@@ -29,15 +29,15 @@ G.Projectiles = (() => {
     return p;
   }
 
-  /** Orbe anclado al jugador: vive mientras el movimiento esté activo. */
+  /** Orbe anclado a un jugador (`owner`): vive mientras el movimiento esté activo. */
   function spawnOrb(o) {
     return spawn(Object.assign({
       orb: true, life: Infinity, pierce: Infinity, hitLog: new Map()
     }, o));
   }
 
-  /** Borra todos los orbes (al cambiar de movimiento activo). */
-  function clearOrbs() { list = list.filter(p => !p.orb); }
+  /** Borra los orbes de un jugador (o todos) al cambiar de movimiento activo. */
+  function clearOrbs(owner) { list = list.filter(p => !p.orb || (owner && p.owner !== owner)); }
 
   function update(dt, player, enemies) {
     for (let i = list.length - 1; i >= 0; i--) {
@@ -45,10 +45,11 @@ G.Projectiles = (() => {
       p.t += dt;
 
       if (p.orb) {
-        // Gira alrededor del jugador.
+        // Gira alrededor de su jugador.
+        const o = p.owner || player;
         p.oa += p.ospeed * dt;
-        p.x = player.x + Math.cos(p.oa) * p.orad;
-        p.y = player.y + Math.sin(p.oa) * p.orad * 0.7;
+        p.x = o.x + Math.cos(p.oa) * p.orad;
+        p.y = o.y + Math.sin(p.oa) * p.orad * 0.7;
         continue;
       }
 

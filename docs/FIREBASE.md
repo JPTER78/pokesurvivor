@@ -33,6 +33,21 @@ navegador.
    Estas reglas hacen que cada jugador sólo pueda leer, escribir y borrar **su**
    partida. Sin ellas, cualquiera podría tocar las de los demás.
 
+### 3b. Realtime Database (amigos en línea, salas y multijugador)
+
+1. **Compilación → Realtime Database** → **Crear base de datos** → ubicación
+   **Bélgica (europe-west1)** → modo bloqueado.
+2. Pestaña **Reglas**: pega el contenido de [`database.rules.json`](../database.rules.json).
+3. Copia la URL que sale arriba (`https://...firebasedatabase.app`) y añádela a
+   `firebase-config.js` como `databaseURL: '...'`.
+
+Más rápido, con la herramienta de Firebase (sube las reglas de las dos bases
+de datos y los índices del ranking de una vez):
+
+```
+npx firebase-tools deploy --only firestore,database --project TU-PROYECTO
+```
+
 ## 4. Conectar el juego
 
 1. Arriba a la izquierda, la rueda ⚙ → **Configuración del proyecto**.
@@ -92,7 +107,13 @@ guardado en la nube (amarillo = guardando, rojo = sin conexión).
 
 Unas 50.000 lecturas y 20.000 escrituras al día y 1 GB de datos. Cada partida
 ocupa unos pocos KB y se guarda tras cada run o compra, así que da para
-bastantes cientos de jugadores diarios. Si algún día se queda corto, Firebase
+bastantes cientos de jugadores diarios. El ranking gasta unas 10 lecturas y
+hasta 10 escrituras por partida.
+
+Realtime Database: **100 conexiones a la vez** (cada jugador con sesión
+abierta en el menú cuenta una) y 10 GB de descarga al mes. Las partidas en
+grupo van directas entre navegadores y no gastan nada; sólo las que no pueden
+conectar directo pasan por aquí (unos 20-70 MB por hora y jugador). Si algún día se queda corto, Firebase
 simplemente rechaza escrituras hasta el día siguiente (no cobra nada sin que
 actives tú un plan de pago).
 
@@ -101,8 +122,8 @@ actives tú un plan de pago).
 Para probar sin tocar el proyecto real (necesita Java 21):
 
 ```
-npx firebase-tools emulators:start --project demo-ps --only auth,firestore
+npx firebase-tools emulators:start --project demo-ps --only auth,firestore,database
 ```
 
 y en `firebase-config.js` usa
-`{ apiKey: 'demo', projectId: 'demo-ps', authDomain: 'demo-ps.firebaseapp.com', appId: 'demo', emulator: true }`.
+`{ apiKey: 'demo', projectId: 'demo-ps', authDomain: 'demo-ps.firebaseapp.com', appId: 'demo', databaseURL: 'http://127.0.0.1:9000?ns=demo-ps-default-rtdb', emulator: true }`.

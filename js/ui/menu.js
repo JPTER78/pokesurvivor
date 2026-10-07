@@ -5,19 +5,22 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'star' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'star', friends: 'friends', rank: 'trophy' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
       b.onclick = () => {
         const go = b.dataset.go;
-        if (go === 'play') G.Flow.play();
+        if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
         else if (go === 'dex') openDex();
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
+        else if (go === 'friends') G.FriendsUI.open();
+        else if (go === 'rank') G.RankingUI.open();
       };
     });
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
+    G.Social.on(() => { if (G.UI.isOpen('scr-menu')) socialLine(); });
     $('btn-logout').onclick = () => {
       if (G.DB.guest && !confirm('Eres invitado: se perderá todo el progreso. ¿Salir?')) return;
       G.Audio.music(null);
@@ -48,6 +51,31 @@ G.MenuUI = (() => {
       `Runs <b style="color:#fff">${st.runs}</b> · Mejor tiempo <b style="color:#fff">${G.U.mmss(st.bestTime)}</b><br>` +
       `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString('es')}</b>` +
       (G.DB.guest ? '<br><span style="color:#ffb0b8">Modo invitado: no se guarda</span>' : '');
+
+    socialLine();
+    // Con cuenta en la nube: amigos en línea, invitaciones y (una vez) el apodo.
+    if (G.DB.online && !G.Social.started) {
+      G.Social.start().then(r => {
+        if (r === 'need-nick' && !G.NickUI.skipped && G.UI.isOpen('scr-menu')) G.NickUI.open();
+        socialLine();
+      });
+    }
+    G.InvitePop.refresh();
+  }
+
+  /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */
+  function socialLine() {
+    const room = G.Social.room;
+    const play = document.querySelector('#scr-menu [data-go=play] small');
+    if (play) play.textContent = room ? 'Volver a tu sala (' + room.members.length + '/' + G.Social.MAX_PLAYERS + ')' : 'Entra en la mazmorra';
+    const fr = G.Social.friends;
+    const on = fr.filter(f => f.status === 'ok' && f.online).length;
+    const req = fr.filter(f => f.status === 'in').length;
+    const parts = [];
+    if (on) parts.push(on + ' en línea');
+    if (req) parts.push(req + (req === 1 ? ' solicitud' : ' solicitudes'));
+    $('menu-friends-sub').textContent = parts.length ? parts.join(' · ') : 'Juega en grupo, hasta 4';
+    $('menu-friends-sub').classList.toggle('gold', req > 0);
   }
 
   // ---------------- colección ----------------

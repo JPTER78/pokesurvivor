@@ -14,7 +14,8 @@ G.FIREBASE_CONFIG = {
   projectId: 'pokesurvivor-jpter',
   storageBucket: 'pokesurvivor-jpter.firebasestorage.app',
   messagingSenderId: '955377776652',
-  appId: '1:955377776652:web:213d0107d3c36aa0fe5629'
+  appId: '1:955377776652:web:213d0107d3c36aa0fe5629',
+  databaseURL: 'https://pokesurvivor-jpter-default-rtdb.europe-west1.firebasedatabase.app'
 };
 
 /* Ejemplo de cómo debe quedar:

@@ -101,6 +101,8 @@
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
+        <button class="menu-item" data-go="friends">Amigos<small id="menu-friends-sub">Juega en grupo, hasta 4</small></button>
+        <button class="menu-item" data-go="rank">Ranking<small>Quién aguanta más</small></button>
       </div>
     </div>
     <div class="box" style="padding:14px 18px">
@@ -140,10 +142,17 @@
     <h3>Privacidad</h3>
     <p>Si creas una cuenta, guardamos tu nombre de jugador y tu partida (colección, monedas,
       mejoras y estadísticas) en Google Firebase para que puedas seguir en cualquier ordenador.
-      Si entras con Google, Firebase guarda también tu correo de Google para identificarte.
+      Si entras con Google, Firebase guarda también tu correo de Google para identificarte
+      (nunca se enseña a otros jugadores).
       No usamos tus datos para nada más, ni los compartimos, ni hay publicidad ni seguimiento.
       Como invitado no se guarda nada fuera de tu navegador.</p>
-    <p>Puedes borrar tu cuenta y tu partida cuando quieras:</p>
+    <p>Amigos y ranking: tu <b>apodo</b> es público para otros jugadores. Guardamos tu lista de
+      amigos, si estás en línea y tus mejores tiempos (con tu apodo y tu Pokémon).</p>
+    <p>Partidas en grupo: tu navegador se conecta <b>directamente</b> con el de tus compañeros
+      (como en una videollamada), así que cada uno puede llegar a ver la dirección IP del otro.
+      Juega en grupo sólo con gente que conozcas. Si la conexión directa no es posible, la partida
+      pasa por los servidores de Firebase.</p>
+    <p>Puedes borrar tu cuenta cuando quieras (se borran también tu apodo, tus amigos y tus marcas):</p>
     <div class="row">
       <button class="btn small" id="legal-delete">Borrar mi cuenta y mi partida</button>
       <span id="legal-del-msg" class="note" style="margin:0"></span>
@@ -151,6 +160,78 @@
   </div>
 </section>
 <div id="boot" class="boot">Cargando…</div>
+
+<!-- ====== Apodo (para amigos y ranking) ====== -->
+<section id="scr-nick" class="scr dim hidden">
+  <div class="box" style="width:min(440px,100%)">
+    <h2>Elige tu apodo</h2>
+    <p class="sub">Es el nombre que verán tus amigos y el que sale en el ranking.
+      Tu nombre y tu correo de Google no se enseñan a nadie.</p>
+    <form id="nick-form" autocomplete="off">
+      <input id="nick-in" class="field" maxlength="16" spellcheck="false" placeholder="3-16 letras, números o _">
+      <p id="nick-err" class="err"></p>
+      <div class="row"><button id="nick-ok" class="btn gold grow" type="submit">Guardar apodo</button></div>
+    </form>
+    <div class="row" style="margin-top:8px"><button id="nick-later" class="btn ghost grow" type="button">Ahora no</button></div>
+  </div>
+</section>
+
+<!-- ====== Amigos ====== -->
+<section id="scr-friends" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Amigos</h2>
+      <div class="row"><button id="fr-room" class="btn small gold hidden">Ir a la sala</button><button class="btn small ghost" data-back>Volver</button></div></div>
+    <p class="sub" id="fr-me"></p>
+    <form id="fr-add" class="row" autocomplete="off">
+      <input id="fr-name" class="field grow" maxlength="16" spellcheck="false" placeholder="Apodo de tu amigo">
+      <button class="btn gold" type="submit" data-sfx="confirm">Añadir amigo</button>
+    </form>
+    <p id="fr-msg" class="note"></p>
+    <div id="fr-list" class="fr-list"></div>
+  </div>
+</section>
+
+<!-- ====== Sala (partida en grupo) ====== -->
+<section id="scr-lobby" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Sala</h2>
+      <div class="row"><button id="lobby-menu" class="btn small ghost">Menú</button><button id="lobby-leave" class="btn small ghost">Salir de la sala</button></div></div>
+    <p class="sub" id="lobby-sub"></p>
+    <div id="lobby-members" class="lobby-members"></div>
+    <h3 id="lobby-inv-title" style="margin:14px 0 6px">Invitar amigos</h3>
+    <div id="lobby-invite" class="fr-list"></div>
+    <div class="row" style="margin-top:14px">
+      <button id="lobby-start" class="btn gold grow">Empezar partida</button>
+    </div>
+    <p class="note" id="lobby-note"></p>
+  </div>
+</section>
+
+<!-- ====== Ranking ====== -->
+<section id="scr-rank" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Ranking <span class="sub" style="font-size:15px">· tiempo aguantado</span></h2><button class="btn small ghost" data-back>Volver</button></div>
+    <div class="gen-tabs" id="rk-mode"></div>
+    <div class="filters" id="rk-period"></div>
+    <div class="row rk-tools">
+      <div class="filters" id="rk-scope" style="margin:0"></div>
+      <input id="rk-poke" class="field" list="rk-dl" placeholder="Filtrar por Pokémon" spellcheck="false">
+      <datalist id="rk-dl"></datalist>
+      <button id="rk-clear" class="btn small ghost hidden">Quitar filtro</button>
+    </div>
+    <div id="rk-list" class="rk-list"></div>
+    <div id="rk-me" class="rk-me"></div>
+  </div>
+</section>
+
+<!-- ====== Invitación recibida ====== -->
+<div id="invite-pop" class="box invite-pop hidden">
+  <div id="inv-text"></div>
+  <div class="row" style="margin-top:10px">
+    <button id="inv-yes" class="btn gold small grow" data-sfx="confirm">Unirme</button>
+    <button id="inv-no" class="btn ghost small">No, gracias</button>
+  </div>
+</div>
 
 <!-- ====== Colección ====== -->
 <section id="scr-dex" class="scr dim hidden">
@@ -212,6 +293,7 @@
     <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
     <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
     <div id="cards" class="cards"></div>
+    <p id="lvl-wait" class="note hidden"></p>
   </div>
 </section>
 
@@ -219,6 +301,7 @@
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
     <p class="sub"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
+    <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
     <div id="pause-sound" class="sound-inline"></div>
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>
@@ -267,6 +350,11 @@
 <script src="js/systems/spawner.js"></script>
 <script src="js/systems/levelup.js"></script>
 <script src="js/systems/gacha.js"></script>
+<!-- red: amigos, salas, cooperativo y ranking -->
+<script src="js/net/social.js"></script>
+<script src="js/net/net.js"></script>
+<script src="js/net/coop.js"></script>
+<script src="js/net/ranking.js"></script>
 <!-- interfaz -->
 <script src="js/ui/icons.js"></script>
 <script src="js/ui/ui.js"></script>
@@ -276,6 +364,8 @@
 <script src="js/ui/menu.js"></script>
 <script src="js/ui/gacha-ui.js"></script>
 <script src="js/ui/run-ui.js"></script>
+<script src="js/ui/social-ui.js"></script>
+<script src="js/ui/ranking-ui.js"></script>
 <!-- juego -->
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>

@@ -2,10 +2,15 @@
  * Los orbes se quedan quietos hasta que entras en el radio del imán; entonces
  * aceleran hacia ti. Para que no se acumulen miles, al pasar de MAX se fusionan
  * los más antiguos.
+ *
+ * Cooperativo: los objetos los crea el anfitrión (cada uno con su id) y los
+ * demás reciben una copia. Todos vuelan hacia el jugador más cercano; quien
+ * decide quién lo ha cogido es el anfitrión.
  */
 G.Pickups = (() => {
   let list = [];
   const MAX = 420;
+  let nextId = 1;
 
   const KIND = {
     xp:    { color: '#7fe0ff', glow: '#2a8fd0', r: 4.5 },
@@ -20,7 +25,11 @@ G.Pickups = (() => {
   function all() { return list; }
 
   function push(o) {
+    // En cooperativo sólo el anfitrión crea objetos (las copias llegan por la red).
+    if (G.Coop.active && !G.Coop.isHost) return;
+    o.id = nextId++;
     list.push(o);
+    if (G.Coop.isHost) G.Coop.pickupAdded(o);
     if (list.length > MAX) {
       // Fusiona los dos más antiguos de XP para no crecer sin límite.
       const i = list.findIndex(p => p.kind === 'xp' || p.kind === 'xpBig');
@@ -28,9 +37,30 @@ G.Pickups = (() => {
         const a = list.splice(i, 1)[0];
         const j = list.findIndex(p => p.kind === 'xp' || p.kind === 'xpBig');
         if (j >= 0) { list[j].value += a.value; list[j].kind = 'xpBig'; }
-      } else list.shift();
+        if (G.Coop.isHost) G.Coop.pickupGone(a.id);
+      } else {
+        const a = list.shift();
+        if (G.Coop.isHost) G.Coop.pickupGone(a.id);
+      }
     }
   }
+
+  /** Copia de un objeto del anfitrión. */
+  function addRemote(id, kind, x, y, value) {
+    if (list.some(p => p.id === id)) return;
+    const o = orb(kind, x, y, value);
+    o.id = id;
+    list.push(o);
+  }
+
+  function removeId(id) {
+    const i = list.findIndex(p => p.id === id);
+    if (i < 0) return null;
+    return list.splice(i, 1)[0];
+  }
+
+  /** Imán: todo vuela hacia el jugador más cercano. */
+  function pullAll() { for (const o of list) o.pulled = true; }
 
   function dropXp(x, y, value, boss = false) {
     if (boss) {
@@ -66,15 +96,26 @@ G.Pickups = (() => {
     };
   }
 
-  function update(dt, pl, onCollect) {
-    const mag = pl.magnet;
-    const mag2 = mag * mag;
+  /**
+   * @param players  un jugador o la lista de jugadores (los caídos no recogen)
+   * @param onCollect(pickup, jugador)
+   */
+  function update(dt, players, onCollect) {
+    if (!Array.isArray(players)) players = [players];
     for (let i = list.length - 1; i >= 0; i--) {
       const p = list[i];
       p.t += dt * 4;
 
+      // El jugador vivo más cercano (en solitario, siempre tú).
+      let pl = null, d2 = Infinity;
+      for (const o of players) {
+        if (o.dead && players.length > 1) continue;
+        const dd = G.U.dist2(o.x, o.y, p.x, p.y);
+        if (dd < d2) { d2 = dd; pl = o; }
+      }
+      if (!pl) continue;
       const dx = pl.x - p.x, dy = pl.y - p.y;
-      const d2 = dx * dx + dy * dy;
+      const mag2 = pl.magnet * pl.magnet;
 
       if (p.pulled || d2 < mag2) {
         p.pulled = true;
@@ -91,8 +132,8 @@ G.Pickups = (() => {
       p.y += p.vy * dt;
 
       if (d2 < 15 * 15) {
-        onCollect(p);
         list.splice(i, 1);
+        onCollect(p, pl);
       }
     }
   }
@@ -138,5 +179,5 @@ G.Pickups = (() => {
     ctx.globalAlpha = 1;
   }
 
-  return { clear, all, dropXp, drop, update, draw, KIND, get count() { return list.length; } };
+  return { clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };
 })();

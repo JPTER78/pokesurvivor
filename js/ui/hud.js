@@ -115,6 +115,8 @@ G.HUD = (() => {
       ctx.restore();
     }
 
+    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (bx > px ? 56 : 40));
+
     const ban = G.Spawner.banner();
     if (ban) {
       const a = Math.min(1, ban.t * 1.6);
@@ -198,6 +200,90 @@ G.HUD = (() => {
     }
 
     ctx.restore();
+  }
+
+  // ---------------- cooperativo ----------------
+
+  /**
+   * - Vida de cada compañero debajo de la tuya.
+   * - Flecha en el borde de la pantalla hacia los que no se ven, con su nombre
+   *   y a cuántos metros están (roja y parpadeando si está caído).
+   * - Si has caído tú: aviso y barra de "te están levantando".
+   */
+  function drawCoop(ctx, w, h, pl, px, top) {
+    const cam = G.Camera;
+    const t = performance.now() / 1000;
+    let y = top;
+    ctx.textAlign = 'left';
+    for (const m of G.Coop.mates) {
+      if (!m.connected) continue;
+      const o = m.pl;
+      ctx.font = F(800, 10);
+      ctx.fillStyle = m.color;
+      ctx.fillText(m.name, px, y + 9);
+      const lx = px + 78;
+      bar(ctx, lx, y + 1, 110, 8, o.dead ? 0 : o.hp / o.maxHp, o.dead ? '#ff5f6d' : '#5fe08a');
+      if (o.dead) {
+        ctx.font = F(800, 9);
+        ctx.fillStyle = Math.sin(t * 8) > 0 ? '#ff8a96' : '#ffd0d5';
+        ctx.fillText('CAÍDO', lx + 116, y + 9);
+      }
+      y += 15;
+    }
+
+    // Flechas hacia los compañeros fuera de la vista.
+    for (const m of G.Coop.mates) {
+      if (!m.connected) continue;
+      const o = m.pl;
+      const sx = (o.x - cam.left()) * cam.scale, sy = (o.y - o.bodyH * 0.5 - cam.top()) * cam.scale;
+      if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
+      const M = 42;
+      const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
+      const a = Math.atan2(sy - ey, sx - ex);
+      const metres = Math.round(G.U.dist(pl.x, pl.y, o.x, o.y) / 32);
+      const col = o.dead ? (Math.sin(t * 8) > 0 ? '#ff5f6d' : '#ffd0d5') : m.color;
+      ctx.save();
+      ctx.translate(ex, ey);
+      // Flecha
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.beginPath(); ctx.arc(0, 0, 17, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 28, Math.sin(a) * 28);
+      ctx.lineTo(Math.cos(a + 2.4) * 14, Math.sin(a + 2.4) * 14);
+      ctx.lineTo(Math.cos(a - 2.4) * 14, Math.sin(a - 2.4) * 14);
+      ctx.closePath(); ctx.fill();
+      // Inicial del compañero dentro del círculo
+      ctx.font = F(800, 14);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(m.name.charAt(0).toUpperCase(), 0, 5);
+      // Nombre y distancia: al lado contrario de la flecha, para que no se salga
+      const lx = -Math.cos(a) * 30, ly = -Math.sin(a) * 26 + 4;
+      ctx.font = F(800, 12);
+      const label = (o.dead ? '¡' + m.name + ' necesita ayuda! ' : m.name + ' ') + '· ' + metres + ' m';
+      ctx.textAlign = Math.cos(a) > 0.3 ? 'right' : Math.cos(a) < -0.3 ? 'left' : 'center';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+      ctx.strokeText(label, lx, ly);
+      ctx.fillStyle = col;
+      ctx.fillText(label, lx, ly);
+      ctx.restore();
+    }
+
+    // Tú, caído.
+    if (pl.dead) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.font = F(800, 20);
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.75)';
+      const msg = G.Coop.players().every(p => p.dead) ? 'Habéis caído todos…' : 'Has caído: un compañero puede levantarte';
+      ctx.strokeText(msg, w / 2, h * 0.62);
+      ctx.fillStyle = '#ffb0b8';
+      ctx.fillText(msg, w / 2, h * 0.62);
+      const f = (pl.reviveT || 0) / G.Player.REVIVE_TIME;
+      if (f > 0) bar(ctx, w / 2 - 110, h * 0.62 + 12, 220, 10, f, '#5fe08a');
+      ctx.restore();
+    }
   }
 
   return { draw, roundRect, bar };

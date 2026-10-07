@@ -246,8 +246,18 @@ G.World = (() => {
     return false;
   }
 
-  function destroyProp(p) {
+  /** Rompe el objeto de esa casilla (llega por la red en cooperativo). */
+  function breakAt(tx, ty) {
+    const k = tx + ',' + ty;
+    if (broken.has(k)) return;
+    const c = data.get(Math.floor(tx / N) + ',' + Math.floor(ty / N));
+    const p = c && c.props.find(o => o.tx === tx && o.ty === ty);
+    if (p) destroyProp(p, true); else broken.add(k);
+  }
+
+  function destroyProp(p, fromNet = false) {
     broken.add(p.tx + ',' + p.ty);
+    if (G.Coop.active && !fromNet) G.Coop.propBroken(p);
     const cx = Math.floor(p.tx / N), cy = Math.floor(p.ty / N);
     const c = data.get(cx + ',' + cy);
     if (c) {
@@ -399,7 +409,7 @@ G.World = (() => {
   return {
     TS, CW, reset, setBiome, biomeName, liquidKind,
     kindAt, isWall, isLiquid, isFree, collide, projectileBlock, propsInCircle, nearestBreakable,
-    damageProp, update, drawGround, drawLiquid, visibleProps, drawProp, drawVignette,
+    damageProp, breakAt, update, drawGround, drawLiquid, visibleProps, drawProp, drawVignette,
     get biome() { return biome; }
   };
 })();

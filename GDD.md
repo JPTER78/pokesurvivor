@@ -27,8 +27,39 @@ Menú principal  (el mundo de fondo, con Pokémon salvajes paseando)
    ├─ Jugar      → run → resumen (+ Pokémonedas, shinies conseguidos) → menú
    ├─ Pokémon    → colección por región, elegir compañero (normal o shiny)
    ├─ Mejoras    → mejoras permanentes
-   └─ Gacha      → 9 banners, uno por región
+   ├─ Gacha      → 9 banners, uno por región
+   ├─ Amigos     → añadir por apodo, en línea, invitar → Sala (hasta 4) → partida en grupo
+   └─ Ranking    → tiempo aguantado: Solo / Grupo × día, semana, mes, año, histórico
 ```
+
+### 2.3 Multijugador cooperativo (hasta 4)
+- **Amigos por apodo.** Las cuentas de nombre y contraseña usan su nombre; las
+  de Google eligen un apodo único (su nombre real nunca se enseña).
+- **Sala:** el que invita es el anfitrión; los amigos en línea reciben la
+  invitación en el menú. El anfitrión empieza la partida para todos.
+- **Conexión:** directa entre navegadores (WebRTC, estrella con el anfitrión);
+  si la red no lo permite, por la Realtime Database (más lento, pero funciona).
+- **Quién manda:** el anfitrión lleva enemigos, objetos, experiencia y reloj;
+  cada jugador su Pokémon (posición, vida, ataques). Los golpes a enemigos se
+  mandan al anfitrión; los ataques de los compañeros se ven como "fantasmas".
+- **Experiencia compartida**; al subir de nivel cada uno elige su carta y el
+  juego **no sigue hasta que eligen todos**.
+- **Caer:** te quedas en el suelo; un compañero a tu lado 3 s te levanta con la
+  mitad de vida. Se acaba cuando caéis todos.
+- **Flechas** en el borde de la pantalla hacia los compañeros que no se ven
+  (nombre y metros; roja si está caído).
+- Dificultad: ×(1 + 0,75·(n−1)) enemigos y ×(1 + 0,3·(n−1)) vida; la
+  experiencia del equipo se divide entre (1 + 0,6·(n−1)).
+- La pausa no para el juego; si se va el anfitrión, la partida acaba para todos.
+
+### 2.4 Ranking
+- Tiempo aguantado. Pestañas **Solo / Grupo**; periodos **diario, semanal,
+  mensual, anual e histórico** (hora de España); **todos o sólo amigos**;
+  **filtro por Pokémon**; tu puesto abajo aunque no salgas en el top 50.
+- Una entrada por jugador (o equipo) y tabla, sólo si mejora. En grupo sale
+  el equipo entero en la misma fila (la sube el anfitrión).
+- Anti-trampas básico: al empezar se apunta la hora del servidor y las reglas
+  no aceptan un tiempo mayor que el tiempo real transcurrido.
 
 ### 2.1 Cuentas
 - Entrar, crear cuenta o **jugar como invitado** (no se guarda nada).
@@ -166,7 +197,6 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 
 ## 11. Pendiente
 
-- [ ] Base de datos real (servidor) — sólo hay que reescribir `js/core/db.js`
 - [ ] Efectividades de tipo en el daño
 - [ ] Gráficos propios para los proyectiles (ahora son orbes de color)
 - [ ] Movimientos propios por Pokémon (ahora salen de sus tipos)
@@ -240,3 +270,18 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   contraseña y Google activos, dominios `jpter78.github.io` y `localhost`). Los
   proyectos `pokemon-survivors-jpter` y `asdaad-9e84f` se borraron (30 días
   recuperables en Google Cloud).
+
+**2026-10-08 · multijugador, amigos y ranking**
+- **Cooperativo hasta 4** con **lista de amigos** (no códigos de sala ni salas
+  públicas). Experiencia compartida y **cartas que esperan a todos**; un caído
+  se **revive** quedándose a su lado.
+- Conexión **WebRTC directa** con señalización por la **Realtime Database**
+  (nueva instancia `pokesurvivor-jpter-default-rtdb`, europe-west1), y **relé**
+  por esa misma base de datos si no se puede conectar directo. Sin servidor
+  propio ni TURN de pago.
+- **Apodo único** para amigos y ranking; las cuentas de Google lo eligen al
+  entrar (privacidad: no se enseña su nombre real).
+- **Ranking de tiempo aguantado**: Solo / Grupo, diario a histórico, amigos,
+  por Pokémon, tu puesto. El grupo sale entero en una fila.
+- Aviso de privacidad: en grupo los navegadores se conectan directamente y
+  pueden verse la IP (como en una videollamada).

@@ -79,26 +79,47 @@
     hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0) {
       if (this.dead) return;
       const d = Math.max(1, Math.round(amount));
+      // Copia de un enemigo del anfitrión: el golpe se le manda a él, que es
+      // quien decide si cae. Aquí sólo se ve (número, destello y animación).
+      if (this.remote) {
+        G.Coop.hit(this, d, color, dirX, dirY, knock);
+        this.hp = Math.max(1, this.hp - d);
+        this.showHurt(d, color, dirX, dirY);
+        return;
+      }
       this.hp -= d;
-      this.flash = 0.09;
-      G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, color, this.boss);
-      G.FX.spark(this.x, this.y - this.bodyH * 0.5, color, dirX, dirY, 3);
+      this.showHurt(d, color, dirX, dirY);
       if (knock > 0 && !this.boss) {
         const [nx, ny] = G.U.norm(dirX, dirY);
         this.kx += nx * knock;
         this.ky += ny * knock;
       }
-      if (!this.anim.busy() && this.phase !== 'dash') this.anim.play('Hurt');
-      G.Audio.sfx('hit');
+      if (G.Coop.isHost) G.Coop.hurtShown(this, d, color);
       if (this.hp <= 0) this.die();
     }
 
+    /** Lo que se VE al recibir un golpe. */
+    showHurt(d, color, dirX = 0, dirY = 0) {
+      this.flash = 0.09;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, color, this.boss);
+      G.FX.spark(this.x, this.y - this.bodyH * 0.5, color, dirX, dirY, 3);
+      if (!this.anim.busy() && this.phase !== 'dash') this.anim.play('Hurt');
+      G.Audio.sfx('hit');
+    }
+
     applySlow(factor, dur = 1.2) {
+      if (this.remote) { G.Coop.status(this, 's', factor); return; }
       this.slow = Math.max(this.slow, factor);
       this.slowT = Math.max(this.slowT, dur);
     }
-    applyBurn(stacks = 1) { this.burn = Math.min(8, this.burn + stacks); this.burnT = 3; }
-    applyPoison(stacks = 1) { this.poison = Math.min(8, this.poison + stacks); this.poisonT = 4; }
+    applyBurn(stacks = 1) {
+      if (this.remote) { G.Coop.status(this, 'b', stacks); return; }
+      this.burn = Math.min(8, this.burn + stacks); this.burnT = 3;
+    }
+    applyPoison(stacks = 1) {
+      if (this.remote) { G.Coop.status(this, 'p', stacks); return; }
+      this.poison = Math.min(8, this.poison + stacks); this.poisonT = 4;
+    }
 
     die() {
       if (this.dead) return;
@@ -109,6 +130,13 @@
       const cy = this.y - this.bodyH * 0.5;
       G.FX.burst(this.x, cy, col, this.boss ? 34 : 9, this.boss ? 260 : 120);
       G.FX.ring(this.x, this.y, this.r, this.r * (this.boss ? 6 : 2.6), col, this.boss ? 0.6 : 0.3, this.boss ? 6 : 3);
+      // En una copia, el botín y los shinies los reparte el anfitrión.
+      if (this.remote) {
+        if (this.boss) G.Camera.kick(0.9);
+        G.Audio.sfx(this.boss ? 'bossDown' : 'faint');
+        if (this.shiny) { G.FX.burst(this.x, cy, '#ffe9a0', 30, 220); G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5); }
+        return;
+      }
       if (this.boss) {
         G.Camera.kick(0.9);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
@@ -120,6 +148,41 @@
         G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5);
         if (G.onShinyCaught) G.onShinyCaught(this);
       }
+    }
+
+    /**
+     * Copia de un enemigo del anfitrión: va hacia la última posición recibida
+     * (más la velocidad estimada, para que no avance a saltos) y anima según
+     * se mueva o según la animación que tenga en el anfitrión.
+     */
+    netUpdate(dt) {
+      this.anim.update(dt);
+      if (this.flash > 0) this.flash -= dt;
+      if (this.dead) { this.fade -= dt; return; }
+      if (this.touchCd > 0) this.touchCd -= dt;
+      this.bob += dt * 6;
+      if (this.shiny) {
+        this.sparkT -= dt;
+        if (this.sparkT <= 0) { this.sparkT = 0.22; G.FX.twinkle(this.x + G.U.rand(-this.r, this.r) * 1.2, this.y - G.U.rand(4, this.bodyH * 1.1)); }
+      }
+      const n = this.net;
+      if (!n) return;
+      const lead = Math.min(0.25, n.age);
+      n.age += dt;
+      const tx = n.x + n.vx * lead, ty = n.y + n.vy * lead;
+      const ox = this.x, oy = this.y;
+      if (G.U.dist2(this.x, this.y, tx, ty) > 160 * 160) { this.x = tx; this.y = ty; }
+      else { this.x = G.U.damp(this.x, tx, 12, dt); this.y = G.U.damp(this.y, ty, 12, dt); }
+      const vx = (this.x - ox) / (dt || 1), vy = (this.y - oy) / (dt || 1);
+      const moving = Math.abs(vx) + Math.abs(vy) > 8;
+      this.anim.dir = n.dir;
+      // Animaciones de una vez (embestida, disparo...) que ha empezado el anfitrión.
+      if (n.anim !== this.lastNetAnim) {
+        this.lastNetAnim = n.anim;
+        const a = G.Coop.ANIMS[n.anim];
+        if (a && a !== 'Idle' && a !== 'Walk' && a !== 'Faint') this.anim.play(a, { speed: 1.4 });
+      }
+      this.anim.loop(moving ? 'Walk' : 'Idle');
     }
 
     update(dt, pl) {
@@ -202,12 +265,13 @@
         if (this.shotCd <= 0 && dist < range) {
           this.shotCd = this.def.shotCd || 2;
           const sp = 190;
-          G.Projectiles.spawn({
+          const shot = G.Projectiles.spawn({
             x: this.x, y: this.y, vx: dx * sp, vy: dy * sp,
             dmg: (this.def.shotDmg || 10) * (this.dmg / this.def.dmg),
             r: 7, life: 2.4, friendly: false, color: '#ff7a9e',
             vis: G.VFX.forType(((G.DEX_BY[this.dex] || {}).types || ['normal'])[0])
           });
+          if (G.Coop.isHost) G.Coop.enemyShot(shot, ((G.DEX_BY[this.dex] || {}).types || ['normal'])[0]);
           this.anim.play('Shoot');
           G.FX.ring(this.x, this.y - G.LIFT, 4, 14, '#ff7a9e', 0.2, 2);
         }
@@ -270,10 +334,10 @@
 
       if (this.dead) return;
 
-      if (this.burn > 0 || this.poison > 0) {
+      if (this.burn > 0 || this.poison > 0 || (this.net && this.net.st)) {
         ctx.save();
         ctx.globalAlpha = 0.45;
-        ctx.fillStyle = this.burn > 0 ? '#ff8a3d' : '#c86bdc';
+        ctx.fillStyle = this.burn > 0 || (this.net && this.net.st & 1) ? '#ff8a3d' : '#c86bdc';
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.2, this.r * 0.5, 0, 0, 6.2832); ctx.fill();
         ctx.restore();
       }
@@ -299,9 +363,42 @@
     const CELL = 52;
     const grid = new Map();
 
-    function clear() { list = []; corpses = []; grid.clear(); }
+    const byId = new Map();
+    function clear() { list = []; corpses = []; grid.clear(); byId.clear(); }
     function all() { return list; }
-    function add(e) { list.push(e); return e; }
+    function add(e) {
+      list.push(e);
+      byId.set(e.id, e);
+      if (G.Coop.isHost) G.Coop.enemyAdded(e);
+      return e;
+    }
+    function get(id) { return byId.get(id); }
+
+    /** Copia local de un enemigo del anfitrión (cooperativo). */
+    function addRemote(o) {
+      if (byId.has(o.id)) return byId.get(o.id);
+      const def = { dex: o.dex, hp: o.hp, spd: 0, dmg: o.dmg, xp: 0, behavior: 'remote' };
+      const e = new Enemy(def, o.x, o.y, { hp: 1, spd: 1, dmg: 1 }, o.boss);
+      e.id = o.id;
+      e.remote = true;
+      if (o.shiny) e.makeShiny();
+      e.maxHp = o.hp; e.hp = o.hp;
+      e.net = { x: o.x, y: o.y, vx: 0, vy: 0, age: 0, dir: 0, anim: 0, st: 0 };
+      list.push(e);
+      byId.set(e.id, e);
+      return e;
+    }
+
+    /** Quita una copia (el anfitrión dice que ha caído o que se ha alejado). */
+    function removeRemote(id, died) {
+      const e = byId.get(id);
+      if (!e) return;
+      byId.delete(id);
+      if (died) e.die();
+      const i = list.indexOf(e);
+      if (i >= 0) list.splice(i, 1);
+      if (died) corpses.push(e);
+    }
 
     function key(cx, cy) { return cx * 73856093 ^ cy * 19349663; }
 
@@ -365,23 +462,51 @@
       }
     }
 
-    function update(dt, pl) {
+    /** El jugador vivo más cercano (los caídos no atraen a nadie). */
+    function nearestPlayer(players, x, y) {
+      let best = null, bd = Infinity;
+      for (const p of players) {
+        if (p.dead) continue;
+        const d = G.U.dist2(x, y, p.x, p.y);
+        if (d < bd) { bd = d; best = p; }
+      }
+      return best;
+    }
+
+    /**
+     * @param players  [jugador local, ...compañeros]. Las estadísticas de la
+     *                 run (derrotados, jefes) se apuntan en el primero.
+     */
+    function update(dt, players) {
+      if (!Array.isArray(players)) players = [players];
+      const pl = players[0];
       rebuildGrid();
-      for (const e of list) e.update(dt, pl);
-      separate(dt);
+      for (const e of list) {
+        if (e.remote) e.netUpdate(dt);
+        else e.update(dt, nearestPlayer(players, e.x, e.y) || pl);
+      }
+      if (!G.Coop.active || G.Coop.isHost) separate(dt);
       for (let i = list.length - 1; i >= 0; i--) {
         const e = list[i];
+        if (e.remote) continue;
         if (e.dead) {
           pl.kills++;
           if (e.boss) pl.bosses++;
           corpses.push(e);
           list.splice(i, 1);
+          byId.delete(e.id);
+          if (G.Coop.isHost) G.Coop.enemyGone(e, true);
           continue;
         }
-        if (!e.boss && !e.shiny && G.U.dist2(e.x, e.y, pl.x, pl.y) > 1400 * 1400) list.splice(i, 1);
+        const near = nearestPlayer(players, e.x, e.y) || pl;
+        if (!e.boss && !e.shiny && G.U.dist2(e.x, e.y, near.x, near.y) > 1400 * 1400) {
+          list.splice(i, 1);
+          byId.delete(e.id);
+          if (G.Coop.isHost) G.Coop.enemyGone(e, false);
+        }
       }
       for (let i = corpses.length - 1; i >= 0; i--) {
-        corpses[i].update(dt, pl);
+        if (corpses[i].remote) corpses[i].netUpdate(dt); else corpses[i].update(dt, pl);
         if (corpses[i].fade <= 0) corpses.splice(i, 1);
       }
       if (corpses.length > 120) corpses.splice(0, corpses.length - 120);
@@ -398,7 +523,7 @@
     function bossAlive() { return list.some(e => e.boss && !e.dead); }
     function shinies() { return list.filter(e => e.shiny && !e.dead); }
 
-    return { clear, all, add, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies,
+    return { clear, all, add, get, addRemote, removeRemote, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies, nearestPlayer,
              get count() { return list.length; } };
   })();
 })();

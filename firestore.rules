@@ -1,20 +1,117 @@
 rules_version = '2';
 
 // Reglas de seguridad de PokéSurvivor.
-// Cada jugador sólo puede leer, escribir y borrar SU partida: saves/{su uid}.
+//   saves/{uid}            partida: sólo su dueño
+//   names/{apodo}          reserva de apodos únicos (en minúsculas)
+//   profiles/{uid}         apodo público de cada jugador
+//   friendships/{a_b}      solicitudes y amistades entre dos jugadores
+//   runs/{uid}             cuándo empezó tu última partida (anti-trampas)
+//   lb/{tabla}/e/{id}      ranking de tiempo aguantado
 // Todo lo demás está cerrado.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /saves/{uid} {
-      allow read, delete: if request.auth != null && request.auth.uid == uid;
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
 
-      allow create, update: if request.auth != null
-        && request.auth.uid == uid
+    match /saves/{uid} {
+      allow read, delete: if signedIn() && me() == uid;
+
+      allow create, update: if signedIn()
+        && me() == uid
         && request.resource.data.keys().hasOnly(['save', 'updatedAt', 'v'])
         && request.resource.data.save is map
         && request.resource.data.v is int
         && request.resource.data.updatedAt == request.time;
+    }
+
+    // ---------- apodos ----------
+
+    match /names/{lower} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == me()
+        && lower.size() >= 3 && lower.size() <= 16
+        && lower == lower.lower();
+      allow delete: if signedIn() && resource.data.uid == me();
+    }
+
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && me() == uid
+        && request.resource.data.keys().hasOnly(['name', 'lower', 'at'])
+        && request.resource.data.name is string
+        && request.resource.data.lower == request.resource.data.name.lower()
+        && request.resource.data.at == request.time
+        && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
+      allow delete: if signedIn() && me() == uid;
+    }
+
+    // ---------- amigos ----------
+    // Un documento por pareja, con id "uidMenor_uidMayor".
+
+    match /friendships/{pid} {
+      allow read: if signedIn() && (resource == null || me() in resource.data.users);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['users', 'from', 'to', 'status', 'names', 'at'])
+        && request.resource.data.from == me()
+        && request.resource.data.to != me()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.users.size() == 2
+        && request.resource.data.users[0] < request.resource.data.users[1]
+        && me() in request.resource.data.users
+        && request.resource.data.to in request.resource.data.users
+        && pid == request.resource.data.users[0] + '_' + request.resource.data.users[1]
+        && request.resource.data.names is map
+        && request.resource.data.at == request.time;
+      // Sólo quien la recibe puede aceptarla.
+      allow update: if signedIn()
+        && resource.data.to == me()
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'at', 'names'])
+        && request.resource.data.status == 'ok';
+      allow delete: if signedIn() && me() in resource.data.users;
+    }
+
+    // ---------- ranking ----------
+
+    match /runs/{uid} {
+      allow read, delete: if signedIn() && me() == uid;
+      allow create, update: if signedIn()
+        && me() == uid
+        && request.resource.data.keys().hasOnly(['startedAt', 'mode'])
+        && request.resource.data.startedAt == request.time;
+    }
+
+    // Una entrada no puede durar más que el tiempo real desde que empezó tu
+    // partida (runs/{uid}), y sólo se puede mejorar, nunca empeorar.
+    function validEntry(board, id) {
+      let d = request.resource.data;
+      let run = get(/databases/$(database)/documents/runs/$(me())).data;
+      return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
+        && d.t is int && d.t > 0 && d.t <= 21600
+        && d.t <= (request.time - run.startedAt).seconds() + 15
+        && d.uids is list && me() in d.uids
+        && d.names is list && d.names.size() == d.uids.size()
+        && d.dex is list && d.dex.size() == d.uids.size()
+        && d.at == request.time
+        && (board.matches('s_.*')
+              ? (d.uids.size() == 1 && id == me())
+              : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')))
+        && (resource == null || d.t > resource.data.t);
+    }
+
+    match /lb/{board}/e/{id} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && validEntry(board, id);
+      allow delete: if signedIn() && me() in resource.data.uids;
+    }
+
+    // Para borrar todas tus marcas al borrar la cuenta (consulta de grupo).
+    match /{path=**}/e/{id} {
+      allow read: if signedIn();
     }
 
     match /{document=**} {

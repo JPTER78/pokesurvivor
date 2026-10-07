@@ -61,6 +61,9 @@ G.Player = class Player {
     this.dead = false;
   }
 
+  /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
+  static get REVIVE_TIME() { return 3; }
+
   static xpFor(level) {
     return Math.floor(8 + level * 6 + Math.pow(level, 1.75) * 1.6);
   }
@@ -89,7 +92,7 @@ G.Player = class Player {
   setActive(i) {
     if (i < 0 || i >= this.moves.length || i === this.active) return;
     this.active = i;
-    G.Projectiles.clearOrbs();
+    G.Projectiles.clearOrbs(this);
     G.Audio.sfx('select');
     const m = this.moves[i];
     m.t = Math.min(m.t, m.cd * 0.35);
@@ -134,6 +137,8 @@ G.Player = class Player {
     if (this.hp <= 0) {
       this.hp = 0; this.dead = true;
       this.anim.play('Faint', { hold: true });
+      G.Projectiles.clearOrbs(this);
+      this.reviveT = 0;
     }
   }
 
@@ -182,7 +187,8 @@ G.Player = class Player {
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
 
     // --- movimiento con colisiones ---
-    const [ax, ay] = G.Input.axis();
+    // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
+    const [ax, ay] = this.frozen ? [0, 0] : G.Input.axis();
     this.walking = ax !== 0 || ay !== 0;
     const s = this.spd;
     this.x += ax * s * dt;
@@ -226,6 +232,54 @@ G.Player = class Player {
     this.anim.loop(this.walking ? 'Walk' : 'Idle', this.walking ? s / 110 : 1);
   }
 
+  /** Vuelve a levantarse (lo revive un compañero en cooperativo). */
+  revive(frac = 0.5) {
+    this.dead = false;
+    this.hp = Math.max(1, this.maxHp * frac);
+    this.invuln = 2;
+    this.reviveT = 0;
+    this.anim._start('Idle', false);
+    G.FX.ring(this.x, this.y, 6, 70, '#5fe08a', 0.5, 4);
+    G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#9dffb8', 18, 150);
+    G.Audio.sfx('heal');
+  }
+
+  // ---------------- compañero (cooperativo) ----------------
+
+  /**
+   * Un compañero en otro ordenador: su dueño manda su estado (posición, vida,
+   * movimiento activo...) y aquí se sigue con suavidad.
+   * n = { x, y, ang, walk, hp, maxHp, dead, mv, ml, mag, aim, rev }
+   */
+  netUpdate(dt) {
+    this.anim.update(dt);
+    const n = this.net;
+    if (!n) return;
+    if (this.flash > 0) this.flash -= dt;
+    if (this.attackFace > 0) this.attackFace -= dt;
+    if (G.U.dist2(this.x, this.y, n.x, n.y) > 300 * 300) { this.x = n.x; this.y = n.y; }
+    else { this.x = G.U.damp(this.x, n.x, 14, dt); this.y = G.U.damp(this.y, n.y, 14, dt); }
+    if (n.hp < this.hp - 0.5 && !n.dead) this.flash = 0.14;
+    this.hp = n.hp; this.maxHp = n.maxHp;
+    this.magnet = n.mag || this.magnet;
+    this.reviveT = n.rev || 0;
+    if (n.dead && !this.dead) { this.dead = true; this.anim.play('Faint', { hold: true }); G.Projectiles.clearOrbs(this); }
+    else if (!n.dead && this.dead) this.revive(n.hp / (n.maxHp || 1));
+    // Movimiento activo (para el halo, el HUD y los orbes).
+    if (n.mv && (!this.moves[0] || this.moves[0].id !== n.mv || this.moves[0].lvl !== n.ml) && G.Moves.BY_ID[n.mv]) {
+      this.moves = [G.Moves.instance(n.mv, n.ml || 1)];
+      this.active = 0;
+      G.Projectiles.clearOrbs(this);
+    }
+    if (this.dead) return;
+    this.walking = !!n.walk;
+    this.moveAngle = n.ang;
+    this.aim = n.aim;
+    const face = this.attackFace > 0 || !this.walking ? this.aim : this.moveAngle;
+    this.anim.dir = G.Sprites.dirFromAngle(face);
+    this.anim.loop(this.walking ? 'Walk' : 'Idle', this.walking ? this.baseSpd / 110 : 1);
+  }
+
   draw(ctx) {
     // Halo del tipo del movimiento activo, en el suelo.
     const m = this.activeMove();
@@ -257,6 +311,33 @@ G.Player = class Player {
       ctx.stroke();
       ctx.restore();
       i++;
+    }
+
+    // Cooperativo: anillo de "reviviendo" y nombre encima.
+    if (this.dead && this.reviveT > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#5fe08a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(this.x, this.y, this.r * 2.4, this.r * 1.0, 0, -Math.PI / 2, -Math.PI / 2 + 6.2832 * Math.min(1, this.reviveT / G.Player.REVIVE_TIME));
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (this.tag) {
+      ctx.save();
+      ctx.font = '700 7px Pixelify,"Segoe UI",sans-serif';
+      ctx.textAlign = 'center';
+      const y = this.y - this.bodyH - 8;
+      ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
+      ctx.strokeText(this.tag, this.x, y);
+      ctx.fillStyle = this.dead ? '#ff8a96' : this.tagColor || '#fff';
+      ctx.fillText(this.tag, this.x, y);
+      if (this.dead) {
+        ctx.font = '700 6px Pixelify,"Segoe UI",sans-serif';
+        ctx.strokeText(this.revLabel || '', this.x, y - 8);
+        ctx.fillText(this.revLabel || '', this.x, y - 8);
+      }
+      ctx.restore();
     }
   }
 };

@@ -42,6 +42,9 @@ jefe, la captura de un shiny salvaje y un shiny en el gacha.
 - **Base de datos (Firebase):** cuentas con nombre + contraseña o Google, y la
   partida se sigue en cualquier ordenador. Pasos en [docs/FIREBASE.md](docs/FIREBASE.md).
   Sin configurar, el juego guarda sólo en el navegador, como antes.
+- **Jugar con amigos (hasta 4) y ranking:** con cuenta en la nube, menú
+  **Amigos** (añadir por apodo, invitar a tu sala) y **Ranking** (tiempo
+  aguantado: solo o grupo, de hoy a histórico, amigos, por Pokémon).
 - **Publicar gratis en GitHub Pages:** [docs/PUBLICAR.md](docs/PUBLICAR.md).
 - Si se juega en dos ordenadores a la vez o sin conexión, las partidas se
   **fusionan**: las colecciones se unen (nunca se pierde un Pokémon ni un
@@ -64,6 +67,8 @@ assets/pokemon/{dex}/   hojas de sprites PMD (Idle, Walk, Attack, Shoot, Charge,
 assets/pokemon/{dex}/s/ las mismas en versión shiny
 assets/fonts/           Pixelify Sans (OFL)
 js/
+  net/      social (apodo, amigos, salas), net (WebRTC + relé),
+            coop (partida en grupo), ranking
   core/     util, db (guardado), audio (sintetizador + efectos), input,
             sprites (animador PMD), camera
   data/     pokedex*, sprites-meta*, moves, starters (+ test), enemies,
@@ -71,7 +76,8 @@ js/
   world/    tiles (pixel art en código), world (terreno, objetos, colisiones)
   entities/ player, enemy, projectile, pickup, fx
   systems/  combat, spawner, levelup, gacha
-  ui/       icons (pixel art), ui, hud, login, test, menu, gacha-ui, run-ui
+  ui/       icons (pixel art), ui, hud, login, test, menu, gacha-ui, run-ui,
+            social-ui, ranking-ui
   game.js   flujo y bucle principal
 tools/      scripts que regeneran los ficheros marcados con *
 ```

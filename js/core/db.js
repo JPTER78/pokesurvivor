@@ -203,7 +203,7 @@ G.DB = (() => {
   //                               MODO NUBE
   // =====================================================================
 
-  let auth = null, fs = null, uid = null, unlisten = null;
+  let auth = null, fs = null, rtdb = null, uid = null, unlisten = null;
   let pushT = 0, retryT = 0, pending = false, pushing = null;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
@@ -226,13 +226,17 @@ G.DB = (() => {
     await loadScript(SDK + 'firebase-app-compat.js');
     await loadScript(SDK + 'firebase-auth-compat.js');
     await loadScript(SDK + 'firebase-firestore-compat.js');
+    // Base de datos en tiempo real: amigos en línea, invitaciones y salas.
+    if (cfg.databaseURL) await loadScript(SDK + 'firebase-database-compat.js');
     firebase.initializeApp(cfg);
     auth = firebase.auth();
     fs = firebase.firestore();
+    rtdb = cfg.databaseURL ? firebase.database() : null;
     // Sólo para pruebas: { ..., emulator: true } usa el emulador local de Firebase.
     if (cfg.emulator) {
       auth.useEmulator('http://127.0.0.1:9099');
       fs.useEmulator('127.0.0.1', 8080);
+      if (rtdb) rtdb.useEmulator('127.0.0.1', 9000);
     }
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     auth.languageCode = 'es';
@@ -417,6 +421,13 @@ G.DB = (() => {
     } catch (e) { return { ok: false, error: authError(e) }; }
   }
 
+  /** Cambia el nombre que se ve en la partida (al elegir apodo). */
+  function setName(n) {
+    if (!save || guest) return;
+    save.name = n; user = n;
+    commit();
+  }
+
   function playAsGuest() {
     user = 'Invitado'; key = null; guest = true; uid = null;
     save = newSave('Invitado');
@@ -436,7 +447,11 @@ G.DB = (() => {
     return true;
   }
 
+  /** Funciones que se ejecutan al cerrar sesión o borrar la cuenta (amigos, salas...). */
+  const leaveHooks = [];
+
   async function logout() {
+    for (const fn of leaveHooks) { try { await fn('logout'); } catch (e) { /* nada */ } }
     if (mode === 'cloud' && !guest && save) {
       if (pending) { try { await pushNow(); } catch (e) { /* queda la copia local */ } }
       stopListening();
@@ -464,6 +479,7 @@ G.DB = (() => {
     try {
       clearTimeout(pushT); clearTimeout(retryT); pending = false;
       stopListening();
+      for (const fn of leaveHooks) await fn('delete');
       await docRef().delete();
       remove(K_CLOUD + uid);
       await auth.currentUser.delete();
@@ -492,8 +508,15 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
-    owns, grant, ownsShiny, grantShiny, merge,
+    owns, grant, ownsShiny, grantShiny, merge, setName,
     onSync(fn) { listeners.add(fn); },
+    onLeave(fn) { leaveHooks.push(fn); },
+    /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */
+    get fb() { return mode === 'cloud' ? { auth, fs, rtdb, uid, emulator: !!(G.FIREBASE_CONFIG || {}).emulator } : null; },
+    /** ¿Está disponible lo online (amigos, ranking, multijugador)? */
+    get online() { return mode === 'cloud' && !guest && !!uid && !!save; },
+    /** ¿La cuenta es de usuario y contraseña (no de Google)? */
+    get nameAccount() { return !!(auth && auth.currentUser && (auth.currentUser.email || '').endsWith('@' + NAME_DOMAIN)); },
     get mode() { return mode; },
     get localReason() { return localReason; },
     get syncState() { return syncState; },

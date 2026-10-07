@@ -4,8 +4,13 @@
  * del escenario (rocas, cofres, hierba alta).
  *
  * Todo ocurre en el plano del suelo: (x, y) son pies / sombra.
+ *
+ * Cooperativo: cada ordenador ejecuta los ataques de SU jugador. Los de los
+ * compañeros llegan por la red y se repiten como "fantasma" (ghostCast): se
+ * ven igual, pero no hacen daño aquí (ya lo hizo su dueño).
  */
 G.Combat = (() => {
+  let ghost = false;
 
   // ---------------- ejecutar el movimiento activo ----------------
 
@@ -24,6 +29,7 @@ G.Combat = (() => {
     }
     m.t = Math.max(0.05, m.cd * pl.cdMul);
     pl.cast(m);
+    if (G.Coop.active) G.Coop.cast(pl, m);
 
     switch (m.kind) {
       case 'projectile': fireProjectiles(pl, m); break;
@@ -59,7 +65,7 @@ G.Combat = (() => {
         vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
         dmg: m.dmg * pl.atk, r: m.size, life: m.life,
         pierce: m.pierce | 0, color: col, homing: m.homing || 0,
-        hits: new Set(), vis
+        hits: new Set(), vis, ghost, owner: pl
       }, payload(m)));
     }
     G.FX.spark(pl.x + Math.cos(pl.aim) * pl.r, pl.y - G.LIFT + Math.sin(pl.aim) * pl.r,
@@ -77,7 +83,7 @@ G.Combat = (() => {
         vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
         dmg: m.dmg * pl.atk, r: m.size, life: m.life,
         pierce: m.pierce | 0, color: col, homing: m.homing || 0,
-        hits: new Set(), vis
+        hits: new Set(), vis, ghost, owner: pl
       }, payload(m)));
     }
     G.FX.ring(pl.x, pl.y, pl.r, pl.r * 4, col, 0.3, 3);
@@ -92,6 +98,7 @@ G.Combat = (() => {
     const col = G.U.TYPE_COLOR[m.type];
     const half = Math.min(m.arc, 6.2832) / 2;
     G.FX.slash(pl.x, pl.y - G.LIFT * 0.5, pl.aim, m.radius, m.arc, col, G.VFX.forMove(m));
+    if (ghost) return;
 
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
       if (!inArc(pl.x, pl.y, e.x, e.y, pl.aim, half)) continue;
@@ -113,6 +120,7 @@ G.Combat = (() => {
       if (G.World.isWall(pl.x + ca * d, pl.y + sa * d)) { len = d; break; }
     }
     G.FX.beam(pl.x, pl.y - G.LIFT, pl.aim, len, w, col, G.VFX.forMove(m));
+    if (ghost) return;
     G.Camera.kick(0.08);
 
     const mx = pl.x + ca * len / 2, my = pl.y + sa * len / 2;
@@ -146,6 +154,7 @@ G.Combat = (() => {
           spin: G.VFX.spins(vis.aura) ? G.U.rand(-6, 6) : 0 });
       }
     }
+    if (ghost) return;
     let healed = 0;
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
       hit(pl, e, m.dmg * pl.atk, col, e.x - pl.x, e.y - pl.y, 0, m);
@@ -166,14 +175,15 @@ G.Combat = (() => {
     }
   }
 
-  let orbCastT = 0;
-  function orbit(pl, m, dt, now) {
+  function orbit(pl, m, dt, now, isGhost = false) {
     const col = G.U.TYPE_COLOR[m.type];
     const want = Math.max(1, m.count | 0);
-    const orbs = G.Projectiles.all().filter(p => p.orb);
+    const mine = p => p.orb && p.owner === pl;
+    const orbs = G.Projectiles.all().filter(mine);
 
     for (let i = orbs.length; i < want; i++) {
       G.Projectiles.spawnOrb({
+        owner: pl, ghost: isGhost,
         x: pl.x, y: pl.y, r: m.size, color: col, vis: G.VFX.forMove(m),
         dmg: m.dmg * pl.atk,
         oa: (i / want) * 6.2832, orad: m.radius, ospeed: m.speed,
@@ -181,7 +191,7 @@ G.Combat = (() => {
         knock: m.knock || 0, burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0
       });
     }
-    const live = G.Projectiles.all().filter(p => p.orb);
+    const live = G.Projectiles.all().filter(mine);
     live.forEach((p, i) => {
       p.dmg = m.dmg * pl.atk;
       p.orad = m.radius;
@@ -191,8 +201,35 @@ G.Combat = (() => {
     });
 
     // Animación de concentración de vez en cuando, para que se note vivo.
-    orbCastT -= dt;
-    if (orbCastT <= 0) { orbCastT = 1.6; pl.cast({ kind: 'orbit', cd: 1.6 }); }
+    pl.orbCastT = (pl.orbCastT || 0) - dt;
+    if (pl.orbCastT <= 0) { pl.orbCastT = 1.6; pl.cast({ kind: 'orbit', cd: 1.6 }); }
+  }
+
+  /** Repite el ataque de un compañero sólo para verlo (sin daño). */
+  function ghostCast(pl, id, lvl, aim) {
+    const def = G.Moves.BY_ID[id];
+    if (!def || def.kind === 'orbit') return;
+    const m = G.Moves.instance(id, lvl);
+    pl.aim = aim;
+    ghost = true;
+    try {
+      pl.cast(m);
+      switch (m.kind) {
+        case 'projectile': fireProjectiles(pl, m); break;
+        case 'melee':      melee(pl, m); break;
+        case 'beam':       beam(pl, m); break;
+        case 'nova':       nova(pl, m); break;
+        case 'aura':       aura(pl, m); break;
+        case 'buff':       buff(pl, m); break;
+      }
+    } finally { ghost = false; }
+  }
+
+  /** Orbes de un compañero que tiene activo un movimiento de órbita (sólo visual). */
+  function ghostOrbit(pl, dt, now) {
+    const m = pl.activeMove();
+    if (m && m.kind === 'orbit' && !pl.dead) orbit(pl, m, dt, now, true);
+    else if (G.Projectiles.all().some(p => p.orb && p.owner === pl)) G.Projectiles.clearOrbs(pl);
   }
 
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
@@ -235,7 +272,9 @@ G.Combat = (() => {
         continue;
       }
 
-      // --- disparos del jugador ---
+      // --- disparos de jugadores ---
+      // Orbes de un compañero: sólo se ven.
+      if (p.orb && p.ghost) continue;
       if (!p.orb) {
         const block = G.World.projectileBlock(p.x, p.y, p.r);
         if (block === 'wall' || (block && !block.destructible)) {
@@ -257,7 +296,7 @@ G.Combat = (() => {
         }
         if (p.phits.has(prop.id)) continue;
         p.phits.add(prop.id);
-        G.World.damageProp(prop, p.dmg, p.color);
+        if (!p.ghost) G.World.damageProp(prop, p.dmg, p.color);
         // La hierba no frena; lo sólido sí gasta perforación.
         if (prop.solid) {
           if (p.pierce > 0) p.pierce--;
@@ -285,6 +324,15 @@ G.Combat = (() => {
         } else {
           if (p.hits.has(e.id)) continue;
           p.hits.add(e.id);
+        }
+
+        // Disparo fantasma de un compañero: choca y se ve, pero no daña.
+        if (p.ghost) {
+          G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
+          if (p.pierce > 0) { p.pierce--; continue; }
+          G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);
+          projectiles.splice(i, 1);
+          break;
         }
 
         e.hurt(p.dmg, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock);
@@ -318,5 +366,5 @@ G.Combat = (() => {
     }
   }
 
-  return { tick, resolve };
+  return { tick, resolve, ghostCast, ghostOrbit };
 })();

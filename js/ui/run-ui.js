@@ -1,11 +1,14 @@
 /* ============ run-ui.js — cartas de nivel, pausa y fin de run ============ */
 G.RunUI = (() => {
   const $ = G.UI.$;
-  let offers = null, offerCb = null;
+  let offers = null, offerCb = null, coopMode = false;
 
-  function showLevelUp(level, list, cb) {
-    offers = list; offerCb = cb;
+  /** @param coop  en grupo: tras elegir, se queda esperando a los demás */
+  function showLevelUp(level, list, cb, coop = false) {
+    offers = list; offerCb = cb; coopMode = coop;
     $('lvl-num').textContent = level;
+    $('lvl-wait').textContent = '';
+    $('lvl-wait').classList.toggle('hidden', !coop);
     const box = $('cards');
     box.innerHTML = '';
     list.forEach((c, i) => {
@@ -31,8 +34,29 @@ G.RunUI = (() => {
     if (!offers || !offers[i]) return;
     const c = offers[i], cb = offerCb;
     offers = null; offerCb = null;
-    G.UI.hide('scr-levelup');
+    if (coopMode) {
+      // Se queda la carta elegida a la vista mientras eligen los demás.
+      $('cards').querySelectorAll('.card').forEach((el, j) => el.classList.toggle('picked', j === i));
+      $('cards').classList.add('done');
+    } else G.UI.hide('scr-levelup');
     cb(c);
+  }
+
+  /** Cooperativo: quién falta por elegir. */
+  function setWaiting(names) {
+    const me = G.Social.me ? G.Social.me.name : '';
+    const others = names.filter(n => n !== me);
+    const list = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1] : a[0];
+    $('lvl-wait').textContent = !names.length ? ''
+      : !others.length ? 'Elige tu carta'
+      : names.includes(me) ? 'Faltan por elegir: ' + list([...others, 'tú'])
+      : 'Esperando a ' + list(others) + '…';
+  }
+
+  function closeLevelUp() {
+    offers = null; offerCb = null;
+    $('cards').classList.remove('done');
+    G.UI.hide('scr-levelup');
   }
 
   function showOver(r, onBack) {
@@ -63,8 +87,10 @@ G.RunUI = (() => {
     G.UI.show('scr-over');
   }
 
-  function showPause() {
+  function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
+    $('pause-coop').classList.toggle('hidden', !coop);
+    $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
     G.UI.show('scr-pause');
   }
 
@@ -73,5 +99,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, pick, showOver, wirePause, showPause };
+  return { showLevelUp, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
 })();
