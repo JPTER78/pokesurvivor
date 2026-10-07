@@ -6,9 +6,16 @@
  * Estos datos NO son secretos: Firebase los diseña para ir en la web. Lo que
  * protege las partidas son las reglas de Firestore (firestore.rules).
  *
- * Mientras esto valga null, el juego funciona en modo local (como antes).
+ * Si se pone a null, el juego funciona en modo local (sólo en el navegador).
  */
-G.FIREBASE_CONFIG = null;
+G.FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBDTxXlQA2ylUSP885q_5T-NpgVjSeaCo8',
+  authDomain: 'pokemon-survivors-jpter.firebaseapp.com',
+  projectId: 'pokemon-survivors-jpter',
+  storageBucket: 'pokemon-survivors-jpter.firebasestorage.app',
+  messagingSenderId: '51846841769',
+  appId: '1:51846841769:web:b5662e751d494e0a8130b8'
+};
 
 /* Ejemplo de cómo debe quedar:
 G.FIREBASE_CONFIG = {
