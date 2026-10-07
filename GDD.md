@@ -236,3 +236,7 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 **2026-10-08 · nuevo nombre**
 - El juego pasa a llamarse **PokéSurvivor** (sin "Pokémon" en el nombre, como
   PokéRogue o Showdown). Repositorio: `pokesurvivor`.
+- Firebase: proyecto nuevo **`pokesurvivor-jpter`** (Firestore en eur3, correo/
+  contraseña y Google activos, dominios `jpter78.github.io` y `localhost`). Los
+  proyectos `pokemon-survivors-jpter` y `asdaad-9e84f` se borraron (30 días
+  recuperables en Google Cloud).

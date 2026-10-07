@@ -9,7 +9,8 @@ navegador.
 ## 1. Crear el proyecto
 
 1. Entra en <https://console.firebase.google.com> con tu cuenta de Google.
-2. **Crear un proyecto** → ponle nombre (p. ej. `pokesurvivor`).
+2. **Crear un proyecto** → ponle nombre (p. ej. `pokesurvivor`). El identificador
+   del proyecto se ve en la ventana de "Entrar con Google" y no se puede cambiar después.
 3. Google Analytics: **desactívalo** (no hace falta y así no hay seguimiento).
 
 ## 2. Activar las cuentas
@@ -60,7 +61,7 @@ navegador.
 **Authentication → Configuración → Dominios autorizados → Agregar dominio**:
 
 - `jpter78.github.io` (si lo publicas en GitHub Pages)
-- `localhost` ya viene puesto, para probar en tu ordenador.
+- `localhost`, para probar en tu ordenador (en proyectos nuevos ya no viene puesto).
 
 Sin esto, "Entrar con Google" da el error *dominio no autorizado*.
 
