@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Reglas de seguridad de Pokémon Survivors.
+// Reglas de seguridad de PokéSurvivor.
 // Cada jugador sólo puede leer, escribir y borrar SU partida: saves/{su uid}.
 // Todo lo demás está cerrado.
 service cloud.firestore {

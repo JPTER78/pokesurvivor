@@ -36,7 +36,7 @@ def gen_of(dex):
 def dexes_with_sprites():
     """Sólo los que tienen sprite de Mundo Misterioso (según SpriteCollab)."""
     url = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/tracker.json'
-    req = urllib.request.Request(url, headers={'User-Agent': 'pokemon-survivors/1.0'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'pokesurvivor/1.0'})
     t = json.load(urllib.request.urlopen(req, timeout=120))
     need = {'Idle', 'Walk', 'Attack'}
     return [d for d in range(1, 1026) if need <= set(t.get(f'{d:04d}', {}).get('sprite_files', {}))]
@@ -45,7 +45,7 @@ def dexes_with_sprites():
 def get(url, retries=3):
     for _ in range(retries):
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'pokemon-survivors/1.0'})
+            req = urllib.request.Request(url, headers={'User-Agent': 'pokesurvivor/1.0'})
             with urllib.request.urlopen(req, timeout=40) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:

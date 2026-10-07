@@ -1,4 +1,4 @@
-# GDD — Pokémon Survivors · Mundo Misterioso
+# GDD — PokéSurvivor · Mundo Misterioso
 
 > Documento de diseño vivo. Refleja el estado **actual** del juego; al final hay
 > un registro de decisiones con fecha.
@@ -232,3 +232,7 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   para borrar la cuenta. Código abierto (MIT) en GitHub (JPTER78).
 - Medidas que NO se aplican a petición: renombrar sin "Pokémon" y quitar los
   sprites ripeados de los juegos (los de CHUNSOFT).
+
+**2026-10-08 · nuevo nombre**
+- El juego pasa a llamarse **PokéSurvivor** (sin "Pokémon" en el nombre, como
+  PokéRogue o Showdown). Repositorio: `pokesurvivor`.

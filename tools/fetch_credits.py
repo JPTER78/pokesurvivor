@@ -23,7 +23,7 @@ OUT = os.path.join(ROOT, 'CREDITS.md')
 
 def fetch(url):
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'pokemon-survivors/1.0'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'pokesurvivor/1.0'})
         with urllib.request.urlopen(req, timeout=40) as r:
             return r.read().decode('utf-8', 'replace')
     except Exception:

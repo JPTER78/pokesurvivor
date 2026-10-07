@@ -58,7 +58,7 @@ def fetch(url, retries=4):
     last = None
     for _ in range(retries):
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'pokemon-survivors/1.0'})
+            req = urllib.request.Request(url, headers={'User-Agent': 'pokesurvivor/1.0'})
             with urllib.request.urlopen(req, timeout=60) as r:
                 return r.read()
         except urllib.error.HTTPError as e:

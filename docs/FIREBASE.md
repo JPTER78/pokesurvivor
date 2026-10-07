@@ -9,7 +9,7 @@ navegador.
 ## 1. Crear el proyecto
 
 1. Entra en <https://console.firebase.google.com> con tu cuenta de Google.
-2. **Crear un proyecto** → ponle nombre (p. ej. `pokemon-survivors`).
+2. **Crear un proyecto** → ponle nombre (p. ej. `pokesurvivor`).
 3. Google Analytics: **desactívalo** (no hace falta y así no hay seguimiento).
 
 ## 2. Activar las cuentas

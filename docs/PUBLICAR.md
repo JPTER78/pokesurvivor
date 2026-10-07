@@ -1,12 +1,12 @@
 # Publicar el juego gratis en GitHub Pages
 
 El juego es una web estática: GitHub Pages la sirve gratis en
-`https://jpter78.github.io/pokemon-survivors/`.
+`https://jpter78.github.io/pokesurvivor/`.
 
 ## 1. Crear el repositorio (una vez)
 
 1. Entra en <https://github.com/new> con la cuenta **JPTER78**.
-2. Nombre: `pokemon-survivors` · **Public** · **sin** README, .gitignore ni licencia
+2. Nombre: `pokesurvivor` · **Public** · **sin** README, .gitignore ni licencia
    (ya vienen en el proyecto).
 3. Crear repositorio.
 
@@ -16,7 +16,7 @@ Desde la carpeta del proyecto (el repositorio local ya está creado y con el
 primer commit hecho):
 
 ```
-git remote add origin https://github.com/JPTER78/pokemon-survivors.git
+git remote add origin https://github.com/JPTER78/pokesurvivor.git
 git push -u origin main
 ```
 
@@ -28,7 +28,7 @@ Son unos 75 MB, puede tardar unos minutos.
 En el repositorio: **Settings → Pages** →
 *Source*: **Deploy from a branch** → *Branch*: **main**, carpeta **/ (root)** → **Save**.
 
-En uno o dos minutos estará en <https://jpter78.github.io/pokemon-survivors/>.
+En uno o dos minutos estará en <https://jpter78.github.io/pokesurvivor/>.
 
 ## 4. Conectar con Firebase
 
@@ -45,7 +45,7 @@ git push
 ## 5. Que salga en Google
 
 1. <https://search.google.com/search-console> → **Añadir propiedad** →
-   *Prefijo de la URL* → `https://jpter78.github.io/pokemon-survivors/`.
+   *Prefijo de la URL* → `https://jpter78.github.io/pokesurvivor/`.
 2. Verificación: el método **Etiqueta HTML** te da una línea `<meta ...>`;
    pégala dentro de `<head>` en `index.html`, haz `git push`, y pulsa Verificar.
 3. **Inspección de URLs** → pega la dirección → **Solicitar indexación**.
