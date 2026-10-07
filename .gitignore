@@ -1,0 +1,17 @@
+# Vídeos de demostración (pesan mucho; se pueden subir aparte)
+videos/
+
+# Cachés de los scripts de descarga
+tools/cache/
+__pycache__/
+
+# Firebase / emulador / logs
+.firebase/
+*-debug.log
+*.log
+node_modules/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store

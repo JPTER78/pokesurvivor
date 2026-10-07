@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pokémon Survivors</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- ====== Inicio: login / registro / invitado ====== -->
+<section id="scr-login" class="scr hidden">
+  <div class="box" style="width:min(420px,100%)">
+    <div class="logo">
+      <div class="t1">Pokémon Survivors</div>
+      <div class="t2">Mundo Misterioso</div>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-tab="login">Entrar</div>
+      <div class="tab" data-tab="register">Crear cuenta</div>
+    </div>
+    <form id="login-form" autocomplete="off">
+      <label for="f-user">Nombre</label>
+      <input id="f-user" class="field" maxlength="16" spellcheck="false">
+      <label for="f-pass">Contraseña</label>
+      <input id="f-pass" class="field" type="password" maxlength="64">
+      <p id="login-err" class="err"></p>
+      <div class="row">
+        <button id="btn-auth" class="btn gold grow" type="submit">Entrar</button>
+      </div>
+    </form>
+    <div class="row" style="margin-top:10px">
+      <button id="btn-google" class="btn google grow hidden" type="button">Entrar con Google</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btn-guest" class="btn ghost grow" type="button">Jugar como invitado</button>
+    </div>
+    <p class="note center" id="login-mode"></p>
+    <p class="note center"><a href="#" class="legal-link" data-legal>Aviso legal y privacidad</a></p>
+  </div>
+</section>
+
+<!-- ====== Test de personalidad ====== -->
+<section id="scr-test" class="scr dim hidden">
+  <div class="box test-box">
+    <div class="progress"><i id="test-bar"></i></div>
+    <p class="sub" id="test-count"></p>
+    <p class="q" id="test-q"></p>
+    <div class="answers" id="test-a"></div>
+  </div>
+</section>
+
+<!-- ====== Resultado del test ====== -->
+<section id="scr-result" class="scr dim hidden">
+  <div class="box result">
+    <p class="sub">Tu personalidad es…</p>
+    <div class="trait" id="res-trait"></div>
+    <p id="res-text"></p>
+    <canvas id="res-stage" class="stage" width="200" height="150"></canvas>
+    <h3>Tu compañero: <span class="gold" id="res-name"></span></h3>
+    <div class="row" style="justify-content:center;margin-top:14px">
+      <button id="res-ok" class="btn gold">¡Vamos juntos!</button>
+      <button id="res-other" class="btn">Elegir otro</button>
+    </div>
+  </div>
+</section>
+
+<!-- ====== Elegir compañero ====== -->
+<section id="scr-starters" class="scr dim hidden">
+  <div class="box wide">
+    <h2>Elige a tu compañero</h2>
+    <p class="sub">Los iniciales de todas las regiones, y dos amigos más.</p>
+    <div class="grid" id="starter-grid"></div>
+    <div class="row between" style="margin-top:14px">
+      <button id="starter-back" class="btn ghost">Volver</button>
+      <span id="starter-info" class="grow" style="color:var(--muted)"></span>
+      <button id="starter-ok" class="btn gold" disabled>Elegir</button>
+    </div>
+  </div>
+</section>
+
+<!-- ====== Menú principal ====== -->
+<section id="scr-menu" class="scr hidden">
+  <div class="menu-left">
+    <div class="logo">
+      <div class="t1">Pokémon Survivors</div>
+      <div class="t2">Mundo Misterioso</div>
+    </div>
+    <div class="partner-card">
+      <canvas id="menu-partner" class="stage" width="260" height="200"></canvas>
+      <div class="nm" id="menu-partner-name"></div>
+      <div class="lv" id="menu-partner-info"></div>
+    </div>
+  </div>
+  <div class="menu-right">
+    <div class="box">
+      <div class="menu-list">
+        <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
+        <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
+        <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
+        <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
+      </div>
+    </div>
+    <div class="box" style="padding:14px 18px">
+      <div id="menu-stats" style="font-size:14px;color:var(--muted)"></div>
+    </div>
+  </div>
+</section>
+
+<div id="topbar" class="topbar hidden">
+  <div class="pill"><span class="coin"></span><span id="coins">0</span></div>
+  <div class="pill" id="user-pill"></div>
+  <button id="btn-sound" class="btn small ghost" title="Sonido"></button>
+  <button id="btn-logout" class="btn small ghost">Salir</button>
+</div>
+<div id="sound-panel" class="box sound-panel hidden"></div>
+<div id="credits-line" class="credits-line hidden">Proyecto de fan sin ánimo de lucro · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK · <a href="#" class="legal-link" data-legal>Aviso legal</a></div>
+
+<!-- ====== Aviso legal y privacidad ====== -->
+<section id="scr-legal" class="scr dim hidden">
+  <div class="box legal" style="width:min(640px,100%)">
+    <div class="row between"><h2>Aviso legal</h2><button class="btn small ghost" id="legal-close">Cerrar</button></div>
+    <h3>Proyecto de fan</h3>
+    <p><b>Pokémon Survivors</b> es un juego hecho por fans, <b>gratuito y sin ánimo de lucro</b>.
+      No tiene anuncios, ni compras, ni ninguna forma de ingreso, y no la tendrá.</p>
+    <p>No está afiliado, patrocinado ni aprobado por Nintendo, Creatures Inc., GAME FREAK ni
+      The Pokémon Company. Pokémon y todos los nombres y personajes relacionados son marcas y
+      propiedad de sus respectivos dueños.</p>
+    <h3>Contenido de terceros</h3>
+    <p>Sprites de <a href="https://github.com/PMDCollab/SpriteCollab" target="_blank" rel="noopener">SpriteCollab</a>
+      (CC BY-NC 4.0, créditos completos en CREDITS.md del repositorio). Datos de la Pokédex de
+      <a href="https://pokeapi.co/" target="_blank" rel="noopener">PokeAPI</a>. Fuente Pixelify Sans (OFL).
+      La música y los efectos de sonido son originales del proyecto.</p>
+    <h3>Contacto y retirada de contenido</h3>
+    <p>Si eres titular de derechos y quieres que retiremos algo, escríbenos y lo quitaremos lo
+      antes posible: <a id="legal-mail" href="#"></a></p>
+    <p>Código fuente: <a id="legal-repo" href="#" target="_blank" rel="noopener"></a></p>
+    <h3>Privacidad</h3>
+    <p>Si creas una cuenta, guardamos tu nombre de jugador y tu partida (colección, monedas,
+      mejoras y estadísticas) en Google Firebase para que puedas seguir en cualquier ordenador.
+      Si entras con Google, Firebase guarda también tu correo de Google para identificarte.
+      No usamos tus datos para nada más, ni los compartimos, ni hay publicidad ni seguimiento.
+      Como invitado no se guarda nada fuera de tu navegador.</p>
+    <p>Puedes borrar tu cuenta y tu partida cuando quieras:</p>
+    <div class="row">
+      <button class="btn small" id="legal-delete">Borrar mi cuenta y mi partida</button>
+      <span id="legal-del-msg" class="note" style="margin:0"></span>
+    </div>
+  </div>
+</section>
+<div id="boot" class="boot">Cargando…</div>
+
+<!-- ====== Colección ====== -->
+<section id="scr-dex" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Pokémon <span id="dex-total" class="sub" style="font-size:15px"></span></h2><button class="btn small ghost" data-back>Volver</button></div>
+    <div class="gen-tabs" id="dex-gens"></div>
+    <div class="split" style="margin-top:8px">
+      <div>
+        <div class="filters" id="dex-filters"></div>
+        <div class="grid" id="dex-grid"></div>
+      </div>
+      <div class="panel" id="dex-detail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== Mejoras ====== -->
+<section id="scr-upgrades" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Mejoras</h2><button class="btn small ghost" data-back>Volver</button></div>
+    <p class="sub">Permanentes: se aplican en todas las runs y con cualquier Pokémon.</p>
+    <div class="upg" id="upg-list"></div>
+  </div>
+</section>
+
+<!-- ====== Gacha ====== -->
+<section id="scr-gacha" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Gacha</h2><button class="btn small ghost" data-back>Volver</button></div>
+    <div class="gen-tabs" id="gacha-gens"></div>
+    <div class="split" style="margin-top:8px">
+      <div>
+        <div class="banner" id="banner">
+          <h3 id="banner-title"></h3>
+          <p id="banner-desc" style="margin:4px 0 6px"></p>
+          <p class="sub" id="gacha-owned" style="margin:0"></p>
+          <div class="feat" id="gacha-feat"></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button id="pull-1" class="btn grow" data-sfx="none">Tirar ×1 · <span class="coin"></span> <span id="cost-1"></span></button>
+          <button id="pull-10" class="btn gold grow" data-sfx="none">Tirar ×10 · <span class="coin"></span> <span id="cost-10"></span></button>
+        </div>
+        <p class="note" id="gacha-pity"></p>
+      </div>
+      <div class="panel rates" id="gacha-rates"></div>
+    </div>
+  </div>
+</section>
+
+<div id="pull-fx" class="hidden">
+  <div class="ball" id="pull-ball"></div>
+  <div class="pull-results" id="pull-results"></div>
+  <button id="pull-close" class="btn gold hidden">Continuar</button>
+</div>
+
+<!-- ====== Durante la run ====== -->
+<section id="scr-levelup" class="scr dim hidden">
+  <div class="box center">
+    <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
+    <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
+    <div id="cards" class="cards"></div>
+  </div>
+</section>
+
+<section id="scr-pause" class="scr dim hidden">
+  <div class="box center" style="width:min(460px,100%)">
+    <h2>Pausa</h2>
+    <p class="sub"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
+    <div id="pause-sound" class="sound-inline"></div>
+    <div class="row" style="justify-content:center">
+      <button id="btn-resume" class="btn gold">Continuar</button>
+      <button id="btn-quit" class="btn">Abandonar run</button>
+    </div>
+  </div>
+</section>
+
+<section id="scr-over" class="scr dim hidden">
+  <div class="box center" style="width:min(480px,100%)">
+    <h2 id="over-title">Has caído…</h2>
+    <div id="over-stats" class="stats"></div>
+    <button id="btn-again" class="btn gold">Volver al menú</button>
+  </div>
+</section>
+
+<!-- datos generados -->
+<script src="js/core/util.js"></script>
+<script src="js/data/music.js"></script>
+<script src="js/data/pokedex.js"></script>
+<script src="js/data/sprites-meta.js"></script>
+<!-- núcleo -->
+<script src="js/core/firebase-config.js"></script>
+<script src="js/core/db.js"></script>
+<script src="js/core/audio.js"></script>
+<script src="js/core/input.js"></script>
+<script src="js/core/sprites.js"></script>
+<script src="js/core/camera.js"></script>
+<!-- datos de juego -->
+<script src="js/data/moves.js"></script>
+<script src="js/data/starters.js"></script>
+<script src="js/data/enemies.js"></script>
+<script src="js/data/upgrades.js"></script>
+<!-- mundo -->
+<script src="js/world/tiles.js"></script>
+<script src="js/world/world.js"></script>
+<!-- entidades -->
+<script src="js/entities/vfx.js"></script>
+<script src="js/entities/fx.js"></script>
+<script src="js/entities/projectile.js"></script>
+<script src="js/entities/enemy.js"></script>
+<script src="js/entities/pickup.js"></script>
+<script src="js/entities/player.js"></script>
+<!-- sistemas -->
+<script src="js/systems/combat.js"></script>
+<script src="js/systems/spawner.js"></script>
+<script src="js/systems/levelup.js"></script>
+<script src="js/systems/gacha.js"></script>
+<!-- interfaz -->
+<script src="js/ui/icons.js"></script>
+<script src="js/ui/ui.js"></script>
+<script src="js/ui/hud.js"></script>
+<script src="js/ui/login.js"></script>
+<script src="js/ui/test.js"></script>
+<script src="js/ui/menu.js"></script>
+<script src="js/ui/gacha-ui.js"></script>
+<script src="js/ui/run-ui.js"></script>
+<!-- juego -->
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
