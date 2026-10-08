@@ -3,8 +3,8 @@
  * sin suavizado, como el resto del juego.
  *
  *   palanca → giran los 3 rodillos → paran uno a uno en el símbolo de la
- *   rareza que ha salido (Poké, Super, Ultra y Master Ball, estrella para la
- *   Legendaria, gema para el shiny). Si es Épica, Legendaria o shiny, el
+ *   rareza que ha salido (Poké, Super, Ultra, Lujo y Master Ball, como en
+ *   G.Icons.rarity; la estrella roja es el shiny). Si es Épica, Legendaria o shiny, el
  *   último rodillo se hace esperar y las luces se vuelven locas.
  *   La ×10 son 10 tiradas rápidas; cada premio cae como una bola a la bandeja.
  *
@@ -12,8 +12,8 @@
  */
 G.Slots = (() => {
   const W = 176, H = 170, CELL = 30;
-  const SYM = { 1: 'ball', 2: 'ball2', 3: 'ball3', 4: 'ball4', 5: 'star' };
-  const STRIP = ['ball', 'ball2', 'ball', 'ball3', 'ball', 'ball2', 'ball4', 'ball', 'star', 'ball2', 'ball3', 'gem', 'ball', 'ball2'];
+  const SYM = G.Icons.RARITY_BALL;
+  const STRIP = ['ball', 'ball2', 'ball', 'ball3', 'ball', 'ball2', 'ballLux', 'ball', 'ball4', 'ball2', 'ball3', 'shiny', 'ball', 'ball2'];
   const REEL_X = [26, 65, 104], REEL_W = 36, REEL_Y = 44, REEL_H = 46, MID = REEL_Y + REEL_H / 2;
   const C = {
     body: '#c8323c', bodyD: '#8e1f2a', bodyL: '#ef6464', trim: '#ffd23f', trimD: '#c08a10',
@@ -23,7 +23,7 @@ G.Slots = (() => {
 
   let cv = null, ctx = null, st = null, raf = 0, last = 0, fast = false;
 
-  const symOf = r => (r.shiny ? 'gem' : SYM[r.rarity]);
+  const symOf = r => (r.shiny ? 'shiny' : SYM[r.rarity]);
   const colOf = r => (r.shiny ? '#9ae6ff' : G.Gacha.RARITY_COLOR[r.rarity]);
 
   function wait(s) {

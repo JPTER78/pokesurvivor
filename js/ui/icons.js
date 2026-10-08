@@ -55,10 +55,10 @@ G.Icons = (() => {
     star: { pal: { y: '#ffd23f', o: '#c08a10', w: '#fff4b0' }, rows: [
       '.....kk.....', '.....kk.....', '....kwyk....', '....kyyk....', 'kkkkwyyykkkk', 'kwyyyyyyyyok',
       '.kyyyyyyyok.', '..kyyyyyyk..', '..kyyyoyyk..', '.kyok..koyk.', '.kok....kok.', '.kk......kk.'] },
-    // Marca de shiny: una gema facetada (el destello con contorno parecía un emoji).
-    gem: { pal: { w: '#ffffff', c: '#9ae6ff', b: '#3fb6e0', d: '#1f6f99' }, rows: [
-      '............', '...kkkkkk...', '..kwwccbbk..', '.kwwcccbbbk.', 'kwcccccbbbdk', 'kddddddddddk',
-      '.kccccbbbdk.', '..kccbbbdk..', '...kcbbdk...', '....kbdk....', '.....kk.....', '............'] },
+    // Marca de shiny: la estrella roja de la ficha de los juegos, con un destello.
+    shiny: { pal: { y: '#ff4d5e', w: '#ffd0d6', o: '#b8283a', x: '#fff6b0' }, rows: [
+      '.....kk...x.', '.....kk..xxx', '....kwyk..x.', '....kyyk....', 'kkkkwyyykkkk', 'kwyyyyyyyyok',
+      '.kyyyyyyyok.', '..kyyyyyyk..', '..kyyyoyyk..', '.kyok..koyk.', '.kok....kok.', '.kk......kk.'] },
     crown: { pal: { y: '#ffd23f', o: '#c08a10', r: '#ff5f6d' }, rows: [
       '............', '............', 'k....k....k.', 'kk..kyk..kk.', 'kyk.kyk.kyk.', 'kyykyyykyyk.',
       'kyyyyyyyyyk.', 'kyyryyyryyk.', 'kyyyyyyyyyk.', 'koooooooook.', 'kkkkkkkkkkk.', '............'] },
@@ -101,6 +101,8 @@ G.Icons = (() => {
     ball3: { pal: { r: '#3a3a46', s: '#1d1d26', w: '#ffd23f', b: '#f4f4f4' }, rows: [
       '....kkkk....', '..kkrrrrkk..', '.krwrrrrrrk.', '.krwrrrrrsk.', 'krrrrkkrrssk', 'kkkkkbbkkkkk', 'kbbbkbbkbbbk', 'kbbbbkkbbbbk', '.kbbbbbbbbk.', '.kbbbbbbbbk.', '..kkbbbbkk..', '....kkkk....'] },
     ball4: { pal: { r: '#8a3fd0', s: '#5e2a96', w: '#ff8ad8', b: '#f4f4f4' }, rows: [
+      '....kkkk....', '..kkrrrrkk..', '.krwrrrrrrk.', '.krwrrrrrsk.', 'krrrrkkrrssk', 'kkkkkbbkkkkk', 'kbbbkbbkbbbk', 'kbbbbkkbbbbk', '.kbbbbbbbbk.', '.kbbbbbbbbk.', '..kkbbbbkk..', '....kkkk....'] },
+    ballLux: { pal: { r: '#30303a', s: '#18181e', w: '#ff5f6d', b: '#ffd23f' }, rows: [
       '....kkkk....', '..kkrrrrkk..', '.krwrrrrrrk.', '.krwrrrrrsk.', 'krrrrkkrrssk', 'kkkkkbbkkkkk', 'kbbbkbbkbbbk', 'kbbbbkkbbbbk', '.kbbbbbbbbk.', '.kbbbbbbbbk.', '..kkbbbbkk..', '....kkkk....'] },
     trophy: { pal: { y: '#ffd23f', d: '#c08a10', w: '#fff3b0' }, rows: [
       '............', '..kkkkkkkk..', 'kkkwyyyydkkk', 'k.kwyyyydk.k', 'k.kwyyyydk.k', '.kkwyyyydkk.',
@@ -280,11 +282,13 @@ G.Icons = (() => {
     }
   }
 
-  /** Fila de estrellas de rareza (llenas y apagadas). */
-  function stars(n, size = 12, max = 5) {
-    let s = '<span class="stars-row">';
-    for (let i = 0; i < max; i++) s += html(i < n ? 'star' : 'starDim', size);
-    return s + '</span>';
+  /**
+   * Rareza como Poké Ball: Poké (Común), Super (Poco común), Ultra (Rara),
+   * Lujo (Épica) y Master (Legendaria).
+   */
+  const RARITY_BALL = { 1: 'ball', 2: 'ball2', 3: 'ball3', 4: 'ballLux', 5: 'ball4' };
+  function rarity(n, size = 12) {
+    return `<span class="rarity-ball" title="${(G.Gacha && G.Gacha.RARITY_NAME[n]) || ''}">${html(RARITY_BALL[n] || 'ball', size)}</span>`;
   }
 
   /** Publica en CSS los iconos que usan las hojas de estilo. */
@@ -294,5 +298,5 @@ G.Icons = (() => {
     r.setProperty('--ico-cursor', `url(${url('cursor')})`);
   }
 
-  return { canvas, url, html, draw, twinkle, stars, installCss, UI, TYPE_GLYPH };
+  return { canvas, url, html, draw, twinkle, rarity, RARITY_BALL, installCss, UI, TYPE_GLYPH };
 })();

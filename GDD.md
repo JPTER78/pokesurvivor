@@ -227,8 +227,8 @@ Kanto, Johto, Hoenn, Sinnoh, Teselia, Kalos, Alola, Galar y Paldea, cada uno con
 - Tirada ×1: 1 ticket · ×10: 1 ticket ×10 (o 10 tickets), con **al menos una
   Épica** garantizada. Los repetidos siguen dando monedas.
 - **Animación: tragaperras pixel art** (palanca, 3 rodillos, bombillas). Los
-  símbolos son la rareza: Poké, Super, Ultra y Master Ball, estrella
-  (Legendaria) y gema (shiny); con Épica o mejor el último rodillo se hace
+  símbolos son la rareza: Poké, Super, Ultra, Lujo y Master Ball
+  (Legendaria) y la estrella roja (shiny); con Épica o mejor el último rodillo se hace
   esperar. La ×10 son 10 tiradas rápidas que caen a la bandeja. Clic = acelerar.
 - **Pity:** a las 70 tiradas sin Legendaria en un banner, la siguiente lo es.
 - Algunas regiones tienen rarezas casi vacías (Galar sólo tiene 4 Poco comunes);
@@ -385,3 +385,9 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   no se les podía disparar (Celebi). Ahora chocan y no salen del círculo.
 - 18 arenas de grieta, una por tipo, con terreno que afecta y clima propio;
   tema musical nuevo para la grieta.
+
+**2026-10-08 · iconos más Pokémon**
+- Shiny: **estrella roja** con destello (como la marca de shiny de los juegos),
+  en vez de la gema.
+- Rareza: ya no hay estrellas; cada rareza es su **Poké Ball** — Poké (Común),
+  Super (Poco común), Ultra (Rara), Lujo (Épica) y **Master (Legendaria)**.

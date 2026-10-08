@@ -126,7 +126,7 @@ G.HUD = (() => {
       ctx.lineTo(Math.cos(a - 2.5) * 12, Math.sin(a - 2.5) * 12);
       ctx.fill();
       ctx.globalAlpha = 1;
-      G.Icons.draw(ctx, 'gem', -11, -11, 22);
+      G.Icons.draw(ctx, 'shiny', -12, -12, 24);
       ctx.restore();
     }
 

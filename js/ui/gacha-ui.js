@@ -43,7 +43,7 @@ G.GachaUI = (() => {
     $('banner-title').textContent = banner.name + ' Misterioso';
     $('banner-desc').textContent = `Los ${all.length} Pokémon de la generación ${gen}. ¡Los legendarios esperan!`;
     $('gacha-owned').innerHTML = `Tienes ${owned} de ${all.length}` +
-      (shinies ? ` · ${G.Icons.html('gem', 12)} ${shinies} shiny` : '');
+      (shinies ? ` · ${G.Icons.html('shiny', 12)} ${shinies} shiny` : '');
 
     const feat = $('gacha-feat');
     feat.innerHTML = '';
@@ -57,7 +57,7 @@ G.GachaUI = (() => {
     $('gacha-rates').innerHTML = '<h3>Probabilidades</h3>' + G.Gacha.RATES.slice().reverse().map(([r, w]) => `
       <div><span style="color:${G.Gacha.RARITY_COLOR[r]}">${G.UI.stars(r, 10)} ${G.Gacha.RARITY_NAME[r]}</span>
       <span>${w}% · ${G.Gacha.pool(r, gen).length}</span></div>`).join('') +
-      `<div><span>${G.Icons.html('gem', 12)} Shiny</span><span>1%</span></div>
+      `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria en un banner, la siguiente lo es.<br>
        · Los repetidos dan Pokémonedas (los shiny repetidos, el triple).<br>
@@ -99,12 +99,12 @@ G.GachaUI = (() => {
       const c = document.createElement('div');
       c.className = 'pcard r' + r.rarity + (r.shiny ? ' shiny' : '');
       c.style.setProperty('--rc', r.shiny ? '#9ae6ff' : G.Gacha.RARITY_COLOR[r.rarity]);
-      c.innerHTML = `<div class="stars">${G.UI.stars(r.rarity, 12)}</div>`;
+      c.innerHTML = `<div class="stars">${G.UI.stars(r.rarity, 24)}</div>`;
       c.appendChild(G.UI.spriteCanvas(r.dex, 132, 120, { lively: r.rarity >= 4 || r.shiny, scale: 2, shiny: r.shiny }));
       const tag = r.isNew
         ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : '¡NUEVO!'}</span>`
         : `Repetido · <span class="coin"></span> +${r.refund}`;
-      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('gem', 14) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
+      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
       out.appendChild(c);
       G.Audio.sfx('reveal', { rarity: r.rarity });
       await wait(n === 10 ? 150 : 0);

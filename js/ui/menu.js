@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'star', friends: 'friends', rank: 'trophy' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', friends: 'friends', rank: 'trophy' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -39,7 +39,7 @@ G.MenuUI = (() => {
     G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
-    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('gem', 20) : '');
+    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
 
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
@@ -108,8 +108,8 @@ G.MenuUI = (() => {
     for (const [k, label] of F) {
       const c = document.createElement('button');
       c.className = 'chip' + (k === dexFilter ? ' on' : '');
-      c.innerHTML = k === 'shiny' ? G.Icons.html('gem', 12) + ' Shiny'
-                  : typeof label === 'number' ? label + ' ' + G.Icons.html('star', 12) : label;
+      c.innerHTML = k === 'shiny' ? G.Icons.html('shiny', 12) + ' Shiny'
+                  : typeof label === 'number' ? G.Icons.rarity(label, 12) + ' ' + G.Gacha.RARITY_NAME[label] : label;
       c.onclick = () => { dexFilter = k; openDex(); };
       fb.appendChild(c);
     }
@@ -133,7 +133,7 @@ G.MenuUI = (() => {
       cell.className = 'cell' + (own ? '' : ' locked') + (p.dex === dexSel ? ' on' : '');
       cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}</span>`);
       if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
-      else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('gem', 14)}</span>`);
+      else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
       const useShiny = sh && p.dex === s.partner && s.partnerShiny;
       cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
       cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
@@ -171,11 +171,11 @@ G.MenuUI = (() => {
       <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
       ${hasSh ? `<div class="seg">
           <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
-          <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('gem', 14)} Shiny</button></div>` : ''}
+          <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
       <div class="center">
         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
-        <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 14)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
+        <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div>
       ${own ? `

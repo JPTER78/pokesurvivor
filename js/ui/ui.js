@@ -55,7 +55,8 @@ G.UI = (() => {
     return types.map(t => `<span class="type" style="background:${G.U.TYPE_COLOR[t]}">${G.U.TYPE_NAME[t]}</span>`).join('');
   }
 
-  function stars(n, size = 12) { return G.Icons.stars(n, size); }
+  /** Rareza: la Poké Ball que le corresponde (ver G.Icons.rarity). */
+  function stars(n, size = 12) { return G.Icons.rarity(n, size > 16 ? 24 : 12); }
 
   // ---------------- sonido de la interfaz ----------------
 
