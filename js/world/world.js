@@ -10,6 +10,15 @@
  *   rock    bloquea, se rompe; puede soltar experiencia, monedas o bayas
  *   chest   bloquea, se rompe; suelta un buen botín
  *   grass   hierba alta, no bloquea; se corta con cualquier ataque
+ *   altar   altar de poder: al tocarlo da un poder temporal (una vez)
+ *   spring  manantial: cura mientras estás encima; se agota y se recarga
+ *   bigchest cofre con candado: se abre quedándote al lado unos segundos
+ *   trap    trampa (veneno, pegajosa, explosiva): salta al pisarla, también
+ *           con los enemigos
+ *   (la lógica de los interactivos está en systems/interact.js)
+ *
+ * Grieta: setArena() convierte una zona lejana del mapa en una arena redonda
+ * cerrada por paredes, donde se lucha contra un legendario (systems/rift.js).
  *
  * Los Pokémon voladores, los fantasma y los jefes ignoran el terreno.
  *
@@ -26,8 +35,12 @@ G.World = (() => {
   const KIND = ['floor', 'wall', 'liquid'];
 
   let seed = 1, biome = 0;
+  let arena = null;                        // { tx, ty, r } en tiles
   const data = new Map();                  // "cx,cy" -> datos del chunk
-  const images = new Map();                // "cx,cy" -> canvas horneado
+  let images = new Map();                  // "cx,cy" -> canvas horneado
+  // Cambio de bioma: durante FADE segundos se funde la paleta vieja con la nueva.
+  const FADE = 2.6;
+  let fade = null;                         // { from, images, t }
   const MAX_IMAGES = 48, MAX_DATA = 400;
   const broken = new Set();                // props destruidos: "tx,ty"
   let nextPropId = 1;
@@ -46,7 +59,11 @@ G.World = (() => {
   const fbm = (x, y, s) => vnoise(x, y, s) * 0.65 + vnoise(x * 2.13 + 17, y * 2.13 - 9, s + 1) * 0.35;
 
   /** Terreno "puro" de un tile (sin caché). */
+  function arenaDist(tx, ty) { return arena ? Math.hypot(tx - arena.tx, ty - arena.ty) : Infinity; }
+
   function terrainRaw(tx, ty) {
+    const ad = arenaDist(tx, ty);
+    if (ad < arena_outer()) return ad < arena.r ? FLOOR : WALL;
     const d = Math.hypot(tx, ty);
     if (d < 9) return FLOOR;                          // claro inicial
     const ramp = G.U.clamp((d - 9) / 8, 0, 1);       // aparición suave
@@ -82,11 +99,14 @@ G.World = (() => {
     return c.terr[(ty - cy * N) * N + (tx - cx * N)];
   }
 
+  const arena_outer = () => (arena ? arena.r + 7 : 0);
+
   function placeProps(c) {
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
       if (c.terr[j * N + i] !== FLOOR) continue;
       const tx = c.cx * N + i, ty = c.cy * N + j;
       if (Math.hypot(tx, ty) < 7) continue;
+      if (arenaDist(tx, ty) < arena_outer() + 2) continue;
       if (broken.has(tx + ',' + ty)) continue;
 
       // Necesita suelo alrededor para no pegarse a paredes / agua.
@@ -96,14 +116,21 @@ G.World = (() => {
 
       const h = H(tx, ty, seed + 404);
       const grove = fbm(tx / 10, ty / 10, seed + 505) > 0.6;
-      let type = null;
-      if (open && h < (grove ? 0.07 : 0.006)) type = 'tree';
+      let type = null, kind = 0;
+      // Interactivos (raros), lejos del claro del principio.
+      const hs = H(tx, ty, seed + 909);
+      if (open && Math.hypot(tx, ty) > 12 && hs < 0.0032) {
+        type = hs < 0.0004 ? 'altar' : hs < 0.0008 ? 'spring' : hs < 0.0011 ? 'bigchest' : 'trap';
+        kind = Math.floor(H(tx, ty, seed + 910) * (type === 'altar' ? 4 : 3));
+      }
+      if (type) { /* ya elegido */ }
+      else if (open && h < (grove ? 0.07 : 0.006)) type = 'tree';
       else if (open && h > 0.992) type = 'rock';
       else if (open && h > 0.985 && h <= 0.992 && H(tx, ty, seed + 606) < 0.07) type = 'chest';
       else if (fbm(tx / 5, ty / 5, seed + 707) > 0.66 && H(tx, ty, seed + 808) < 0.75) type = 'grass';
       if (!type) continue;
 
-      const p = makeProp(type, tx, ty);
+      const p = makeProp(type, tx, ty, kind);
       c.props.push(p);
       if (p.solid) c.propAt.set(tx + ',' + ty, p);
     }
@@ -113,17 +140,23 @@ G.World = (() => {
     tree:  { solid: true,  hp: Infinity, r: 13 },
     rock:  { solid: true,  hp: 34,       r: 12 },
     chest: { solid: true,  hp: 22,       r: 12 },
-    grass: { solid: false, hp: 1,        r: 14 }
+    grass: { solid: false, hp: 1,        r: 14 },
+    altar:    { solid: true,  hp: Infinity, r: 9 },
+    spring:   { solid: false, hp: Infinity, r: 22, flat: true },
+    bigchest: { solid: true,  hp: Infinity, r: 14 },
+    trap:     { solid: false, hp: Infinity, r: 9, flat: true }
   };
+  const SPECIAL = new Set(['altar', 'spring', 'bigchest', 'trap']);
 
-  function makeProp(type, tx, ty) {
+  function makeProp(type, tx, ty, kind = 0) {
     const d = PROP[type];
     return {
-      id: nextPropId++, type, tx, ty,
+      id: nextPropId++, type, tx, ty, kind,
       x: tx * TS + TS / 2, y: ty * TS + TS - 4,
-      r: d.r, hp: d.hp, maxHp: d.hp, solid: d.solid,
+      r: d.r, hp: d.hp, maxHp: d.hp, solid: d.solid, flat: !!d.flat,
       destructible: d.hp !== Infinity, flash: 0,
-      wiggle: H(tx, ty, 9) * 6.28
+      wiggle: H(tx, ty, 9) * 6.28,
+      used: false, charge: 1, open: 0          // altar / manantial / cofre con candado
     };
   }
 
@@ -164,6 +197,19 @@ G.World = (() => {
       for (const p of c.props) {
         if (!p.destructible || p.hp <= 0) continue;
         if (G.U.dist2(x, y, p.x, p.y) <= (r + p.r) ** 2) out.push(p);
+      }
+    }
+    return out;
+  }
+
+  /** Objetos interactivos (altares, manantiales, cofres con candado, trampas) cerca. */
+  function specialsNear(x, y, r) {
+    const out = [];
+    const c0x = Math.floor((x - r) / CW), c1x = Math.floor((x + r) / CW);
+    const c0y = Math.floor((y - r) / CW), c1y = Math.floor((y + r) / CW);
+    for (let cy = c0y; cy <= c1y; cy++) for (let cx = c0x; cx <= c1x; cx++) {
+      for (const p of chunkData(cx, cy).props) {
+        if (SPECIAL.has(p.type) && G.U.dist2(x, y, p.x, p.y) <= (r + p.r) ** 2) out.push(p);
       }
     }
     return out;
@@ -290,25 +336,42 @@ G.World = (() => {
       for (let i = 0; i < n; i++) G.Pickups.drop('coin', p.x + G.U.rand(-14, 14), p.y + G.U.rand(-10, 10), 3);
       G.Pickups.drop(Math.random() < 0.5 ? 'heal' : 'magnet', p.x, p.y);
       G.Pickups.dropXp(p.x, p.y, 20);
+      return;
     }
+    if (p.type === 'bigchest') {
+      // Botín grande: monedas, tickets y experiencia para subir un nivel.
+      G.FX.burst(p.x, p.y - 12, '#f2c443', 34, 220);
+      G.FX.ring(p.x, p.y - 8, 6, 80, '#f2c443', 0.6, 5);
+      G.Camera.kick(0.4);
+      for (let i = 0; i < 9; i++) G.Pickups.drop('coin', p.x + G.U.rand(-22, 22), p.y + G.U.rand(-14, 14), 4);
+      const tk = G.U.randInt(1, 3);
+      for (let i = 0; i < tk; i++) G.Pickups.drop('ticket', p.x + G.U.rand(-16, 16), p.y + G.U.rand(-10, 10), 1);
+      if (Math.random() < 0.15) G.Pickups.drop('ticket10', p.x, p.y - 10, 1);
+      G.Pickups.dropXp(p.x, p.y, G.Game.levelXp());
+      return;
+    }
+    if (p.type === 'trap') G.Interact.trapEffect(p);
   }
 
   // ---------------- dibujo ----------------
 
-  function chunkImage(cx, cy) {
+  function chunkImage(cx, cy, bi = biome, cache = images) {
     const k = cx + ',' + cy;
-    let img = images.get(k);
+    let img = cache.get(k);
     if (img) return img;
     const at = (tx, ty) => KIND[terrainAt(tx, ty)];
     // Campo continuo de "tierra"; tiles.js lo muestrea en rejilla y lo
     // interpola por píxel para que las manchas tengan bordes orgánicos.
     const S = 6 * G.Tiles.T;
     const dirtField = (gx, gy) => fbm(gx / S, gy / S, seed + 303);
-    img = G.Tiles.paintChunk(cx, cy, N, at, dirtField, biome, seed);
-    if (images.size > MAX_IMAGES) images.delete(images.keys().next().value);
-    images.set(k, img);
+    img = G.Tiles.paintChunk(cx, cy, N, at, dirtField, bi, seed);
+    if (cache.size > MAX_IMAGES) cache.delete(cache.keys().next().value);
+    cache.set(k, img);
     return img;
   }
+
+  /** 0..1 del fundido de bioma (suavizado), o null si no hay. */
+  function fadeK() { if (!fade) return null; const x = Math.min(1, fade.t / FADE); return x * x * (3 - 2 * x); }
 
   function visibleChunks(cam, pad = 0) {
     const out = [];
@@ -320,9 +383,15 @@ G.World = (() => {
 
   function drawGround(ctx, cam) {
     ctx.imageSmoothingEnabled = false;
+    const k = fadeK();
     for (const [cx, cy] of visibleChunks(cam)) {
       // +1 de solape: con escalas no enteras evita juntas entre chunks.
+      if (k == null) { ctx.drawImage(chunkImage(cx, cy), cx * CW, cy * CW, CW + 1, CW + 1); continue; }
+      // Fundido: el bioma viejo debajo y el nuevo apareciendo encima.
+      ctx.drawImage(chunkImage(cx, cy, fade.from, fade.images), cx * CW, cy * CW, CW + 1, CW + 1);
+      ctx.globalAlpha = k;
       ctx.drawImage(chunkImage(cx, cy), cx * CW, cy * CW, CW + 1, CW + 1);
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -362,20 +431,58 @@ G.World = (() => {
   function drawProp(ctx, p, t) {
     const P = G.Sprites.PX;
     const variant = p.type === 'grass' ? (Math.sin(t * 2.4 + p.wiggle) > 0.55 ? 1 : 0)
-                  : p.type === 'rock' ? (p.hp < p.maxHp * 0.5 ? 1 : 0) : 0;
+                  : p.type === 'rock' ? (p.hp < p.maxHp * 0.5 ? 1 : 0)
+                  : p.type === 'altar' ? p.kind * 2 + (p.used ? 1 : 0)
+                  : p.type === 'spring' ? (p.charge < 0.15 ? 1 : 0)
+                  : p.type === 'trap' ? p.kind : 0;
     const img = G.Tiles.propSprite(biome, p.type, variant);
     const w = img.width * P, h = img.height * P;
+    if (p.flat) {
+      // Planos (manantial, trampa): pegados al suelo, centrados en su casilla.
+      ctx.drawImage(img, Math.round(p.x - w / 2), Math.round(p.y - 8 - h / 2), w, h);
+      if (p.type === 'spring' && p.charge >= 0.15 && Math.sin(t * 3 + p.wiggle) > 0.92) {
+        G.FX.twinkle(p.x + G.U.rand(-20, 20), p.y - 8 + G.U.rand(-6, 6));
+      }
+      return;
+    }
+    if (p.type === 'altar' && !p.used) {
+      // Halo del orbe, latiendo.
+      const col = ['#ff5f6d', '#5fd4ff', '#ff8ad8', '#ffd23f'][p.kind];
+      ctx.save();
+      ctx.globalAlpha = 0.22 + Math.sin(t * 3 + p.wiggle) * 0.1;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(p.x, p.y - h + 11 * P, 13, 0, 6.2832); ctx.fill();
+      ctx.restore();
+    }
+    if (p.type === 'bigchest' && p.open > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - h / 2, 26, -Math.PI / 2, -Math.PI / 2 + 6.2832 * Math.min(1, p.open / G.Interact.CHEST_TIME));
+      ctx.stroke();
+      ctx.restore();
+    }
     if (p.type !== 'grass') {
       ctx.fillStyle = 'rgba(0,0,0,.3)';
       ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r * 1.1, p.r * 0.38, 0, 0, 6.2832); ctx.fill();
     }
     ctx.save();
     if (p.flash > 0) ctx.filter = 'brightness(2.2)';
-    ctx.drawImage(img, Math.round(p.x - w / 2), Math.round(p.y - h + (p.type === 'grass' ? 4 : 2)), w, h);
+    const x = Math.round(p.x - w / 2), y = Math.round(p.y - h + (p.type === 'grass' ? 4 : 2));
+    const k = fadeK();
+    if (k != null) {
+      // El objeto viejo se desvanece mientras aparece el nuevo.
+      const old = G.Tiles.propSprite(fade.from, p.type, variant);
+      ctx.globalAlpha = 1 - k;
+      ctx.drawImage(old, Math.round(p.x - old.width * P / 2), Math.round(p.y - old.height * P + (p.type === 'grass' ? 4 : 2)), old.width * P, old.height * P);
+      ctx.globalAlpha = k;
+    }
+    ctx.drawImage(img, x, y, w, h);
     ctx.restore();
   }
 
   function update(dt, cam) {
+    if (fade && (fade.t += dt) >= FADE) fade = null;
     for (const [cx, cy] of visibleChunks(cam, 60)) {
       for (const p of chunkData(cx, cy).props) if (p.flash > 0) p.flash -= dt;
     }
@@ -386,13 +493,21 @@ G.World = (() => {
   function reset(s) {
     seed = (s | 0) || 1;
     data.clear(); images.clear(); broken.clear();
+    fade = null; arena = null;
   }
 
-  function setBiome(i) {
-    const b = ((i % G.Tiles.BIOMES.length) + G.Tiles.BIOMES.length) % G.Tiles.BIOMES.length;
+  /**
+   * @param i        bioma (se repiten los normales en ciclo; G.Tiles.ARENA es la grieta)
+   * @param instant  sin fundido (al empezar una run)
+   */
+  function setBiome(i, instant = false) {
+    const n = G.Tiles.NORMAL;
+    const b = i === G.Tiles.ARENA ? i : ((i % n) + n) % n;
     if (b === biome) return;
+    // El terreno es el mismo: sólo cambia la paleta, fundiéndose poco a poco.
+    fade = instant ? null : { from: biome, images, t: 0 };
     biome = b;
-    images.clear();          // el terreno es el mismo: sólo cambia la paleta
+    images = new Map();
   }
 
   function biomeName() { return G.Tiles.BIOMES[biome].name; }
@@ -409,7 +524,20 @@ G.World = (() => {
   return {
     TS, CW, reset, setBiome, biomeName, liquidKind,
     kindAt, isWall, isLiquid, isFree, collide, projectileBlock, propsInCircle, nearestBreakable,
-    damageProp, breakAt, update, drawGround, drawLiquid, visibleProps, drawProp, drawVignette,
+    damageProp, breakAt, specialsNear, update,
+    breakProp(p) { if (!broken.has(p.tx + ',' + p.ty)) destroyProp(p); },
+    /** Arena de la grieta: { tx, ty, r } (en tiles) o null. */
+    setArena(a) {
+      arena = a;
+      if (!a) return;
+      // Olvida los chunks de esa zona (si se hubieran generado antes).
+      const R = a.r + 9;
+      for (const k of [...data.keys(), ...images.keys()]) {
+        const [cx, cy] = k.split(',').map(Number);
+        if (Math.abs(cx * N + N / 2 - a.tx) < R + N && Math.abs(cy * N + N / 2 - a.ty) < R + N) { data.delete(k); images.delete(k); }
+      }
+    },
+    get arena() { return arena; }, drawGround, drawLiquid, visibleProps, drawProp, drawVignette,
     get biome() { return biome; }
   };
 })();

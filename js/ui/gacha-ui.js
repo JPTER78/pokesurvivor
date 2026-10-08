@@ -10,8 +10,6 @@ G.GachaUI = (() => {
     $('pull-1').onclick = () => pull(1);
     $('pull-10').onclick = () => pull(10);
     $('pull-close').onclick = close;
-    $('cost-1').textContent = G.Gacha.COST_1;
-    $('cost-10').textContent = G.Gacha.COST_10;
 
     const tabs = $('gacha-gens');
     G.Gacha.BANNERS.forEach(b => {
@@ -62,10 +60,16 @@ G.GachaUI = (() => {
       `<div><span>${G.Icons.html('gem', 12)} Shiny</span><span>1%</span></div>
        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria en un banner, la siguiente lo es.<br>
-       · Los repetidos dan Pokémonedas (los shiny repetidos, el triple).</p>`;
+       · Los repetidos dan Pokémonedas (los shiny repetidos, el triple).<br>
+       · Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y
+         los jefes y los legendarios de las grietas dan tickets ×10.</p>`;
 
-    $('pull-1').disabled = s.coins < G.Gacha.COST_1;
-    $('pull-10').disabled = s.coins < G.Gacha.COST_10;
+    const t = s.tickets;
+    $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
+    $('cost-10').innerHTML = t.t10 >= 1 || t.t1 < 10 ? `${G.Icons.html('ticket10', 18)} 1` : `${G.Icons.html('ticket', 18)} 10`;
+    $('gacha-tickets').innerHTML = `Tienes ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> tickets y ${G.Icons.html('ticket10', 18)} <b>${t.t10}</b> tickets ×10`;
+    $('pull-1').disabled = !G.Gacha.costOf(s, 1);
+    $('pull-10').disabled = !G.Gacha.costOf(s, 10);
     G.UI.refreshCoins();
   }
 
@@ -74,7 +78,7 @@ G.GachaUI = (() => {
   async function pull(n) {
     if (busy) return;
     const res = G.Gacha.pull(G.DB.save, n, gen);
-    if (!res) { G.Audio.sfx('error'); G.UI.toast('No tienes suficientes Pokémonedas'); return; }
+    if (!res) { G.Audio.sfx('error'); G.UI.toast('No tienes tickets suficientes: consíguelos jugando'); return; }
     G.DB.commit();
     busy = true;
 

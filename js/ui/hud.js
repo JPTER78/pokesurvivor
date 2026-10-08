@@ -115,7 +115,53 @@ G.HUD = (() => {
       ctx.restore();
     }
 
+    // Poder de altar activo.
+    if (pl.power) {
+      const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
+      ctx.font = F(800, 9);
+      ctx.textAlign = 'left';
+      const tw = ctx.measureText(txt).width + 12;
+      roundRect(ctx, bx, py + 34, tw, 15, 7);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.fillStyle = pw.def.color;
+      ctx.fillText(txt, bx + 6, py + 45);
+      bx += tw + 5;
+    }
+
     if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (bx > px ? 56 : 40));
+
+    // Grieta: flecha si no se ve; en la arena, cuenta atrás.
+    const rift = G.Rift.rift;
+    if (rift) {
+      const sx = (rift.x - cam.left()) * cam.scale, sy = (rift.y - 40 - cam.top()) * cam.scale;
+      if (sx < 0 || sx > w || sy < 0 || sy > h) {
+        const M = 40, ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
+        const a = Math.atan2(sy - ey, sx - ex);
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = '#b48aff';
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * 26, Math.sin(a) * 26);
+        ctx.lineTo(Math.cos(a + 2.5) * 12, Math.sin(a + 2.5) * 12);
+        ctx.lineTo(Math.cos(a - 2.5) * 12, Math.sin(a - 2.5) * 12);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.font = F(800, 11);
+        ctx.textAlign = Math.cos(a) > 0.3 ? 'right' : Math.cos(a) < -0.3 ? 'left' : 'center';
+        const label = 'Grieta · ' + Math.round(G.U.dist(pl.x, pl.y, rift.x, rift.y) / 32) + ' m · ' + Math.ceil(rift.ttl) + ' s';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+        ctx.strokeText(label, -Math.cos(a) * 26, -Math.sin(a) * 22 + 4);
+        ctx.fillText(label, -Math.cos(a) * 26, -Math.sin(a) * 22 + 4);
+        ctx.restore();
+      }
+    }
+    if (G.Rift.inArena) {
+      ctx.textAlign = 'center';
+      ctx.font = F(800, 12);
+      ctx.fillStyle = '#d9c2ff';
+      ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
+    }
 
     const ban = G.Spawner.banner();
     if (ban) {

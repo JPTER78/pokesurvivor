@@ -156,7 +156,7 @@ G.Coop = (() => {
       if (o.connected && o.uid !== m.uid && o.state) p[o.uid] = o.state;
     }
     const ev = m.q; m.q = [];
-    return { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins,
+    return { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
              p, e: enemyList(m.pl), ev };
   }
 
@@ -247,6 +247,7 @@ G.Coop = (() => {
           emit(['pb', ev[1], ev[2]], from);
           break;
         case 'lp': picked(from); break;
+        case 're': G.Rift.enterRequest(); break;
         case 'bye': mateGone(from); break;
       }
     }
@@ -256,7 +257,8 @@ G.Coop = (() => {
 
   function onHostFrame(msg) {
     for (const ev of msg.ev || []) applyHostEvent(ev);
-    api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co });
+    api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
+                   t1: (msg.tk || [])[0], t10: (msg.tk || [])[1] });
     for (const u in msg.p || {}) {
       const m = mates.get(u);
       if (m) m.pl.net = readState(msg.p[u]);
@@ -306,6 +308,7 @@ G.Coop = (() => {
       case 'lr': api.resume(); break;
       case 'sh': api.shiny(ev[1]); break;
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
+      case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
     }
   }
 
@@ -396,6 +399,9 @@ G.Coop = (() => {
     ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
     propBroken, collected, shinyCaught, levelStart, localPicked, over,
+    /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */
+    broadcast(ev) { emit(ev); },
+    toHost(ev) { if (active && !host) { outEv.push(ev); flushClient(true); } },
     mate(u) { return mates.get(u); },
     get mates() { return [...mates.values()]; },
     get members() { return members; },

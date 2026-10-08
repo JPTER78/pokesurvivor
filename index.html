@@ -113,6 +113,7 @@
 
 <div id="topbar" class="topbar hidden">
   <div class="pill"><span class="coin"></span><span id="coins">0</span></div>
+  <div class="pill" id="tickets-pill" title="Tickets del gacha"></div>
   <div class="pill" id="user-pill"></div>
   <button id="btn-sound" class="btn small ghost" title="Sonido"></button>
   <button id="btn-logout" class="btn small ghost">Salir</button>
@@ -252,7 +253,16 @@
 <section id="scr-upgrades" class="scr dim hidden">
   <div class="box wide">
     <div class="row between"><h2>Mejoras</h2><button class="btn small ghost" data-back>Volver</button></div>
-    <p class="sub">Permanentes: se aplican en todas las runs y con cualquier Pokémon.</p>
+    <div class="upg-head">
+      <canvas id="upg-stage" class="stage" width="120" height="96"></canvas>
+      <div class="grow">
+        <p class="sub" style="margin:0">Cada Pokémon tiene sus propias mejoras: sólo cuentan cuando juegas con él.</p>
+        <div class="row" style="margin-top:8px">
+          <label for="upg-mon" style="margin:0">Pokémon</label>
+          <select id="upg-mon" class="field" style="width:auto;min-width:220px"></select>
+        </div>
+      </div>
+    </div>
     <div class="upg" id="upg-list"></div>
   </div>
 </section>
@@ -271,9 +281,10 @@
           <div class="feat" id="gacha-feat"></div>
         </div>
         <div class="row" style="margin-top:14px">
-          <button id="pull-1" class="btn grow" data-sfx="none">Tirar ×1 · <span class="coin"></span> <span id="cost-1"></span></button>
-          <button id="pull-10" class="btn gold grow" data-sfx="none">Tirar ×10 · <span class="coin"></span> <span id="cost-10"></span></button>
+          <button id="pull-1" class="btn grow" data-sfx="none">Tirar ×1 · <span id="cost-1"></span></button>
+          <button id="pull-10" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10"></span></button>
         </div>
+        <p class="note tickets-line" id="gacha-tickets"></p>
         <p class="note" id="gacha-pity"></p>
       </div>
       <div class="panel rates" id="gacha-rates"></div>
@@ -350,6 +361,8 @@
 <script src="js/systems/spawner.js"></script>
 <script src="js/systems/levelup.js"></script>
 <script src="js/systems/gacha.js"></script>
+<script src="js/systems/interact.js"></script>
+<script src="js/systems/rift.js"></script>
 <!-- red: amigos, salas, cooperativo y ranking -->
 <script src="js/net/social.js"></script>
 <script src="js/net/net.js"></script>

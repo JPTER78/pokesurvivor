@@ -100,6 +100,8 @@ G.Spawner = (() => {
   function update(dt, who, t) {
     players = Array.isArray(who) ? who : [who];
     if (announceT > 0) announceT -= dt;
+    // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
+    if (G.Rift.inArena) return;
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;
@@ -135,9 +137,10 @@ G.Spawner = (() => {
   }
 
   /** Aviso grande en pantalla (también lo usan el bioma y los shinies). */
-  function say(text, secs = 2.6) {
+  /** @param local  sólo en este ordenador (no se manda a los compañeros) */
+  function say(text, secs = 2.6, local = false) {
     announce = text; announceT = secs;
-    if (G.Coop.isHost) G.Coop.say(text, secs);
+    if (G.Coop.isHost && !local) G.Coop.say(text, secs);
   }
 
   function banner() { return announceT > 0 ? { text: announce, t: announceT } : null; }

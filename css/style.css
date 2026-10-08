@@ -497,3 +497,9 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
   .lobby-members { grid-template-columns: repeat(2, 1fr); }
   .rk-row { grid-template-columns: 40px auto 1fr auto; gap: 6px; }
 }
+
+/* ---------- tickets y mejoras por Pokémon ---------- */
+.tickets-line img, #tickets-pill img, #cost-1 img, #cost-10 img { vertical-align: middle; }
+.upg-head { display: flex; gap: 14px; align-items: center; margin: 6px 0 12px; }
+.upg-head .stage { width: 120px; height: 96px; flex: 0 0 120px; }
+select.field { font-family: var(--font); }

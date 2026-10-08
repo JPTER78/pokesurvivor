@@ -51,7 +51,7 @@ G.Game = (() => {
   function startRun(coop = null) {
     const save = G.DB.save;
     const mon = G.DEX_BY[save.partner];
-    const perks = G.Upgrades.perks(save.upgrades);
+    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -60,8 +60,9 @@ G.Game = (() => {
     G.EnemyMgr.clear();
     G.Pickups.clear();
     G.Spawner.reset();
+    G.Rift.reset();
     G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
-    G.World.setBiome(0);
+    G.World.setBiome(0, true);
     biome = 0;
     time = 0; pendingLevels = 0;
 
@@ -98,10 +99,21 @@ G.Game = (() => {
   /** Todos los jugadores de la partida (tú primero). */
   function everyone() { return G.Coop.active ? G.Coop.players() : [pl]; }
 
-  function teamState() {
-    return { time, level: pl.level, xp: pl.xp, xpNext: pl.xpNext, kills: pl.kills, bosses: pl.bosses, coins: pl.coins };
+  /** Experiencia que hace falta para el siguiente nivel (cofres con candado). */
+  function levelXp() {
+    if (!pl) return 20;
+    const k = (G.Coop.active ? G.Coop.xpFactor() : 1) * (pl.xpMul || 1);
+    return Math.ceil((pl.xpNext - pl.xp + 1) / k);
   }
-  function summary() { return { t: time, ki: pl.kills, bo: pl.bosses, co: pl.coins, lv: pl.level }; }
+
+  // Destello de pantalla completa (viaje a la grieta).
+  let flashT = 0, flashDur = 1, flashCol = '#fff';
+  function flash(col, dur) { flashCol = col; flashDur = dur; flashT = dur; }
+
+  function teamState() {
+    return { time, level: pl.level, xp: pl.xp, xpNext: pl.xpNext, kills: pl.kills, bosses: pl.bosses, coins: pl.coins, t1: pl.t1, t10: pl.t10 };
+  }
+  function summary() { return { t: time, ki: pl.kills, bo: pl.bosses, co: pl.coins, lv: pl.level, t1: pl.t1, t10: pl.t10 }; }
 
   /** Lo que el cooperativo necesita del juego. */
   const coopApi = {
@@ -113,6 +125,8 @@ G.Game = (() => {
       if (t.level > pl.level) G.Audio.sfx('xp');
       pl.level = t.level; pl.xp = t.xp; pl.xpNext = t.xpNext;
       pl.kills = t.kills; pl.bosses = t.bosses; pl.coins = t.coins;
+      if (t.t1 > pl.t1 || t.t10 > pl.t10) G.Audio.sfx('shiny');
+      pl.t1 = t.t1 || 0; pl.t10 = t.t10 || 0;
     },
     levelStart(level) {
       state = 'levelup';
@@ -128,7 +142,7 @@ G.Game = (() => {
     resume() { G.RunUI.closeLevelUp(); if (state === 'levelup') state = 'playing'; },
     shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
     over(d) {
-      if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1) });
+      if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
       if (d && d.why === 'host') G.UI.toast('El anfitrión ha terminado la partida', 3200);
       endRun(!(d && d.why === 'host'));
@@ -172,6 +186,9 @@ G.Game = (() => {
     const record = time > save.stats.bestTime;
 
     save.coins += coins;
+    save.tickets = save.tickets || { t1: 0, t10: 0 };
+    save.tickets.t1 += pl.t1;
+    save.tickets.t10 += pl.t10;
     save.stats.runs++;
     save.stats.totalKills += pl.kills;
     save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
@@ -185,7 +202,7 @@ G.Game = (() => {
     else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
     G.RunUI.showOver({
-      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record,
+      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
@@ -217,7 +234,7 @@ G.Game = (() => {
 
   // ---------------- recogida ----------------
 
-  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm' };
+  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend' };
 
   /** @param who  quien lo ha cogido (en cooperativo puede ser un compañero) */
   function onCollect(p, who = pl) {
@@ -236,6 +253,12 @@ G.Game = (() => {
     if (p.kind === 'coin') {
       pl.coins += p.value;
       G.FX.dmgText(who.x, who.y - who.bodyH - 6, '+' + p.value, '#ffd23f');
+      return;
+    }
+    if (p.kind === 'ticket' || p.kind === 'ticket10') {
+      if (p.kind === 'ticket') pl.t1++; else pl.t10++;
+      G.FX.dmgText(who.x, who.y - who.bodyH - 8, p.kind === 'ticket' ? '+1 ticket' : '¡Ticket ×10!', p.kind === 'ticket' ? '#ffd23f' : '#d9a6ff', true);
+      G.FX.ring(who.x, who.y, 6, 50, p.kind === 'ticket' ? '#ffd23f' : '#c47bff', 0.4, 3);
       return;
     }
     if (p.kind === 'heal') {
@@ -318,8 +341,10 @@ G.Game = (() => {
 
   function update(dt) {
     const coop = G.Coop.active;
+    if (flashT > 0) flashT -= dt;
     // Tras caer, deja que se vea la animación de Faint antes del resumen.
-    if (pl.dead && !coop) {
+    // (En la arena de la grieta no: allí caer sólo te echa de vuelta.)
+    if (pl.dead && !coop && !G.Rift.inArena) {
       deathT += dt;
       pl.update(dt);
       G.EnemyMgr.update(dt * 0.3, pl);
@@ -331,7 +356,7 @@ G.Game = (() => {
     time += dt;
 
     const b = Math.floor(time / 240);
-    if (b !== biome) {
+    if (b !== biome && !G.Rift.inArena) {
       biome = b;
       G.World.setBiome(b);
       G.Audio.sfx('biome');
@@ -357,6 +382,8 @@ G.Game = (() => {
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
     G.Combat.resolve(dt, pl, time);
     G.Pickups.update(dt, all, onCollect);
+    G.Interact.update(dt, pl);
+    G.Rift.update(dt, pl, time);
     G.FX.update(dt);
 
     G.Audio.music(G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
@@ -373,7 +400,7 @@ G.Game = (() => {
 
   /** Anfitrión: si caéis todos, se acaba (tras ver caer al último). */
   function checkAllDown(dt) {
-    if (!G.Coop.players().every(p => p.dead)) { deathT = 0; return; }
+    if (G.Rift.inArena || !G.Coop.players().every(p => p.dead)) { deathT = 0; return; }
     deathT += dt;
     if (deathT > 1.6) {
       deathT = 0;
@@ -392,9 +419,12 @@ G.Game = (() => {
 
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
     const items = [];
-    for (const p of G.World.visibleProps(cam)) items.push({ y: p.y, prop: p });
+    // Los planos (manantiales, trampas) siempre debajo de todo lo demás.
+    for (const p of G.World.visibleProps(cam)) items.push({ y: p.flat ? p.y - 4000 : p.y, prop: p });
     for (const e of G.EnemyMgr.drawables(cam)) items.push({ y: e.y, ent: e });
     for (const e of extra) items.push({ y: e.y, ent: e });
+    const rift = G.Rift.drawable();
+    if (rift) items.push({ y: rift.y, ent: rift });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
       if (it.prop) G.World.drawProp(ctx, it.prop, t);
@@ -417,6 +447,13 @@ G.Game = (() => {
 
     G.World.drawVignette(ctx, w, h);
     G.HUD.draw(ctx, w, h, pl, st);
+    if (flashT > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, flashT / flashDur * 1.4);
+      ctx.fillStyle = flashCol;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
   }
 
   // ---------------- fondo de los menús ----------------
@@ -431,7 +468,7 @@ G.Game = (() => {
 
     function init() {
       G.World.reset(4242);
-      G.World.setBiome(0);
+      G.World.setBiome(0, true);
       G.Camera.x = 0; G.Camera.y = 0;
       wanderers = CAST.map(dex => spawn(dex, true));
       ready = true;
@@ -454,6 +491,7 @@ G.Game = (() => {
 
     function step(dt) {
       t += dt;
+      G.World.update(dt, G.Camera);
       // Deriva lenta de la cámara.
       G.Camera.x += Math.cos(t * 0.05) * 14 * dt;
       G.Camera.y += Math.sin(t * 0.037) * 10 * dt;
@@ -503,7 +541,7 @@ G.Game = (() => {
     /** Al volver de una run, recupera el mundo del menú. */
     function restore() {
       G.World.reset(4242);
-      G.World.setBiome(bi);
+      G.World.setBiome(bi, true);
       G.FX.clear(); G.Projectiles.clear(); G.EnemyMgr.clear(); G.Pickups.clear();
       wanderers = CAST.map(dex => spawn(dex, true));
     }
@@ -512,7 +550,9 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun,
+    init, startRun, everyone, levelXp, flash,
+    /** Para pruebas: salta el reloj de la run. */
+    debugTime(t) { time = t; },
     toUI() { state = 'ui'; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };

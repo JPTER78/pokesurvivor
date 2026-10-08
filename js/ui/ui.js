@@ -30,6 +30,8 @@ G.UI = (() => {
   function refreshCoins() {
     const s = G.DB.save;
     $('coins').textContent = s ? s.coins.toLocaleString('es') : '0';
+    const t = (s && s.tickets) || { t1: 0, t10: 0 };
+    $('tickets-pill').innerHTML = `${G.Icons.html('ticket', 18)} ${t.t1} &nbsp;${G.Icons.html('ticket10', 18)} ${t.t10}`;
     // Punto de sincronización: verde = guardado en la nube, amarillo = guardando,
     // rojo = sin conexión (se guarda en local y se sube al volver).
     const st = G.DB.guest ? 'guest' : G.DB.syncState;

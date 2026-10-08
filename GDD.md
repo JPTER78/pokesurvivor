@@ -100,10 +100,20 @@ desde código (16 px por tile, ×2).
 | Rocas | Se rompen; sueltan XP, monedas o bayas |
 | Cofres | Se rompen; buen botín de monedas |
 | Hierba alta | Se corta con cualquier ataque; a veces suelta algo |
+| **Altar de poder** | Al tocarlo, 25 s de Furia (daño ×2), Rayo (+45% velocidad), Imán (×4) o Prisa (−40% recarga); luego se apaga |
+| **Manantial** | Cura mientras estás encima; se agota y se recarga solo en ~45 s |
+| **Cofre con candado** | Quédate 3,5 s a su lado (aunque te ataquen): monedas, 1-3 tickets (15% un ×10) y experiencia para subir un nivel |
+| **Trampas** | Veneno, pegajosa (te frena) o explosiva; saltan al pisarlas, también con los enemigos |
+| **Grieta** | Rara (cada 30 s, 14% desde el minuto 1:15; dura 45 s). Te lleva a la arena de un legendario |
 
 - **Voladores, fantasmas y jefes** ignoran el terreno.
 - **3 biomas** que rotan cada 4 minutos, cada uno con su música:
-  Bosque Umbrío, Cueva Cristal, Volcán Ceniza.
+  Bosque Umbrío, Cueva Cristal, Volcán Ceniza. El cambio es un **fundido**
+  de 2,6 s entre la paleta vieja y la nueva (suelo y objetos).
+- **Grieta → arena:** zona redonda cerrada en el bioma *Grieta Distorsión*,
+  contra un **legendario** (2 min). Ganas: ticket ×10 extra, 3 tickets y
+  monedas, y vuelves donde estabas. Pierdes (caéis todos o se acaba el tiempo):
+  vuelves sin premio con el 30% de vida. Mientras, los enemigos del mapa esperan.
 
 ## 5. Enemigos
 
@@ -111,8 +121,9 @@ desde código (16 px por tile, ×2).
   sortea un elenco de 7 Pokémon por tramo, así cada partida es distinta.
 - IA según tipos: persecución, embestida telegrafiada (`Charge` → `Attack`),
   disparo a distancia o tanque.
-- **5 jefes** (min. 3, 6, 9, 12, 15): legendarios y pseudolegendarios **al azar**,
-  cada vez más fuertes. Durante un combate de jefe las oleadas bajan al 25%, no
+- **5 jefes** (min. 3, 6, 9, 12, 15): Pokémon fuertes **no legendarios**
+  (pseudolegendarios, Slaking...) al azar, cada vez más fuertes; cada uno suelta
+  un **ticket ×10**. Los legendarios sólo salen en las grietas. Durante un combate de jefe las oleadas bajan al 25%, no
   hay mareas y suena el tema de jefe.
 - Mareas cada ~45 s. Tope de 420 enemigos.
 
@@ -134,9 +145,20 @@ desde código (16 px por tile, ×2).
 Al terminar una run: `tiempo/5 + derrotados/4 + 80 por jefe + monedas recogidas`,
 multiplicado por la mejora Fortuna. Cuenta nueva: 500 de regalo.
 
-### 7.2 Mejoras permanentes
+Las monedas sirven para las **mejoras**; el gacha va con tickets.
+
+### 7.2 Mejoras permanentes — de cada Pokémon
 Vitalidad, Fuerza, Zancada, Reflejos, Coraza, Síntesis, Imán, Sabiduría, Fortuna
-y **Repertorio (empezar con 2 movimientos)**.
+y **Repertorio (empezar con 2 movimientos)**. Cada Pokémon tiene las suyas y
+sólo cuentan cuando juegas con él (en la pantalla de Mejoras se elige cuál).
+Las que se compraron cuando eran de la cuenta pasaron al compañero de entonces.
+
+### 7.2b Tickets del gacha
+- **Ticket** (×1): cada Pokémon derrotado tiene 1/260 de soltar uno; los cofres
+  con candado dan 1-3.
+- **Ticket ×10**: los jefes, el legendario de la grieta (2) y, a veces, los
+  cofres con candado.
+- En grupo los tickets son del equipo: todos se llevan los que se recogen.
 
 ### 7.3 Gacha — un banner por región
 Kanto, Johto, Hoenn, Sinnoh, Teselia, Kalos, Alola, Galar y Paldea, cada uno con
@@ -151,7 +173,8 @@ Kanto, Johto, Hoenn, Sinnoh, Teselia, Kalos, Alola, Galar y Paldea, cada uno con
 | Legendaria | 1,5% | 300 |
 | *Shiny* | *1% (cualquier rareza)* | *×3* |
 
-- Tirada ×1: 100 · ×10: 900, con **al menos una Épica** garantizada.
+- Tirada ×1: 1 ticket · ×10: 1 ticket ×10 (o 10 tickets), con **al menos una
+  Épica** garantizada. Los repetidos siguen dando monedas.
 - **Pity:** a las 70 tiradas sin Legendaria en un banner, la siguiente lo es.
 - Algunas regiones tienen rarezas casi vacías (Galar sólo tiene 4 Poco comunes);
   si una rareza no tiene Pokémon en ese banner, sale la más cercana.
@@ -285,3 +308,14 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   por Pokémon, tu puesto. El grupo sale entero en una fila.
 - Aviso de privacidad: en grupo los navegadores se conectan directamente y
   pueden verse la IP (como en una videollamada).
+
+**2026-10-08 · mejoras por Pokémon, tickets, grietas e interactivos**
+- **Mejoras de cada Pokémon** (no de la cuenta); las ya compradas pasan al
+  compañero actual. Las monedas quedan sólo para mejoras.
+- **Gacha con tickets** que se ganan jugando (sin regalo inicial ni conversión
+  de monedas): ×1 de Pokémon normales (1/260), ×10 de jefes y legendarios.
+- **Jefes casuales no legendarios**; los legendarios, sólo en las **grietas**
+  (arena aparte; perder te devuelve sin premio). En grupo viajáis todos.
+- **Altares, manantiales, cofres con candado y trampas**, en pixel art propio.
+- **Fundido** entre biomas en vez del cambio brusco.
+- Pokédex: campo `leg` (legendario o singular) de PokeAPI.

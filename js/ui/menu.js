@@ -209,17 +209,34 @@ G.MenuUI = (() => {
 
   // ---------------- mejoras ----------------
 
+  let upgDex = null;
+
   function openUpgrades() {
     G.UI.show('scr-upgrades', true);
+    const s = G.DB.save;
+    if (!upgDex || !s.owned[upgDex]) upgDex = s.partner;
+    // Selector con tus Pokémon: el compañero primero, luego los que ya tienen mejoras.
+    const sel = $('upg-mon');
+    const lv = d => Object.values(s.pupg[d] || {}).reduce((a, b) => a + b, 0);
+    const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d])
+      .sort((a, b) => (b === s.partner) - (a === s.partner) || lv(b) - lv(a) || a - b);
+    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
+    sel.value = upgDex;
+    sel.onchange = () => { upgDex = +sel.value; G.Audio.sfx('select'); renderUpgrades(); };
     renderUpgrades();
   }
 
   function renderUpgrades() {
     const s = G.DB.save;
+    const levels = G.DB.upgradesOf(upgDex);
+    const mon = G.DEX_BY[upgDex];
+    const shiny = upgDex === s.partner && !!s.partnerShiny && G.DB.ownsShiny(upgDex);
+    G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny });
+    $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     const box = $('upg-list');
     box.innerHTML = '';
     for (const u of G.Upgrades.LIST) {
-      const lvl = s.upgrades[u.id] || 0;
+      const lvl = levels[u.id] || 0;
       const maxed = lvl >= u.max;
       const cost = maxed ? 0 : G.Upgrades.cost(u.id, lvl);
       const el = document.createElement('div');
@@ -235,11 +252,11 @@ G.MenuUI = (() => {
       el.querySelector('button').onclick = () => {
         if (maxed || s.coins < cost) return;
         s.coins -= cost;
-        s.upgrades[u.id] = lvl + 1;
+        levels[u.id] = lvl + 1;
         G.DB.commit();
         G.Audio.sfx('buy');
         G.UI.refreshCoins();
-        G.UI.toast(`${u.name}: nivel ${lvl + 1}`);
+        G.UI.toast(`${mon.name} · ${u.name}: nivel ${lvl + 1}`);
         renderUpgrades();
       };
       box.appendChild(el);

@@ -142,6 +142,12 @@
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
       }
       G.Pickups.dropXp(this.x, this.y, this.xp, this.boss);
+      if (this.legend) {
+        // El legendario de la grieta: además del ticket ×10 de todo jefe.
+        G.Pickups.drop('ticket10', this.x + 20, this.y - 16, 1);
+        for (let i = 0; i < 3; i++) G.Pickups.drop('ticket', this.x + G.U.rand(-30, 30), this.y + G.U.rand(-20, 20), 1);
+        for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-50, 50), this.y + G.U.rand(-35, 35), 8);
+      }
       G.Audio.sfx(this.boss ? 'bossDown' : 'faint');
       if (this.shiny) {
         G.FX.burst(this.x, cy, '#ffe9a0', 30, 220);
@@ -389,6 +395,31 @@
       return e;
     }
 
+    // --- arena de la grieta ---
+    let stashed = null;
+
+    /** Guarda los enemigos del mapa mientras dura la arena. */
+    function stash() {
+      stashed = list.filter(e => !e.dead);
+      for (const e of stashed) byId.delete(e.id);
+      list = []; corpses = [];
+    }
+
+    /** Al volver: quita los de la arena y devuelve los del mapa (avisando a los demás). */
+    function restore() {
+      for (const e of list) { byId.delete(e.id); if (G.Coop.isHost) G.Coop.enemyGone(e, false); }
+      list = []; corpses = [];
+      for (const e of stashed || []) add(e);
+      stashed = null;
+    }
+
+    /** Invitado: borra las copias (llegarán otra vez del anfitrión). */
+    function clearRemote() {
+      for (const e of list) if (e.remote) byId.delete(e.id);
+      list = list.filter(e => !e.remote);
+      corpses = corpses.filter(e => !e.remote);
+    }
+
     /** Quita una copia (el anfitrión dice que ha caído o que se ha alejado). */
     function removeRemote(id, died) {
       const e = byId.get(id);
@@ -523,7 +554,7 @@
     function bossAlive() { return list.some(e => e.boss && !e.dead); }
     function shinies() { return list.filter(e => e.shiny && !e.dead); }
 
-    return { clear, all, add, get, addRemote, removeRemote, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies, nearestPlayer,
+    return { clear, all, add, get, addRemote, removeRemote, stash, restore, clearRemote, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies, nearestPlayer,
              get count() { return list.length; } };
   })();
 })();

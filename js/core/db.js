@@ -27,7 +27,7 @@
 G.DB = (() => {
   const K_ACC = 'ps.accounts', K_SES = 'ps.session', K_SAVE = 'ps.save.';
   const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.';
-  const VERSION = 2;
+  const VERSION = 3;
   const START_COINS = 500;
   const SDK = 'https://www.gstatic.com/firebasejs/13.0.0/';
   const NAME_DOMAIN = 'jugadores.pokesurvivor.net';   // sólo para el email interno
@@ -67,7 +67,9 @@ G.DB = (() => {
       partnerShiny: false,    // jugar con su versión shiny (si la tienes)
       starter: null,          // dex que te tocó en el test
       personality: null,      // { trait, scores }
-      upgrades: {},           // id -> nivel
+      upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
+      pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+      tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
       pity: {},               // generación del banner -> tiradas sin ★5
       stats: { runs: 0, bestTime: 0, bestLevel: 0, totalKills: 0, pulls: 0, coinsEarned: 0, shinies: 0 }
     };
@@ -80,6 +82,14 @@ G.DB = (() => {
     for (const k in base.stats) if (s.stats[k] == null) s.stats[k] = base.stats[k];
     // v1 -> v2: había un único banner (Kanto) con el pity como número.
     if (typeof s.pity === 'number') s.pity = { 1: s.pity };
+    // v2 -> v3: las mejoras eran de la cuenta; pasan al compañero de entonces.
+    if (!s.pupgDone) {
+      if (s.partner && Object.values(s.upgrades || {}).some(v => v > 0)) {
+        s.pupg[s.partner] = Object.assign({}, s.upgrades);
+      }
+      s.pupgDone = true;
+    }
+    s.tickets = Object.assign({ t1: 0, t10: 0 }, s.tickets);
     s.v = VERSION;
     return s;
   }
@@ -105,6 +115,12 @@ G.DB = (() => {
       }
     }
     for (const k in older.upgrades || {}) r.upgrades[k] = Math.max(r.upgrades[k] || 0, older.upgrades[k]);
+    r.pupg = r.pupg || {};
+    for (const d in older.pupg || {}) {
+      const mine = r.pupg[d] = r.pupg[d] || {};
+      for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
+    }
+    r.pupgDone = r.pupgDone || older.pupgDone;
     for (const k in older.stats || {}) r.stats[k] = Math.max(r.stats[k] || 0, older.stats[k] || 0);
     if (r.starter == null) r.starter = older.starter;
     if (r.personality == null) r.personality = older.personality;
@@ -498,6 +514,13 @@ G.DB = (() => {
 
   function ownsShiny(dex) { return !!(save && save.shiny && save.shiny[dex]); }
 
+  /** Mejoras compradas para un Pokémon: { id -> nivel }. */
+  function upgradesOf(dex) {
+    if (!save) return {};
+    save.pupg = save.pupg || {};
+    return save.pupg[dex] || (save.pupg[dex] = {});
+  }
+
   /** Da la versión shiny (y la normal, si no la tenía). Devuelve true si es nueva. */
   function grantShiny(dex, from) {
     grant(dex, from);
@@ -508,7 +531,7 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
-    owns, grant, ownsShiny, grantShiny, merge, setName,
+    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */

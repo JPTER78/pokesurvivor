@@ -48,6 +48,7 @@ G.Player = class Player {
     this.kills = 0;
     this.bosses = 0;
     this.coins = 0;            // monedas recogidas en esta run
+    this.t1 = 0; this.t10 = 0; // tickets del gacha recogidos en esta run
     this.dmgDealt = 0;
 
     this.invuln = 0;
@@ -59,6 +60,8 @@ G.Player = class Player {
     this.lavaTick = 0;
     this.attackFace = 0;       // tiempo que sigue mirando al objetivo tras atacar
     this.dead = false;
+    this.power = null;         // poder de altar activo: { def, t, dur }
+    this.slowT = 0;            // pegado por una trampa
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -73,7 +76,7 @@ G.Player = class Player {
   // ---------------- stats efectivos ----------------
   get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount); }
   get spd() {
-    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount);
+    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
     return this.inLiquid && G.World.liquidKind() === 'water' ? s * 0.6 : s;
   }
   get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
@@ -164,6 +167,13 @@ G.Player = class Player {
     return leveled;
   }
 
+  /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
+  addPower(def, dur) {
+    if (this.power) this.power.def.off(this);
+    def.on(this);
+    this.power = { def, t: dur, dur };
+  }
+
   addBuff(stat, amount, dur, maxStacks) {
     const b = this.buffs[stat];
     if (!b) return;
@@ -184,6 +194,8 @@ G.Player = class Player {
       const b = this.buffs[k];
       if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
     }
+    if (this.slowT > 0) this.slowT -= dt;
+    if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
 
     // --- movimiento con colisiones ---
@@ -292,6 +304,14 @@ G.Player = class Player {
       ctx.restore();
     }
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y);
+    // Poder de altar: aro de su color latiendo bajo los pies.
+    if (this.power && !this.dead) {
+      ctx.save();
+      ctx.globalAlpha = 0.35 + Math.sin(performance.now() / 120) * 0.15;
+      ctx.strokeStyle = this.power.def.color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 2.1, this.r * 0.85, 0, 0, 6.2832); ctx.stroke();
+      ctx.restore();
+    }
 
     const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });

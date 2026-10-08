@@ -14,7 +14,9 @@
  *   ranged   se mantiene a distancia y dispara
  *   tank     lento, mucha vida
  *
- * Jefes: legendarios / pseudolegendarios al azar, por franjas de poder.
+ * Jefes: Pokémon fuertes NO legendarios (pseudolegendarios, Slaking...), al
+ * azar por franjas de poder. Los legendarios sólo salen en las grietas
+ * (systems/rift.js).
  */
 G.Enemies = (() => {
   const TIERS = [
@@ -28,11 +30,11 @@ G.Enemies = (() => {
 
   // Franjas de jefe: minuto en que salen, PV base y franja de BST.
   const BOSS_SLOTS = [
-    { at: 180, hp: 1400,  dmg: 34, xp: 220,  bst: [520, 590] },
-    { at: 360, hp: 3200,  dmg: 42, xp: 420,  bst: [570, 620] },
-    { at: 540, hp: 5600,  dmg: 48, xp: 680,  bst: [580, 640] },
-    { at: 720, hp: 9000,  dmg: 56, xp: 1000, bst: [600, 690] },
-    { at: 900, hp: 16000, dmg: 68, xp: 1800, bst: [670, 800] }
+    { at: 180, hp: 1400,  dmg: 34, xp: 220,  bst: [490, 545] },
+    { at: 360, hp: 3200,  dmg: 42, xp: 420,  bst: [520, 580] },
+    { at: 540, hp: 5600,  dmg: 48, xp: 680,  bst: [540, 600] },
+    { at: 720, hp: 9000,  dmg: 56, xp: 1000, bst: [580, 700] },
+    { at: 900, hp: 16000, dmg: 68, xp: 1800, bst: [600, 700] }
   ];
 
   // Stats base aproximados a partir de los de juego (inverso de fetch_pokedex).
@@ -89,9 +91,9 @@ G.Enemies = (() => {
     }));
     const used = new Set();
     bosses = BOSS_SLOTS.map(slot => {
-      let pool = G.DEX.filter(p => p.bst >= slot.bst[0] && p.bst <= slot.bst[1] && G.SPRITE_META[p.dex] && !used.has(p.dex) &&
-        (p.rarity === 5 || p.bst >= 600));
-      if (!pool.length) pool = G.DEX.filter(p => p.rarity === 5 && G.SPRITE_META[p.dex] && !used.has(p.dex));
+      const ok = p => !p.leg && G.SPRITE_META[p.dex] && !used.has(p.dex);
+      let pool = G.DEX.filter(p => ok(p) && p.bst >= slot.bst[0] && p.bst <= slot.bst[1]);
+      if (!pool.length) pool = G.DEX.filter(p => ok(p) && p.bst >= 580);
       const p = G.U.pick(pool);
       used.add(p.dex);
       return {

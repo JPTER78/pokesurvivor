@@ -33,8 +33,19 @@ G.Tiles = (() => {
       wallFace: ['#2b2624', '#25201f'], wallFaceDark: '#151211',
       liq: '#e45a1f', liqDeep: '#b9401a', foam: '#ffd46a', shore: '#3a2a22',
       prop: 'dead', leaf: ['#4a3a30', '#5e4a3c', '#6f5a49', '#806a58'], trunk: ['#3a2e27', '#52423a'],
-      rock: ['#4e4642', '#6a605b', '#877c76'], grass: ['#6b4a2a', '#94693a', '#c4914e'] }
+      rock: ['#4e4642', '#6a605b', '#877c76'], grass: ['#6b4a2a', '#94693a', '#c4914e'] },
+    // Sólo dentro de una grieta: la arena del legendario (estilo Mundo Distorsión).
+    { name: 'Grieta Distorsión', liquid: 'water',
+      floor: ['#2d2547', '#332a50', '#29213f'], dirt: ['#3b2f5e', '#41346a', '#362b55'],
+      speck: '#221b38', light: '#5a4a8c', flowers: ['#c47bff', '#7be0ff', '#ff8ad8'],
+      wallTop: ['#241c3d', '#2a2147', '#1f1835'], wallLight: '#7a62c8', wallEdge: '#0a0714',
+      wallFace: ['#171126', '#130e20'], wallFaceDark: '#08050f',
+      liq: '#5a2ad0', liqDeep: '#3d1a99', foam: '#c9a6ff', shore: '#1d1730',
+      prop: 'crystal', leaf: ['#7b3cff', '#a77bff', '#d9c2ff', '#ffffff'], trunk: ['#2a1f4a', '#3d2d6a'],
+      rock: ['#3a3150', '#524870', '#6d6290'], grass: ['#3d2d6a', '#5a3fa0', '#8a6ad0'] }
   ];
+  const NORMAL = 3;                   // biomas que se van turnando en una run
+  const ARENA = 3;                    // índice del de la grieta
 
   // ---------------- utilidades de color / píxel ----------------
 
@@ -397,6 +408,115 @@ G.Tiles = (() => {
       return P.canvas();
     },
 
+    // ---------- objetos interactivos ----------
+
+    /** Altar de poder. variante = efecto*2 + (usado ? 1 : 0). */
+    altar(B, variant) {
+      const P = Pix(18, 27);
+      const R = B.rock.map(h => pack(h));
+      const eff = variant >> 1, used = variant & 1;
+      const ORB = [['#ff5f6d', '#c23a4b', '#ffd3d8'], ['#5fd4ff', '#2a8fd0', '#d8f6ff'],
+                   ['#ff8ad8', '#b03d84', '#ffe0f4'], ['#ffd23f', '#c08a10', '#fff3b0']][eff];
+      const O = (used ? ['#6b7380', '#4a505c', '#9aa2ae'] : ORB).map(h => pack(h));
+      // Escalones, columna y losa.
+      for (let y = 21; y <= 25; y++) for (let x = 1; x <= 16; x++) P.set(x, y, R[y === 21 ? 2 : y >= 24 ? 0 : 1]);
+      for (let y = 12; y <= 20; y++) for (let x = 5; x <= 12; x++) P.set(x, y, R[x === 5 ? 2 : x >= 11 ? 0 : 1]);
+      for (let y = 10; y <= 11; y++) for (let x = 3; x <= 14; x++) P.set(x, y, R[y === 10 ? 2 : 1]);
+      // Runas de su color en la columna.
+      [[7, 14], [8, 15], [10, 14], [9, 17], [7, 18], [10, 18]].forEach(([x, y]) => P.set(x, y, O[1]));
+      // Orbe.
+      disc(P, 8.5, 5.5, 4.2, (x, y, d) => {
+        const lit = (8.5 - x) * 0.5 + (5.5 - y) * 0.7;
+        return lit > 1.6 ? O[2] : d > 0.75 ? O[1] : O[0];
+      });
+      outline(P, pack('#120e1a'));
+      return P.canvas();
+    },
+
+    /** Manantial curativo. variante 1 = agotado. */
+    spring(B, variant) {
+      const P = Pix(34, 16);
+      const R = B.rock.map(h => pack(h));
+      const W = (variant ? ['#2f5f68', '#3a6f7a', '#4f8a92'] : ['#2ba8b8', '#5fe8d8', '#b8fff4']).map(h => pack(h));
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 34; x++) {
+        const nx = (x - 16.5) / 16.5, ny = (y - 8) / 7.5;
+        const d = nx * nx + ny * ny;
+        if (d > 1) continue;
+        if (d > 0.62) { P.set(x, y, R[(H(x, y, 71) < 0.5 ? 1 : 0) + (ny < -0.2 ? 1 : 0)]); continue; }
+        const wave = Math.sin(x * 0.7 + y * 1.3) > 0.6;
+        P.set(x, y, d < 0.18 ? W[2] : wave ? W[2] : d < 0.4 ? W[1] : W[0]);
+      }
+      if (!variant) [[10, 6], [11, 5], [22, 9], [23, 8], [16, 11]].forEach(([x, y]) => P.set(x, y, pack('#ffffff')));
+      outline(P, pack('#14161c'));
+      return P.canvas();
+    },
+
+    /** Cofre grande con candado. */
+    bigchest() {
+      const P = Pix(24, 20);
+      const wood = pack('#6b3a1e'), woodL = pack('#8e5329'), woodD = pack('#432210');
+      const iron = pack('#9aa6b5'), ironD = pack('#5d6773'), gold = pack('#f2c443'), goldD = pack('#b5832a');
+      for (let y = 2; y < 19; y++) for (let x = 1; x < 23; x++) {
+        let c = y < 8 ? woodL : wood;
+        if (y === 8 || y === 9) c = ironD;
+        if (x === 1 || x === 22 || y === 18) c = woodD;
+        if (x === 5 || x === 6 || x === 17 || x === 18) c = (x === 5 || x === 17) ? iron : ironD;
+        if (y === 2 && x > 1 && x < 22) c = iron;
+        P.set(x, y, c);
+      }
+      // Candado.
+      for (let x = 10; x <= 13; x++) { P.set(x, 5, iron); }
+      P.set(9, 6, iron); P.set(14, 6, iron); P.set(9, 7, iron); P.set(14, 7, iron);
+      for (let y = 8; y <= 13; y++) for (let x = 8; x <= 15; x++) P.set(x, y, (x + y) % 4 ? gold : goldD);
+      P.set(11, 10, woodD); P.set(12, 10, woodD); P.set(11, 11, woodD); P.set(11, 12, woodD);
+      outline(P, pack('#1e0f06'));
+      return P.canvas();
+    },
+
+    /** Trampa de Mundo Misterioso. variante: 0 veneno · 1 pegajosa · 2 explosiva. */
+    trap(B, variant) {
+      const P = Pix(14, 14);
+      const COL = [['#b45ec4', '#e6a3f0'], ['#8bd94a', '#d2ff9a'], ['#ff7b3d', '#ffd08a']][variant];
+      const c = pack(COL[0]), l = pack(COL[1]);
+      const base = pack('#2a2238'), baseL = pack('#3b3150');
+      for (let y = 1; y < 13; y++) for (let x = 1; x < 13; x++) {
+        const edge = x === 1 || y === 1 || x === 12 || y === 12;
+        P.set(x, y, edge ? c : (x + y) % 2 ? base : baseL);
+      }
+      const sym = [
+        // veneno: calavera de puntos
+        [[5, 4], [6, 4], [7, 4], [8, 4], [4, 5], [9, 5], [4, 6], [6, 6], [7, 6], [9, 6], [5, 7], [8, 7], [5, 8], [6, 8], [7, 8], [8, 8], [5, 9], [8, 9]],
+        // pegajosa: gotas
+        [[4, 4], [4, 5], [3, 6], [5, 6], [4, 7], [8, 5], [8, 6], [7, 7], [9, 7], [8, 8], [6, 9], [5, 10], [7, 10], [6, 11]],
+        // explosiva: mina
+        [[6, 3], [7, 3], [5, 4], [8, 4], [4, 5], [9, 5], [4, 6], [6, 6], [7, 6], [9, 6], [4, 7], [6, 7], [7, 7], [9, 7], [4, 8], [9, 8], [5, 9], [8, 9], [6, 10], [7, 10]]
+      ][variant];
+      for (const [x, y] of sym) P.set(x, y, l);
+      outline(P, pack('#0c0812'));
+      return P.canvas();
+    },
+
+    /** Grieta hacia la arena del legendario. variante = fotograma 0..3. */
+    rift(B, variant) {
+      const P = Pix(30, 46);
+      const glow = pack('#7b3cff'), mid = pack('#b48aff'), core = pack('#140a26'), white = pack('#f2e6ff');
+      for (let y = 2; y < 44; y++) {
+        const t = (y - 2) / 42;
+        const w = Math.sin(t * Math.PI) * 9 + 1;
+        const off = Math.round(Math.sin(t * 9 + variant * 1.6) * 2.2 + (H(y, variant, 91) - 0.5) * 2);
+        for (let x = -Math.ceil(w) - 2; x <= Math.ceil(w) + 2; x++) {
+          const ax = Math.abs(x) / w;
+          const px = 15 + x + off;
+          if (ax <= 0.45) P.set(px, y, core);
+          else if (ax <= 0.75) P.set(px, y, H(px, y, 92 + variant) < 0.15 ? white : mid);
+          else if (ax <= 1.15 || H(px, y, 93 + variant) < 0.3) P.set(px, y, glow);
+        }
+      }
+      // Chispas en el centro.
+      for (let i = 0; i < 6; i++) P.set(13 + Math.floor(H(i, variant, 94) * 5), 8 + Math.floor(H(i, variant, 95) * 30), white);
+      return P.canvas();
+    },
+
     chest() {
       const P = Pix(16, 14);
       const gold = pack('#f2c443'), goldD = pack('#b5832a'), wood = pack('#8a4f2a'), woodD = pack('#5e3418');
@@ -417,5 +537,5 @@ G.Tiles = (() => {
 
   function clearProps() { propCache.clear(); }
 
-  return { T, BIOMES, paintChunk, propSprite, clearProps };
+  return { T, BIOMES, NORMAL, ARENA, paintChunk, propSprite, clearProps };
 })();
