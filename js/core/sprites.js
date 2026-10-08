@@ -16,6 +16,30 @@ G.Sprites = (() => {
 
   function meta(dex) { return G.SPRITE_META[dex] || null; }
 
+  /** ¿Flota en su sprite? (tools/hover_flags.py) Pasa por encima de rocas y agua. */
+  function hovers(dex) { const m = meta(dex); return !!(m && m.hv); }
+
+  /**
+   * Versión blanca de una imagen (para el destello al recibir un golpe).
+   * Se hace una vez por hoja con composición "source-in": mucho más barato
+   * que ctx.filter en cada dibujo, que era lo que más ralentizaba con muchos
+   * enemigos a la vez.
+   */
+  const whites = new WeakMap();
+  function white(img) {
+    let c = whites.get(img);
+    if (c) return c;
+    c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = '#ffffff';
+    x.fillRect(0, 0, c.width, c.height);
+    whites.set(img, c);
+    return c;
+  }
+
   /** ¿Tiene versión shiny? (assets/pokemon/{dex}/s/) */
   function hasShiny(dex) { const m = meta(dex); return !!(m && m.sh); }
 
@@ -198,16 +222,20 @@ G.Sprites = (() => {
       const row = Math.min(this.dir, m.r - 1);
       const alpha = opts.alpha == null ? 1 : opts.alpha;
       if (alpha <= 0) return;
-      ctx.save();
-      if (alpha < 1) ctx.globalAlpha = alpha;
-      if (opts.flash) ctx.filter = opts.softFlash ? 'brightness(1.9) saturate(.5)' : 'brightness(0) invert(1)';
-      ctx.drawImage(s.img,
-        Math.min(frame, m.n - 1) * m.w, row * m.h, m.w, m.h,
-        Math.round(x - m.ax * k), Math.round(y - m.ay * k), m.w * k, m.h * k);
-      ctx.restore();
+      const sx = Math.min(frame, m.n - 1) * m.w, sy = row * m.h;
+      const dx = Math.round(x - m.ax * k), dy = Math.round(y - m.ay * k);
+      const prev = ctx.globalAlpha;
+      if (alpha < 1) ctx.globalAlpha = prev * alpha;
+      // Destello: blanco entero (enemigos) o medio blanco encima (tu Pokémon).
+      if (!opts.flash || opts.softFlash) ctx.drawImage(s.img, sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
+      if (opts.flash) {
+        if (opts.softFlash) ctx.globalAlpha = prev * alpha * 0.55;
+        ctx.drawImage(white(s.img), sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
+      }
+      ctx.globalAlpha = prev;
     }
   }
 
-  return { PX, meta, hasShiny, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
+  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
            drawShadow, Animator, ANIMS };
 })();

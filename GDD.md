@@ -176,7 +176,12 @@ amarillo y "¡Muy eficaz!" cuando lo es; gris si no.
   (pseudolegendarios, Slaking...) al azar, cada vez más fuertes; cada uno suelta
   un **ticket ×10**. Los legendarios sólo salen en las grietas. Durante un combate de jefe las oleadas bajan al 25%, no
   hay mareas y suena el tema de jefe.
-- Mareas cada ~45 s. Tope de 420 enemigos.
+- Mareas cada ~45 s. Tope de **280** enemigos a la vez; al llegar al tope, los
+  que siguen saliendo son élite (×1,6 vida y experiencia, ×1,25 daño).
+- **Pathfinding:** campo de distancias (BFS) alrededor de cada jugador; los que
+  caminan rodean rocas, paredes y charcos peligrosos. Sólo vuelan por encima
+  los que **flotan en su sprite** (`hv` en sprites-meta, tools/hover_flags.py):
+  Rowlet o Pidgey caminan aunque sean Voladores; Gastly o Zubat flotan.
 
 ## 6. Shinies
 
@@ -391,3 +396,11 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   en vez de la gema.
 - Rareza: ya no hay estrellas; cada rareza es su **Poké Ball** — Poké (Común),
   Super (Poco común), Ultra (Rara), Lujo (Épica) y **Master (Legendaria)**.
+
+**2026-10-08 · cámara, rendimiento e IA**
+- Cámara un 20% más lejos (768 de ancho de mundo en vez de 640).
+- Rendimiento: el destello al golpear usaba `ctx.filter` (×95 más caro que una
+  silueta blanca precalculada, que es lo que se usa ahora); tope de 70 números
+  de daño; resolución interna ×1,5 como mucho; menos trabajo fuera de pantalla;
+  tope de 280 enemigos con élites al llegar al tope.
+- Los enemigos rodean obstáculos; vuelan sólo los que flotan en su sprite.

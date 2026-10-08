@@ -44,7 +44,9 @@
       const types = (G.DEX_BY[def.dex] && G.DEX_BY[def.dex].types) || [];
       this.types = types.length ? types : ['normal'];
       this.atkType = this.types[0];         // tipo de sus golpes (tabla de tipos)
-      this.flying = boss || types.includes('flying') || types.includes('ghost');
+      // Vuelan por encima de rocas y agua sólo los que FLOTAN en su sprite (un
+      // Rowlet camina aunque sea Volador). Los jefes, por su tamaño, también.
+      this.flying = boss || G.Sprites.hovers(def.dex);
 
       this.flash = 0;
       this.slow = 0; this.slowT = 0;
@@ -207,10 +209,12 @@
     }
 
     update(dt, pl) {
-      this.anim.update(dt);
+      // Fuera de pantalla no hace falta animar (sí moverse y pensar).
+      const seen = G.Camera.sees(this.x, this.y, 120);
+      if (seen || this.dead) this.anim.update(dt);
       if (this.flash > 0) this.flash -= dt;
       if (this.dead) { this.fade -= dt; return; }
-      if (this.shiny) {
+      if (this.shiny && seen) {
         this.sparkT -= dt;
         if (this.sparkT <= 0) {
           this.sparkT = 0.22;
@@ -255,6 +259,12 @@
         this.sideT -= dt;
         const a = Math.atan2(dy, dx) + this.side * 1.25;
         dx = Math.cos(a); dy = Math.sin(a);
+      }
+
+      // Camino alrededor de los obstáculos (los que no vuelan).
+      if (!this.flying && this.phase !== 'dash' && this.sideT <= 0) {
+        const pd = G.Path.dirFor(this, pl);
+        if (pd && !(this.behavior === 'ranged' && dist < (this.def.range || 200) * 0.82)) { dx = pd[0]; dy = pd[1]; }
       }
 
       let vx = dx * spd, vy = dy * spd;
@@ -351,7 +361,8 @@
       ctx.globalAlpha = alpha;
       G.Sprites.drawShadow(ctx, this.dex, this.x, this.y, this.scale);
       // Los voladores flotan un poco.
-      const lift = this.flying && !this.boss ? 6 + Math.sin(this.bob) * 2 : 0;
+      // Los que flotan ya van en el aire en su sprite: sólo se mecen un poco.
+      const lift = this.flying && !this.boss ? 1 + Math.sin(this.bob) * 1.5 : 0;
       this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha });
       ctx.restore();
 

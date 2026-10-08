@@ -5,7 +5,7 @@
 G.Camera = {
   x: 0, y: 0,
   scale: 1,
-  VIEW_W: 640,
+  VIEW_W: 768,              // un 20% más de vista que al principio (640)
   shake: 0,
   _sx: 0, _sy: 0,
 

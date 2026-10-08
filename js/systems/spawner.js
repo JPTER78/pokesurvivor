@@ -11,7 +11,10 @@
  * jugáis (ver G.Coop.scaleRate / scaleHp).
  */
 G.Spawner = (() => {
-  const CAP = 420;
+  // Tope de enemigos a la vez (antes 420: con tantos se ralentizaba). Cuando
+  // se llega al tope, los que siguen saliendo son "élite" (más vida, daño y
+  // experiencia), así la dificultad no baja.
+  const CAP = 280, ELITE_FROM = 0.85;
   const SHINY_RATE = 1 / 4096;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
@@ -59,10 +62,7 @@ G.Spawner = (() => {
 
   function scaled(sc, k) { return k === 1 ? sc : Object.assign({}, sc, { hp: sc.hp * k }); }
 
-  function isFlyer(def) {
-    const d = G.DEX_BY[def.dex];
-    return !!d && (d.types.includes('flying') || d.types.includes('ghost'));
-  }
+  function isFlyer(def) { return G.Sprites.hovers(def.dex); }
 
   function rollShiny(dex) {
     if (!G.Sprites.hasShiny(dex)) return false;
@@ -76,6 +76,7 @@ G.Spawner = (() => {
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length)));
+    if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
     if (shiny) e.makeShiny();
     G.EnemyMgr.add(e);
     if (shiny) {

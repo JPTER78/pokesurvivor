@@ -69,6 +69,9 @@ G.FX = (() => {
   }
 
   function dmgText(x, y, value, color = '#ffffff', big = false) {
+    // Con cientos de golpes por segundo no se leen igual: tope de 70 (los
+    // grandes, como "¡Muy eficaz!" o los de jefe, siempre entran).
+    if (texts.length >= 70) { if (!big) return; texts.shift(); }
     texts.push({ x: x + G.U.rand(-6, 6), y, vy: -46, t: 0, life: big ? 0.95 : 0.62, s: value, color, big });
   }
 

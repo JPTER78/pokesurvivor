@@ -220,6 +220,15 @@ G.World = (() => {
     return c.propAt.get(tx + ',' + ty) || null;
   }
 
+  /** ¿Se puede pasar por esta casilla andando? (pathing.js) */
+  function walkable(tx, ty) {
+    const t = terrainAt(tx, ty);
+    if (t === WALL) return false;
+    if (t === LIQUID && (LIQ[liquidKind()] || {}).dmg) return false;   // lava, veneno, descarga
+    const p = propAtTile(tx, ty);
+    return !(p && p.solid);
+  }
+
   /** ¿Hay sitio para que algo de radio r esté aquí? */
   function isFree(x, y, r = 12, allowLiquid = false) {
     const t0x = tileOf(x - r), t1x = tileOf(x + r), t0y = tileOf(y - r), t1y = tileOf(y + r);
@@ -512,7 +521,6 @@ G.World = (() => {
       ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r * 1.1, p.r * 0.38, 0, 0, 6.2832); ctx.fill();
     }
     ctx.save();
-    if (p.flash > 0) ctx.filter = 'brightness(2.2)';
     const x = Math.round(p.x - w / 2), y = Math.round(p.y - h + (p.type === 'grass' ? 4 : 2));
     const k = fadeK();
     if (k != null) {
@@ -523,6 +531,7 @@ G.World = (() => {
       ctx.globalAlpha = k;
     }
     ctx.drawImage(img, x, y, w, h);
+    if (p.flash > 0) { ctx.globalAlpha = 0.6; ctx.drawImage(G.Sprites.white(img), x, y, w, h); }
     ctx.restore();
   }
 
@@ -567,7 +576,7 @@ G.World = (() => {
   }
 
   return {
-    TS, CW, reset, setBiome, biomeName, liquidKind, liquidEffect,
+    TS, CW, reset, setBiome, biomeName, liquidKind, liquidEffect, walkable,
     kindAt, isWall, isLiquid, isFree, collide, projectileBlock, propsInCircle, nearestBreakable,
     damageProp, breakAt, specialsNear, update,
     breakProp(p) { if (!broken.has(p.tx + ',' + p.ty)) destroyProp(p); },
