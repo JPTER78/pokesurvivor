@@ -20,7 +20,8 @@ G.Pickups = (() => {
     bomb:  { color: '#ff7b3d', glow: '#b03d10', r: 6.5 },
     coin:  { color: '#ffd23f', glow: '#b8860b', r: 5.5 },
     ticket:   { color: '#ffd23f', glow: '#c08a10', r: 7 },
-    ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 }
+    ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
+    item:     { color: '#ffd23f', glow: '#c08a10', r: 9 }       // value = id del objeto
   };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
   const TICKET_RATE = 1 / 260;
@@ -176,8 +177,15 @@ G.Pickups = (() => {
       } else {
         // Baya, imán y bomba: su icono pixel art.
         const ICON = { heal: 'berry', magnet: 'magnet', bomb: 'bomb', ticket: 'ticket', ticket10: 'ticket10' };
-        const sz = p.kind === 'ticket10' ? 24 : 18;
-        G.Icons.draw(ctx, ICON[p.kind], p.x - sz / 2, y - sz / 2 - 1, sz);
+        const sz = p.kind === 'ticket10' || p.kind === 'item' ? 24 : 18;
+        if (p.kind === 'item') {
+          // Objeto: brillo dorado latiendo, para que se vea desde lejos.
+          ctx.globalAlpha = 0.35 + Math.sin(p.t * 1.5) * 0.15;
+          ctx.fillStyle = '#ffe14d';
+          ctx.beginPath(); ctx.arc(p.x, y, 18, 0, 6.2832); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        G.Icons.draw(ctx, p.kind === 'item' ? p.value : ICON[p.kind], p.x - sz / 2, y - sz / 2 - 1, sz);
         continue;
       }
       ctx.fillStyle = 'rgba(255,255,255,.8)';

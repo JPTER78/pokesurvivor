@@ -183,6 +183,21 @@ amarillo y "¡Muy eficaz!" cuando lo es; gris si no.
   los que **flotan en su sprite** (`hv` en sprites-meta, tools/hover_flags.py):
   Rowlet o Pidgey caminan aunque sean Voladores; Gastly o Zubat flotan.
 
+### 5.1 Personalidades
+En cada run, cada tramo de enemigos trae al menos 2 con personalidad (1 en el
+primero, para ir aprendiendo). Los ataques "con aviso" se ven antes en el suelo.
+
+| Personalidad | Quién | Qué hace |
+|---|---|---|
+| Curandero | Chansey, Blissey, Audino, Clefairy... | Cura un 15% a los de alrededor cada 3,5 s |
+| Escudo | Shuckle, Bronzong, Mr. Mime, Bastiodon... | Escudo del 35% de vida a 6 compañeros |
+| Invocador | Nidoqueen, Vespiquen, Golbat, Gyarados... | Llama a 2 de su manada (Nidoran, Combee...) |
+| Kamikaze | Voltorb, Electrode, Koffing, Geodude... | Se acerca y explota (aviso de 1 s) |
+| Rayo | Eléctrico, Psíquico, Dragón, Hielo (algunos) | Rayo con franja de aviso |
+| Zonas | Fuego, Tierra, Veneno (algunos) | Círculos bajo tus pies que estallan |
+| Abanico | Agua, Planta, Bicho, Hada (algunos) | 3 disparos en abanico (5 más adelante) |
+| Saltador | Lucha, Tierra, Normal, Roca (algunos) | Salta y cae donde estabas |
+
 ## 6. Shinies
 
 - **Salvajes:** cada enemigo tiene **1/4096** de salir shiny (también los jefes).
@@ -208,6 +223,25 @@ Vitalidad, Fuerza, Zancada, Reflejos, Coraza, Síntesis, Imán, Sabiduría, Fort
 y **Repertorio (empezar con 2 movimientos)**. Cada Pokémon tiene las suyas y
 sólo cuentan cuando juegas con él (en la pantalla de Mejoras se elige cuál).
 Las que se compraron cuando eran de la cuenta pasaron al compañero de entonces.
+
+### 7.2a Objetos equipables (uno por run)
+Restos, Cinta Elección, Garra Rápida, Banda Focus, Cascabel Concha, Moneda
+Amuleto, Huevo Suerte, Vidasfera, Pañuelo Elección, Casco Dentado y Chaleco
+Asalto. Los sueltan **todos los jefes**, los cofres con candado (50%) y a veces
+los normales (8%). Si ya llevas uno, eliges (en solitario el juego se para).
+
+### 7.2c Evolución de movimientos
+Un movimiento al nivel máximo evoluciona si en esa run has cogido su mejora de
+condición (Ascuas + Potencia → Llamarada, Burbuja + Carrera → Surf...): sale
+una **carta dorada** (siempre, si está lista). Los 47 de ataque evolucionan.
+
+### 7.2d Misiones, logros y perfil
+- **3 diarias + 2 semanales** (premio en tickets y monedas); una diaria se puede
+  cambiar al día. Mismas misiones en cualquier ordenador (semilla por cuenta).
+- **Logros** con medalla (bronce, plata, oro), premio y a veces **título**;
+  uno por cada **legendario** vencido en una grieta.
+- **Perfil público** (desde el ranking o la lista de amigos): 3 favoritos,
+  título, mejores marcas y las 8 mejores medallas.
 
 ### 7.2b Tickets del gacha
 - **Ticket** (×1): cada Pokémon derrotado tiene 1/260 de soltar uno; los cofres
@@ -404,3 +438,11 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   de daño; resolución interna ×1,5 como mucho; menos trabajo fuera de pantalla;
   tope de 280 enemigos con élites al llegar al tope.
 - Los enemigos rodean obstáculos; vuelan sólo los que flotan en su sprite.
+
+**2026-10-08 · misiones, logros, objetos, evoluciones y enemigos con personalidad**
+- Misiones 3+2, logros con premio y título, perfil público (todos lo ven).
+- Objetos equipables de un solo uso por run (cofres y jefes).
+- Evolución de movimientos: nivel máximo + condición, carta dorada.
+- Enemigos con personalidad: curanderos, escudos, invocadores y ataques con
+  aviso (rayos, zonas, kamikazes, abanico, saltos). Ajustados con un piloto
+  automático: la supervivencia media es parecida a la de antes (89 s frente a 60 s).

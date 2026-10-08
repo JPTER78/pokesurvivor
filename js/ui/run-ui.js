@@ -16,9 +16,10 @@ G.RunUI = (() => {
       el.className = 'card';
       const tag = c.type === 'new'
         ? `<span class="tag-chip" style="background:${c.color}">Nuevo · ${c.tag}</span>`
-        : c.type === 'up'
+        : c.type === 'up' || c.type === 'evo'
           ? `<span class="tag-chip" style="background:${c.color}">${c.tag}</span>`
-          : `<span class="tag-chip" style="background:#9fb1c9">Mejora</span>`;
+          : `<span class="tag-chip" style="background:${c.color === '#ffd23f' ? '#ffd23f' : '#9fb1c9'}">${c.tag}</span>`;
+      if (c.type === 'evo') el.classList.add('evo');
       el.innerHTML =
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
          <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
@@ -89,6 +90,23 @@ G.RunUI = (() => {
     G.UI.show('scr-over');
   }
 
+  /** Has encontrado un objeto llevando ya otro: ¿con cuál te quedas? */
+  function showItemChoice(cur, next, cb) {
+    const box = $('item-cards');
+    box.innerHTML = '';
+    [[cur, 'Quedarme con'], [next, 'Cambiar a']].forEach(([id, verb], i) => {
+      const it = G.Items.BY[id];
+      const el = document.createElement('div');
+      el.className = 'card' + (i === 1 ? ' evo' : '');
+      el.innerHTML = `<div class="ico">${G.Icons.html(id, 36)}</div>
+        <div class="txt"><div class="nm">${verb} ${it.name}</div><div class="ds">${it.desc}</div></div>
+        <div class="key">${i + 1}</div>`;
+      el.onclick = () => { G.UI.hide('scr-item'); cb(id); };
+      box.appendChild(el);
+    });
+    G.UI.show('scr-item');
+  }
+
   function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
@@ -101,5 +119,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, showItemChoice, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
 })();

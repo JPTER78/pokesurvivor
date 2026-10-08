@@ -71,7 +71,15 @@ G.DB = (() => {
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
       pity: {},               // generación del banner -> tiradas sin ★5
-      stats: { runs: 0, bestTime: 0, bestLevel: 0, totalKills: 0, pulls: 0, coinsEarned: 0, shinies: 0 }
+      legends: {},            // dex -> fecha: legendarios vencidos en grietas
+      arenas: {},             // tipo -> fecha: arenas de grieta ganadas
+      itemsFound: {},         // id -> fecha: objetos equipables encontrados
+      evoMoves: {},           // id -> fecha: movimientos evolucionados alguna vez
+      ach: {},                // id -> fecha: logros conseguidos
+      missions: {},           // misiones del día / semana (systems/progress.js)
+      profile: { favs: [], title: '' },   // perfil público: 3 favoritos y título
+      stats: { runs: 0, bestTime: 0, bestLevel: 0, totalKills: 0, pulls: 0, coinsEarned: 0, shinies: 0,
+               bossesTotal: 0, riftWins: 0, evolutions: 0, missionsDone: 0, groupRuns: 0, bestGroupTime: 0 }
     };
   }
 
@@ -121,6 +129,23 @@ G.DB = (() => {
       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
+    // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
+    for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
+      r[coll] = r[coll] || {};
+      for (const k in older[coll] || {}) if (!r[coll][k]) r[coll][k] = older[coll][k];
+    }
+    // Misiones del mismo día/semana: el mayor progreso y lo ya recogido.
+    const mo = older.missions || {}, mr = r.missions = r.missions || {};
+    for (const [per, list] of [['day', 'daily'], ['week', 'weekly']]) {
+      if (mr[per] !== mo[per] || !mr[list] || !mo[list]) continue;
+      mr[list].forEach((m, i) => {
+        const o = mo[list][i];
+        if (!o || o.id !== m.id) return;
+        m.prog = Math.max(m.prog || 0, o.prog || 0);
+        m.claimed = m.claimed || o.claimed;
+        m.told = m.told || o.told;
+      });
+    }
     for (const k in older.stats || {}) r.stats[k] = Math.max(r.stats[k] || 0, older.stats[k] || 0);
     if (r.starter == null) r.starter = older.starter;
     if (r.personality == null) r.personality = older.personality;

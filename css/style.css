@@ -507,3 +507,62 @@ select.field { font-family: var(--font); }
 /* ---------- tragaperras del gacha ---------- */
 #slot { width: min(528px, 92vw, 66vh); height: auto; image-rendering: pixelated; cursor: pointer;
   filter: drop-shadow(0 0 30px rgba(255,90,90,.35)); animation: pop .25s ease-out both; }
+
+/* ---------- misiones, logros, perfil y objetos ---------- */
+.goals-body { max-height: 62vh; overflow-y: auto; padding-right: 6px; }
+.goals-h { margin: 6px 0 4px; }
+.goals-h h3 { margin: 0; }
+.mission {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center;
+  padding: 10px 12px; margin-bottom: 6px; border-radius: 8px;
+  background: rgba(0,0,0,.22); border: 2px solid rgba(244,248,255,.14);
+}
+.mission.ready { border-color: var(--gold); background: rgba(255,210,63,.1); }
+.mission.claimed { opacity: .55; }
+.mission small, .ach small { color: var(--muted); font-size: 12px; }
+.mission .bar, .ach .bar { height: 7px; background: rgba(0,0,0,.4); border-radius: 6px; overflow: hidden; margin: 4px 0 2px; }
+.mission .bar i, .ach .bar i { display: block; height: 100%; background: var(--gold); }
+.m-rw, .a-rw { font-size: 13px; color: var(--ink); }
+.m-rw img, .a-rw img, .tag-chip img { vertical-align: middle; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.ach {
+  display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 8px;
+  background: rgba(0,0,0,.2); border: 2px solid rgba(244,248,255,.1);
+}
+.ach.ok { border-color: rgba(255,210,63,.6); }
+.ach .a-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.leg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; }
+.leg-cell { display: flex; flex-direction: column; align-items: center; padding: 4px; border-radius: 8px; background: rgba(0,0,0,.25); border: 2px solid transparent; }
+.leg-cell.ok { border-color: rgba(255,210,63,.5); }
+.leg-cell small { font-size: 10px; color: var(--muted); text-align: center; }
+.fav-slots { display: flex; gap: 12px; flex-wrap: wrap; margin: 6px 0; }
+.fav-slot {
+  width: 140px; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 10px; background: rgba(0,0,0,.28); border: 3px dashed rgba(244,248,255,.25); cursor: pointer; text-align: center;
+}
+.fav-slots.view .fav-slot { cursor: default; border-style: solid; border-color: rgba(255,210,63,.55); }
+.fav-slot b { font-size: 14px; }
+.profile-box { width: min(640px, 100%); max-height: 90vh; overflow-y: auto; }
+.prof-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: -10px; }
+.prof-head h2 { margin: 0; }
+.prof-title { color: var(--gold); font-size: 15px; border: 2px solid var(--gold); border-radius: 8px; padding: 1px 8px; }
+.prof-marks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+.prof-marks div { background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; }
+.prof-marks span { color: var(--muted); font-size: 12px; }
+.prof-marks b { font-size: 18px; }
+.prof-medals { display: flex; flex-wrap: wrap; gap: 8px; }
+.prof-medals .pm { width: 84px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.prof-medals small { font-size: 10px; color: var(--muted); }
+a.plink { color: inherit; text-decoration: none; border-bottom: 1px dotted rgba(244,248,255,.4); }
+a.plink:hover { color: var(--gold); }
+#user-pill { cursor: pointer; }
+.ach-pop {
+  position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 80;
+  display: flex; gap: 10px; align-items: center; padding: 10px 16px; animation: pop .2s ease-out;
+  border-color: var(--gold) !important;
+}
+.ach-pop b { display: block; color: var(--gold); }
+.ach-pop small { color: var(--muted); }
+.card.evo { border-color: var(--gold); background: linear-gradient(90deg, rgba(255,210,63,.18), rgba(255,210,63,.04)); }
+.card.evo .nm { color: var(--gold); }
+@media (max-width: 760px) { .mission { grid-template-columns: 1fr; } .prof-marks { grid-template-columns: repeat(2, 1fr); } }

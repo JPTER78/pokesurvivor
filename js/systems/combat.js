@@ -209,10 +209,11 @@ G.Combat = (() => {
   }
 
   /** Repite el ataque de un compañero sólo para verlo (sin daño). */
-  function ghostCast(pl, id, lvl, aim) {
+  function ghostCast(pl, id, lvl, aim, evolved) {
     const def = G.Moves.BY_ID[id];
     if (!def || def.kind === 'orbit') return;
     const m = G.Moves.instance(id, lvl);
+    if (evolved) G.Moves.evolve(m);
     pl.aim = aim;
     ghost = true;
     try {
@@ -239,6 +240,7 @@ G.Combat = (() => {
     const k = typeK(m.type, e);
     dmg *= k;
     e.hurt(dmg, col, dx, dy, knock, G.Types.label(G.Types.mult(m.type, e.types)));
+    if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
     if (m.burn) e.applyBurn(m.burn);
     if (m.poison) e.applyPoison(m.poison);
@@ -345,6 +347,7 @@ G.Combat = (() => {
                p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
         pl.dmgDealt += p.dmg * k;
+        pl.onDealt(p.dmg * k);
         if (p.burn) e.applyBurn(p.burn);
         if (p.poison) e.applyPoison(p.poison);
         if (p.slow) e.applySlow(p.slow);
@@ -368,6 +371,7 @@ G.Combat = (() => {
       e.touchCd = 0.55;
       e.strike(pl);
       pl.hurt(e.dmg, e.atkType);
+      if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;
     }

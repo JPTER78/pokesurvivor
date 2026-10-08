@@ -62,6 +62,10 @@ G.Player = class Player {
     this.dead = false;
     this.power = null;         // poder de altar activo: { def, t, dur }
     this.slowT = 0;            // pegado por una trampa
+    this.item = null;          // objeto equipado (data/items.js), uno por run
+    this.sashT = -999;         // última vez que salvó la Banda Focus
+    this.bellHeal = 0;         // curación pendiente del Cascabel Concha
+    this.statsTaken = {};      // mejoras de stat cogidas (condición de evolución)
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -96,6 +100,11 @@ G.Player = class Player {
 
   setActive(i) {
     if (i < 0 || i >= this.moves.length || i === this.active) return;
+    // Cinta Elección: no se puede cambiar de movimiento.
+    if (this.hasItem('choiceband') && this.moves[this.active]) {
+      G.FX.dmgText(this.x, this.y - this.bodyH - 8, 'Cinta Elección', '#ff8ad8');
+      return;
+    }
     this.active = i;
     G.Projectiles.clearOrbs(this);
     G.Audio.sfx('select');
@@ -116,6 +125,10 @@ G.Player = class Player {
    * acelera si la recarga es más corta que la animación, para que encadene.
    */
   cast(m) {
+    // Vidasfera: cada ataque cuesta un poco de vida (nunca te deja KO).
+    if (this.hasItem('lifeorb') && m.kind !== 'orbit' && !this.remote) {
+      this.hp = Math.max(1, this.hp - Math.max(1, this.maxHp * 0.01));
+    }
     const anim = { melee: 'Attack', beam: 'Shoot', projectile: 'Shoot', nova: 'Attack',
                    aura: 'Charge', buff: 'Charge', orbit: 'Charge' }[m.kind] || 'Attack';
     // No reinicies una animación que va por la mitad: se vería a tirones.
@@ -147,6 +160,13 @@ G.Player = class Player {
     G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), eff === 'super' ? '#ff3048' : eff === 'weak' ? '#c9a0a8' : '#ff6b7a', eff === 'super');
     if (eff === 'super') G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Muy eficaz!', '#ff8a96');
     G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ff5f6d', 6, 90);
+    // Banda Focus: aguanta el golpe con 1 de vida (una vez cada 60 s).
+    if (this.hp <= 0 && this.hasItem('focussash') && performance.now() - this.sashT > 60000) {
+      this.sashT = performance.now();
+      this.hp = 1; this.invuln = 1.2;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Banda Focus!', '#ff9a3d', true);
+      G.FX.ring(this.x, this.y, 6, 70, '#ff9a3d', 0.5, 4);
+    }
     if (this.hp <= 0) {
       this.hp = 0; this.dead = true;
       this.anim.play('Faint', { hold: true });
@@ -177,6 +197,21 @@ G.Player = class Player {
     return leveled;
   }
 
+  // ---------------- objeto equipado ----------------
+  hasItem(id) { return this.item === id; }
+
+  /** Se pone un objeto (y se quita el que llevara). */
+  equip(id) {
+    if (this.item) G.Items.BY[this.item].off(this);
+    this.item = id;
+    if (id) G.Items.BY[id].on(this);
+  }
+
+  /** Cascabel Concha: un poco de vida por el daño que haces (tope 4/s). */
+  onDealt(dmg) {
+    if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
+  }
+
   /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
   addPower(def, dur) {
     if (this.power) this.power.def.off(this);
@@ -205,6 +240,7 @@ G.Player = class Player {
       if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
     }
     if (this.slowT > 0) this.slowT -= dt;
+    if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
 

@@ -101,6 +101,7 @@
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
+        <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
         <button class="menu-item" data-go="friends">Amigos<small id="menu-friends-sub">Juega en grupo, hasta 4</small></button>
         <button class="menu-item" data-go="rank">Ranking<small>Quién aguanta más</small></button>
       </div>
@@ -225,6 +226,27 @@
   </div>
 </section>
 
+<!-- ====== Misiones, logros y perfil ====== -->
+<section id="scr-goals" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Misiones</h2><button class="btn small ghost" data-back>Volver</button></div>
+    <div class="tabs" id="goals-tabs">
+      <div class="tab on" data-tab="missions">Misiones</div>
+      <div class="tab" data-tab="ach">Logros</div>
+      <div class="tab" data-tab="profile">Perfil</div>
+    </div>
+    <div id="goals-body" class="goals-body"></div>
+  </div>
+</section>
+
+<!-- ====== Perfil público de un jugador ====== -->
+<section id="scr-profile" class="scr dim hidden">
+  <div class="box profile-box">
+    <div class="row end"><button class="btn small ghost" id="prof-close">Cerrar</button></div>
+    <div id="prof-body"></div>
+  </div>
+</section>
+
 <!-- ====== Invitación recibida ====== -->
 <div id="invite-pop" class="box invite-pop hidden">
   <div id="inv-text"></div>
@@ -308,6 +330,14 @@
   </div>
 </section>
 
+<section id="scr-item" class="scr dim hidden">
+  <div class="box center">
+    <h2>¡Un objeto!</h2>
+    <p class="sub">Sólo puedes llevar uno · <kbd>1</kbd> <kbd>2</kbd></p>
+    <div id="item-cards" class="cards"></div>
+  </div>
+</section>
+
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
@@ -347,6 +377,9 @@
 <script src="js/data/starters.js"></script>
 <script src="js/data/enemies.js"></script>
 <script src="js/data/upgrades.js"></script>
+<script src="js/data/items.js"></script>
+<script src="js/data/missions.js"></script>
+<script src="js/data/achievements.js"></script>
 <!-- mundo -->
 <script src="js/world/tiles.js"></script>
 <script src="js/world/world.js"></script>
@@ -366,6 +399,8 @@
 <script src="js/systems/rift.js"></script>
 <script src="js/systems/weather.js"></script>
 <script src="js/systems/pathing.js"></script>
+<script src="js/systems/progress.js"></script>
+<script src="js/systems/hazards.js"></script>
 <!-- red: amigos, salas, cooperativo y ranking -->
 <script src="js/net/social.js"></script>
 <script src="js/net/net.js"></script>
@@ -383,6 +418,7 @@
 <script src="js/ui/run-ui.js"></script>
 <script src="js/ui/social-ui.js"></script>
 <script src="js/ui/ranking-ui.js"></script>
+<script src="js/ui/goals-ui.js"></script>
 <!-- juego -->
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>

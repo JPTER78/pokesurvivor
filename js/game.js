@@ -65,6 +65,7 @@ G.Game = (() => {
     G.Rift.reset();
     G.Weather.reset();
     G.Path.clear();
+    G.Hazards.clear();
     G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
     G.World.setBiome(0, true);
     biome = 0;
@@ -152,6 +153,7 @@ G.Game = (() => {
       endRun(!(d && d.why === 'host'));
     },
     lost(msg) { G.UI.toast(msg, 3600); endRun(false); },
+    item(id) { offerItem(id); },
     mateLeft() {}
   };
 
@@ -196,9 +198,13 @@ G.Game = (() => {
     save.stats.runs++;
     save.stats.totalKills += pl.kills;
     save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
+    if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
     save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
+    G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
+    G.Progress.checkAch();
     G.DB.commit();
+    if (G.Social.me) G.Social.publishProfile();
 
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.
     const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
@@ -238,7 +244,25 @@ G.Game = (() => {
 
   // ---------------- recogida ----------------
 
-  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend' };
+  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend' };
+
+  /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
+  function offerItem(id) {
+    if (!pl || !G.Items.BY[id]) return;
+    const take = got => {
+      if (got !== pl.item) {
+        pl.equip(got);
+        G.Spawner.say('¡Llevas ' + G.Items.BY[got].name + '!', 2.6, true);
+        G.Progress.event('item', { id: got });
+      }
+      if (state === 'choice') state = 'playing';
+    };
+    if (!pl.item) { take(id); return; }
+    if (pl.item === id) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
+    // En solitario se para el juego; en grupo sigue (como la pausa).
+    if (!G.Coop.active) state = 'choice';
+    G.RunUI.showItemChoice(pl.item, id, take);
+  }
 
   /** @param who  quien lo ha cogido (en cooperativo puede ser un compañero) */
   function onCollect(p, who = pl) {
@@ -257,6 +281,10 @@ G.Game = (() => {
     if (p.kind === 'coin') {
       pl.coins += p.value;
       G.FX.dmgText(who.x, who.y - who.bodyH - 6, '+' + p.value, '#ffd23f');
+      return;
+    }
+    if (p.kind === 'item') {
+      if (mine) offerItem(p.value);
       return;
     }
     if (p.kind === 'ticket' || p.kind === 'ticket10') {
@@ -295,9 +323,15 @@ G.Game = (() => {
       }
       return;
     }
+    if (G.UI.isOpen('scr-item')) {
+      for (let i = 0; i < 2; i++) {
+        if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) document.querySelectorAll('#item-cards .card')[i].click();
+      }
+      return;
+    }
     if (state === 'ui') {
       // Esc en una subpantalla del menú vuelve al menú.
-      if (G.Input.tap('escape') && ['scr-dex', 'scr-upgrades', 'scr-gacha', 'scr-friends', 'scr-rank'].some(G.UI.isOpen)
+      if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-dex', 'scr-upgrades', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
       return;
     }
@@ -370,7 +404,7 @@ G.Game = (() => {
       G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#ffffff', 0.7, 6);
     }
 
-    pl.frozen = coop && G.UI.isOpen('scr-pause');
+    pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item'));
     pl.update(dt);
     if (coop) {
       for (const p of G.Coop.puppets()) { p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time); }
@@ -388,6 +422,7 @@ G.Game = (() => {
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
     G.Combat.resolve(dt, pl, time);
     G.Pickups.update(dt, all, onCollect);
+    G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
     G.Weather.update(dt, time, pl);
@@ -422,6 +457,7 @@ G.Game = (() => {
     const t = performance.now() / 1000;
     G.World.drawGround(ctx, cam);
     G.World.drawLiquid(ctx, cam, t);
+    G.Hazards.draw(ctx);
     G.Pickups.draw(ctx);
 
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
@@ -580,7 +616,9 @@ G.Flow = {
   boot() {
     G.UI.initChrome();
     G.LoginUI.init(); G.TestUI.init(); G.MenuUI.init(); G.GachaUI.init();
-    G.SocialUI.init(); G.RankingUI.init();
+    G.SocialUI.init(); G.RankingUI.init(); G.GoalsUI.init(); G.ProfileUI.init();
+    // Tu nombre arriba a la derecha abre tu perfil.
+    document.getElementById('user-pill').onclick = () => G.GoalsUI.open('profile');
     G.Audio.music('village');     // suena tras el primer clic (lo exige el navegador)
     G.Game.init();
     // La base de datos (nube o local) recupera la sesión anterior.

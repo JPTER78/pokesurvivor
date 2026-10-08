@@ -79,6 +79,7 @@ G.GachaUI = (() => {
     if (busy) return;
     const res = G.Gacha.pull(G.DB.save, n, gen);
     if (!res) { G.Audio.sfx('error'); G.UI.toast('No tienes tickets suficientes: consíguelos jugando'); return; }
+    G.Progress.checkAch();
     G.DB.commit();
     busy = true;
 

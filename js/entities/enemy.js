@@ -67,6 +67,12 @@
       this.bob = Math.random() * 6.28;
       this.shiny = false;
       this.sparkT = 0;
+      // personalidades
+      this.sc = sc;                       // escala de la run (para sus invocaciones)
+      this.shield = 0; this.shieldT = 0;  // escudo que absorbe daño
+      this.skillCd = G.U.rand(1, 4);      // escudos / saltos
+      this.minions = [];
+      this.jump = null;                   // { sx, sy, tx, ty, t, dur }
     }
 
     cy() { return this.y; }
@@ -92,7 +98,14 @@
         this.showHurt(d, color, dirX, dirY, eff);
         return;
       }
-      this.hp -= d;
+      // Escudo: absorbe primero.
+      if (this.shield > 0) {
+        const a = Math.min(this.shield, d);
+        this.shield -= a;
+        if (a >= d) { G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, '#9fd8ff'); this.flash = 0.05; return; }
+        amount = d - a;
+      }
+      this.hp -= Math.max(1, Math.round(amount));
       this.showHurt(d, color, dirX, dirY, eff);
       if (knock > 0 && !this.boss) {
         const [nx, ny] = G.U.norm(dirX, dirY);
@@ -157,6 +170,8 @@
       if (this.boss) {
         G.Camera.kick(0.9);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
+        // Los jefes siempre sueltan un objeto equipable.
+        G.Pickups.drop('item', this.x - 26, this.y - 10, G.Items.roll());
       }
       G.Pickups.dropXp(this.x, this.y, this.xp, this.boss);
       if (this.legend) {
@@ -254,6 +269,26 @@
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
       const dist = G.U.dist(this.x, this.y, pl.x, pl.y);
 
+      // --- personalidad (escudos, saltos, explosión) ---
+      if (this.shieldT > 0 && (this.shieldT -= dt) <= 0) this.shield = 0;
+      if (this.jump) { this.updateJump(dt); return; }
+      if (this.behavior === 'bomber' && this.phase === 'fuse') {
+        this.pt -= dt;
+        this.flash = Math.floor(this.pt * 10) % 2 ? 0.05 : 0;
+        if (this.pt <= 0) { this.hp = 0; this.die(); }
+        this.anim.loop('Idle');
+        return;
+      }
+      if (this.behavior === 'bomber' && dist < this.r + pl.r + 26) { this.startFuse(); return; }
+      if (this.behavior === 'shielder' || this.behavior === 'jumper') {
+        this.skillCd -= dt;
+        if (this.skillCd <= 0) {
+          if (this.behavior === 'shielder') { this.skillCd = 6; this.castShields(); }
+          else if (dist < 250) { this.skillCd = G.U.rand(5, 7); this.startJump(pl); return; }
+          else this.skillCd = 0.5;
+        }
+      }
+
       // Si lleva rato atascado contra algo, rodea por un lado.
       if (this.sideT > 0) {
         this.sideT -= dt;
@@ -264,7 +299,7 @@
       // Camino alrededor de los obstáculos (los que no vuelan).
       if (!this.flying && this.phase !== 'dash' && this.sideT <= 0) {
         const pd = G.Path.dirFor(this, pl);
-        if (pd && !(this.behavior === 'ranged' && dist < (this.def.range || 200) * 0.82)) { dx = pd[0]; dy = pd[1]; }
+        if (pd && !(this.keepsDistance() && dist < (this.def.range || 200) * 0.82)) { dx = pd[0]; dy = pd[1]; }
       }
 
       let vx = dx * spd, vy = dy * spd;
@@ -289,24 +324,17 @@
           vx = this.dx * spd * 3.4; vy = this.dy * spd * 3.4;
           if (this.pt <= 0) { this.phase = 'walk'; this.pt = 1.1; }
         }
-      } else if (this.behavior === 'ranged') {
+      } else if (this.keepsDistance()) {
         const range = this.def.range || 200;
         const keep = range * 0.82;
-        if (dist < keep * 0.75) { vx = -dx * spd * 0.8; vy = -dy * spd * 0.8; }
+        // Recta hacia ti (no el camino) para alejarse.
+        const [ddx, ddy] = G.U.norm(pl.x - this.x, pl.y - this.y);
+        if (dist < keep * 0.75) { vx = -ddx * spd * 0.8; vy = -ddy * spd * 0.8; }
         else if (dist < keep) { vx *= 0.1; vy *= 0.1; animBase = 'Idle'; }
         this.shotCd -= dt;
         if (this.shotCd <= 0 && dist < range) {
           this.shotCd = this.def.shotCd || 2;
-          const sp = 190;
-          const shot = G.Projectiles.spawn({
-            x: this.x, y: this.y, vx: dx * sp, vy: dy * sp,
-            dmg: (this.def.shotDmg || 10) * (this.dmg / this.def.dmg),
-            r: 7, life: 2.4, friendly: false, color: '#ff7a9e', mtype: this.atkType,
-            vis: G.VFX.forType(((G.DEX_BY[this.dex] || {}).types || ['normal'])[0])
-          });
-          if (G.Coop.isHost) G.Coop.enemyShot(shot, ((G.DEX_BY[this.dex] || {}).types || ['normal'])[0]);
-          this.anim.play('Shoot');
-          G.FX.ring(this.x, this.y - G.LIFT, 4, 14, '#ff7a9e', 0.2, 2);
+          this.special(pl, ddx, ddy);
         }
       }
 
@@ -337,6 +365,124 @@
       this.anim.loop(moving ? animBase : 'Idle', moving ? Math.max(0.6, spd / 70) : 1);
     }
 
+    keepsDistance() { return ['ranged', 'fan', 'beamer', 'zoner', 'healer', 'summoner'].includes(this.behavior); }
+
+    shotDmg() { return (this.def.shotDmg || 10) * (this.dmg / this.def.dmg); }
+
+    /** Disparo normal de enemigo (uno, o varios en abanico). */
+    shoot(ax, ay, spread = 0, n = 1, k = 1) {
+      const sp = 190, type = this.atkType;
+      const base = Math.atan2(ay, ax);
+      for (let i = 0; i < n; i++) {
+        const a = base + (n === 1 ? 0 : (i / (n - 1) - 0.5) * spread);
+        const shot = G.Projectiles.spawn({
+          x: this.x, y: this.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+          dmg: this.shotDmg() * k, r: 7, life: 2.4, friendly: false, color: '#ff7a9e', mtype: type,
+          vis: G.VFX.forType(type)
+        });
+        if (G.Coop.isHost) G.Coop.enemyShot(shot, type);
+      }
+      this.anim.play('Shoot');
+      G.FX.ring(this.x, this.y - G.LIFT, 4, 14, '#ff7a9e', 0.2, 2);
+    }
+
+    /** Lo que hace cada personalidad cuando le toca (anfitrión / solitario). */
+    special(pl, dx, dy) {
+      const col = G.U.TYPE_COLOR[this.atkType] || '#ff7a9e';
+      switch (this.behavior) {
+        case 'fan': { const n = this.def.fanN || 5; this.shoot(dx, dy, n === 3 ? 0.6 : 0.9, n, 0.65); break; }
+        case 'beamer':
+          // Rayo con aviso: primero se ve la franja en el suelo.
+          G.Hazards.add({ kind: 'beam', x: this.x, y: this.y, angle: Math.atan2(dy, dx), len: 360, w: 22,
+                          delay: 1.0, dmg: this.shotDmg() * 1.05, type: this.atkType, color: col });
+          this.anim.play('Charge', { speed: 1.2 });
+          break;
+        case 'zoner': {
+          const n = G.U.randInt(1, this.def.zones || 3);
+          for (let i = 0; i < n; i++) {
+            G.Hazards.add({ kind: 'zone', x: pl.x + (i ? G.U.rand(-70, 70) : 0), y: pl.y + (i ? G.U.rand(-55, 55) : 0), r: 44,
+                            delay: 1.2, dmg: this.shotDmg() * 0.95, type: this.atkType, color: col });
+          }
+          this.anim.play('Shoot');
+          break;
+        }
+        case 'healer': this.healAround(); break;
+        case 'summoner': this.summon(); break;
+        default: this.shoot(dx, dy);
+      }
+    }
+
+    healAround() {
+      let n = 0;
+      for (const e of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
+        if (e.dead || e.hp >= e.maxHp) continue;
+        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.15);
+        G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#7dffb0', 5, 60);
+        n++;
+      }
+      this.anim.play('Charge');
+      G.FX.ring(this.x, this.y, 8, 150, '#5fe08a', 0.5, 3);
+      if (G.Coop.isHost) G.Coop.broadcast(['fxr', Math.round(this.x), Math.round(this.y), 150, '#5fe08a']);
+      if (n && G.Camera.sees(this.x, this.y, 0)) G.Audio.sfx('heal');
+    }
+
+    castShields() {
+      const near = G.EnemyMgr.queryCircle(this.x, this.y, 160).filter(e => !e.dead)
+        .sort((a, b) => G.U.dist2(a.x, a.y, this.x, this.y) - G.U.dist2(b.x, b.y, this.x, this.y)).slice(0, 6);
+      for (const e of near) { e.shield = Math.max(e.shield, e.maxHp * 0.35); e.shieldT = 8; }
+      this.anim.play('Charge');
+      G.FX.ring(this.x, this.y, 8, 160, '#7fc8ff', 0.5, 3);
+      if (G.Coop.isHost) G.Coop.broadcast(['fxr', Math.round(this.x), Math.round(this.y), 160, '#7fc8ff']);
+    }
+
+    summon() {
+      this.minions = this.minions.filter(m => !m.dead && G.EnemyMgr.get(m.id));
+      if (this.minions.length >= 4 || G.EnemyMgr.count > 260) return;
+      const dex = this.def.minion || this.dex;
+      const mon = G.DEX_BY[dex];
+      const def = { dex, name: mon ? mon.name : '', hp: Math.round(this.def.hp * 0.35), spd: Math.round(this.def.spd * 1.1),
+                    dmg: Math.round(this.def.dmg * 0.6), xp: Math.max(1, Math.round(this.def.xp * 0.25)), behavior: 'chase' };
+      for (let i = 0; i < 2; i++) {
+        const a = Math.random() * 6.2832;
+        const m = new Enemy(def, this.x + Math.cos(a) * 30, this.y + Math.sin(a) * 22, this.sc || { hp: 1, spd: 1, dmg: 1 });
+        G.EnemyMgr.add(m);
+        this.minions.push(m);
+        G.FX.burst(m.x, m.y - 8, '#c47bff', 8, 90);
+      }
+      this.anim.play('Charge');
+      G.FX.ring(this.x, this.y, 8, 50, '#c47bff', 0.4, 3);
+    }
+
+    startFuse() {
+      this.phase = 'fuse'; this.pt = 1.0;
+      G.Hazards.add({ kind: 'zone', x: this.x, y: this.y, r: 62, delay: 1.0, dmg: this.dmg * 1.4, type: this.atkType, color: '#ff7b3d' });
+    }
+
+    startJump(pl) {
+      const tx = pl.x, ty = pl.y;
+      this.jump = { sx: this.x, sy: this.y, tx, ty, t: -0.45, dur: 0.6 };
+      this.anim.play('Charge', { speed: 1.4 });
+      G.Hazards.add({ kind: 'zone', x: tx, y: ty, r: 50, delay: 1.05, dmg: this.dmg * 1.2, type: this.atkType,
+                      color: G.U.TYPE_COLOR[this.atkType] || '#ff7a9e' });
+    }
+
+    /** Salto: se agacha, vuela en arco y cae donde estabas. */
+    updateJump(dt) {
+      const j = this.jump;
+      j.t += dt;
+      if (j.t < 0) { this.anim.loop('Idle'); return; }
+      const k = Math.min(1, j.t / j.dur);
+      this.x = j.sx + (j.tx - j.sx) * k;
+      this.y = j.sy + (j.ty - j.sy) * k;
+      this.jumpLift = Math.sin(k * Math.PI) * 46;
+      this.anim.dir = G.Sprites.dirFromAngle(Math.atan2(j.ty - j.sy, j.tx - j.sx));
+      if (k >= 1) {
+        this.jump = null; this.jumpLift = 0;
+        if (!this.flying) G.World.collide(this);
+        this.anim.play('Attack', { speed: 1.4 });
+      }
+    }
+
     /** Lo llama combat.js cuando te toca: anima el golpe. */
     strike(pl) {
       if (!this.anim.busy()) {
@@ -360,15 +506,26 @@
       ctx.save();
       ctx.globalAlpha = alpha;
       G.Sprites.drawShadow(ctx, this.dex, this.x, this.y, this.scale);
-      // Los voladores flotan un poco.
       // Los que flotan ya van en el aire en su sprite: sólo se mecen un poco.
-      const lift = this.flying && !this.boss ? 1 + Math.sin(this.bob) * 1.5 : 0;
+      // (Y los que saltan, en arco.)
+      const lift = (this.flying && !this.boss ? 1 + Math.sin(this.bob) * 1.5 : 0) + (this.jumpLift || 0);
       this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha });
       ctx.restore();
 
       if (this.dead) return;
 
-      if (this.burn > 0 || this.poison > 0 || (this.net && this.net.st)) {
+      // Escudo: burbuja azul.
+      if (this.shield > 0 || (this.net && this.net.st & 4)) {
+        ctx.save();
+        ctx.globalAlpha = 0.35 + Math.sin(this.bob) * 0.08;
+        ctx.strokeStyle = '#9fd8ff'; ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(127,200,255,.14)';
+        ctx.beginPath(); ctx.ellipse(this.x, this.y - this.bodyH * 0.45, this.r * 1.5, this.bodyH * 0.65, 0, 0, 6.2832);
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+
+      if (this.burn > 0 || this.poison > 0 || (this.net && this.net.st & 3)) {
         ctx.save();
         ctx.globalAlpha = 0.45;
         ctx.fillStyle = this.burn > 0 || (this.net && this.net.st & 1) ? '#ff8a3d' : '#c86bdc';
@@ -453,7 +610,7 @@
       const e = byId.get(id);
       if (!e) return;
       byId.delete(id);
-      if (died) e.die();
+      if (died) { e.die(); G.Progress.kill(e); }
       const i = list.indexOf(e);
       if (i >= 0) list.splice(i, 1);
       if (died) corpses.push(e);
@@ -551,6 +708,7 @@
         if (e.dead) {
           pl.kills++;
           if (e.boss) pl.bosses++;
+          G.Progress.kill(e);
           corpses.push(e);
           list.splice(i, 1);
           byId.delete(e.id);

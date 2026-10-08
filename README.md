@@ -32,6 +32,13 @@ Hay **tabla de tipos** (un Rayo Burbuja le quita más a un Charmander) y,
 de vez en cuando, **climas** (sol, lluvia, arena, nieve, niebla) que potencian
 unos tipos y debilitan otros.
 
+Cada día hay **misiones** (y semanales) que dan tickets y monedas; los
+**logros** dan medallas y títulos, y tu **perfil** enseña tus 3 Pokémon
+favoritos, tus marcas y tus medallas. En las runs encuentras **objetos** (Restos,
+Cinta Elección...) y tus movimientos **evolucionan** al máximo nivel. Los
+enemigos tienen personalidad: curan, ponen escudos, llaman a su manada o atacan
+con aviso en el suelo.
+
 Las **mejoras** son de cada Pokémon. El **gacha** va con **tickets** que se
 ganan jugando (×1 de algunos Pokémon, ×10 de jefes y legendarios), y se tira
 en una tragaperras pixel art.

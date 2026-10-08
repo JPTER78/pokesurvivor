@@ -13,6 +13,16 @@
  *   charger  se para, apunta y embiste
  *   ranged   se mantiene a distancia y dispara
  *   tank     lento, mucha vida
+ *   ---- con personalidad ----
+ *   healer   cura a los de alrededor (Chansey, Blissey, Audino...)
+ *   shielder pone escudos a sus compañeros (Shuckle, Bronzong, Mr. Mime...)
+ *   summoner llama a su manada (Nidoqueen trae Nidoran, Vespiquen Combee...)
+ *   bomber   se acerca y explota (Voltorb, Electrode, Koffing, Geodude...)
+ *   beamer   rayo que avisa en el suelo antes de disparar
+ *   zoner    zonas de daño bajo tus pies que estallan al poco
+ *   fan      dispara en abanico
+ *   jumper   salta y cae sobre ti (la caída se ve antes en el suelo)
+ * Los ataques con aviso están en systems/hazards.js.
  *
  * Jefes: Pokémon fuertes NO legendarios (pseudolegendarios, Slaking...), al
  * azar por franjas de poder. Los legendarios sólo salen en las grietas
@@ -43,9 +53,26 @@ G.Enemies = (() => {
 
   const H = (d, s) => G.U.hash(d, 7, s);
 
+  // Personalidades fijas de algunos Pokémon.
+  const HEAL = new Set([35, 36, 113, 173, 183, 184, 242, 301, 440, 531, 594, 700, 764, 858]);
+  const SHIELD = new Set([95, 122, 208, 213, 227, 306, 375, 410, 411, 436, 437, 439, 476, 703]);
+  const BOMB = new Set([74, 75, 76, 100, 101, 102, 109, 110, 337, 338, 343, 344]);
+  // Invocador -> Pokémon de su manada.
+  const SUMMON = { 15: 13, 18: 16, 24: 23, 28: 27, 31: 29, 34: 32, 42: 41, 51: 50, 53: 52, 57: 56, 59: 58,
+                   62: 60, 68: 66, 73: 72, 78: 77, 82: 81, 85: 84, 91: 90, 117: 116, 130: 129, 168: 167, 169: 41,
+                   199: 79, 230: 116, 262: 261, 334: 333, 405: 403, 416: 415, 462: 81, 466: 239, 553: 551, 637: 636 };
+
   function behaviorOf(p) {
     const t = p.types, h = H(p.dex, 11);
     const has = (...xs) => xs.some(x => t.includes(x));
+    if (HEAL.has(p.dex)) return 'healer';
+    if (SHIELD.has(p.dex)) return 'shielder';
+    if (BOMB.has(p.dex)) return 'bomber';
+    if (SUMMON[p.dex] && G.SPRITE_META[SUMMON[p.dex]]) return 'summoner';
+    if (has('electric', 'psychic', 'dragon', 'ice') && h < 0.18) return 'beamer';
+    if (has('fire', 'ground', 'poison') && h < 0.18) return 'zoner';
+    if (has('water', 'grass', 'bug', 'fairy') && h >= 0.18 && h < 0.32) return 'fan';
+    if (has('fighting', 'ground', 'normal', 'rock') && h >= 0.42 && h < 0.56) return 'jumper';
     if (has('psychic', 'electric', 'ghost', 'fairy') && h < 0.4) return 'ranged';
     if (has('fire', 'water', 'poison', 'ice') && h < 0.22) return 'ranged';
     if (has('fighting', 'normal', 'ground', 'rock', 'dragon', 'steel', 'dark') && h < 0.4) return 'charger';
@@ -65,11 +92,18 @@ G.Enemies = (() => {
       dmg: Math.round(tier.dmg * (behavior === 'tank' ? 1.2 : 1)),
       xp: Math.max(3, Math.round(tier.xp * (behavior === 'tank' ? 1.3 : 1)))
     };
-    if (behavior === 'ranged') {
-      d.shotDmg = Math.round(tier.dmg * 0.8);
-      d.shotCd = +(2.2 - ti * 0.15).toFixed(2);
-      d.range = 190 + ti * 6;
+    // Los que pelean de lejos: daño del disparo, recarga y distancia.
+    const CD = { ranged: 2.2 - ti * 0.15, fan: 3.2 - ti * 0.15, beamer: 4.4 - ti * 0.2, zoner: 4.6 - ti * 0.2,
+                 healer: 3.5, summoner: 7 };
+    if (CD[behavior]) {
+      d.shotDmg = Math.round(tier.dmg * (behavior === 'fan' ? 0.7 : 0.8));
+      d.shotCd = +CD[behavior].toFixed(2);
+      d.range = (behavior === 'beamer' ? 260 : behavior === 'healer' || behavior === 'summoner' ? 230 : 190) + ti * 6;
     }
+    if (behavior === 'summoner') d.minion = SUMMON[p.dex];
+    if (behavior === 'fan') d.fanN = ti < 2 ? 3 : 5;             // abanico más ancho más adelante
+    if (behavior === 'zoner') d.zones = ti < 2 ? 1 : ti < 4 ? 2 : 3;   // más zonas más adelante
+    if (behavior === 'bomber') { d.spd = Math.round(d.spd * 1.25); d.hp = Math.round(d.hp * 0.8); }
     return d;
   }
 
@@ -80,6 +114,20 @@ G.Enemies = (() => {
 
   // ---------------- elenco de la run ----------------
 
+  const PLAIN = ['chase', 'charger', 'ranged', 'tank'];
+
+  /** Elenco de un tramo: siempre con al menos 2 con personalidad (si los hay). */
+  function castFor(tier) {
+    const all = candidates(tier);
+    const special = all.filter(p => !PLAIN.includes(behaviorOf(p)));
+    // Al principio de la run, sólo uno con personalidad (para ir aprendiendo).
+    const want = tier.from === 0 ? 1 : 2;
+    const pick = G.U.pickN(special, Math.min(want, special.length));
+    // Y el resto, sin más personalidades en el primer tramo.
+    if (tier.from === 0) return pick.concat(G.U.pickN(all.filter(p => !pick.includes(p) && PLAIN.includes(behaviorOf(p))), tier.cast - pick.length));
+    return pick.concat(G.U.pickN(all.filter(p => !pick.includes(p)), tier.cast - pick.length));
+  }
+
   let cast = null;      // [{ from, list: [def] }]
   let bosses = null;    // [def de jefe]
 
@@ -87,7 +135,7 @@ G.Enemies = (() => {
   function rollRun() {
     cast = TIERS.map((tier, ti) => ({
       from: tier.from,
-      list: G.U.pickN(candidates(tier), tier.cast).map(p => defFor(p, tier, ti))
+      list: castFor(tier).map(p => defFor(p, tier, ti))
     }));
     const used = new Set();
     bosses = BOSS_SLOTS.map(slot => {

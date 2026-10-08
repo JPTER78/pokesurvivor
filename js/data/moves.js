@@ -361,5 +361,70 @@
     return 'tackle';
   }
 
-  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor };
+  // ---------------- evolución de movimientos ----------------
+  /*
+   * Un movimiento al NIVEL MÁXIMO evoluciona si en esa run has cogido alguna
+   * vez la mejora de su condición (`needs`, un id de LevelUp.STATS). Sale una
+   * carta dorada. Los potenciadores (buff) no evolucionan.
+   */
+  const NEED_NAME = { hp: 'Vigor', atk: 'Potencia', spd: 'Carrera', cd: 'Reflejos', def: 'Coraza',
+                      rgn: 'Síntesis', mag: 'Imán', xp: 'Aprendizaje' };
+  const EVO = {
+    'tackle': ['Derribo', 'hp'],             'quick-attack': ['Velocidad Extrema', 'spd'],
+    'body-slam': ['Gigaimpacto', 'atk'],     'hyper-voice': ['Alboroto', 'cd'],
+    'ember': ['Llamarada', 'atk'],           'flamethrower': ['Sofoco', 'cd'],
+    'fire-spin': ['Fuego Sagrado', 'rgn'],   'heat-wave': ['Erupción', 'hp'],
+    'water-gun': ['Escaldar', 'atk'],        'bubble': ['Surf', 'spd'],
+    'hydro-pump': ['Hidrocañón', 'atk'],     'vine-whip': ['Latigazo', 'atk'],
+    'razor-leaf': ['Lluevehojas', 'cd'],     'leaf-storm': ['Danza Pétalo', 'rgn'],
+    'giga-drain': ['Planta Feroz', 'hp'],    'thunder-shock': ['Trueno', 'atk'],
+    'discharge': ['Campo Eléctrico', 'def'], 'thunderbolt': ['Electrocañón', 'cd'],
+    'confusion': ['Psicocarga', 'cd'],       'psybeam': ['Premonición', 'atk'],
+    'psychic': ['Vasta Fuerza', 'mag'],      'sludge': ['Bomba Lodo', 'atk'],
+    'poison-sting': ['Puya Nociva', 'spd'],  'toxic': ['Gas Venenoso', 'rgn'],
+    'mud-shot': ['Tierra Viva', 'atk'],      'bulldoze': ['Terremoto', 'atk'],
+    'gust': ['Vendaval', 'spd'],             'wing-attack': ['Pájaro Osado', 'atk'],
+    'bug-bite': ['Tijera X', 'atk'],         'string-shot': ['Red Viscosa', 'cd'],
+    'bug-buzz': ['Enjambre', 'rgn'],         'rock-throw': ['Roca Afilada', 'atk'],
+    'rock-slide': ['Trampa Rocas', 'cd'],    'ice-beam': ['Ventisca', 'atk'],
+    'powder-snow': ['Viento Hielo', 'spd'],  'karate-chop': ['A Bocajarro', 'atk'],
+    'aura-sphere': ['Onda Certera', 'cd'],   'lick': ['Puño Sombra', 'atk'],
+    'shadow-ball': ['Golpe Fantasma', 'cd'], 'dragon-rage': ['Cometa Draco', 'atk'],
+    'fairy-wind': ['Fuerza Lunar', 'atk'],   'dazzling-gleam': ['Campo de Niebla', 'rgn'],
+    'metal-claw': ['Cabeza de Hierro', 'atk'], 'flash-cannon': ['Rayo Metálico', 'def'],
+    'bite': ['Triturar', 'atk'],             'dark-pulse': ['Alarido', 'spd'],
+    'night-shade': ['Pesadilla', 'rgn']
+  };
+  // Lo que gana al evolucionar, según cómo funcione.
+  const EVO_MODS = {
+    projectile: { t: '×1,8 daño, +2 proyectiles, +2 perforación y más grandes', m: { dmg: 1.8, count: 2, pierce: 2, size: 1.3, spread: 1.1 } },
+    melee:      { t: '×1,9 daño, más alcance y golpea en 360°', m: { dmg: 1.9, radius: 1.3, arc: 9 } },
+    beam:       { t: '×1,8 daño, rayo un 50% más grueso y más largo', m: { dmg: 1.8, width: 1.5, radius: 1.2, cd: 0.85 } },
+    orbit:      { t: '+2 orbes, ×1,7 daño y más radio', m: { count: 2, dmg: 1.7, radius: 1.15 } },
+    nova:       { t: '+6 proyectiles, ×1,6 daño y +1 perforación', m: { count: 6, dmg: 1.6, pierce: 1 } },
+    aura:       { t: '×1,8 daño y un 35% más de radio', m: { dmg: 1.8, radius: 1.35 } }
+  };
+
+  /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */
+  function evoInfo(m, statsTaken) {
+    const e = EVO[m.id];
+    if (!e || m.evolved || m.lvl < m.def.maxLvl || !EVO_MODS[m.kind]) return null;
+    const [name, needs] = e;
+    return { name, needs, needName: NEED_NAME[needs], text: EVO_MODS[m.kind].t,
+             ready: !!(statsTaken && statsTaken[needs]) };
+  }
+
+  /** Evoluciona una instancia (cambia nombre y potencia; sigue siendo del mismo tipo). */
+  function evolve(m) {
+    const e = EVO[m.id];
+    if (!e || m.evolved) return false;
+    applyMods(m, EVO_MODS[m.kind].m);
+    m.baseName = m.name;
+    m.name = e[0];
+    m.evolved = true;
+    return true;
+  }
+
+  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
+              EVO, NEED_NAME, evoInfo, evolve };
 })();

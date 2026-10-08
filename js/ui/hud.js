@@ -209,8 +209,9 @@ G.HUD = (() => {
       roundRect(ctx, x, y, S, S, 12);
       ctx.fillStyle = on ? 'rgba(20,30,50,.95)' : 'rgba(10,16,28,.8)';
       ctx.fill();
-      ctx.lineWidth = on ? 2.5 : 1.2;
-      ctx.strokeStyle = on ? col : 'rgba(140,170,210,.22)';
+      ctx.lineWidth = on ? 2.5 : m && m.evolved ? 2 : 1.2;
+      // Evolucionado: borde dorado.
+      ctx.strokeStyle = m && m.evolved ? '#ffd23f' : on ? col : 'rgba(140,170,210,.22)';
       ctx.stroke();
 
       if (!m) continue;
@@ -249,6 +250,24 @@ G.HUD = (() => {
         ctx.textAlign = 'center';
         ctx.fillStyle = col;
         ctx.fillText(m.name, x + S / 2, y - 7);
+      }
+    }
+
+    // ---------- objeto equipado (a la izquierda de los movimientos) ----------
+    {
+      const ix = sx - S - 18, iy = sy;
+      roundRect(ctx, ix, iy, S, S, 12);
+      ctx.fillStyle = pl.item ? 'rgba(40,30,10,.9)' : 'rgba(10,16,28,.55)';
+      ctx.fill();
+      ctx.lineWidth = pl.item ? 2 : 1;
+      ctx.strokeStyle = pl.item ? '#ffd23f' : 'rgba(140,170,210,.18)';
+      ctx.stroke();
+      if (pl.item) {
+        G.Icons.draw(ctx, pl.item, ix + (S - 36) / 2, iy + (S - 36) / 2, 36);
+        ctx.font = F(700, 9);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffd23f';
+        ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
       }
     }
 

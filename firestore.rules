@@ -37,14 +37,19 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.uid == me();
     }
 
+    // Perfil público: apodo, 3 favoritos, título, mejores marcas y medallas.
     match /profiles/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn()
         && me() == uid
-        && request.resource.data.keys().hasOnly(['name', 'lower', 'at'])
+        && request.resource.data.keys().hasOnly(['name', 'lower', 'at', 'favs', 'title', 'best', 'medals'])
         && request.resource.data.name is string
         && request.resource.data.lower == request.resource.data.name.lower()
         && request.resource.data.at == request.time
+        && (!('favs' in request.resource.data) || (request.resource.data.favs is list && request.resource.data.favs.size() <= 3))
+        && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
+        && (!('best' in request.resource.data) || request.resource.data.best is map)
+        && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
         && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
       allow delete: if signedIn() && me() == uid;
     }

@@ -144,7 +144,8 @@ G.Coop = (() => {
     for (const e of G.EnemyMgr.all()) {
       if (e.dead || G.U.dist2(e.x, e.y, near.x, near.y) > r2n) continue;
       const a = ANIMS.indexOf(e.anim.cur);
-      out.push([e.id, r1(e.x), r1(e.y), Math.ceil(e.hp), a < 0 ? 0 : a, e.anim.dir, (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0)]);
+      out.push([e.id, r1(e.x), r1(e.y), Math.ceil(e.hp), a < 0 ? 0 : a, e.anim.dir,
+                (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0)]);
     }
     return out;
   }
@@ -239,8 +240,8 @@ G.Coop = (() => {
           break;
         }
         case 'c':
-          G.Combat.ghostCast(m.pl, ev[1], ev[2], ev[3]);
-          emit(['c', from, ev[1], ev[2], ev[3]], from);
+          G.Combat.ghostCast(m.pl, ev[1], ev[2], ev[3], ev[4]);
+          emit(['c', from, ev[1], ev[2], ev[3], ev[4]], from);
           break;
         case 'pb':
           G.World.breakAt(ev[1], ev[2]);
@@ -291,7 +292,8 @@ G.Coop = (() => {
         G.Projectiles.spawn({ x: ev[1], y: ev[2], vx: ev[3], vy: ev[4], dmg: ev[5], r: ev[6], life: ev[7],
                               friendly: false, color: '#ff7a9e', vis: G.VFX.forType(ev[8]), mtype: ev[8] });
         break;
-      case 'c': { const m = mates.get(ev[1]); if (m) G.Combat.ghostCast(m.pl, ev[2], ev[3], ev[4]); break; }
+      case 'c': { const m = mates.get(ev[1]); if (m) G.Combat.ghostCast(m.pl, ev[2], ev[3], ev[4], ev[5]); break; }
+      case 'item': api.item(ev[1]); break;
       case 'pk': G.Pickups.addRemote(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
       case 'pc': G.Pickups.removeId(ev[1]); break;
       case 'mag': G.Pickups.pullAll(); G.FX.ring(local.x, local.y, 10, 420, '#ff9ed8', 0.6, 4); break;
@@ -310,6 +312,8 @@ G.Coop = (() => {
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
       case 'wx': G.Weather.onEvent(ev); break;
+      case 'hz': G.Hazards.add(ev[1], true); break;
+      case 'fxr': G.FX.ring(ev[1], ev[2], 8, ev[3], ev[4], 0.5, 3); break;
     }
   }
 
@@ -318,8 +322,8 @@ G.Coop = (() => {
   /** Tu ataque: los demás lo repiten como fantasma. */
   function cast(pl, m) {
     if (!active || pl !== local) return;
-    if (host) emit(['c', me, m.id, m.lvl, r2(pl.aim)]);
-    else outEv.push(['c', m.id, m.lvl, r2(pl.aim)]);
+    if (host) emit(['c', me, m.id, m.lvl, r2(pl.aim), m.evolved ? 1 : 0]);
+    else outEv.push(['c', m.id, m.lvl, r2(pl.aim), m.evolved ? 1 : 0]);
   }
 
   // invitado
@@ -347,9 +351,9 @@ G.Coop = (() => {
     emit(['pc', p.id]);
     if (p.kind === 'magnet') emit(['mag']);
     if (p.kind === 'bomb') emit(['bomb', r1(who.x), r1(who.y)]);
-    if (p.kind === 'heal' && who !== local) {
+    if ((p.kind === 'heal' || p.kind === 'item') && who !== local) {
       const m = mates.get(who.uid);
-      if (m) m.q.push(['heal', 0.3]);
+      if (m) m.q.push(p.kind === 'heal' ? ['heal', 0.3] : ['item', p.value]);
     }
   }
 

@@ -77,6 +77,7 @@ G.Social = (() => {
     me = { uid, name };
     G.DB.setName(name);
     if (started && !statusRef) online();
+    publishProfile();
     return { ok: true };
   }
 
@@ -357,11 +358,49 @@ G.Social = (() => {
     emit('invites');
   }
 
+  // ---------------- perfil público ----------------
+
+  /** Lo que se enseña de ti (también para tu vista previa, sin subirlo). */
+  function profileData() {
+    const s = G.DB.save, st = s.stats, prof = s.profile || {};
+    const unlocked = G.AchDefs.LIST.filter(a => s.ach && s.ach[a.id]);
+    const medals = unlocked.slice().sort((a, b) => (b.tier - a.tier) || (s.ach[b.id] - s.ach[a.id])).slice(0, 8).map(a => a.id);
+    return {
+      name: me ? me.name : G.DB.user,
+      favs: (prof.favs || []).slice(0, 3).map(f => ({ dex: f.dex | 0, shiny: !!f.shiny })),
+      title: prof.title || '',
+      best: { solo: st.bestTime | 0, group: st.bestGroupTime | 0, level: st.bestLevel | 0, bosses: st.bossesTotal | 0,
+              legends: Object.keys(s.legends || {}).length, kills: st.totalKills | 0, medals: unlocked.length },
+      medals
+    };
+  }
+
+  let pubT = 0;
+  /** Sube tu perfil (con un poco de espera, por si cambias varias cosas seguidas). */
+  function publishProfile() {
+    if (!me || !fb) return;
+    clearTimeout(pubT);
+    pubT = setTimeout(() => {
+      if (!me || !fb) return;
+      const d = profileData();
+      fb.fs.collection('profiles').doc(uid).set(Object.assign(d, {
+        name: me.name, lower: me.name.toLowerCase(), at: firebase.firestore.FieldValue.serverTimestamp()
+      })).catch(e => console.warn('[Social] perfil:', e.code || e.message));
+    }, 800);
+  }
+
+  /** El perfil público de otro jugador. */
+  async function getProfile(other) {
+    if (!fb) return null;
+    const d = await fb.fs.collection('profiles').doc(other).get().catch(() => null);
+    return d && d.exists ? d.data() : null;
+  }
+
   // Al cerrar sesión o borrar la cuenta.
   G.DB.onLeave(why => stop(why));
 
   return {
-    start, stop, claimNick, request, accept, remove,
+    start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
     createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },

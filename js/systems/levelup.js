@@ -50,6 +50,26 @@ G.LevelUp = (() => {
       }
     }
 
+    // --- evoluciones: movimiento al máximo + su condición cumplida ---
+    const waiting = {};                   // stat -> movimiento que la espera para evolucionar
+    for (const m of pl.moves) {
+      const ev = G.Moves.evoInfo(m, pl.statsTaken);
+      if (!ev) continue;
+      if (!ev.ready) { waiting[ev.needs] = m; continue; }
+      out.push({
+        w: 40, type: 'evo', key: 'evo:' + m.id,
+        icon: 'move:' + m.id, color: '#ffd23f', tag: 'EVOLUCIÓN',
+        title: m.name + ' → ' + ev.name, desc: ev.text,
+        apply: p => {
+          G.Moves.evolve(m);
+          G.FX.ring(p.x, p.y, 8, 120, '#ffd23f', 0.8, 6);
+          G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#ffe14d', 40, 240);
+          G.Audio.sfx('legend');
+          G.Progress.event('evolve', { move: m.id });
+        }
+      });
+    }
+
     // --- mejoras de movimientos que ya tienes ---
     for (const m of pl.moves) {
       const txt = G.Moves.nextUpText(m);
@@ -64,13 +84,16 @@ G.LevelUp = (() => {
     }
 
     // --- stats ---
-    for (const s of G.U.pickN(STATS, 5)) {
+    // Las que desbloquean una evolución salen siempre y con aviso.
+    const pickStats = G.U.pickN(STATS.filter(s => !waiting[s.id]), 5).concat(STATS.filter(s => waiting[s.id]));
+    for (const s of pickStats) {
+      const evoFor = waiting[s.id];
       out.push({
-        w: pl.moves.length < pl.maxMoves ? 4 : 7,
+        w: evoFor ? 14 : pl.moves.length < pl.maxMoves ? 4 : 7,
         type: 'stat', key: 'stat:' + s.id,
-        icon: s.icon, color: '#8fa3c4', tag: 'Mejora',
+        icon: s.icon, color: evoFor ? '#ffd23f' : '#8fa3c4', tag: evoFor ? 'Evoluciona ' + evoFor.name : 'Mejora',
         title: s.title, desc: s.desc,
-        apply: s.apply
+        apply: p => { s.apply(p); p.statsTaken[s.id] = (p.statsTaken[s.id] || 0) + 1; }
       });
     }
 
@@ -82,6 +105,9 @@ G.LevelUp = (() => {
     const pool = candidates(pl);
     const picked = [];
     const used = new Set();
+    // Si hay una evolución lista, su carta dorada sale siempre.
+    const evo = pool.findIndex(c => c.type === 'evo');
+    if (evo >= 0) { const c = pool.splice(evo, 1)[0]; used.add(c.key); picked.push(c); }
 
     while (picked.length < n && pool.length) {
       const total = pool.reduce((a, c) => a + c.w, 0);
