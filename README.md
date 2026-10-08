@@ -28,8 +28,13 @@ candado** (quédate a su lado unos segundos) y **trampas** que también dañan a
 los enemigos. A veces se abre una **grieta**: entra y lucharás contra un
 **legendario** en una arena aparte.
 
+Hay **tabla de tipos** (un Rayo Burbuja le quita más a un Charmander) y,
+de vez en cuando, **climas** (sol, lluvia, arena, nieve, niebla) que potencian
+unos tipos y debilitan otros.
+
 Las **mejoras** son de cada Pokémon. El **gacha** va con **tickets** que se
-ganan jugando (×1 de algunos Pokémon, ×10 de jefes y legendarios).
+ganan jugando (×1 de algunos Pokémon, ×10 de jefes y legendarios), y se tira
+en una tragaperras pixel art.
 
 Cada enemigo tiene 1/4096 de salir **shiny**: brilla, una flecha en el borde de
 la pantalla te dice dónde está, y si lo derrotas te lo quedas. En el gacha sale

@@ -49,8 +49,11 @@ G.Combat = (() => {
   }
 
   function payload(m) {
-    return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0 };
+    return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type };
   }
+
+  /** Tabla de tipos × clima para un ataque de tipo `type` contra `e`. */
+  function typeK(type, e) { return G.Types.mult(type, e.types) * G.Weather.mult(type); }
 
   function fireProjectiles(pl, m) {
     const col = G.U.TYPE_COLOR[m.type];
@@ -188,7 +191,7 @@ G.Combat = (() => {
         dmg: m.dmg * pl.atk,
         oa: (i / want) * 6.2832, orad: m.radius, ospeed: m.speed,
         rehit: Math.max(0.12, m.cd),
-        knock: m.knock || 0, burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0
+        knock: m.knock || 0, burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, mtype: m.type
       });
     }
     const live = G.Projectiles.all().filter(mine);
@@ -233,7 +236,9 @@ G.Combat = (() => {
   }
 
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
-    e.hurt(dmg, col, dx, dy, knock);
+    const k = typeK(m.type, e);
+    dmg *= k;
+    e.hurt(dmg, col, dx, dy, knock, G.Types.label(G.Types.mult(m.type, e.types)));
     pl.dmgDealt += dmg;
     if (m.burn) e.applyBurn(m.burn);
     if (m.poison) e.applyPoison(m.poison);
@@ -265,7 +270,7 @@ G.Combat = (() => {
           continue;
         }
         if (G.U.dist2(p.x, p.y, pl.x, pl.y) < (p.r + pl.r) * (p.r + pl.r)) {
-          pl.hurt(p.dmg);
+          pl.hurt(p.dmg, p.mtype);
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 7, 110);
           projectiles.splice(i, 1);
         }
@@ -335,9 +340,11 @@ G.Combat = (() => {
           break;
         }
 
-        e.hurt(p.dmg, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock);
+        const k = p.mtype ? typeK(p.mtype, e) : 1;
+        e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
+               p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
-        pl.dmgDealt += p.dmg;
+        pl.dmgDealt += p.dmg * k;
         if (p.burn) e.applyBurn(p.burn);
         if (p.poison) e.applyPoison(p.poison);
         if (p.slow) e.applySlow(p.slow);
@@ -360,7 +367,7 @@ G.Combat = (() => {
       if (e.touchCd > 0) continue;
       e.touchCd = 0.55;
       e.strike(pl);
-      pl.hurt(e.dmg);
+      pl.hurt(e.dmg, e.atkType);
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;
     }

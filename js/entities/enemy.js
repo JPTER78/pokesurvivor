@@ -42,6 +42,8 @@
       this.behavior = def.behavior;
 
       const types = (G.DEX_BY[def.dex] && G.DEX_BY[def.dex].types) || [];
+      this.types = types.length ? types : ['normal'];
+      this.atkType = this.types[0];         // tipo de sus golpes (tabla de tipos)
       this.flying = boss || types.includes('flying') || types.includes('ghost');
 
       this.flash = 0;
@@ -76,7 +78,8 @@
       G.Sprites.preload([this.dex], 4000, true);
     }
 
-    hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0) {
+    /** @param eff  'super' | 'weak' | null (tabla de tipos, sólo para enseñarlo) */
+    hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0, eff = null) {
       if (this.dead) return;
       const d = Math.max(1, Math.round(amount));
       // Copia de un enemigo del anfitrión: el golpe se le manda a él, que es
@@ -84,11 +87,11 @@
       if (this.remote) {
         G.Coop.hit(this, d, color, dirX, dirY, knock);
         this.hp = Math.max(1, this.hp - d);
-        this.showHurt(d, color, dirX, dirY);
+        this.showHurt(d, color, dirX, dirY, eff);
         return;
       }
       this.hp -= d;
-      this.showHurt(d, color, dirX, dirY);
+      this.showHurt(d, color, dirX, dirY, eff);
       if (knock > 0 && !this.boss) {
         const [nx, ny] = G.U.norm(dirX, dirY);
         this.kx += nx * knock;
@@ -99,12 +102,24 @@
     }
 
     /** Lo que se VE al recibir un golpe. */
-    showHurt(d, color, dirX = 0, dirY = 0) {
+    showHurt(d, color, dirX = 0, dirY = 0, eff = null) {
       this.flash = 0.09;
-      G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, color, this.boss);
+      // Muy eficaz: número amarillo y grande. Poco eficaz: gris.
+      G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, eff === 'super' ? '#ffe14d' : eff === 'weak' ? '#a3abb8' : color,
+                   this.boss || eff === 'super');
+      if (eff) Enemy.effText(this, eff);
       G.FX.spark(this.x, this.y - this.bodyH * 0.5, color, dirX, dirY, 3);
       if (!this.anim.busy() && this.phase !== 'dash') this.anim.play('Hurt');
       G.Audio.sfx('hit');
+    }
+
+    /** "¡Muy eficaz!" / "No es muy eficaz…" de vez en cuando (no en cada golpe). */
+    static effText(e, eff) {
+      const now = performance.now();
+      if (now - (Enemy.lastEff || 0) < 1400) return;
+      Enemy.lastEff = now;
+      G.FX.dmgText(e.x, e.y - e.bodyH - 16, eff === 'super' ? '¡Muy eficaz!' : 'No es muy eficaz…',
+                   eff === 'super' ? '#ffe14d' : '#a3abb8');
     }
 
     applySlow(factor, dur = 1.2) {
@@ -193,8 +208,8 @@
 
     update(dt, pl) {
       this.anim.update(dt);
-      if (this.dead) { this.fade -= dt; return; }
       if (this.flash > 0) this.flash -= dt;
+      if (this.dead) { this.fade -= dt; return; }
       if (this.shiny) {
         this.sparkT -= dt;
         if (this.sparkT <= 0) {
@@ -229,7 +244,7 @@
         } else terrainMul = 0.55;
       }
 
-      const spd = this.spd * (1 - this.slow) * terrainMul;
+      const spd = this.spd * (1 - this.slow) * terrainMul * G.Weather.speedFor(this.types);
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
       const dist = G.U.dist(this.x, this.y, pl.x, pl.y);
 
@@ -274,7 +289,7 @@
           const shot = G.Projectiles.spawn({
             x: this.x, y: this.y, vx: dx * sp, vy: dy * sp,
             dmg: (this.def.shotDmg || 10) * (this.dmg / this.def.dmg),
-            r: 7, life: 2.4, friendly: false, color: '#ff7a9e',
+            r: 7, life: 2.4, friendly: false, color: '#ff7a9e', mtype: this.atkType,
             vis: G.VFX.forType(((G.DEX_BY[this.dex] || {}).types || ['normal'])[0])
           });
           if (G.Coop.isHost) G.Coop.enemyShot(shot, ((G.DEX_BY[this.dex] || {}).types || ['normal'])[0]);

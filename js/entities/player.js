@@ -77,7 +77,8 @@ G.Player = class Player {
   get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount); }
   get spd() {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
-    return this.inLiquid && G.World.liquidKind() === 'water' ? s * 0.6 : s;
+    const w = G.Weather.speedFor(this.mon.types);
+    return (this.inLiquid && G.World.liquidKind() === 'water' ? s * 0.6 : s) * w;
   }
   get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
@@ -127,15 +128,23 @@ G.Player = class Player {
   }
 
   // ---------------- daño y curación ----------------
-  hurt(amount) {
+  /** @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual */
+  hurt(amount, type = null) {
     if (this.invuln > 0 || this.dead) return;
+    let eff = null;
+    if (type) {
+      const k = G.Types.mult(type, this.mon.types);
+      eff = G.Types.label(k);
+      amount *= k * G.Weather.mult(type);
+    }
     const d = Math.max(1, amount * (1 - this.reduction));
     this.hp -= d;
     this.invuln = 0.45;
     this.flash = 0.14;
     G.Audio.sfx('hurt');
     G.Camera.kick(0.28);
-    G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), '#ff6b7a');
+    G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), eff === 'super' ? '#ff3048' : eff === 'weak' ? '#c9a0a8' : '#ff6b7a', eff === 'super');
+    if (eff === 'super') G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Muy eficaz!', '#ff8a96');
     G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ff5f6d', 6, 90);
     if (this.hp <= 0) {
       this.hp = 0; this.dead = true;

@@ -83,29 +83,16 @@ G.GachaUI = (() => {
     busy = true;
 
     const best = Math.max(...res.map(r => r.rarity));
-    const anyShiny = res.some(r => r.shiny);
-    const fx = $('pull-fx'), ball = $('pull-ball'), out = $('pull-results');
+    const fx = $('pull-fx'), slot = $('slot'), out = $('pull-results');
     out.innerHTML = '';
     $('pull-close').classList.add('hidden');
-    ball.style.display = '';
-    ball.className = 'ball';
-    ball.style.setProperty('--glow', anyShiny ? '#9ae6ff' : G.Gacha.RARITY_COLOR[best]);
+    slot.style.display = '';
     fx.classList.remove('hidden');
 
-    // Cae, se agita y estalla con el color de la mejor rareza.
-    void ball.offsetWidth;
-    ball.classList.add('drop');
-    await wait(350); G.Audio.sfx('ball');
-    await wait(250);
-    ball.className = 'ball shake';
-    const shakes = best >= 4 || anyShiny ? 3 : 2;
-    for (let i = 0; i < shakes; i++) { G.Audio.sfx('shake'); await wait(450); }
-    ball.className = 'ball burst';
+    // La tragaperras (ui/slots.js) y luego las cartas.
+    await G.Slots.play(slot, res);
     G.Audio.sfx('burst', { rarity: best });
-    if (best === 5) G.Audio.sfx('legend');
-    if (anyShiny) G.Audio.sfx('shiny');
-    await wait(450);
-    ball.style.display = 'none';
+    slot.style.display = 'none';
 
     for (const r of res) {
       const mon = G.DEX_BY[r.dex];

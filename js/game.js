@@ -61,6 +61,7 @@ G.Game = (() => {
     G.Pickups.clear();
     G.Spawner.reset();
     G.Rift.reset();
+    G.Weather.reset();
     G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
     G.World.setBiome(0, true);
     biome = 0;
@@ -321,9 +322,11 @@ G.Game = (() => {
 
   let deathT = 0;
 
+  let frameDt = 0;
   function loop(ts) {
     const dt = Math.min(1 / 30, (ts - last) / 1000) || 0;
     last = ts;
+    frameDt = state === 'playing' ? dt : 0;
 
     handleKeys();
 
@@ -384,6 +387,7 @@ G.Game = (() => {
     G.Pickups.update(dt, all, onCollect);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
+    G.Weather.update(dt, time, pl);
     G.FX.update(dt);
 
     G.Audio.music(G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
@@ -445,7 +449,17 @@ G.Game = (() => {
     G.FX.draw(ctx);
     ctx.restore();
 
+    G.Weather.draw(ctx, w, h, frameDt);
     G.World.drawVignette(ctx, w, h);
+    // Niebla: la viñeta se cierra un poco (sin tapar el centro).
+    const fog = G.Weather.vignette;
+    if (fog > 0) {
+      const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.62);
+      g.addColorStop(0, 'rgba(200,205,220,0)');
+      g.addColorStop(1, `rgba(200,205,220,${0.45 * fog})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
     G.HUD.draw(ctx, w, h, pl, st);
     if (flashT > 0) {
       ctx.save();

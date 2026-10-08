@@ -503,3 +503,7 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .upg-head { display: flex; gap: 14px; align-items: center; margin: 6px 0 12px; }
 .upg-head .stage { width: 120px; height: 96px; flex: 0 0 120px; }
 select.field { font-family: var(--font); }
+
+/* ---------- tragaperras del gacha ---------- */
+#slot { width: min(528px, 92vw, 66vh); height: auto; image-rendering: pixelated; cursor: pointer;
+  filter: drop-shadow(0 0 30px rgba(255,90,90,.35)); animation: pop .25s ease-out both; }

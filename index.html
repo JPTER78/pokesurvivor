@@ -293,7 +293,7 @@
 </section>
 
 <div id="pull-fx" class="hidden">
-  <div class="ball" id="pull-ball"></div>
+  <canvas id="slot" width="176" height="170" title="Clic para acelerar"></canvas>
   <div class="pull-results" id="pull-results"></div>
   <button id="pull-close" class="btn gold hidden">Continuar</button>
 </div>
@@ -343,6 +343,7 @@
 <script src="js/core/camera.js"></script>
 <!-- datos de juego -->
 <script src="js/data/moves.js"></script>
+<script src="js/data/types.js"></script>
 <script src="js/data/starters.js"></script>
 <script src="js/data/enemies.js"></script>
 <script src="js/data/upgrades.js"></script>
@@ -363,6 +364,7 @@
 <script src="js/systems/gacha.js"></script>
 <script src="js/systems/interact.js"></script>
 <script src="js/systems/rift.js"></script>
+<script src="js/systems/weather.js"></script>
 <!-- red: amigos, salas, cooperativo y ranking -->
 <script src="js/net/social.js"></script>
 <script src="js/net/net.js"></script>
@@ -375,6 +377,7 @@
 <script src="js/ui/login.js"></script>
 <script src="js/ui/test.js"></script>
 <script src="js/ui/menu.js"></script>
+<script src="js/ui/slots.js"></script>
 <script src="js/ui/gacha-ui.js"></script>
 <script src="js/ui/run-ui.js"></script>
 <script src="js/ui/social-ui.js"></script>

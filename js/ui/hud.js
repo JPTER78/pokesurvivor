@@ -82,6 +82,21 @@ G.HUD = (() => {
     ctx.fillStyle = '#8fa3c4';
     ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
 
+    // ---------- clima (arriba a la derecha) ----------
+    const wx = G.Weather.current;
+    if (wx) {
+      ctx.font = F(800, 11);
+      ctx.textAlign = 'left';
+      const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
+      const tw = ctx.measureText(txt).width + 40;
+      const x0 = w - tw - 16, y0 = 14;
+      roundRect(ctx, x0, y0, tw, 26, 9);
+      ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
+      G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
+      ctx.fillStyle = wx.color;
+      ctx.fillText(txt, x0 + 32, y0 + 17);
+    }
+
     // ---------- barra del jefe ----------
     const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
     if (boss) {

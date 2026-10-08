@@ -115,6 +115,27 @@ desde código (16 px por tile, ×2).
   monedas, y vuelves donde estabas. Pierdes (caéis todos o se acaba el tiempo):
   vuelves sin premio con el 30% de vida. Mientras, los enemigos del mapa esperan.
 
+### 4.1 Climas (evento raro)
+Desde el minuto 2, cada minuto hay un 18% de que llegue un clima (~1 minuto):
+
+| Clima | Efecto |
+|---|---|
+| Sol abrasador | Fuego ×1,5 · Agua ×0,5 |
+| Lluvia | Agua ×1,5 · Eléctrico ×1,2 · Fuego ×0,5 |
+| Tormenta de arena | Roca, Tierra y Acero ×1,3; el resto pierde un 1,2% de vida cada 2 s (nunca KO) |
+| Nevada | Hielo ×1,5; el resto pierde vida igual y va un 10% más lento |
+| Niebla | Fantasma, Hada y Psíquico ×1,3; la viñeta se cierra un poco |
+
+Afecta a todos (tú y los enemigos). Cada bioma prefiere unos climas. Lo visual
+es suave: tinte leve y pocas partículas pixel. En grupo lo decide el anfitrión.
+
+### 4.2 Tabla de tipos (suavizada)
+La de los juegos, pero ×1,6 / ×0,6 / ×0,3 en vez de ×2 / ×0,5 / ×0 (con un
+solo ataque activo, una inmunidad total dejaría enemigos imposibles). Dos
+tipos se multiplican, con tope ×0,3–×2,4. Tus ataques usan el tipo del
+movimiento; los enemigos, su tipo principal (o el de su disparo). Número
+amarillo y "¡Muy eficaz!" cuando lo es; gris si no.
+
 ## 5. Enemigos
 
 - **De todas las generaciones.** 6 tramos por total de stats base; en cada run se
@@ -175,6 +196,10 @@ Kanto, Johto, Hoenn, Sinnoh, Teselia, Kalos, Alola, Galar y Paldea, cada uno con
 
 - Tirada ×1: 1 ticket · ×10: 1 ticket ×10 (o 10 tickets), con **al menos una
   Épica** garantizada. Los repetidos siguen dando monedas.
+- **Animación: tragaperras pixel art** (palanca, 3 rodillos, bombillas). Los
+  símbolos son la rareza: Poké, Super, Ultra y Master Ball, estrella
+  (Legendaria) y gema (shiny); con Épica o mejor el último rodillo se hace
+  esperar. La ×10 son 10 tiradas rápidas que caen a la bandeja. Clic = acelerar.
 - **Pity:** a las 70 tiradas sin Legendaria en un banner, la siguiente lo es.
 - Algunas regiones tienen rarezas casi vacías (Galar sólo tiene 4 Poco comunes);
   si una rareza no tiene Pokémon en ese banner, sale la más cercana.
@@ -319,3 +344,8 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 - **Altares, manantiales, cofres con candado y trampas**, en pixel art propio.
 - **Fundido** entre biomas en vez del cambio brusco.
 - Pokédex: campo `leg` (legendario o singular) de PokeAPI.
+
+**2026-10-08 · climas, tabla de tipos y tragaperras**
+- **Climas** como evento raro (sol, lluvia, arena, nieve, niebla), visual suave.
+- **Tabla de tipos suavizada** en los dos sentidos.
+- Gacha con **tragaperras pixel art** en vez de la Poké Ball.
