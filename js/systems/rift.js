@@ -77,13 +77,16 @@ G.Rift = (() => {
   // ---------------- arena ----------------
 
   /** Quien manda: elige legendario y lugar, y avisa a todos. */
-  function start() {
+  function start(forceType) {
     if (arena) return;
-    const pool = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
+    let pool = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
+    if (forceType && pool.some(p => p.types.includes(forceType))) pool = pool.filter(p => p.types.includes(forceType));
     const mon = G.U.pick(pool);
     const cfg = {
       tx: 5000 + Math.floor(Math.random() * 3000), ty: 5000 + Math.floor(Math.random() * 3000), r: ARENA_R,
-      dex: mon.dex, shiny: G.Sprites.hasShiny(mon.dex) && Math.random() < 1 / 512
+      dex: mon.dex, shiny: G.Sprites.hasShiny(mon.dex) && Math.random() < 1 / 512,
+      // La arena es la de uno de sus tipos, al azar.
+      type: forceType || G.U.pick(mon.types)
     };
     if (G.Coop.isHost) G.Coop.broadcast(['arena', cfg]);
     begin(cfg);
@@ -101,8 +104,11 @@ G.Rift = (() => {
     rift = null; asked = false; downT = 0;
     if (authority()) G.EnemyMgr.stash(); else G.EnemyMgr.clearRemote();
     G.Projectiles.clear();
-    G.World.setArena({ tx: cfg.tx, ty: cfg.ty, r: cfg.r });
-    G.World.setBiome(G.Tiles.ARENA, true);
+    G.World.setArena({ tx: cfg.tx, ty: cfg.ty, r: cfg.r, type: cfg.type });
+    G.World.setBiome(G.Tiles.arenaBiome(cfg.type), true);
+    // Cada arena trae su clima (el volcán, sol; el glaciar, nieve...).
+    const th = G.Tiles.ARENA_THEMES[cfg.type];
+    if (th && th.weather) G.Weather.force(th.weather, ARENA_TIME + 15);
     // Todos al sur de la arena, en fila; el legendario aparece al norte.
     const ps = G.Game.everyone();
     ps.forEach((p, i) => { p.x = arena.x + (i - (ps.length - 1) / 2) * 34; p.y = arena.y + ts * 3; });
@@ -127,6 +133,9 @@ G.Rift = (() => {
     };
     const e = new G.Enemy(def, arena.x, arena.y - ts * 3.5, { hp: 1, spd: 1, dmg: 1 }, true);
     e.legend = true;
+    // Choca con las paredes y columnas como tú: si volara por encima de las
+    // rocas, tus disparos no podrían alcanzarle (bug de Celebi).
+    e.flying = false;
     if (arena.shiny) e.makeShiny();
     G.EnemyMgr.add(e);
     arena.bossId = e.id;
@@ -135,10 +144,21 @@ G.Rift = (() => {
     G.Audio.sfx('boss');
   }
 
+  /** Nadie sale del círculo de la arena (por si algo empuja demasiado). */
+  function keepInside() {
+    const ts = TS(), max = (arena.r - 1.4) * ts;
+    for (const e of G.EnemyMgr.all()) {
+      if (e.remote) continue;
+      const dx = e.x - arena.x, dy = e.y - arena.y, d = Math.hypot(dx, dy);
+      if (d > max) { e.x = arena.x + dx / d * max; e.y = arena.y + dy / d * max; }
+    }
+  }
+
   function arenaTick(dt, pl) {
     arena.t += dt;
     if (arena.phase === 'fight') {
       if (!authority()) return;
+      keepInside();
       const boss = G.EnemyMgr.get(arena.bossId);
       if (!boss || boss.dead) { G.Coop.isHost && G.Coop.broadcast(['aw']); won(); return; }
       const allDown = G.Game.everyone().every(p => p.dead);
@@ -171,6 +191,7 @@ G.Rift = (() => {
     const a = arena;
     arena = null;
     G.World.setBiome(a.biome, true);
+    G.Weather.clear();
     if (authority()) G.EnemyMgr.restore(); else G.EnemyMgr.clearRemote();
     G.Projectiles.clear();
     for (const p of G.Game.everyone()) { p.x = a.back.x; p.y = a.back.y; }
@@ -221,6 +242,8 @@ G.Rift = (() => {
     get rift() { return rift; }, get arena() { return arena; },
     get inArena() { return !!arena; },
     get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },
-    debugOpen() { open(); }
+    debugOpen() { open(); },
+    /** Para pruebas: arena de un tipo ya. */
+    debugArena(type) { start(type); }
   };
 })();

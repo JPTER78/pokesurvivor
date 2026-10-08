@@ -172,6 +172,10 @@ G.Weather = (() => {
     KINDS, reset, update, draw, mult, speedFor, hurts, onEvent,
     get current() { return cur && level() > 0 ? Object.assign({ left: Math.max(0, cur.dur - cur.t) }, cur, KINDS[cur.kind]) : null; },
     get vignette() { return cur && cur.kind === 'fog' ? level() : 0; },
+    /** Pone un clima ya (la arena de la grieta; no se manda: cada uno lo pone). */
+    force(kind, dur) { start(kind, dur); },
+    /** Quita el clima de golpe (al salir de la arena). */
+    clear() { cur = null; parts.length = 0; },
     debugStart(kind = 'rain', dur = 60) { start(kind, dur); if (G.Coop.isHost) G.Coop.broadcast(['wx', kind, dur]); }
   };
 })();

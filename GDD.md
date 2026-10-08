@@ -115,6 +115,36 @@ desde código (16 px por tile, ×2).
   monedas, y vuelves donde estabas. Pierdes (caéis todos o se acaba el tiempo):
   vuelves sin premio con el 30% de vida. Mientras, los enemigos del mapa esperan.
 
+### 4.0 Arenas de la grieta (una por tipo)
+El legendario te espera en la arena de **uno de sus dos tipos, al azar**. Cada
+arena tiene su paleta, su decoración, su terreno y su clima, y suena un tema
+propio ("rift"). El legendario choca con paredes y columnas como tú y no puede
+salir del círculo.
+
+| Tipo | Arena | Terreno | Clima |
+|---|---|---|---|
+| Normal | Pradera Eterna | columnas | — |
+| Fuego | Volcán Ígneo | ríos de lava (quema) | sol |
+| Agua | Gruta Marina | charcos (frenan) | lluvia |
+| Planta | Selva Esmeralda | ciénaga (frena mucho), árboles | — |
+| Eléctrico | Central Voltio | charcos con descarga | lluvia |
+| Hielo | Glaciar Eterno | placas de hielo (resbalas) | nieve |
+| Lucha | Dojo Ancestral | muchas columnas | — |
+| Veneno | Ciénaga Tóxica | charcos de veneno | — |
+| Tierra | Desierto Rojo | arenas movedizas | arena |
+| Volador | Pico Celeste | árboles-nube | — |
+| Psíquico | Templo Mental | cristales rosas, columnas | — |
+| Bicho | Bosque Colmena | ciénaga, mucha hierba | — |
+| Roca | Cantera Antigua | muchas columnas y rocas | arena |
+| Fantasma | Cementerio Sombrío | árboles muertos | niebla |
+| Dragón | Santuario Dragón | llamas dracónicas (queman) | — |
+| Siniestro | Callejón Oscuro | columnas | — |
+| Acero | Fortaleza de Acero | muchas columnas | — |
+| Hada | Bosque Encantado | árboles rosas, fuentes | — |
+
+Inmunidades al terreno: Fuego a la lava, Veneno/Acero al veneno,
+Eléctrico/Tierra a la descarga, Hielo al hielo. El legendario no sufre su arena.
+
 ### 4.1 Climas (evento raro)
 Desde el minuto 2, cada minuto hay un 18% de que llegue un clima (~1 minuto):
 
@@ -349,3 +379,9 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 - **Climas** como evento raro (sol, lluvia, arena, nieve, niebla), visual suave.
 - **Tabla de tipos suavizada** en los dos sentidos.
 - Gacha con **tragaperras pixel art** en vez de la Poké Ball.
+
+**2026-10-08 · arenas por tipo**
+- Bug: los legendarios (jefes = voladores) atravesaban las rocas de la arena y
+  no se les podía disparar (Celebi). Ahora chocan y no salen del círculo.
+- 18 arenas de grieta, una por tipo, con terreno que afecta y clima propio;
+  tema musical nuevo para la grieta.

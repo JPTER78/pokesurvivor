@@ -390,7 +390,7 @@ G.Game = (() => {
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
 
-    G.Audio.music(G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
+    G.Audio.music(G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (G.Coop.isHost) checkAllDown(dt);
   }

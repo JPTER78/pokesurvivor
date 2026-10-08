@@ -78,7 +78,8 @@ G.Player = class Player {
   get spd() {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
     const w = G.Weather.speedFor(this.mon.types);
-    return (this.inLiquid && G.World.liquidKind() === 'water' ? s * 0.6 : s) * w;
+    const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
+    return s * slow * w;
   }
   get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
@@ -212,19 +213,28 @@ G.Player = class Player {
     const [ax, ay] = this.frozen ? [0, 0] : G.Input.axis();
     this.walking = ax !== 0 || ay !== 0;
     const s = this.spd;
-    this.x += ax * s * dt;
-    this.y += ay * s * dt;
+    // Hielo: resbalas (la velocidad cambia despacio).
+    const slide = this.inLiquid && G.World.liquidEffect(this.mon.types).slide;
+    this.svx = slide ? G.U.damp(this.svx || 0, ax * s * 1.15, 1.6, dt) : ax * s;
+    this.svy = slide ? G.U.damp(this.svy || 0, ay * s * 1.15, 1.6, dt) : ay * s;
+    this.x += this.svx * dt;
+    this.y += this.svy * dt;
     G.World.collide(this);
     if (this.walking) this.moveAngle = Math.atan2(ay, ax);
 
     // --- terreno líquido ---
     this.inLiquid = G.World.isLiquid(this.x, this.y);
     if (this.inLiquid) {
-      if (G.World.liquidKind() === 'lava') {
+      const le = G.World.liquidEffect(this.mon.types);
+      if (le.dmg) {
         this.lavaTick -= dt;
-        if (this.lavaTick <= 0) { this.lavaTick = 0.5; this.invuln = 0; this.hurt(5); }
+        if (this.lavaTick <= 0) {
+          this.lavaTick = le.every; this.invuln = 0;
+          this.hurt(Math.max(le.flat, this.maxHp * le.dmg * 0.5));
+          G.FX.burst(this.x, this.y - 4, le.color, 5, 70);
+        }
       } else if (this.walking && Math.random() < dt * 8) {
-        G.FX.burst(this.x, this.y, '#b3defa', 2, 40);
+        G.FX.burst(this.x, this.y, le.slide ? '#ffffff' : '#b3defa', 2, 40);
       }
     }
 

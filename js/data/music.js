@@ -99,5 +99,30 @@ G.MUSIC = {
   }
 };
 
+// Se añade fuera del objeto para no tocar los demás temas.
+/* ---------------- Grieta: duelo contra el legendario ----------------
+ * Más rápido y más tenso que el de jefe: La menor, bajo galopando y la
+ * melodía subiendo a la octava alta en la segunda mitad. */
+G.MUSIC.rift = {
+  bpm: 164,
+  chords: ['Am', 'F', 'G', 'E', 'Am', 'F', 'Dm', 'E',
+           'F', 'G', 'Am', 'Am', 'Dm', 'E', 'Am', 'E'],
+  melody: [{ inst: 'lead', vel: 1, bars: [
+    'A5:2 C6:2 E6:4 D6:2 C6:2 B5:4', 'A5:2 F5:2 A5:4 C6:4 F6:4',
+    'G5:2 B5:2 D6:4 C6:2 B5:2 G5:4', 'G#5:8 B5:4 E6:4',
+    'A5:2 A5:2 C6:2 A5:2 E6:4 D6:2 C6:2', 'F6:4 E6:2 D6:2 C6:4 A5:4',
+    'D6:4 C6:2 A5:2 F5:4 A5:4', 'G#5:4 B5:4 D6:4 E6:4',
+    'F6:2 E6:2 C6:4 A5:4 C6:4', 'G6:2 F6:2 D6:4 B5:4 D6:4',
+    'E6:4 C6:2 A5:2 E6:4 A6:4', 'A6:12 -:4',
+    'F6:4 D6:2 A5:2 F6:4 E6:2 D6:2', 'E6:2 G#6:2 B6:4 G#6:4 E6:4',
+    'A6:4 E6:2 C6:2 A5:4 C6:4', 'B5:4 G#5:4 E5:4 -:4'] }],
+  parts: [
+    { inst: 'bass', octave: 2, vel: 1, pattern: 'R.RRR.RRF.FFO.OF' },
+    { inst: 'pluck', octave: 4, vel: 0.5, pattern: '0.2.3.2.1.2.3.4.' },
+    { inst: 'pad', octave: 3, vel: 0.55, pattern: 'C-------C-------' }
+  ],
+  drums: { kick: 'X.x.X.x.X.x.X.xx', snare: '....X.......X..X', hat: 'xoxoxoxoxoxoxoxo' }
+};
+
 /** Tema de cada bioma durante la run. */
 G.BIOME_MUSIC = ['forest', 'cave', 'volcano'];

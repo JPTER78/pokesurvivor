@@ -34,18 +34,101 @@ G.Tiles = (() => {
       liq: '#e45a1f', liqDeep: '#b9401a', foam: '#ffd46a', shore: '#3a2a22',
       prop: 'dead', leaf: ['#4a3a30', '#5e4a3c', '#6f5a49', '#806a58'], trunk: ['#3a2e27', '#52423a'],
       rock: ['#4e4642', '#6a605b', '#877c76'], grass: ['#6b4a2a', '#94693a', '#c4914e'] },
-    // Sólo dentro de una grieta: la arena del legendario (estilo Mundo Distorsión).
-    { name: 'Grieta Distorsión', liquid: 'water',
-      floor: ['#2d2547', '#332a50', '#29213f'], dirt: ['#3b2f5e', '#41346a', '#362b55'],
-      speck: '#221b38', light: '#5a4a8c', flowers: ['#c47bff', '#7be0ff', '#ff8ad8'],
-      wallTop: ['#241c3d', '#2a2147', '#1f1835'], wallLight: '#7a62c8', wallEdge: '#0a0714',
-      wallFace: ['#171126', '#130e20'], wallFaceDark: '#08050f',
-      liq: '#5a2ad0', liqDeep: '#3d1a99', foam: '#c9a6ff', shore: '#1d1730',
-      prop: 'crystal', leaf: ['#7b3cff', '#a77bff', '#d9c2ff', '#ffffff'], trunk: ['#2a1f4a', '#3d2d6a'],
-      rock: ['#3a3150', '#524870', '#6d6290'], grass: ['#3d2d6a', '#5a3fa0', '#8a6ad0'] }
   ];
   const NORMAL = 3;                   // biomas que se van turnando en una run
-  const ARENA = 3;                    // índice del de la grieta
+  const ARENA = 3;                    // a partir de aquí, las arenas de la grieta (una por tipo)
+
+  // ---------------- arenas de la grieta ----------------
+  /*
+   * Cada tipo tiene su arena: paleta, terreno y clima.
+   *   liquid   charcos: water (frena) · swamp (frena más) · lava (quema) ·
+   *            poison (envenena) · spark (descarga) · ice (resbala)
+   *   pools    cuánto terreno es charco (0 = ninguno)
+   *   pillars  probabilidad de una columna 2×2 (cobertura) por bloque
+   *   props    densidad de árboles / rocas / hierba
+   *   weather  clima que trae (ver systems/weather.js) o null
+   */
+  const ARENA_THEMES = {
+    normal:   { name: 'Pradera Eterna', floor: '#6f8a4f', wall: '#8a7f6a', liquid: 'water', liq: '#4f8fd0', prop: 'tree',
+                leaf: '#5aa04a', trunk: '#6b4a2a', flowers: ['#f4d65c', '#ffffff', '#f39ac0'], grass: '#5a9a40', rock: '#8a8a8a',
+                pools: 0, pillars: 0.035, props: { tree: 0.025, grass: 0.05 }, weather: null },
+    fire:     { name: 'Volcán Ígneo', floor: '#5b3a2e', wall: '#3a2826', liquid: 'lava', liq: '#e45a1f', foam: '#ffd46a', prop: 'dead',
+                leaf: '#5e4a3c', trunk: '#3a2e27', flowers: ['#ff8d3d', '#ffc45e', '#e06a4a'], grass: '#94693a', rock: '#6a605b',
+                pools: 0.31, pillars: 0.03, props: { tree: 0.01 }, weather: 'sun' },
+    water:    { name: 'Gruta Marina', floor: '#3c6a80', wall: '#2a4660', liquid: 'water', liq: '#2f86d6', foam: '#bfeaff', prop: 'crystal',
+                leaf: '#5fd0e8', trunk: '#2a4a78', flowers: ['#ff9ec4', '#7ef0d0', '#ffffff'], grass: '#3f8a9a', rock: '#5d7a90',
+                pools: 0.33, pillars: 0.02, props: { tree: 0.015 }, weather: 'rain' },
+    grass:    { name: 'Selva Esmeralda', floor: '#3a7a32', wall: '#4a6a36', liquid: 'swamp', liq: '#4f6b2a', foam: '#9ac25a', prop: 'tree',
+                leaf: '#3f9a3a', trunk: '#5b3b22', flowers: ['#f4d65c', '#ff8ad8', '#ffffff'], grass: '#4caa3f', rock: '#6a7a5a',
+                pools: 0.22, pillars: 0, props: { tree: 0.05, grass: 0.12 }, weather: null },
+    electric: { name: 'Central Voltio', floor: '#4a4840', wall: '#3a3a48', liquid: 'spark', liq: '#e8c020', foam: '#fff6c0', prop: 'crystal',
+                leaf: '#ffd23f', trunk: '#5a5030', flowers: ['#ffe14d', '#ffffff', '#7fd0ff'], grass: '#8a8a40', rock: '#70707a',
+                pools: 0.28, pillars: 0.04, props: { tree: 0.01 }, weather: 'rain' },
+    ice:      { name: 'Glaciar Eterno', floor: '#b8cfe0', wall: '#7f9fc0', liquid: 'ice', liq: '#9fd8f0', foam: '#ffffff', prop: 'crystal',
+                leaf: '#bfe8ff', trunk: '#6f8fb0', flowers: ['#ffffff', '#9fe0ff', '#d8f1ff'], grass: '#9fc0d8', rock: '#8fa8c0',
+                pools: 0.36, pillars: 0.02, props: { tree: 0.02 }, weather: 'snow' },
+    fighting: { name: 'Dojo Ancestral', floor: '#8a6a46', wall: '#5e4232', liquid: 'water', liq: '#4f8fd0', prop: 'tree',
+                leaf: '#4f8a3a', trunk: '#5b3b22', flowers: ['#ff5f6d', '#f4d65c', '#ffffff'], grass: '#6a8a40', rock: '#8a7a6a',
+                pools: 0, pillars: 0.075, props: { tree: 0.008 }, weather: null },
+    poison:   { name: 'Ciénaga Tóxica', floor: '#46384f', wall: '#33263f', liquid: 'poison', liq: '#9a4fc0', foam: '#e0a6ff', prop: 'dead',
+                leaf: '#5a4a6a', trunk: '#3a2f45', flowers: ['#c86bdc', '#8bd94a', '#e0a6ff'], grass: '#6a5a8a', rock: '#5a4f6a',
+                pools: 0.31, pillars: 0.015, props: { tree: 0.02 }, weather: null },
+    ground:   { name: 'Desierto Rojo', floor: '#b08a52', wall: '#8a5e34', liquid: 'swamp', liq: '#9a7a48', foam: '#d6b98a', prop: 'dead',
+                leaf: '#8a6a40', trunk: '#6a4a2a', flowers: ['#e06a4a', '#f4d65c', '#ffffff'], grass: '#b0904a', rock: '#9a7a5a',
+                pools: 0.25, pillars: 0.04, props: { tree: 0.01, rock: 0.015 }, weather: 'sand' },
+    flying:   { name: 'Pico Celeste', floor: '#9fb8d8', wall: '#dfe8f4', liquid: 'water', liq: '#7fb8ff', prop: 'tree',
+                leaf: '#e8f2ff', trunk: '#9aa8c0', flowers: ['#ffffff', '#ffe14d', '#bfe0ff'], grass: '#b8d0e8', rock: '#c0ccdc',
+                pools: 0, pillars: 0.02, props: { tree: 0.025 }, weather: null },
+    psychic:  { name: 'Templo Mental', floor: '#5e4470', wall: '#3e2a55', liquid: 'water', liq: '#8a5ad0', prop: 'crystal',
+                leaf: '#ff8ad8', trunk: '#5a3a7a', flowers: ['#ff8ad8', '#c9a6ff', '#ffffff'], grass: '#8a5a9a', rock: '#7a6a8a',
+                pools: 0, pillars: 0.045, props: { tree: 0.02 }, weather: null },
+    bug:      { name: 'Bosque Colmena', floor: '#5a6a2a', wall: '#5e4a26', liquid: 'swamp', liq: '#6a7a2a', foam: '#c4d65a', prop: 'tree',
+                leaf: '#8aaa30', trunk: '#5b3b22', flowers: ['#f4d65c', '#ffffff', '#c4d65a'], grass: '#8aaa30', rock: '#7a7a5a',
+                pools: 0.2, pillars: 0, props: { tree: 0.04, grass: 0.12 }, weather: null },
+    rock:     { name: 'Cantera Antigua', floor: '#7a6a58', wall: '#55473a', liquid: 'water', liq: '#4f8fd0', prop: 'dead',
+                leaf: '#6a5a4a', trunk: '#4a3e32', flowers: ['#c9b28a', '#ffffff', '#a89070'], grass: '#8a7a5a', rock: '#8a7a6a',
+                pools: 0, pillars: 0.08, props: { rock: 0.03 }, weather: 'sand' },
+    ghost:    { name: 'Cementerio Sombrío', floor: '#383447', wall: '#24202e', liquid: 'water', liq: '#3a3a6a', prop: 'dead',
+                leaf: '#4a4060', trunk: '#2e2838', flowers: ['#9a8ad0', '#5fe0c0', '#c9cfdc'], grass: '#4a4a60', rock: '#5a5670',
+                pools: 0, pillars: 0.03, props: { tree: 0.03 }, weather: 'fog' },
+    dragon:   { name: 'Santuario Dragón', floor: '#363a5e', wall: '#24264a', liquid: 'lava', liq: '#7b5cff', foam: '#c9a6ff', prop: 'crystal',
+                leaf: '#7b5cff', trunk: '#2a2a5a', flowers: ['#7b5cff', '#ffd23f', '#ffffff'], grass: '#4a4a8a', rock: '#5a5a8a',
+                pools: 0.22, pillars: 0.04, props: { tree: 0.015 }, weather: null },
+    dark:     { name: 'Callejón Oscuro', floor: '#2c282e', wall: '#1c181f', liquid: 'water', liq: '#2a2a3a', prop: 'dead',
+                leaf: '#3a3040', trunk: '#241e28', flowers: ['#ff5f6d', '#6b5c52', '#9a8a9a'], grass: '#3a343a', rock: '#4a444a',
+                pools: 0, pillars: 0.05, props: { tree: 0.02 }, weather: null },
+    steel:    { name: 'Fortaleza de Acero', floor: '#6d7888', wall: '#465060', liquid: 'water', liq: '#4f8fd0', prop: 'crystal',
+                leaf: '#c9d2de', trunk: '#5d6773', flowers: ['#c9d2de', '#ffd23f', '#ffffff'], grass: '#8a96a6', rock: '#9aa6b5',
+                pools: 0, pillars: 0.08, props: { tree: 0.01 }, weather: null },
+    fairy:    { name: 'Bosque Encantado', floor: '#4f7f5a', wall: '#7a5a8a', liquid: 'water', liq: '#8fd8ff', foam: '#ffe0f4', prop: 'tree',
+                leaf: '#e08ad0', trunk: '#6b4a5a', flowers: ['#ff8ad8', '#ffffff', '#c9a6ff'], grass: '#c48ad8', rock: '#9a8aa8',
+                pools: 0.16, pillars: 0, props: { tree: 0.05, grass: 0.1 }, weather: null }
+  };
+  const ARENA_TYPES = Object.keys(ARENA_THEMES);
+
+  /** Aclara (k>0) u oscurece (k<0) un color. */
+  function shade(hex, k) {
+    const c = rgb(hex).map(v => Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k)));
+    return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  /** Paleta completa de bioma a partir de los pocos colores de una arena. */
+  function arenaBiome(th) {
+    const f = th.floor, w = th.wall, L = th.liq;
+    return {
+      name: 'Grieta · ' + th.name, liquid: th.liquid,
+      floor: [f, shade(f, 0.05), shade(f, -0.06)], dirt: [shade(f, -0.16), shade(f, -0.12), shade(f, -0.2)],
+      speck: shade(f, -0.25), light: shade(f, 0.22), flowers: th.flowers,
+      wallTop: [w, shade(w, 0.07), shade(w, -0.07)], wallLight: shade(w, 0.32), wallEdge: shade(w, -0.7),
+      wallFace: [shade(w, -0.3), shade(w, -0.38)], wallFaceDark: shade(w, -0.55),
+      liq: L, liqDeep: shade(L, -0.22), foam: th.foam || shade(L, 0.55), shore: shade(f, -0.32),
+      prop: th.prop, leaf: [shade(th.leaf, -0.35), shade(th.leaf, -0.15), th.leaf, shade(th.leaf, 0.3)],
+      trunk: [shade(th.trunk, -0.2), th.trunk],
+      rock: [shade(th.rock, -0.2), th.rock, shade(th.rock, 0.22)],
+      grass: [shade(th.grass, -0.28), th.grass, shade(th.grass, 0.28)]
+    };
+  }
+  for (const t of ARENA_TYPES) BIOMES.push(arenaBiome(ARENA_THEMES[t]));
 
   // ---------------- utilidades de color / píxel ----------------
 
@@ -537,5 +620,7 @@ G.Tiles = (() => {
 
   function clearProps() { propCache.clear(); }
 
-  return { T, BIOMES, NORMAL, ARENA, paintChunk, propSprite, clearProps };
+  return { T, BIOMES, NORMAL, ARENA, ARENA_THEMES, ARENA_TYPES, paintChunk, propSprite, clearProps,
+           /** Índice de bioma de la arena de un tipo. */
+           arenaBiome: type => ARENA + Math.max(0, ARENA_TYPES.indexOf(type)) };
 })();

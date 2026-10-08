@@ -61,9 +61,23 @@ G.World = (() => {
   /** Terreno "puro" de un tile (sin caché). */
   function arenaDist(tx, ty) { return arena ? Math.hypot(tx - arena.tx, ty - arena.ty) : Infinity; }
 
+  /** Pasillo libre de la arena: donde aparecéis (sur) y el legendario (norte). */
+  function arenaSafe(tx, ty) {
+    const lx = tx - arena.tx, ly = ty - arena.ty;
+    return (Math.abs(lx) <= 2 && ly >= -6 && ly <= 5) || Math.hypot(lx, ly) < 2.5;
+  }
+
   function terrainRaw(tx, ty) {
     const ad = arenaDist(tx, ty);
-    if (ad < arena_outer()) return ad < arena.r ? FLOOR : WALL;
+    if (ad < arena_outer()) {
+      if (ad >= arena.r) return WALL;
+      if (arenaSafe(tx, ty)) return FLOOR;
+      const th = arena.th;
+      // Columnas de 2×2 (cobertura) y charcos según el tipo de la arena.
+      if (th.pillars && ad < arena.r - 2 && H(tx >> 1, ty >> 1, seed + 31 + arena.tx) < th.pillars) return WALL;
+      if (th.pools && ad < arena.r - 1.5 && fbm(tx / 3.2, ty / 3.2, seed + 37 + arena.tx) < th.pools) return LIQUID;
+      return FLOOR;
+    }
     const d = Math.hypot(tx, ty);
     if (d < 9) return FLOOR;                          // claro inicial
     const ramp = G.U.clamp((d - 9) / 8, 0, 1);       // aparición suave
@@ -106,13 +120,25 @@ G.World = (() => {
       if (c.terr[j * N + i] !== FLOOR) continue;
       const tx = c.cx * N + i, ty = c.cy * N + j;
       if (Math.hypot(tx, ty) < 7) continue;
-      if (arenaDist(tx, ty) < arena_outer() + 2) continue;
       if (broken.has(tx + ',' + ty)) continue;
 
       // Necesita suelo alrededor para no pegarse a paredes / agua.
       let open = true;
       for (let b = -1; b <= 1 && open; b++) for (let a = -1; a <= 1; a++)
         if (terrainRaw(tx + a, ty + b) !== FLOOR) { open = false; break; }
+
+      // Dentro de la arena: la decoración de su tipo (y nada en el pasillo).
+      const ad = arenaDist(tx, ty);
+      if (ad < arena_outer() + 2) {
+        if (!arena || ad >= arena.r - 1.2 || arenaSafe(tx, ty)) continue;
+        const pr = arena.th.props, hh = H(tx, ty, seed + 777);
+        let at = null;
+        if (open && hh < (pr.tree || 0)) at = 'tree';
+        else if (open && hh < (pr.tree || 0) + (pr.rock || 0)) at = 'rock';
+        else if (hh > 1 - (pr.grass || 0)) at = 'grass';
+        if (at) { const p = makeProp(at, tx, ty); c.props.push(p); if (p.solid) c.propAt.set(tx + ',' + ty, p); }
+        continue;
+      }
 
       const h = H(tx, ty, seed + 404);
       const grove = fbm(tx / 10, ty / 10, seed + 505) > 0.6;
@@ -168,6 +194,25 @@ G.World = (() => {
   function isWall(x, y) { return terrainAt(tileOf(x), tileOf(y)) === WALL; }
   function isLiquid(x, y) { return terrainAt(tileOf(x), tileOf(y)) === LIQUID; }
   function liquidKind() { return G.Tiles.BIOMES[biome].liquid; }
+
+  /**
+   * Efecto del charco actual sobre un Pokémon de estos tipos:
+   *   { slow, dmg, every, color, slide }  (dmg en % de vida máxima)
+   * Los de su tipo no sufren el suyo (Fuego en lava, Veneno en veneno...).
+   */
+  const LIQ = {
+    water: { slow: 0.6 },
+    swamp: { slow: 0.45 },
+    lava:   { dmg: 0.06, flat: 5, every: 0.5, color: '#ff8a3d', immune: ['fire'] },
+    poison: { dmg: 0.035, flat: 3, every: 0.5, color: '#c86bdc', immune: ['poison', 'steel'] },
+    spark:  { dmg: 0.045, flat: 4, every: 0.7, color: '#ffe14d', immune: ['electric', 'ground'] },
+    ice:    { slide: true, immune: ['ice'] }
+  };
+  function liquidEffect(types) {
+    const e = LIQ[liquidKind()] || LIQ.water;
+    if (e.immune && types && types.some(t => e.immune.includes(t))) return {};
+    return e;
+  }
 
   function propAtTile(tx, ty) {
     const cx = Math.floor(tx / N), cy = Math.floor(ty / N);
@@ -395,10 +440,10 @@ G.World = (() => {
     }
   }
 
-  /** Brillos animados sobre el agua / burbujas de la lava. */
+  /** Brillos animados sobre el agua / burbujas de la lava (y del veneno y la electricidad). */
   function drawLiquid(ctx, cam, t) {
     const B = G.Tiles.BIOMES[biome];
-    const lava = B.liquid === 'lava';
+    const lava = B.liquid === 'lava' || B.liquid === 'poison' || B.liquid === 'spark';
     ctx.fillStyle = B.foam;
     const P = G.Sprites.PX;
     for (const [cx, cy] of visibleChunks(cam)) {
@@ -502,7 +547,7 @@ G.World = (() => {
    */
   function setBiome(i, instant = false) {
     const n = G.Tiles.NORMAL;
-    const b = i === G.Tiles.ARENA ? i : ((i % n) + n) % n;
+    const b = i >= G.Tiles.ARENA ? i : ((i % n) + n) % n;
     if (b === biome) return;
     // El terreno es el mismo: sólo cambia la paleta, fundiéndose poco a poco.
     fade = instant ? null : { from: biome, images, t: 0 };
@@ -522,7 +567,7 @@ G.World = (() => {
   }
 
   return {
-    TS, CW, reset, setBiome, biomeName, liquidKind,
+    TS, CW, reset, setBiome, biomeName, liquidKind, liquidEffect,
     kindAt, isWall, isLiquid, isFree, collide, projectileBlock, propsInCircle, nearestBreakable,
     damageProp, breakAt, specialsNear, update,
     breakProp(p) { if (!broken.has(p.tx + ',' + p.ty)) destroyProp(p); },
@@ -530,6 +575,7 @@ G.World = (() => {
     setArena(a) {
       arena = a;
       if (!a) return;
+      a.th = G.Tiles.ARENA_THEMES[a.type] || G.Tiles.ARENA_THEMES.normal;
       // Olvida los chunks de esa zona (si se hubieran generado antes).
       const R = a.r + 9;
       for (const k of [...data.keys(), ...images.keys()]) {

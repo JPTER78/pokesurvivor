@@ -236,12 +236,14 @@
 
       // --- terreno ---
       let terrainMul = 1;
-      if (!this.flying && G.World.isLiquid(this.x, this.y)) {
-        if (G.World.liquidKind() === 'lava') {
+      // (El legendario está en su casa: su arena no le afecta.)
+      if (!this.flying && !this.legend && G.World.isLiquid(this.x, this.y)) {
+        const le = G.World.liquidEffect(this.types);
+        if (le.dmg) {
           this.lavaTick -= dt;
-          if (this.lavaTick <= 0) { this.lavaTick = 0.5; this.hurt(6 + this.maxHp * 0.04, '#ff8a3d'); }
+          if (this.lavaTick <= 0) { this.lavaTick = le.every; this.hurt(6 + this.maxHp * 0.04, le.color); }
           if (this.dead) return;
-        } else terrainMul = 0.55;
+        } else if (le.slow) terrainMul = le.slow < 0.5 ? 0.45 : 0.55;
       }
 
       const spd = this.spd * (1 - this.slow) * terrainMul * G.Weather.speedFor(this.types);
