@@ -77,8 +77,11 @@ G.Rift = (() => {
   // ---------------- arena ----------------
 
   /** Quien manda: elige legendario y lugar, y avisa a todos. */
+  let nextType = null;          // pruebas/vídeos: tipo de la próxima arena
+
   function start(forceType) {
     if (arena) return;
+    forceType = forceType || nextType; nextType = null;
     let pool = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
     if (forceType && pool.some(p => p.types.includes(forceType))) pool = pool.filter(p => p.types.includes(forceType));
     const mon = G.U.pick(pool);
@@ -244,6 +247,8 @@ G.Rift = (() => {
     get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },
     debugOpen() { open(); },
     /** Para pruebas: arena de un tipo ya. */
-    debugArena(type) { start(type); }
+    debugArena(type) { start(type); },
+    /** Para vídeos: la próxima grieta en la que entres será de este tipo. */
+    debugNextType(type) { nextType = type; }
   };
 })();

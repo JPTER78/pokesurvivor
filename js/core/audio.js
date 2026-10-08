@@ -464,10 +464,15 @@ G.Audio = (() => {
   }
 
   /** Para grabar vídeos: la salida final como MediaStream (MediaRecorder). */
-  function debugStream() {
+  /**
+   * Para grabar vídeos: el sonido del juego como MediaStream.
+   * @param solo  sólo a la grabación (deja de sonar por los altavoces)
+   */
+  function debugStream(solo = false) {
     if (!ctx) return null;
     const d = ctx.createMediaStreamDestination();
     outNode.connect(d);
+    if (solo) { try { outNode.disconnect(ctx.destination); } catch (e) { /* ya estaba */ } }
     return d.stream;
   }
 
