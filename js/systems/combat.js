@@ -149,7 +149,7 @@ G.Combat = (() => {
       for (let i = 0; i < 5; i++) {
         const a = Math.random() * 6.2832, r = m.radius * G.U.rand(0.45, 1);
         const x = pl.x + Math.cos(a) * r, y = pl.y + Math.sin(a) * r * 0.8 - G.LIFT * 0.5;
-        // Gigadrenado tira hacia ti; veneno y sombras suben; el resto gira.
+        // Hierba Lazo tira hacia ti; veneno y sombras suben; el resto gira.
         const v = vis.inward ? [-Math.cos(a) * r * 2.2, -Math.sin(a) * r * 1.8]
                 : vis.rise ? [G.U.rand(-10, 10), -55]
                 : [-Math.sin(a) * 70, Math.cos(a) * 55];

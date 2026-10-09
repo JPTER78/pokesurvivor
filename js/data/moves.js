@@ -133,9 +133,10 @@
       desc: 'Un ciclón de hojas gira amplio a tu alrededor.',
       cd: 0.26, dmg: 14, count: 4, radius: 74, speed: 2.6, size: 8 },
 
-    { id: 'giga-drain', name: 'Gigadrenado', type: 'grass', kind: 'aura',
-      desc: 'Drena vida de todo lo cercano y te cura con cada golpe.',
-      cd: 0.55, dmg: 9, radius: 76, drain: 0.5 },
+    // (Antes Gigadrenado: curaba con cada golpe y estaba roto. Mismo id para no romper partidas.)
+    { id: 'giga-drain', name: 'Hierba Lazo', type: 'grass', kind: 'aura',
+      desc: 'Raíces que atrapan y machacan todo lo que tienes cerca.',
+      cd: 0.55, dmg: 9, radius: 76 },
 
     // ---------------- ELÉCTRICO ----------------
     { id: 'thunder-shock', name: 'Impactrueno', type: 'electric', kind: 'projectile',
