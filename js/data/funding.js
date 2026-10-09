@@ -10,7 +10,7 @@
  *   raised    lo recaudado en total y lo gastado, con la fecha de la última cuenta
  */
 G.Funding = {
-  kofi: '',
+  kofi: 'jpter78',
   sponsors: 'JPTER78',
   costs: [
     ['Servidores (Firebase, plan gratuito)', 0],
