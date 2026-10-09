@@ -219,7 +219,7 @@
 
     function save() {
       G.DB.commit();
-      if (G.Social.me) G.Social.publishProfile();
+      if (G.Social.me) G.Social.publishProfile(true);
       G.Audio.sfx('confirm');
     }
 

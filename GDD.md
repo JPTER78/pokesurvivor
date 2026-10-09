@@ -164,7 +164,7 @@ La de los juegos, pero ×1,6 / ×0,6 / ×0,3 en vez de ×2 / ×0,5 / ×0 (con un
 solo ataque activo, una inmunidad total dejaría enemigos imposibles). Dos
 tipos se multiplican, con tope ×0,3–×2,4. Tus ataques usan el tipo del
 movimiento; los enemigos, su tipo principal (o el de su disparo). Número
-amarillo y "¡Muy eficaz!" cuando lo es; gris si no.
+amarillo cuando es muy eficaz; gris si no (sin texto, para no cargar la pantalla).
 
 ## 5. Enemigos
 
@@ -263,7 +263,8 @@ Kanto, Johto, Hoenn, Sinnoh, Teselia, Kalos, Alola, Galar y Paldea, cada uno con
 | Legendaria | 1,5% | 300 |
 | *Shiny* | *1% (cualquier rareza)* | *×3* |
 
-- Tirada ×1: 1 ticket · ×10: 1 ticket ×10 (o 10 tickets), con **al menos una
+- Tirada ×1: 1 ticket · ×10: **10 tickets normales o 1 ticket ×10** (dos botones,
+  eliges con qué pagar), con **al menos una
   Épica** garantizada. Los repetidos siguen dando monedas.
 - **Animación: tragaperras pixel art** (palanca, 3 rodillos, bombillas). Los
   símbolos son la rareza: Poké, Super, Ultra, Lujo y Master Ball
@@ -387,6 +388,40 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   contraseña y Google activos, dominios `jpter78.github.io` y `localhost`). Los
   proyectos `pokemon-survivors-jpter` y `asdaad-9e84f` se borraron (30 días
   recuperables en Google Cloud).
+
+**2026-10-09 · móvil y ajustes**
+- **Jugable en móvil y tablet, en horizontal** (en vertical sale "Gira el
+  móvil" y la partida se pausa). **Joystick flotante**: aparece donde pones el
+  dedo. Los iconos de ataque se tocan para cambiarlo (en PC también con clic) y
+  hay botón de pausa. Al cambiar de app, la partida se pausa sola.
+- La cámara asegura un alto mínimo de mundo en pantallas muy anchas.
+- Interfaz compacta en pantallas bajas (menú en dos columnas, barra superior
+  pequeña, la línea de créditos pasa a Ajustes → Acerca de).
+- **Ajustes** (PC y móvil): sonido; gráficos (calidad Auto/Alta/Media/Baja,
+  números de daño, menos sacudidas y destellos, FPS, pantalla completa);
+  controles (tamaño del joystick, teclas); cuenta (apodo fijo, nube, cerrar
+  sesión, borrar); acerca de (versión, créditos, aviso legal, contacto).
+- **Calidad automática**: baja efectos si el juego va a menos de 45 FPS.
+- **Instalable como app** (PWA: icono, pantalla completa, abre sin conexión).
+- Arreglos: el orbe extra de los movimientos de órbita al mejorarlos; sonido
+  que no arrancaba en móvil; los invocadores respetan el tope de enemigos;
+  aviso claro si un archivo del juego no llega a cargar.
+
+**2026-10-09 · gastar lo mínimo de Firebase (plan gratuito)**
+- **Ranking con resumen**: un documento `lbs/{tabla}` con el top 50 por
+  tabla (1 lectura por pestaña en vez de ~52) y caché de 10 min en el
+  navegador; las marcas propias se recuerdan para no leer antes de escribir.
+  El filtro por Pokémon queda **sólo en el histórico** (la mitad de escrituras).
+- **"En línea" aproximado** por Firestore (`pres/`, latido cada 10 min, se lee
+  al abrir Amigos o la sala) e **invitaciones por Firestore** (`inv/`). La
+  Realtime Database sólo se conecta dentro de una sala: el tope de 100
+  conexiones del plan gratis ya no limita a los jugadores normales.
+- **Guardado en la nube** como mucho cada 30 s (y al cerrar), sin escucha en
+  vivo del propio documento; perfil público como mucho cada 10 min.
+- Medido en el emulador: ver todo el ranking dos veces pasó de 1.275 a 20
+  lecturas; terminar una partida de 12 a 3.
+- Menos Pokémon en pantalla pero más fuertes (×0,45 de cantidad, ×2,1 vida,
+  ×1,35 daño, ×2,6 experiencia) y sin textos de "¡Muy eficaz!".
 
 **2026-10-08 · multijugador, amigos y ranking**
 - **Cooperativo hasta 4** con **lista de amigos** (no códigos de sala ni salas

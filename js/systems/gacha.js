@@ -11,17 +11,14 @@
  *
  * Se tira con TICKETS (se consiguen jugando):
  *   ×1   1 ticket
- *   ×10  1 ticket ×10, o 10 tickets normales si no tienes ninguno ×10
+ *   ×10  10 tickets normales, o 1 ticket ×10 (eliges con qué)
  */
 G.Gacha = (() => {
   /** ¿Qué gasta una tirada de n? → { t1, t10 } o null si no te llega. */
-  function costOf(save, n) {
+  /** @param use  't1' (tickets normales) o 't10' (un ticket ×10, sólo para la ×10) */
+  function costOf(save, n, use = 't1') {
     const t = save.tickets || { t1: 0, t10: 0 };
-    if (n === 10) {
-      if (t.t10 >= 1) return { t1: 0, t10: 1 };
-      if (t.t1 >= 10) return { t1: 10, t10: 0 };
-      return null;
-    }
+    if (n === 10 && use === 't10') return t.t10 >= 1 ? { t1: 0, t10: 1 } : null;
     return t.t1 >= n ? { t1: n, t10: 0 } : null;
   }
   const RATES = [[1, 45], [2, 30], [3, 17], [4, 6.5], [5, 1.5]];
@@ -80,8 +77,8 @@ G.Gacha = (() => {
    * Devuelve null si no hay monedas, o la lista de resultados:
    *   { dex, rarity, shiny, isNew, refund }
    */
-  function pull(save, n, gen = 1) {
-    const cost = costOf(save, n);
+  function pull(save, n, gen = 1, use = 't1') {
+    const cost = costOf(save, n, use);
     if (!cost) return null;
     save.tickets.t1 -= cost.t1;
     save.tickets.t10 -= cost.t10;

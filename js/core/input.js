@@ -1,4 +1,4 @@
-/* ============ input.js — teclado y ratón ============ */
+/* ============ input.js — teclado y ratón (el táctil está en touch.js) ============ */
 G.Input = (() => {
   const down = new Set();
   const pressed = new Set();   // se limpia cada frame
@@ -25,8 +25,10 @@ G.Input = (() => {
   addEventListener('mouseup', () => mdown = false);
 
   return {
-    /** Vector de movimiento normalizado del jugador. */
+    /** Vector de movimiento del jugador (teclado o joystick táctil). */
     axis() {
+      const t = G.Touch && G.Touch.vector();
+      if (t && (t[0] || t[1])) return t;
       let x = 0, y = 0;
       if (MOVE_KEYS.left.some(k => down.has(k))) x -= 1;
       if (MOVE_KEYS.right.some(k => down.has(k))) x += 1;

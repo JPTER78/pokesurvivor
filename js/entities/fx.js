@@ -8,7 +8,9 @@
  */
 G.FX = (() => {
   const PX = G.Sprites.PX;
-  const MAX_PARTS = 1400, MAX_SPRITES = 320;
+  // Topes según la calidad (Ajustes → Gráficos): bajo, medio, alto.
+  const CAP_PARTS = [350, 800, 1400], CAP_SPRITES = [110, 210, 320], CAP_TEXTS = [25, 45, 70], DENS = [0.35, 0.65, 1];
+  const q = () => G.Settings.fx;
   let parts = [], sprites = [], texts = [], rings = [], slashes = [], beams = [];
 
   function clear() { parts = []; sprites = []; texts = []; rings = []; slashes = []; beams = []; }
@@ -19,12 +21,13 @@ G.FX = (() => {
 
   /** Partícula cuadrada. o: { vx, vy, life, size (en píxeles de arte), grav, drag } */
   function px(x, y, color, o = {}) {
-    if (parts.length >= MAX_PARTS) return;
+    if (parts.length >= CAP_PARTS[q()]) return;
     parts.push({ x, y, vx: o.vx || 0, vy: o.vy || 0, t: 0, life: o.life || 0.4, color,
                  s: (o.size || 1) * PX, grav: o.grav || 0, drag: o.drag == null ? 0.9 : o.drag });
   }
 
   function burst(x, y, color, n = 8, power = 110) {
+    n = Math.max(1, Math.round(n * DENS[q()]));
     for (let i = 0; i < n; i++) {
       const a = Math.random() * 6.2832, s = G.U.rand(power * 0.35, power);
       px(x, y, color, { vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: G.U.rand(0.22, 0.5), size: Math.random() < 0.35 ? 2 : 1 });
@@ -32,6 +35,7 @@ G.FX = (() => {
   }
 
   function spark(x, y, color, dirX, dirY, n = 4) {
+    n = Math.max(1, Math.round(n * DENS[q()]));
     const base = Math.atan2(dirY, dirX);
     for (let i = 0; i < n; i++) {
       const a = base + G.U.rand(-0.9, 0.9), s = G.U.rand(60, 170);
@@ -41,7 +45,7 @@ G.FX = (() => {
 
   /** Sprite de efecto suelto. o: { vx, vy, life, scale, angle, spin, grav, frameRate, fade } */
   function sp(shape, pal, x, y, o = {}) {
-    if (sprites.length >= MAX_SPRITES) return;
+    if (sprites.length >= CAP_SPRITES[q()]) return;
     sprites.push({ shape, pal, x, y, vx: o.vx || 0, vy: o.vy || 0, t: 0, life: o.life || 0.4,
                    scale: o.scale || 1, angle: o.angle || 0, spin: o.spin || 0, grav: o.grav || 0,
                    fr: o.frameRate || 10, fade: o.fade !== false });
@@ -49,12 +53,13 @@ G.FX = (() => {
 
   /** Centelleo de shiny (cruz de píxeles que nace y se apaga). */
   function twinkle(x, y) {
-    if (sprites.length >= MAX_SPRITES) return;
+    if (sprites.length >= CAP_SPRITES[q()]) return;
     sprites.push({ twinkle: true, x, y, vx: 0, vy: -8, t: 0, life: G.U.rand(0.45, 0.7) });
   }
 
   /** Partículas de estela de los proyectiles, según el material. */
   function trail(kind, pal, x, y, vx, vy) {
+    if (Math.random() > DENS[q()]) return;          // en calidad baja, menos estela
     const P = G.VFX.PAL[pal] || G.VFX.PAL.normal;
     const back = Math.atan2(-vy, -vx);
     const j = () => G.U.rand(-3, 3);
@@ -71,7 +76,9 @@ G.FX = (() => {
   function dmgText(x, y, value, color = '#ffffff', big = false) {
     // Con cientos de golpes por segundo no se leen igual: tope de 70 (los
     // grandes, como "¡Muy eficaz!" o los de jefe, siempre entran).
-    if (texts.length >= 70) { if (!big) return; texts.shift(); }
+    // Ajustes → "Números de daño": los números se ocultan; los avisos de texto no.
+    if ((typeof value === 'number' || /^-\d/.test(value)) && !G.Settings.get('dmgNumbers')) return;
+    if (texts.length >= CAP_TEXTS[q()]) { if (!big) return; texts.shift(); }
     texts.push({ x: x + G.U.rand(-6, 6), y, vy: -46, t: 0, life: big ? 0.95 : 0.62, s: value, color, big });
   }
 

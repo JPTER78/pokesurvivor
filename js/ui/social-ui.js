@@ -73,12 +73,21 @@
       if (t) G.Audio.sfx(bad ? 'error' : 'confirm');
     }
 
-    function open() { withNick(() => { G.UI.show('scr-friends', true); msg(''); render(); }); }
+    function open() { withNick(() => { G.UI.show('scr-friends', true); msg(''); render(); G.Social.refreshPresence(); }); }
+
+    /** "hace 5 min", "hace 2 h", "hace 3 días". */
+    function ago(t) {
+      const m = Math.max(1, Math.round((Date.now() - t) / 60000));
+      if (m < 60) return 'hace ' + m + ' min';
+      const h = Math.round(m / 60);
+      if (h < 48) return 'hace ' + h + ' h';
+      return 'hace ' + Math.round(h / 24) + ' días';
+    }
 
     function stateText(f) {
       if (f.status === 'in') return 'Quiere ser tu amigo';
       if (f.status === 'out') return 'Solicitud enviada';
-      if (!f.online) return 'Desconectado';
+      if (!f.online) return f.seen ? 'Visto ' + ago(f.seen) : 'Desconectado';
       return f.play ? 'Jugando' : 'En línea';
     }
 
@@ -163,6 +172,7 @@
     function open() {
       if (!G.Social.room) { G.MenuUI.open(); return; }
       G.Social.refreshMember();
+      G.Social.refreshPresence();
       G.UI.show('scr-lobby', true);
       membersKey = '';
       render();

@@ -6,7 +6,9 @@ rules_version = '2';
 //   profiles/{uid}         apodo público de cada jugador
 //   friendships/{a_b}      solicitudes y amistades entre dos jugadores
 //   runs/{uid}             cuándo empezó tu última partida (anti-trampas)
-//   lb/{tabla}/e/{id}      ranking de tiempo aguantado
+//   lb/{tabla}/e/{id}      ranking de tiempo aguantado (marcas validadas)
+//   lbs/{tabla}            resumen con el top 50 de cada tabla
+//   pres/{uid}             en línea (aproximado) · inv/{para_de} invitaciones
 // Todo lo demás está cerrado.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -112,6 +114,63 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create, update: if signedIn() && validEntry(board, id);
       allow delete: if signedIn() && me() in resource.data.uids;
+    }
+
+    // Resumen con el top 50 de cada tabla (lo que se lee al mirar el ranking).
+    //   top: { id: { t, uids, names, dex, shiny, lv, kills } }
+    //   me:  la fila que añades o mejoras (debe coincidir con tu marca validada,
+    //        escrita en la misma transacción)
+    //   ev:  la fila que sale del top (sólo si tiene menos tiempo que la tuya)
+    // Al borrar la cuenta: me = '' y ev = una fila tuya que se quita.
+    function validTop(board) {
+      let d = request.resource.data;
+      let old = resource == null ? {} : resource.data.top;
+      let changed = d.top.diff(old).affectedKeys();
+      return d.keys().hasOnly(['top', 'me', 'ev'])
+        && d.top is map && d.top.size() <= 50
+        && d.me is string && d.ev is string
+        && (d.me == '' ? removeMine(d, old, changed) : addMine(board, d, old, changed));
+    }
+    function addMine(board, d, old, changed) {
+      let e = getAfter(/databases/$(database)/documents/lb/$(board)/e/$(d.me)).data;
+      let row = d.top[d.me];
+      return me() in e.uids
+        && changed.hasOnly([d.me, d.ev])
+        && row.t == e.t && row.uids == e.uids && row.names == e.names && row.dex == e.dex
+        && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t));
+    }
+    function removeMine(d, old, changed) {
+      return d.ev in old && me() in old[d.ev].uids && !(d.ev in d.top) && changed.hasOnly([d.ev]);
+    }
+
+    match /lbs/{board} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && validTop(board);
+    }
+
+    // Presencia aproximada: "en línea" si at es de hace menos de unos minutos.
+    match /pres/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['at', 'room', 'play', 'on'])
+        && request.resource.data.at == request.time
+        && request.resource.data.room is string && request.resource.data.room.size() <= 40
+        && request.resource.data.play is bool && request.resource.data.on is bool;
+      allow delete: if signedIn() && me() == uid;
+    }
+
+    // Invitaciones a una sala: id "para_de". Sólo entre amigos confirmados.
+    match /inv/{id} {
+      allow read: if signedIn() && (resource == null || me() == resource.data.to || me() == resource.data.from);
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['to', 'from', 'room', 'name', 'at'])
+        && request.resource.data.from == me()
+        && id == request.resource.data.to + '_' + me()
+        && request.resource.data.room is string && request.resource.data.room.size() <= 40
+        && request.resource.data.name is string && request.resource.data.name.size() <= 16
+        && request.resource.data.at == request.time
+        && get(/databases/$(database)/documents/friendships/$(request.resource.data.to < me() ? request.resource.data.to + '_' + me() : me() + '_' + request.resource.data.to)).data.status == 'ok';
+      allow delete: if signedIn() && (me() == resource.data.to || me() == resource.data.from);
     }
 
     // Para borrar todas tus marcas al borrar la cuenta (consulta de grupo).

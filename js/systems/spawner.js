@@ -14,7 +14,10 @@ G.Spawner = (() => {
   // Tope de enemigos a la vez (antes 420: con tantos se ralentizaba). Cuando
   // se llega al tope, los que siguen saliendo son "élite" (más vida, daño y
   // experiencia), así la dificultad no baja.
-  const CAP = 280, ELITE_FROM = 0.85;
+  const CAP = 120, ELITE_FROM = 0.85;
+  // Menos Pokémon pero más fuertes (la pantalla no se satura): salen ~45% de
+  // los de antes, cada uno con más vida, daño y experiencia.
+  const DENSITY = 0.45, HP_K = 2.1, DMG_K = 1.35, XP_K = 2.6;
   const SHINY_RATE = 1 / 4096;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
@@ -27,7 +30,7 @@ G.Spawner = (() => {
 
   /** Enemigos por segundo según el minuto de la run. */
   function rate(t) {
-    return 1.6 + t * 0.028 + Math.pow(t / 60, 1.6) * 0.5;
+    return (1.6 + t * 0.028 + Math.pow(t / 60, 1.6) * 0.5) * DENSITY;
   }
 
   function ringPoint(pl, angle) {
@@ -75,7 +78,8 @@ G.Spawner = (() => {
     const pt = freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
-    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length)));
+    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * HP_K));
+    e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
     if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
     if (shiny) e.makeShiny();
     G.EnemyMgr.add(e);
@@ -130,7 +134,7 @@ G.Spawner = (() => {
       surgeT = G.U.rand(38, 56);
       const base = Math.random() * 6.2832;
       const target = anchor();
-      const n = Math.min(CAP - G.EnemyMgr.count, Math.round((14 + Math.floor(t / 22)) * G.Coop.scaleRate(players.length)));
+      const n = Math.min(CAP - G.EnemyMgr.count, Math.round((14 + Math.floor(t / 22)) * G.Coop.scaleRate(players.length) * 0.55));
       for (let i = 0; i < n; i++) spawnOne(target, t, base + G.U.rand(-0.55, 0.55));
       say('¡Marea de Pokémon!', 2.2);
       G.Audio.sfx('surge');
@@ -149,6 +153,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, tickBanner, banner, say, rate, SHINY_RATE,
+  return { reset, update, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();

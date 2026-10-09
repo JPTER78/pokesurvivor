@@ -8,7 +8,8 @@ G.GachaUI = (() => {
 
   function init() {
     $('pull-1').onclick = () => pull(1);
-    $('pull-10').onclick = () => pull(10);
+    $('pull-10').onclick = () => pull(10, 't1');
+    $('pull-10b').onclick = () => pull(10, 't10');
     $('pull-close').onclick = close;
 
     const tabs = $('gacha-gens');
@@ -66,18 +67,20 @@ G.GachaUI = (() => {
 
     const t = s.tickets;
     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
-    $('cost-10').innerHTML = t.t10 >= 1 || t.t1 < 10 ? `${G.Icons.html('ticket10', 18)} 1` : `${G.Icons.html('ticket', 18)} 10`;
+    $('cost-10').innerHTML = `${G.Icons.html('ticket', 18)} 10`;
+    $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
     $('gacha-tickets').innerHTML = `Tienes ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> tickets y ${G.Icons.html('ticket10', 18)} <b>${t.t10}</b> tickets ×10`;
     $('pull-1').disabled = !G.Gacha.costOf(s, 1);
-    $('pull-10').disabled = !G.Gacha.costOf(s, 10);
+    $('pull-10').disabled = !G.Gacha.costOf(s, 10, 't1');
+    $('pull-10b').disabled = !G.Gacha.costOf(s, 10, 't10');
     G.UI.refreshCoins();
   }
 
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
-  async function pull(n) {
+  async function pull(n, use = 't1') {
     if (busy) return;
-    const res = G.Gacha.pull(G.DB.save, n, gen);
+    const res = G.Gacha.pull(G.DB.save, n, gen, use);
     if (!res) { G.Audio.sfx('error'); G.UI.toast('No tienes tickets suficientes: consíguelos jugando'); return; }
     G.Progress.checkAch();
     G.DB.commit();

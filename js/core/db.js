@@ -245,7 +245,11 @@ G.DB = (() => {
   // =====================================================================
 
   let auth = null, fs = null, rtdb = null, uid = null, unlisten = null;
-  let pushT = 0, retryT = 0, pending = false, pushing = null;
+  let pushT = 0, retryT = 0, pending = false, pushing = null, lastPush = 0;
+  // Como mucho una subida cada 30 s (el plan gratuito de Firebase tiene un
+  // cupo diario de escrituras). La copia local se guarda siempre al momento,
+  // y al ocultar o cerrar la pestaña se sube lo pendiente.
+  const PUSH_GAP = 30 * 1000;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
 
@@ -321,28 +325,14 @@ G.DB = (() => {
     save = migrate(s, s.name);
     key = uid; user = save.name; guest = false;
     write(K_CLOUD + uid, save);
-    listen();
     if (online) await pushNow(); else { pending = true; setSync('offline'); scheduleRetry(); }
   }
 
-  /**
-   * Cambios que llegan de otro ordenador mientras juegas: se fusionan al
-   * momento. Sin esto, este ordenador seguía con su copia vieja y, al guardar,
-   * podía devolver las monedas o el compañero a un estado anterior.
+  /*
+   * Ya no se escucha el documento en vivo (cada cambio costaba una lectura).
+   * Si juegas en dos ordenadores, las partidas se fusionan al entrar y en
+   * cada subida (transacción con merge()).
    */
-  function listen() {
-    if (unlisten) unlisten();
-    unlisten = docRef().onSnapshot(snap => {
-      if (!snap.exists || snap.metadata.hasPendingWrites || !save) return;
-      const remote = migrate(snap.data().save);
-      if ((remote.updated || 0) <= (save.updated || 0)) return;
-      applyInPlace(merge(plain(save), remote));
-      write(K_CLOUD + uid, save);
-      if (!pending) setSync('ok');
-      if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
-    }, e => console.warn('[DB] escucha:', e.code || e.message));
-  }
-
   function stopListening() { if (unlisten) { unlisten(); unlisten = null; } }
 
   /** Sube la partida fusionándola con lo que haya en la nube (transacción). */
@@ -355,6 +345,7 @@ G.DB = (() => {
       return Promise.resolve();
     }
     pending = false;
+    lastPush = Date.now();
     setSync('syncing');
     let merged = null;
     const tr = fs.runTransaction(async tx => {
@@ -377,7 +368,7 @@ G.DB = (() => {
       scheduleRetry();
     }).finally(() => {
       pushing = null;
-      if (pending && syncState === 'pending') schedulePush(1500);
+      if (pending && syncState === 'pending') schedulePush(Math.max(1500, PUSH_GAP - (Date.now() - lastPush)));
     });
     return pushing;
   }
@@ -484,7 +475,7 @@ G.DB = (() => {
     write(K_CLOUD + uid, save);
     pending = true;
     setSync('pending');
-    schedulePush(1200);
+    schedulePush(Math.max(1200, PUSH_GAP - (Date.now() - lastPush)));
     return true;
   }
 

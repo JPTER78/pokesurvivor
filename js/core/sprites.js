@@ -72,11 +72,16 @@ G.Sprites = (() => {
     if (!name) return null;
     const k = dex + '/' + name + (shiny ? '/s' : '');
     let s = sheets.get(k);
-    if (s) return s;
-    s = { ready: false, failed: false, img: new Image() };
+    if (s) {
+      // Si la descarga se cortó (red mala, servidor saturado), reintenta más tarde.
+      if (s.failed && performance.now() > s.retryAt) { s.failed = false; s.img.src = s.src + '?r=' + s.tries; }
+      return s;
+    }
+    s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0,
+          src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png` };
     s.img.onload = () => { s.ready = true; };
-    s.img.onerror = () => { s.failed = true; };
-    s.img.src = `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png`;
+    s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
+    s.img.src = s.src;
     sheets.set(k, s);
     return s;
   }

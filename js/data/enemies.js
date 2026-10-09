@@ -69,6 +69,8 @@ G.Enemies = (() => {
     if (SHIELD.has(p.dex)) return 'shielder';
     if (BOMB.has(p.dex)) return 'bomber';
     if (SUMMON[p.dex] && G.SPRITE_META[SUMMON[p.dex]]) return 'summoner';
+    // Enjambres: algunos Bicho llaman a más de los suyos (desde el principio).
+    if (has('bug') && h >= 0.6 && h < 0.78) return 'summoner';
     if (has('electric', 'psychic', 'dragon', 'ice') && h < 0.18) return 'beamer';
     if (has('fire', 'ground', 'poison') && h < 0.18) return 'zoner';
     if (has('water', 'grass', 'bug', 'fairy') && h >= 0.18 && h < 0.32) return 'fan';
@@ -115,16 +117,22 @@ G.Enemies = (() => {
   // ---------------- elenco de la run ----------------
 
   const PLAIN = ['chase', 'charger', 'ranged', 'tank'];
+  const SUPPORT = ['healer', 'shielder', 'summoner'];
 
-  /** Elenco de un tramo: siempre con al menos 2 con personalidad (si los hay). */
+  /**
+   * Elenco de un tramo: siempre un "apoyo" (curandero, escudo o invocador)
+   * y, desde el segundo tramo, también uno de los que atacan con aviso.
+   * En el primero no hay más personalidades (para ir aprendiendo).
+   */
   function castFor(tier) {
     const all = candidates(tier);
-    const special = all.filter(p => !PLAIN.includes(behaviorOf(p)));
-    // Al principio de la run, sólo uno con personalidad (para ir aprendiendo).
-    const want = tier.from === 0 ? 1 : 2;
-    const pick = G.U.pickN(special, Math.min(want, special.length));
-    // Y el resto, sin más personalidades en el primer tramo.
-    if (tier.from === 0) return pick.concat(G.U.pickN(all.filter(p => !pick.includes(p) && PLAIN.includes(behaviorOf(p))), tier.cast - pick.length));
+    const kind = p => behaviorOf(p);
+    // Primero el tipo de apoyo (a partes iguales) y luego el Pokémon.
+    const kinds = SUPPORT.filter(k => all.some(p => kind(p) === k));
+    const sk = kinds.length ? kinds[Math.floor(Math.random() * kinds.length)] : null;
+    const pick = sk ? G.U.pickN(all.filter(p => kind(p) === sk), 1) : [];
+    if (tier.from > 0) pick.push(...G.U.pickN(all.filter(p => !PLAIN.includes(kind(p)) && !SUPPORT.includes(kind(p))), 1));
+    if (tier.from === 0) return pick.concat(G.U.pickN(all.filter(p => !pick.includes(p) && PLAIN.includes(kind(p))), tier.cast - pick.length));
     return pick.concat(G.U.pickN(all.filter(p => !pick.includes(p)), tier.cast - pick.length));
   }
 

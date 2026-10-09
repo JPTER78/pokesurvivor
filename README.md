@@ -19,6 +19,12 @@ de personalidad y a la mazmorra.
 | `Q` / `E` | Ciclar movimientos |
 | `Esc` / `P` | Pausa |
 
+**En móvil o tablet** (en horizontal): pon el dedo en cualquier sitio y arrastra
+para moverte (el joystick aparece donde tocas), toca un ataque de abajo para
+cambiarlo y el botón de arriba a la derecha para pausar. Se puede instalar como
+app ("Añadir a pantalla de inicio"). En **Ajustes** hay sonido, calidad gráfica
+(con modo automático), números de daño, menos sacudidas, FPS y la cuenta.
+
 El Pokémon ataca solo con el movimiento activo. Las rocas, cofres y la hierba
 alta se rompen; las paredes y los árboles bloquean los disparos enemigos; el
 agua frena y la lava quema (también a los enemigos).

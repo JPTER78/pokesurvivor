@@ -183,6 +183,11 @@ G.Combat = (() => {
     const want = Math.max(1, m.count | 0);
     const mine = p => p.orb && p.owner === pl;
     const orbs = G.Projectiles.all().filter(mine);
+    // Si cambia el número de orbes (al mejorar el movimiento), se reparten
+    // todos por igual a partir de donde va el primero, sin saltos.
+    const relayout = orbs.length !== want;
+    const base = orbs.length ? orbs[0].oa : now * m.speed;
+    if (orbs.length > want) for (const p of orbs.slice(want)) G.Projectiles.remove(p);
 
     for (let i = orbs.length; i < want; i++) {
       G.Projectiles.spawnOrb({
@@ -200,7 +205,7 @@ G.Combat = (() => {
       p.orad = m.radius;
       p.ospeed = m.speed;
       p.r = m.size;
-      if (live.length !== want) p.oa = (i / live.length) * 6.2832 + now * m.speed;
+      if (relayout) p.oa = base + (i / live.length) * 6.2832;
     });
 
     // Animación de concentración de vez en cuando, para que se note vivo.

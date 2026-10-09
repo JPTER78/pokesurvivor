@@ -55,11 +55,13 @@ G.Audio = (() => {
 
   function unlock() {
     if (!init()) return;
-    if (ctx.state === 'suspended') ctx.resume();
+    // 'suspended' o 'interrupted' (iPhone al volver de otra app): se reanuda.
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
     if (wanted && !current) startSong(wanted);
   }
-  addEventListener('pointerdown', unlock, { capture: true });
-  addEventListener('keydown', unlock, { capture: true });
+  // En móvil, tocar la pantalla (pointerdown) no cuenta como gesto para el
+  // sonido: sí levantar el dedo (pointerup / touchend). Se escuchan todos.
+  for (const ev of ['pointerdown', 'pointerup', 'touchend', 'keydown']) addEventListener(ev, unlock, { capture: true });
 
   function applyVolumes() {
     if (!ctx) return;

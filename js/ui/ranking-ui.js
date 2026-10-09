@@ -1,6 +1,7 @@
 /* ============ ranking-ui.js — pantalla del ranking ============
  * Pestañas Solo / Grupo, periodo (diario ... histórico), todos o sólo amigos,
- * filtro por Pokémon y tu puesto abajo aunque no salgas en el top.
+ * filtro por Pokémon (sólo en el histórico) y tu puesto abajo aunque no salgas
+ * en el top. Lo leído se guarda 10 min (ver ranking.js).
  */
 G.RankingUI = (() => {
   const $ = G.UI.$;
@@ -21,7 +22,13 @@ G.RankingUI = (() => {
     $('rk-clear').onclick = () => { $('rk-poke').value = ''; setDex(null); };
   }
 
-  function setDex(d) { dex = d; $('rk-clear').classList.toggle('hidden', !d); load(); }
+  /** El filtro por Pokémon sólo existe en el histórico: al elegir uno se pasa a esa pestaña. */
+  function setDex(d) {
+    dex = d;
+    if (d && period !== 'a') period = 'a';
+    $('rk-clear').classList.toggle('hidden', !d);
+    tabs(); load();
+  }
 
   function open() {
     if (!G.SocialUI.needOnline()) return;
@@ -44,7 +51,10 @@ G.RankingUI = (() => {
     };
     mk($('rk-mode'), [['s', `<b>${G.Icons.html('user', 16)} Solo</b>`], ['g', `<b>${G.Icons.html('friends', 16)} Grupo</b>`]],
        mode, k => { mode = k; }, 'gen-tab');
-    mk($('rk-period'), G.Ranking.PERIODS, period, k => { period = k; }, 'chip');
+    mk($('rk-period'), G.Ranking.PERIODS, period, k => {
+      period = k;
+      if (k !== 'a' && dex) { dex = null; $('rk-poke').value = ''; $('rk-clear').classList.add('hidden'); }
+    }, 'chip');
     mk($('rk-scope'), [['all', 'Todos'], ['friends', 'Sólo amigos']], scope, k => { scope = k; }, 'chip');
   }
 

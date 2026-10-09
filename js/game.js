@@ -31,6 +31,9 @@ G.Game = (() => {
     ctx = cv.getContext('2d');
     resize();
     addEventListener('resize', resize);
+    G.Touch.init(cv);
+    // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
+    document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
     G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
     Backdrop.init();
     last = performance.now();
@@ -45,6 +48,36 @@ G.Game = (() => {
     cv.width = Math.round(w * dpr);
     cv.height = Math.round(h * dpr);
     G.Camera.resize(w, h, dpr);
+    checkOrientation();
+  }
+
+  /** Móvil en vertical: aviso de girarlo (y pausa). */
+  function checkOrientation() {
+    const portrait = G.Touch.active && innerHeight > innerWidth;
+    const el = document.getElementById('rotate');
+    if (!el) return;
+    if (portrait && !document.getElementById('rotate-ico').innerHTML) document.getElementById('rotate-ico').innerHTML = G.Icons.html('phone', 48);
+    el.classList.toggle('hidden', !portrait);
+    if (portrait) autoPause();
+  }
+
+  /** Pausa sola (sólo en solitario: en grupo los demás siguen). */
+  function autoPause() {
+    G.Touch.reset();
+    if (state === 'playing' && !G.Coop.active) { state = 'paused'; G.RunUI.showPause(); }
+  }
+
+  /** Pausa/continúa (tecla Esc o P, o el botón de pausa del móvil). */
+  function togglePause() {
+    // En grupo la pausa no para el juego (los demás siguen jugando).
+    if (G.Coop.active) {
+      if (state !== 'playing') return;
+      if (G.UI.isOpen('scr-pause')) G.UI.hide('scr-pause');
+      else { G.RunUI.showPause(true); G.Audio.sfx('pause'); }
+      return;
+    }
+    if (state === 'playing') { state = 'paused'; G.RunUI.showPause(); G.Audio.sfx('pause'); }
+    else if (state === 'paused') { state = 'playing'; G.UI.hideAll(); }
   }
 
   // ---------------- run ----------------
@@ -317,6 +350,7 @@ G.Game = (() => {
   // ---------------- teclado ----------------
 
   function handleKeys() {
+    if (G.SettingsUI.isOpen) { if (G.Input.tap('escape')) G.SettingsUI.close(); return; }
     if (state === 'levelup') {
       for (let i = 0; i < 3; i++) {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
@@ -335,18 +369,7 @@ G.Game = (() => {
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
       return;
     }
-    if (G.Input.tap('escape') || G.Input.tap('keyp')) {
-      // En grupo la pausa no para el juego (los demás siguen jugando).
-      if (G.Coop.active) {
-        if (state !== 'playing') return;
-        if (G.UI.isOpen('scr-pause')) G.UI.hide('scr-pause');
-        else { G.RunUI.showPause(true); G.Audio.sfx('pause'); }
-        return;
-      }
-      if (state === 'playing') { state = 'paused'; G.RunUI.showPause(); G.Audio.sfx('pause'); }
-      else if (state === 'paused') { state = 'playing'; G.UI.hideAll(); }
-      return;
-    }
+    if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
     for (let i = 0; i < 4; i++) {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
@@ -359,10 +382,15 @@ G.Game = (() => {
 
   let deathT = 0;
 
-  let frameDt = 0;
+  let frameDt = 0, speedK = 1;
+  let fpsShown = 60, fpsAcc = 0, fpsN = 0;
   function loop(ts) {
-    const dt = Math.min(1 / 30, (ts - last) / 1000) || 0;
+    const real = (ts - last) / 1000 || 0;
+    const dt = Math.min(1 / 30, real) * speedK;
     last = ts;
+    if (state === 'playing') G.Settings.sample(real);
+    fpsAcc += real; fpsN++;
+    if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
     frameDt = state === 'playing' ? dt : 0;
 
     handleKeys();
@@ -500,9 +528,19 @@ G.Game = (() => {
       ctx.fillRect(0, 0, w, h);
     }
     G.HUD.draw(ctx, w, h, pl, st);
+    G.Touch.draw(ctx);
+    if (G.Settings.get('fps')) {
+      ctx.save();
+      ctx.font = '700 11px Pixelify, monospace';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = fpsShown >= 50 ? '#5fe08a' : fpsShown >= 30 ? '#ffd23f' : '#ff5f6d';
+      ctx.fillText(fpsShown + ' FPS', w - 10, h - 8);
+      ctx.restore();
+    }
     if (flashT > 0) {
       ctx.save();
-      ctx.globalAlpha = Math.min(1, flashT / flashDur * 1.4);
+      // "Menos destellos": el fogonazo de pantalla se queda en un tercio.
+      ctx.globalAlpha = Math.min(1, flashT / flashDur * 1.4) * (G.Settings.get('calm') ? 0.3 : 1);
       ctx.fillStyle = flashCol;
       ctx.fillRect(0, 0, w, h);
       ctx.restore();
@@ -606,6 +644,13 @@ G.Game = (() => {
     init, startRun, everyone, levelXp, flash,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { time = t; },
+    /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
+    debugSpeed(k) { speedK = k; },
+    togglePause,
+    /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
+    quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
+    /** Para grabar vídeos: abre las cartas de subir de nivel. */
+    debugLevelUp() { pl.level++; pendingLevels++; },
     toUI() { state = 'ui'; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };
@@ -616,7 +661,7 @@ G.Flow = {
   boot() {
     G.UI.initChrome();
     G.LoginUI.init(); G.TestUI.init(); G.MenuUI.init(); G.GachaUI.init();
-    G.SocialUI.init(); G.RankingUI.init(); G.GoalsUI.init(); G.ProfileUI.init();
+    G.SocialUI.init(); G.RankingUI.init(); G.GoalsUI.init(); G.ProfileUI.init(); G.SettingsUI.init();
     // Tu nombre arriba a la derecha abre tu perfil.
     document.getElementById('user-pill').onclick = () => G.GoalsUI.open('profile');
     G.Audio.music('village');     // suena tras el primer clic (lo exige el navegador)

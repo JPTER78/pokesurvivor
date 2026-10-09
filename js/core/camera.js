@@ -12,9 +12,13 @@ G.Camera = {
   /** Recalcula la escala para el tamaño actual del canvas. */
   dpr: 1,
 
+  // En pantallas más anchas que 16:9 (móviles en horizontal) se asegura
+  // también un alto mínimo de mundo, para no ver una franja estrecha.
+  MIN_VIEW_H: 420,
+
   resize(cssW, cssH, dpr = 1) {
     this.dpr = dpr;
-    this.scale = cssW / this.VIEW_W;
+    this.scale = Math.min(cssW / this.VIEW_W, cssH / this.MIN_VIEW_H);
     this.w = cssW / this.scale;
     this.h = cssH / this.scale;
   },
@@ -30,7 +34,10 @@ G.Camera = {
     } else { this._sx = this._sy = 0; }
   },
 
-  kick(amount) { this.shake = Math.min(1.2, this.shake + amount); },
+  kick(amount) {
+    if (G.Settings.get('calm')) amount *= 0.25;      // "menos sacudidas"
+    this.shake = Math.min(1.2, this.shake + amount);
+  },
 
   /** Aplica la transformación de cámara al contexto. */
   apply(ctx) {

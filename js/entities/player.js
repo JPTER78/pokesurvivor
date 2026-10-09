@@ -158,7 +158,6 @@ G.Player = class Player {
     G.Audio.sfx('hurt');
     G.Camera.kick(0.28);
     G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), eff === 'super' ? '#ff3048' : eff === 'weak' ? '#c9a0a8' : '#ff6b7a', eff === 'super');
-    if (eff === 'super') G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Muy eficaz!', '#ff8a96');
     G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ff5f6d', 6, 90);
     // Banda Focus: aguanta el golpe con 1 de vida (una vez cada 60 s).
     if (this.hp <= 0 && this.hasItem('focussash') && performance.now() - this.sashT > 60000) {

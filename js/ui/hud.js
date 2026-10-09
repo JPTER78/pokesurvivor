@@ -28,6 +28,8 @@ G.HUD = (() => {
   function draw(ctx, w, h, pl, st) {
     ctx.save();
     ctx.textBaseline = 'alphabetic';
+    G.Touch.clearButtons();
+    const touch = G.Touch.active;
 
     // ---------- barra de experiencia (borde superior) ----------
     const xpF = pl.xp / pl.xpNext;
@@ -89,7 +91,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16, y0 = 14;
+      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 14;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
@@ -203,6 +205,8 @@ G.HUD = (() => {
       const on = i === pl.active;
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
+      // Tocar (o hacer clic en) un icono activa ese movimiento.
+      if (m) G.Touch.addButton(x, y, S, S, () => { if (G.Game.state === 'playing' && pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); } }, GAP / 2);
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
 
       // fondo
@@ -271,12 +275,24 @@ G.HUD = (() => {
       }
     }
 
-    // pista de teclas
+    // ---------- botón de pausa (táctil) ----------
+    if (touch) {
+      const bx = w - 52, by = 12, bs = 40;
+      roundRect(ctx, bx, by, bs, bs, 10);
+      ctx.fillStyle = 'rgba(10,16,28,.7)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(244,248,255,.8)'; ctx.stroke();
+      ctx.fillStyle = '#f4f8ff';
+      ctx.fillRect(bx + 13, by + 11, 5, 18); ctx.fillRect(bx + 22, by + 11, 5, 18);
+      G.Touch.addButton(bx, by, bs, bs, () => G.Game.togglePause(), 8);
+    }
+
+    // pista de controles
     if (st.time < 14) {
       ctx.font = F(600, 10);
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
-      ctx.fillText('WASD moverse  ·  1-4 / Q / E cambiar de movimiento  ·  Esc pausa', w / 2, h - 4);
+      ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
+                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
     }
 
     ctx.restore();

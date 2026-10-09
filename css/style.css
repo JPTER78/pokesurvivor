@@ -38,7 +38,7 @@ body {
   -webkit-font-smoothing: none;
 }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
-#game { display: block; width: 100vw; height: 100vh; }
+#game { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; }
 button { font: inherit; color: inherit; }
 input { font: inherit; }
 
@@ -363,7 +363,7 @@ kbd {
 ::-webkit-scrollbar-thumb { background: rgba(244,248,255,.3); border-radius: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (min-height: 521px) {
   #scr-menu { flex-direction: column; overflow-y: auto; }
   .menu-right { width: 100%; background: rgba(5,10,25,.7); }
   .split { grid-template-columns: 1fr; }
@@ -566,3 +566,90 @@ a.plink:hover { color: var(--gold); }
 .card.evo { border-color: var(--gold); background: linear-gradient(90deg, rgba(255,210,63,.18), rgba(255,210,63,.04)); }
 .card.evo .nm { color: var(--gold); }
 @media (max-width: 760px) { .mission { grid-template-columns: 1fr; } .prof-marks { grid-template-columns: repeat(2, 1fr); } }
+
+
+/* ================= móvil y táctil ================= */
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+body { touch-action: manipulation; }
+/* Con táctil no tienen sentido las pistas de teclas. */
+body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !important; }
+#rotate {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(5, 10, 30, .94);
+}
+#rotate.hidden { display: none; }
+#rotate .box { max-width: 320px; }
+#rotate-ico { animation: rot-hint 1.6s steps(4) infinite; display: inline-block; }
+@keyframes rot-hint { 0%, 30% { transform: rotate(0deg); } 60%, 100% { transform: rotate(90deg); } }
+
+/* ---------- ajustes ---------- */
+#scr-settings { z-index: 60; }
+.box.settings { width: min(640px, 100%); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; }
+.set-body { overflow-y: auto; padding-right: 4px; min-height: 0; }
+#set-tabs { flex-wrap: wrap; }
+#set-tabs .gen-tab { padding: 6px 12px; }
+.set-h { color: var(--gold); font-size: 17px; margin: 14px 0 6px; }
+.set-h:first-child { margin-top: 4px; }
+.set-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+.set-row b { display: block; }
+.set-row small { display: block; color: var(--muted); font-size: 12px; }
+.set-row .switch { min-width: 58px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.set-chips { margin: 6px 0 10px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; font-size: 14px; }
+.keys span { color: var(--muted); }
+.credits { margin: 4px 0 12px; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.credits b { color: var(--ink); }
+.about-logo { text-align: center; font-size: 34px; font-weight: 700; color: var(--gold); text-shadow: 2px 2px 0 #a55f00, 4px 4px 0 var(--shadow); margin-top: 6px; }
+.btn.danger { background: #8a1f2e; border-color: #ff8a96; }
+.row.wrap { flex-wrap: wrap; }
+.touch-hint { display: none; }
+body.touch .touch-hint { display: block; }
+#pause-sound + .row, #scr-pause .row { flex-wrap: wrap; }
+a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
+
+/* ================= pantallas bajas (móvil en horizontal) =================
+ * Todo más compacto: la barra superior deja sitio, el menú va en dos
+ * columnas y la línea de créditos se esconde (está en Ajustes → Acerca de). */
+@media (max-height: 520px) {
+  .scr { padding: 44px 10px 6px; }
+  /* Sin barra superior encima: no hace falta dejarle hueco. */
+  #scr-login, #scr-test, #scr-result, #scr-starters, #scr-nick, #scr-levelup, #scr-pause,
+  #scr-over, #scr-item, #scr-settings, #scr-legal, #scr-profile { padding: 6px 10px; }
+  .split { grid-template-columns: 1fr; }
+  .logo .t1 { font-size: 30px; }
+  .box { padding: 10px 14px; border-radius: 10px; }
+  .box h2 { font-size: 20px; }
+  .box h3 { font-size: 16px; }
+  .sub { font-size: 13px; margin-bottom: 8px; }
+  .note { margin-top: 8px; font-size: 12px; }
+  .btn { padding: 7px 14px; }
+  .btn.small { padding: 4px 9px; font-size: 13px; }
+  .topbar { top: 5px; right: 6px; gap: 5px; }
+  .pill { padding: 2px 8px; font-size: 13px; gap: 5px; }
+  #user-pill { max-width: 130px; overflow: hidden; white-space: nowrap; }
+  .topbar .btn.small { padding: 2px 6px; }
+  .credits-line { display: none !important; }
+  .sound-panel { top: 40px; }
+
+  #scr-menu { flex-direction: row; padding: 0; overflow: hidden; }
+  .menu-left { padding: 40px 8px 6px; }
+  .menu-left .logo { margin-bottom: 2px; }
+  .menu-left .logo .t1 { font-size: 28px; }
+  .logo .t2 { font-size: 10px; margin-top: 2px; letter-spacing: 2px; }
+  #menu-partner { height: min(34vh, 130px); width: auto; }
+  .partner-card { margin-top: 2px; }
+  .partner-card .nm { font-size: 17px; }
+  .partner-card .lv { font-size: 12px; }
+  .menu-right { width: min(54vw, 420px); padding: 40px 8px 6px; gap: 6px; justify-content: flex-start; }
+  .menu-right .box { padding: 6px 8px; }
+  .menu-right > .box:last-child { display: none; }
+  .menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 4px; }
+  .menu-item { font-size: 15px; padding: 4px 6px; grid-template-columns: 22px 1fr; column-gap: 6px; }
+  .menu-item small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .menu-item.play { grid-column: span 2; font-size: 21px; }
+  .menu-item::before { display: none; }
+  .mi-ico img { width: 20px; height: 20px; }
+  .box.settings { max-height: calc(100dvh - 12px); }
+}

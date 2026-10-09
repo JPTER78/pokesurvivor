@@ -122,19 +122,9 @@
       // Muy eficaz: número amarillo y grande. Poco eficaz: gris.
       G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, eff === 'super' ? '#ffe14d' : eff === 'weak' ? '#a3abb8' : color,
                    this.boss || eff === 'super');
-      if (eff) Enemy.effText(this, eff);
       G.FX.spark(this.x, this.y - this.bodyH * 0.5, color, dirX, dirY, 3);
       if (!this.anim.busy() && this.phase !== 'dash') this.anim.play('Hurt');
       G.Audio.sfx('hit');
-    }
-
-    /** "¡Muy eficaz!" / "No es muy eficaz…" de vez en cuando (no en cada golpe). */
-    static effText(e, eff) {
-      const now = performance.now();
-      if (now - (Enemy.lastEff || 0) < 1400) return;
-      Enemy.lastEff = now;
-      G.FX.dmgText(e.x, e.y - e.bodyH - 16, eff === 'super' ? '¡Muy eficaz!' : 'No es muy eficaz…',
-                   eff === 'super' ? '#ffe14d' : '#a3abb8');
     }
 
     applySlow(factor, dur = 1.2) {
@@ -437,7 +427,8 @@
 
     summon() {
       this.minions = this.minions.filter(m => !m.dead && G.EnemyMgr.get(m.id));
-      if (this.minions.length >= 4 || G.EnemyMgr.count > 260) return;
+      // Con el tope general de enemigos (menos Pokémon en pantalla), con un pequeño margen.
+      if (this.minions.length >= 4 || G.EnemyMgr.count > G.Spawner.CAP + 15) return;
       const dex = this.def.minion || this.dex;
       const mon = G.DEX_BY[dex];
       const def = { dex, name: mon ? mon.name : '', hp: Math.round(this.def.hp * 0.35), spd: Math.round(this.def.spd * 1.1),
@@ -533,6 +524,10 @@
         ctx.restore();
       }
 
+      // Apoyos: icono encima, para saber a quién ir primero.
+      const SUP = { healer: 'heart', shielder: 'shield', summoner: 'friends' };
+      if (SUP[this.behavior]) G.Icons.draw(ctx, SUP[this.behavior], Math.round(this.x - 6), Math.round(this.y - this.bodyH - (this.hp < this.maxHp ? 26 : 18)), 12);
+
       if (this.boss || this.hp < this.maxHp) {
         const w = this.boss ? 90 : Math.max(22, this.r * 2);
         const y = this.y - this.bodyH - 10;
@@ -568,7 +563,7 @@
     /** Copia local de un enemigo del anfitrión (cooperativo). */
     function addRemote(o) {
       if (byId.has(o.id)) return byId.get(o.id);
-      const def = { dex: o.dex, hp: o.hp, spd: 0, dmg: o.dmg, xp: 0, behavior: 'remote' };
+      const def = { dex: o.dex, hp: o.hp, spd: 0, dmg: o.dmg, xp: 0, behavior: o.beh || 'remote' };
       const e = new Enemy(def, o.x, o.y, { hp: 1, spd: 1, dmg: 1 }, o.boss);
       e.id = o.id;
       e.remote = true;

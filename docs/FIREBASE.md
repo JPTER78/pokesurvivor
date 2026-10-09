@@ -33,7 +33,7 @@ navegador.
    Estas reglas hacen que cada jugador sólo pueda leer, escribir y borrar **su**
    partida. Sin ellas, cualquiera podría tocar las de los demás.
 
-### 3b. Realtime Database (amigos en línea, salas y multijugador)
+### 3b. Realtime Database (salas y multijugador)
 
 1. **Compilación → Realtime Database** → **Crear base de datos** → ubicación
    **Bélgica (europe-west1)** → modo bloqueado.
@@ -105,17 +105,37 @@ guardado en la nube (amarillo = guardando, rojo = sin conexión).
 
 ## Límites del plan gratis
 
-Unas 50.000 lecturas y 20.000 escrituras al día y 1 GB de datos. Cada partida
-ocupa unos pocos KB y se guarda tras cada run o compra, así que da para
-bastantes cientos de jugadores diarios. El ranking gasta unas 10 lecturas y
-hasta 10 escrituras por partida.
+Firestore: unas 50.000 lecturas y 20.000 escrituras al día y 1 GB de datos.
+El juego está pensado para gastar lo mínimo (medido en el emulador):
 
-Realtime Database: **100 conexiones a la vez** (cada jugador con sesión
-abierta en el menú cuenta una) y 10 GB de descarga al mes. Las partidas en
-grupo van directas entre navegadores y no gastan nada; sólo las que no pueden
-conectar directo pasan por aquí (unos 20-70 MB por hora y jugador). Si algún día se queda corto, Firebase
-simplemente rechaza escrituras hasta el día siguiente (no cobra nada sin que
-actives tú un plan de pago).
+| Acción | Lecturas | Escrituras |
+|---|---|---|
+| Ver una pestaña del ranking | 1 (0 si la viste hace menos de 10 min) | 0 |
+| Ver tu puesto si no estás en el top 50 | 1 la primera vez en ese navegador | 0 |
+| Terminar una partida | ~3 | ~3-9 (sólo donde mejoras) |
+| Guardar la partida | 1 cada 30 s como mucho | 1 cada 30 s como mucho |
+| Estar conectado | 0 | 1 cada 10 min (el "en línea") |
+| Abrir Amigos o la sala | 1 por amigo (vale 1 min) | 0 |
+
+Cómo se consigue:
+- **Ranking**: cada tabla tiene un documento resumen `lbs/{tabla}` con el
+  top 50 (las reglas comprueban que cada fila coincide con una marca validada
+  contra trampas en `lb/{tabla}/e/{id}`). Lo leído se guarda 10 min en el
+  navegador. El filtro por Pokémon sólo existe en el histórico.
+- **Guardado**: la copia del navegador se guarda al momento; la nube recibe
+  lo pendiente como mucho cada 30 s y siempre al ocultar o cerrar la pestaña.
+  Si juegas en dos ordenadores a la vez, se fusiona al entrar y al subir.
+- **Perfil público**: tras una partida se sube como mucho cada 10 min.
+
+Realtime Database: **100 conexiones a la vez** y 10 GB de descarga al mes.
+Sólo se conecta quien está **en una sala o partida en grupo** (el "en línea"
+de los amigos y las invitaciones van por Firestore), así que el límite de
+100 sólo cuenta a los que juegan en grupo en ese momento, no a todos los
+jugadores. Las partidas en grupo van directas entre navegadores y no gastan
+nada; sólo las que no pueden conectar directo pasan por aquí (unos 20-70 MB
+por hora y jugador). Si algún día se queda corto, Firebase simplemente
+rechaza operaciones hasta el día siguiente (no cobra nada sin que actives tú
+un plan de pago).
 
 ## Para desarrolladores: emulador
 

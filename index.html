@@ -2,13 +2,24 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>PokéSurvivor</title>
+<meta name="description" content="Fan game gratuito: sobrevive a las hordas con tu compañero Pokémon, solo o con amigos. Sin descargas ni anuncios.">
+<meta name="theme-color" content="#0a1430">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/icons/icon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PokéSurvivor">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <canvas id="game"></canvas>
+<!-- En móvil se juega en horizontal -->
+<div id="rotate" class="hidden"><div class="box center"><div id="rotate-ico"></div><h2>Gira el móvil</h2><p class="sub">PokéSurvivor se juega en horizontal.</p></div></div>
 
 <!-- ====== Inicio: login / registro / invitado ====== -->
 <section id="scr-login" class="scr hidden">
@@ -104,6 +115,7 @@
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
         <button class="menu-item" data-go="friends">Amigos<small id="menu-friends-sub">Juega en grupo, hasta 4</small></button>
         <button class="menu-item" data-go="rank">Ranking<small>Quién aguanta más</small></button>
+        <button class="menu-item" data-go="settings">Ajustes<small>Sonido, gráficos, controles y cuenta</small></button>
       </div>
     </div>
     <div class="box" style="padding:14px 18px">
@@ -117,10 +129,27 @@
   <div class="pill" id="tickets-pill" title="Tickets del gacha"></div>
   <div class="pill" id="user-pill"></div>
   <button id="btn-sound" class="btn small ghost" title="Sonido"></button>
+  <button id="btn-full" class="btn small ghost hidden" title="Pantalla completa"></button>
+  <button id="btn-settings" class="btn small ghost" title="Ajustes"></button>
   <button id="btn-logout" class="btn small ghost">Salir</button>
 </div>
 <div id="sound-panel" class="box sound-panel hidden"></div>
 <div id="credits-line" class="credits-line hidden">Proyecto de fan sin ánimo de lucro · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK · <a href="#" class="legal-link" data-legal>Aviso legal</a></div>
+
+<!-- ====== Ajustes ====== -->
+<section id="scr-settings" class="scr dim hidden">
+  <div class="box settings">
+    <div class="row between"><h2>Ajustes</h2><button class="btn small ghost" id="set-close">Cerrar</button></div>
+    <div class="tabs" id="set-tabs">
+      <button class="gen-tab" data-t="sound">Sonido</button>
+      <button class="gen-tab" data-t="gfx">Gráficos</button>
+      <button class="gen-tab" data-t="ctl">Controles</button>
+      <button class="gen-tab" data-t="acc">Cuenta</button>
+      <button class="gen-tab" data-t="about">Acerca de</button>
+    </div>
+    <div id="set-body" class="set-body"></div>
+  </div>
+</section>
 
 <!-- ====== Aviso legal y privacidad ====== -->
 <section id="scr-legal" class="scr dim hidden">
@@ -217,7 +246,7 @@
     <div class="filters" id="rk-period"></div>
     <div class="row rk-tools">
       <div class="filters" id="rk-scope" style="margin:0"></div>
-      <input id="rk-poke" class="field" list="rk-dl" placeholder="Filtrar por Pokémon" spellcheck="false">
+      <input id="rk-poke" class="field" list="rk-dl" placeholder="Filtrar por Pokémon (histórico)" spellcheck="false">
       <datalist id="rk-dl"></datalist>
       <button id="rk-clear" class="btn small ghost hidden">Quitar filtro</button>
     </div>
@@ -305,6 +334,7 @@
         <div class="row" style="margin-top:14px">
           <button id="pull-1" class="btn grow" data-sfx="none">Tirar ×1 · <span id="cost-1"></span></button>
           <button id="pull-10" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10"></span></button>
+          <button id="pull-10b" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10b"></span></button>
         </div>
         <p class="note tickets-line" id="gacha-tickets"></p>
         <p class="note" id="gacha-pity"></p>
@@ -341,11 +371,13 @@
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
-    <p class="sub"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
+    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
+    <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
     <div id="pause-sound" class="sound-inline"></div>
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>
+      <button id="btn-pause-settings" class="btn">Ajustes</button>
       <button id="btn-quit" class="btn">Abandonar run</button>
     </div>
   </div>
@@ -361,6 +393,7 @@
 
 <!-- datos generados -->
 <script src="js/core/util.js"></script>
+<script src="js/core/settings.js"></script>
 <script src="js/data/music.js"></script>
 <script src="js/data/pokedex.js"></script>
 <script src="js/data/sprites-meta.js"></script>
@@ -369,6 +402,7 @@
 <script src="js/core/db.js"></script>
 <script src="js/core/audio.js"></script>
 <script src="js/core/input.js"></script>
+<script src="js/core/touch.js"></script>
 <script src="js/core/sprites.js"></script>
 <script src="js/core/camera.js"></script>
 <!-- datos de juego -->
@@ -419,6 +453,7 @@
 <script src="js/ui/social-ui.js"></script>
 <script src="js/ui/ranking-ui.js"></script>
 <script src="js/ui/goals-ui.js"></script>
+<script src="js/ui/settings-ui.js"></script>
 <!-- juego -->
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>

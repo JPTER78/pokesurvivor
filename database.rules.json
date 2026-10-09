@@ -3,24 +3,6 @@
     ".read": false,
     ".write": false,
 
-    "status": {
-      "$uid": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === $uid",
-        ".validate": "!newData.exists() || (newData.hasChildren(['on', 'at']) && newData.child('on').isBoolean())"
-      }
-    },
-
-    "inv": {
-      "$to": {
-        ".read": "auth != null && auth.uid === $to",
-        "$from": {
-          ".write": "auth != null && (auth.uid === $from || (auth.uid === $to && !newData.exists()))",
-          ".validate": "!newData.exists() || (newData.hasChildren(['room', 'name', 'at']) && newData.child('room').isString() && newData.child('room').val().length <= 40)"
-        }
-      }
-    },
-
     "rooms": {
       "$room": {
         ".read": "auth != null && data.child('m').child(auth.uid).exists()",
