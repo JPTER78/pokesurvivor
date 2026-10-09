@@ -664,3 +664,13 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .login-tag { margin: -6px 0 12px; font-size: 13px; color: var(--muted); text-align: center; }
 .login-links { margin-top: 10px; font-size: 13px; text-align: center; }
 .login-links a { color: #9fd4ff; }
+
+/* ---------- apoyar el proyecto ---------- */
+#scr-support { z-index: 60; }
+.box.support { width: min(560px, 100%); }
+.sup-tab { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 15px; }
+.sup-tab td { padding: 5px 4px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.sup-tab td.num { text-align: right; white-space: nowrap; }
+.sup-tab tr.tot td { font-weight: 700; color: var(--gold); border-bottom: 0; }
+#btn-support span { margin-left: 2px; }
+@media (max-height: 520px) { #btn-support span { display: none; } }

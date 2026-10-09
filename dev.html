@@ -189,6 +189,7 @@
   <div class="pill"><span class="coin"></span><span id="coins">0</span></div>
   <div class="pill" id="tickets-pill" title="Tickets del gacha"></div>
   <div class="pill" id="user-pill"></div>
+  <button id="btn-support" class="btn small gold hidden" title="Apoyar el proyecto"></button>
   <button id="btn-sound" class="btn small ghost" title="Sonido"></button>
   <button id="btn-full" class="btn small ghost hidden" title="Pantalla completa"></button>
   <button id="btn-settings" class="btn small ghost" title="Ajustes"></button>
@@ -196,6 +197,14 @@
 </div>
 <div id="sound-panel" class="box sound-panel hidden"></div>
 <div id="credits-line" class="credits-line hidden">Proyecto de fan sin ánimo de lucro · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK · <a href="#" class="legal-link" data-legal>Aviso legal</a></div>
+
+<!-- ====== Apoyar el proyecto (donaciones) ====== -->
+<section id="scr-support" class="scr dim hidden">
+  <div class="box support">
+    <div class="row between"><h2>Apoyar el proyecto</h2><button class="btn small ghost" id="sup-close">Cerrar</button></div>
+    <div id="sup-body"></div>
+  </div>
+</section>
 
 <!-- ====== Ajustes ====== -->
 <section id="scr-settings" class="scr dim hidden">
@@ -218,7 +227,7 @@
     <div class="row between"><h2>Aviso legal</h2><button class="btn small ghost" id="legal-close">Cerrar</button></div>
     <h3>Proyecto de fan</h3>
     <p><b>PokéSurvivor</b> es un juego hecho por fans, <b>gratuito y sin ánimo de lucro</b>.
-      No tiene anuncios, ni compras, ni ninguna forma de ingreso, y no la tendrá.</p>
+      No tiene anuncios ni compras. Se puede apoyar con donaciones voluntarias, que se usan sólo para pagar los servidores y el dominio, y que no dan ninguna ventaja en el juego.</p>
     <p>No está afiliado, patrocinado ni aprobado por Nintendo, Creatures Inc., GAME FREAK ni
       The Pokémon Company. Pokémon y todos los nombres y personajes relacionados son marcas y
       propiedad de sus respectivos dueños.</p>
@@ -507,6 +516,7 @@
 <script defer src="js/data/items.js"></script>
 <script defer src="js/data/missions.js"></script>
 <script defer src="js/data/achievements.js"></script>
+<script defer src="js/data/funding.js"></script>
 <!-- mundo -->
 <script defer src="js/world/tiles.js"></script>
 <script defer src="js/world/world.js"></script>
@@ -547,6 +557,7 @@
 <script defer src="js/ui/ranking-ui.js"></script>
 <script defer src="js/ui/goals-ui.js"></script>
 <script defer src="js/ui/settings-ui.js"></script>
+<script defer src="js/ui/support-ui.js"></script>
 <!-- juego -->
 <script defer src="js/game.js"></script>
 <script defer src="js/main.js"></script>
