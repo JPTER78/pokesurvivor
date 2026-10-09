@@ -2,7 +2,7 @@
 (() => {
   // Si un archivo no llega a cargarse (conexión móvil que se corta), mejor
   // avisar que arrancar a medias.
-  const NEED = ['U', 'Settings', 'DB', 'Audio', 'Input', 'Touch', 'Sprites', 'Camera', 'Moves', 'Enemies', 'Upgrades', 'Items',
+  const NEED = ['U', 'I18n', 'Settings', 'DB', 'Audio', 'Input', 'Touch', 'Sprites', 'Camera', 'Moves', 'Enemies', 'Upgrades', 'Items',
                 'World', 'FX', 'Projectiles', 'EnemyMgr', 'Pickups', 'Player', 'Combat', 'Spawner', 'LevelUp', 'Gacha',
                 'Rift', 'Weather', 'Progress', 'Hazards', 'Social', 'Net', 'Coop', 'Ranking', 'Icons', 'UI', 'HUD',
                 'MenuUI', 'RunUI', 'SettingsUI', 'Game', 'Flow'];
@@ -17,6 +17,7 @@
 
   function boot() {
     if (broken()) return;
+    G.I18n.startDom();
     // Espera a la fuente pixel para que la UI no salte al cargarla.
     const ready = document.fonts && document.fonts.load ? document.fonts.load('16px Pixelify') : Promise.resolve();
     ready.catch(() => {}).then(() => G.Flow.boot());

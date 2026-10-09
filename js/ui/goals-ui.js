@@ -250,7 +250,7 @@
       const b = d.best || {};
       const body = $('prof-body');
       body.innerHTML = `
-        <div class="prof-head"><h2>${esc(d.name || '???')}</h2>${d.title ? `<span class="prof-title">${esc(d.title)}</span>` : ''}</div>
+        <div class="prof-head"><h2 translate="no">${esc(d.name || '???')}</h2>${d.title ? `<span class="prof-title">${esc(d.title)}</span>` : ''}</div>
         <div class="fav-slots view" id="prof-favs"></div>
         <div class="prof-marks">
           <div><span>Mejor tiempo</span><b>${fmt(b.solo || 0)}</b></div>

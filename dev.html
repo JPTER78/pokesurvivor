@@ -1,12 +1,34 @@
 <!doctype html>
-<!-- GENERADO desde dev.html por tools/build.js: no editar a mano (se edita dev.html). -->
+<!-- dev.html: página fuente. Aquí se edita; index.html lo genera tools/build.js. -->
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io</title>
 <meta name="description" content="Sobrevive a hordas de Pokémon con tu compañero en este fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo con amigos. Sin descargas ni anuncios.">
-
+<!-- seo:begin -->
+<link rel="canonical" href="https://pokesurvivor.com/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#0a1430">
+<meta name="color-scheme" content="dark">
+<!-- Compartir en redes (WhatsApp, Discord, Twitter/X...) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PokéSurvivor">
+<meta property="og:locale" content="es_ES">
+<meta property="og:url" content="https://pokesurvivor.com/">
+<meta property="og:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">
+<meta property="og:description" content="Fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo hasta 4 amigos. Sin descargas ni anuncios.">
+<meta property="og:image" content="https://pokesurvivor.com/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="PokéSurvivor: un Pokémon rodeado de hordas en un mapa pixel art">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">
+<meta name="twitter:description" content="Fan game gratis para navegador y móvil, con cooperativo hasta 4. Sin descargas ni anuncios.">
+<meta name="twitter:image" content="https://pokesurvivor.com/assets/og-image.jpg">
+<script>window.PS_PAGES = true;</script>
+<!-- seo:end -->
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="assets/icons/icon-32.png">
 <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
@@ -16,7 +38,41 @@
 <meta name="apple-mobile-web-app-title" content="PokéSurvivor">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifySans.ttf" as="font" type="font/ttf" crossorigin>
-
+<!-- seo:begin -->
+<!-- Datos estructurados para Google (tipo de página: videojuego gratuito) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://pokesurvivor.com/#web",
+      "url": "https://pokesurvivor.com/",
+      "name": "PokéSurvivor",
+      "inLanguage": "es"
+    },
+    {
+      "@type": ["VideoGame", "WebApplication"],
+      "@id": "https://pokesurvivor.com/#juego",
+      "name": "PokéSurvivor",
+      "url": "https://pokesurvivor.com/",
+      "description": "Fan game gratuito de supervivencia (bullet heaven, estilo Survivor.io) con Pokémon: elige compañero, sobrevive a hordas, sube de nivel, evoluciona tus ataques, enfréntate a legendarios en grietas y juega en cooperativo con hasta 4 amigos.",
+      "image": "https://pokesurvivor.com/assets/og-image.jpg",
+      "inLanguage": "es",
+      "genre": ["Roguelike", "Bullet heaven", "Acción", "Supervivencia"],
+      "gamePlatform": ["Navegador web", "PC", "Android", "iOS"],
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Cualquiera con navegador web moderno",
+      "playMode": ["SinglePlayer", "CoOp", "MultiPlayer"],
+      "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 4 },
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR", "availability": "https://schema.org/InStock" },
+      "isPartOf": { "@id": "https://pokesurvivor.com/#web" }
+    }
+  ]
+}
+</script>
+<!-- seo:end -->
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -54,7 +110,7 @@
       <button id="btn-guest" class="btn ghost grow" type="button">Jugar como invitado</button>
     </div>
     <p class="note center" id="login-mode"></p>
-    <p class="note center"><a href="#" class="legal-link" data-legal>Aviso legal y privacidad</a></p>
+    <p class="note center"><!-- seo:begin --><a href="guia/">Guía</a> · <a href="pokedex/">Pokédex</a> · <!-- seo:end --><a href="#" class="legal-link" data-legal>Aviso legal y privacidad</a></p>
   </div>
 </section>
 
@@ -221,7 +277,7 @@
       <h1>PokéSurvivor</h1>
       <p>PokéSurvivor necesita JavaScript para funcionar. Actívalo para jugar.</p>
       <p>Fan game gratuito de supervivencia con 966 Pokémon de las 9 regiones: elige tu compañero, sobrevive a las hordas, evoluciona tus ataques, enfréntate a legendarios y juega en cooperativo con hasta 4 amigos.</p>
-      
+      <!-- seo:begin --><p><a href="guia/">Guía del juego</a> · <a href="pokedex/">Pokédex: todos los Pokémon jugables</a></p><!-- seo:end -->
     </div>
   </div>
 </noscript>
@@ -426,6 +482,74 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=e2103e338c"></script>
+<!-- scripts:begin -->
+<script defer src="js/core/util.js"></script>
+<script defer src="js/core/i18n.js"></script>
+<script defer src="js/data/lang-en.js"></script>
+<script defer src="js/core/settings.js"></script>
+<script defer src="js/data/music.js"></script>
+<script defer src="js/data/pokedex.js"></script>
+<script defer src="js/data/sprites-meta.js"></script>
+<!-- núcleo -->
+<script defer src="js/core/firebase-config.js"></script>
+<script defer src="js/core/db.js"></script>
+<script defer src="js/core/audio.js"></script>
+<script defer src="js/core/input.js"></script>
+<script defer src="js/core/touch.js"></script>
+<script defer src="js/core/sprites.js"></script>
+<script defer src="js/core/camera.js"></script>
+<!-- datos de juego -->
+<script defer src="js/data/moves.js"></script>
+<script defer src="js/data/types.js"></script>
+<script defer src="js/data/starters.js"></script>
+<script defer src="js/data/enemies.js"></script>
+<script defer src="js/data/upgrades.js"></script>
+<script defer src="js/data/items.js"></script>
+<script defer src="js/data/missions.js"></script>
+<script defer src="js/data/achievements.js"></script>
+<!-- mundo -->
+<script defer src="js/world/tiles.js"></script>
+<script defer src="js/world/world.js"></script>
+<!-- entidades -->
+<script defer src="js/entities/vfx.js"></script>
+<script defer src="js/entities/fx.js"></script>
+<script defer src="js/entities/projectile.js"></script>
+<script defer src="js/entities/enemy.js"></script>
+<script defer src="js/entities/pickup.js"></script>
+<script defer src="js/entities/player.js"></script>
+<!-- sistemas -->
+<script defer src="js/systems/combat.js"></script>
+<script defer src="js/systems/spawner.js"></script>
+<script defer src="js/systems/levelup.js"></script>
+<script defer src="js/systems/gacha.js"></script>
+<script defer src="js/systems/interact.js"></script>
+<script defer src="js/systems/rift.js"></script>
+<script defer src="js/systems/weather.js"></script>
+<script defer src="js/systems/pathing.js"></script>
+<script defer src="js/systems/progress.js"></script>
+<script defer src="js/systems/hazards.js"></script>
+<!-- red: amigos, salas, cooperativo y ranking -->
+<script defer src="js/net/social.js"></script>
+<script defer src="js/net/net.js"></script>
+<script defer src="js/net/coop.js"></script>
+<script defer src="js/net/ranking.js"></script>
+<!-- interfaz -->
+<script defer src="js/ui/icons.js"></script>
+<script defer src="js/ui/ui.js"></script>
+<script defer src="js/ui/hud.js"></script>
+<script defer src="js/ui/login.js"></script>
+<script defer src="js/ui/test.js"></script>
+<script defer src="js/ui/menu.js"></script>
+<script defer src="js/ui/slots.js"></script>
+<script defer src="js/ui/gacha-ui.js"></script>
+<script defer src="js/ui/run-ui.js"></script>
+<script defer src="js/ui/social-ui.js"></script>
+<script defer src="js/ui/ranking-ui.js"></script>
+<script defer src="js/ui/goals-ui.js"></script>
+<script defer src="js/ui/settings-ui.js"></script>
+<!-- juego -->
+<script defer src="js/game.js"></script>
+<script defer src="js/main.js"></script>
+<!-- scripts:end -->
 </body>
 </html>

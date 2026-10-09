@@ -84,11 +84,17 @@ G.RankingUI = (() => {
     const uid = G.Social.uid;
     rows.forEach((r, i) => list.appendChild(rowEl(r, i + 1, r.uids.includes(uid))));
 
-    const pn = { d: 'de hoy', w: 'de esta semana', m: 'de este mes', y: 'de este año', a: 'de siempre' }[period];
-    const where = (mode === 's' ? 'en solitario' : 'en grupo') + (dex ? ' con ' + G.DEX_BY[dex].name : '');
+    // La frase se monta en cada idioma (traducirla por trozos sale rara).
+    const en = G.I18n.lang === 'en';
+    const pn = en ? { d: 'today', w: 'this week', m: 'this month', y: 'this year', a: 'of all time' }[period]
+                  : { d: 'de hoy', w: 'de esta semana', m: 'de este mes', y: 'de este año', a: 'de siempre' }[period];
+    const mon = dex ? G.DEX_BY[dex].name : '';
+    const where = en ? (mode === 's' ? 'solo' : 'group') + (dex ? ' with ' + mon : '')
+                     : (mode === 's' ? 'en solitario' : 'en grupo') + (dex ? ' con ' + mon : '');
     $('rk-me').innerHTML = !G.Social.me ? 'Elige un apodo (en Amigos) para salir en el ranking.'
-      : me ? `Tu mejor puesto ${pn} ${where}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}`
-      : `Aún no tienes marca ${pn} ${where}.`;
+      : me ? (en ? `<span translate="no">Your best ${where} rank ${pn}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
+                 : `Tu mejor puesto ${pn} ${where}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}`)
+      : (en ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>` : `Aún no tienes marca ${pn} ${where}.`);
   }
 
   function rowEl(r, pos, mine) {
@@ -100,7 +106,7 @@ G.RankingUI = (() => {
     r.dex.forEach((d, i) => { if (G.DEX_BY[d]) mons.appendChild(G.UI.spriteCanvas(d, 44, 40, { scale: 1, shiny: !!r.shiny[i] })); });
     el.appendChild(mons);
     el.insertAdjacentHTML('beforeend',
-      `<span class="who"><b>${r.names.map((n, i) => `<a href="#" class="plink" data-u="${esc(r.uids[i] || '')}">${esc(n)}</a>`).join(' · ')}</b><small>Nv. ${r.lv || 1} · ${(r.kills || 0).toLocaleString('es')} derrotados</small></span>
+      `<span class="who"><b translate="no">${r.names.map((n, i) => `<a href="#" class="plink" data-u="${esc(r.uids[i] || '')}">${esc(n)}</a>`).join(' · ')}</b><small>Nv. ${r.lv || 1} · ${(r.kills || 0).toLocaleString('es')} derrotados</small></span>
        <span class="time">${fmt(r.t)}</span>`);
     el.querySelectorAll('.plink').forEach(a => { a.onclick = e => { e.preventDefault(); G.ProfileUI.show(a.dataset.u); }; });
     return el;
