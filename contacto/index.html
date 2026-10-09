@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contacto · PokéSurvivor</title>
+<meta name="description" content="Cómo contactar con PokéSurvivor: correo, fallos y sugerencias.">
+<meta name="theme-color" content="#0a1430">
+<link rel="icon" type="image/png" href="../assets/icons/icon-32.png">
+<link rel="stylesheet" href="../css/pages.css">
+<style>
+  .contact { list-style: none; padding: 0; display: grid; gap: 10px; }
+  .contact li { background: rgba(5,10,30,.45); border: 2px solid rgba(244,248,255,.25); border-radius: 10px; padding: 12px 14px; margin: 0; }
+  .contact b { display: block; color: var(--gold); font-family: 'Pixelify', sans-serif; font-size: 19px; }
+  .contact .mail { font-size: 18px; word-break: break-all; }
+  .contact .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .btn.small { font-size: 15px; padding: 6px 14px; }
+  #copied { color: #5fe08a; margin-left: 6px; }
+  [data-l="en"] { display: none; }
+  html[lang="en"] [data-l="es"] { display: none; }
+  html[lang="en"] [data-l="en"] { display: initial; }
+  html[lang="en"] li[data-l="en"], html[lang="en"] p[data-l="en"], html[lang="en"] h1[data-l="en"] { display: block; }
+</style>
+<script>
+  // Mismo idioma que el juego (o el del navegador).
+  (function () {
+    var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
+    var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
+    var l = s === 'es' || s === 'en' ? s : (n.indexOf('es') === 0 ? 'es' : 'en');
+    document.documentElement.lang = l;
+    if (l === 'en') document.title = 'Contact · PokéSurvivor';
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../">PokéSurvivor</a>
+  <nav><a class="play" href="../"><span data-l="es">Volver al juego</span><span data-l="en">Back to the game</span></a></nav>
+</header>
+<main>
+<article class="doc">
+  <h1 data-l="es">Contacto</h1>
+  <h1 data-l="en">Contact</h1>
+  <p class="lead" data-l="es">¿Has encontrado un fallo, tienes una idea o quieres decirnos algo? Escríbenos.</p>
+  <p class="lead" data-l="en">Found a bug, have an idea or want to tell us something? Get in touch.</p>
+  <ul class="contact">
+    <li>
+      <b><span data-l="es">Correo</span><span data-l="en">Email</span></b>
+      <span class="mail" id="mail">jpieratorregrosa@gmail.com</span>
+      <div class="row">
+        <a class="btn small" href="mailto:jpieratorregrosa@gmail.com?subject=Pok%C3%A9Survivor"><span data-l="es">Escribir un correo</span><span data-l="en">Send an email</span></a>
+        <button class="btn small ghost" id="copy" type="button"><span data-l="es">Copiar</span><span data-l="en">Copy</span></button>
+        <span id="copied"></span>
+      </div>
+      <p data-l="es">Para cualquier cosa: dudas, problemas con tu cuenta, sugerencias o si eres titular de derechos y quieres que retiremos algo.</p>
+      <p data-l="en">For anything: questions, account problems, suggestions, or if you are a rights holder and want something removed.</p>
+    </li>
+    <li>
+      <b><span data-l="es">Fallos y sugerencias</span><span data-l="en">Bugs and suggestions</span></b>
+      <p data-l="es">Si tienes cuenta de GitHub, puedes abrir un aviso en el repositorio del juego.</p>
+      <p data-l="en">If you have a GitHub account, you can open an issue in the game's repository.</p>
+      <div class="row"><a class="btn small ghost" href="https://github.com/JPTER78/pokesurvivor/issues" target="_blank" rel="noopener">GitHub</a></div>
+    </li>
+  </ul>
+</article>
+</main>
+<script>
+  document.getElementById('copy').onclick = function () {
+    var t = document.getElementById('mail').textContent;
+    var ok = function () { document.getElementById('copied').textContent = document.documentElement.lang === 'en' ? 'Copied!' : '¡Copiado!'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, function () {});
+    else { var r = document.createRange(); r.selectNodeContents(document.getElementById('mail')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); ok(); }
+  };
+</script>
+</body>
+</html>
