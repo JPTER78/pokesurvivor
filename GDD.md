@@ -244,7 +244,7 @@ una **carta dorada** (siempre, si está lista). Los 47 de ataque evolucionan.
   título, mejores marcas y las 8 mejores medallas.
 
 ### 7.2b Tickets del gacha
-- **Ticket** (×1): cada Pokémon derrotado tiene 1/260 de soltar uno; los cofres
+- **Ticket** (×1): cada Pokémon derrotado tiene 1/400 de soltar uno; los cofres
   con candado dan 1-3.
 - **Ticket ×10**: los jefes, el legendario de la grieta (2) y, a veces, los
   cofres con candado.
@@ -442,7 +442,7 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 - **Mejoras de cada Pokémon** (no de la cuenta); las ya compradas pasan al
   compañero actual. Las monedas quedan sólo para mejoras.
 - **Gacha con tickets** que se ganan jugando (sin regalo inicial ni conversión
-  de monedas): ×1 de Pokémon normales (1/260), ×10 de jefes y legendarios.
+  de monedas): ×1 de Pokémon normales (1/260), ×10 de legendarios (siempre) y jefes (1 de cada 3).
 - **Jefes casuales no legendarios**; los legendarios, sólo en las **grietas**
   (arena aparte; perder te devuelve sin premio). En grupo viajáis todos.
 - **Altares, manantiales, cofres con candado y trampas**, en pixel art propio.
@@ -510,3 +510,6 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   Duendes del tesoro 1-2 por partida: Meowth (monedas) o Gholdengo (ticket ×10;
   Gimmighoul no tiene sprite). Huyen y se escapan a los 15 s. En grupo, todo
   compartido.
+- Más tarde (10-10): subir de nivel otra vez la mitad de rápido (experiencia
+  por nivel ×4 respecto al original) y tickets ×1 más raros (1/400 en vez de 1/260).
+  Misiones de nivel 8/12/15 y logros de nivel 15 y 30 (antes 12/16/20, 20 y 40).

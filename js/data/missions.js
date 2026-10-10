@@ -20,7 +20,7 @@ G.MissionDefs = (() => {
       match: (d, t) => d.types.includes(t), text: (n, t) => `Derrota a ${n} Pokémon de tipo ${T(t)}` },
     { id: 'survive', ev: 'runEnd', mode: 'max', value: min, goals: [5, 7, 9], reward: { t1: 3, coins: 200 },
       text: n => `Aguanta ${n} minutos en una run` },
-    { id: 'level', ev: 'runEnd', mode: 'max', value: d => d.level, goals: [12, 16, 20], reward: { t1: 2, coins: 200 },
+    { id: 'level', ev: 'runEnd', mode: 'max', value: d => d.level, goals: [8, 12, 15], reward: { t1: 2, coins: 200 },
       text: n => `Llega al nivel ${n} en una run` },
     { id: 'boss', ev: 'kill', match: d => d.boss, goals: [1, 2], reward: { t1: 3, coins: 250 },
       text: n => (n === 1 ? 'Derrota a un jefe' : `Derrota a ${n} jefes`) },

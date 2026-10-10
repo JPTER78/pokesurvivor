@@ -309,7 +309,7 @@ G.I18n.add({
   'Cazashinies': 'Shiny hunter', 'Consigue 1 shiny.': 'Get 1 shiny.', 'Consigue 5 shinies.': 'Get 5 shinies.', 'Consigue 20 shinies.': 'Get 20 shinies.',
   'Calentando': 'Warming up', 'Superviviente': 'Survivor', 'Resistente': 'Tough', 'Duro de pelar': 'Hard to beat', 'Imparable': 'Unstoppable',
   'Aguanta 5 minutos.': 'Survive 5 minutes.', 'Aguanta 10 minutos.': 'Survive 10 minutes.', 'Aguanta 15 minutos.': 'Survive 15 minutes.', 'Aguanta 20 minutos.': 'Survive 20 minutes.',
-  'Creciendo': 'Growing up', 'Veterano': 'Veteran', 'Llega al nivel 20 en una run.': 'Reach level 20 in a run.', 'Llega al nivel 40 en una run.': 'Reach level 40 in a run.',
+  'Creciendo': 'Growing up', 'Veterano': 'Veteran', 'Llega al nivel 20 en una run.': 'Reach level 20 in a run.', 'Llega al nivel 40 en una run.': 'Reach level 40 in a run.', 'Llega al nivel 15 en una run.': 'Reach level 15 in a run.', 'Llega al nivel 30 en una run.': 'Reach level 30 in a run.',
   'Primeros combates': 'First battles', 'Valiente': 'Brave', 'Leyenda': 'Legend', 'Leyenda viva': 'Living legend',
   'Derrota a 1.000 Pokémon.': 'Defeat 1,000 Pokémon.', 'Derrota a 10.000 Pokémon.': 'Defeat 10,000 Pokémon.', 'Derrota a 100.000 Pokémon.': 'Defeat 100,000 Pokémon.',
   'Derrota a un jefe.': 'Defeat a boss.', 'Derrota a 25 jefes.': 'Defeat 25 bosses.', 'Derrota a 100 jefes.': 'Defeat 100 bosses.',

@@ -173,7 +173,7 @@
         // Los jefes siempre sueltan un objeto equipable.
         G.Pickups.drop('item', this.x - 26, this.y - 10, G.Items.roll());
       }
-      G.Pickups.dropXp(this.x, this.y, this.xp, this.boss);
+      G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend);
       if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
       // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.
       if (this.behavior === 'thief') {
