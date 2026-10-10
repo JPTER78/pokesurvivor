@@ -12,9 +12,9 @@ Estado a 10-10-2026:
 - [x] Páginas en español e inglés, sitemap, robots, 404 e imagen para compartir,
       generadas y probadas (Lighthouse: SEO 100, accesibilidad 100).
 - [x] Script del paso final ensayado: `tools/activar_dominio.sh`.
-- [ ] Paso 1 · DNS en Cloudflare (**TÚ**)
-- [ ] Paso 2 · Verificar el dominio en GitHub (**TÚ**, recomendado)
-- [ ] Paso 3 · Paso final (**YO**)
+- [x] Paso 1 · DNS en Cloudflare (**TÚ**)
+- [x] Paso 2 · Verificar el dominio en GitHub (**TÚ**, recomendado)
+- [x] Paso 3 · Paso final (**YO**): hecho el 10-10-2026, con HTTPS
 - [ ] Paso 4 · Google Search Console y Bing (**TÚ**)
 
 ---
