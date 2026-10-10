@@ -310,8 +310,24 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 
 #pull-fx {
   position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 18px;
+  align-items: center; gap: 18px; padding: 14px 10px;
+  /* Si las 10 cartas no caben (móvil en horizontal) se puede desplazar, y
+     "Continuar" se queda siempre a la vista abajo (antes quedaba fuera y no
+     había forma de cerrar sin recargar la página). */
+  overflow-y: auto; overscroll-behavior: contain;
   background: radial-gradient(circle at 50% 45%, #1b2d63, #03060f 70%);
+}
+/* Centrado vertical que no corta por arriba cuando no cabe. */
+#pull-fx::before, #pull-fx::after { content: ''; margin: auto; }
+#pull-close { position: sticky; bottom: 8px; z-index: 2; flex-shrink: 0; box-shadow: 0 4px 18px rgba(0,0,0,.6); }
+@media (max-height: 520px) {
+  #pull-fx { gap: 10px; }
+  .pull-results { gap: 6px; }
+  .pcard { width: 100px; padding: 5px 3px; border-radius: 10px; }
+  .pcard canvas { width: 84px; height: auto; }
+  .pcard b { font-size: 12px; }
+  .pcard .tag { font-size: 10px; }
+  .pcard .stars { font-size: 11px; }
 }
 #pull-fx.hidden { display: none; }
 .ball {

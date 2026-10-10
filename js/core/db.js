@@ -327,7 +327,13 @@ G.DB = (() => {
     save = migrate(s, s.name);
     key = uid; user = save.name; guest = false;
     write(K_CLOUD + uid, save);
-    if (online) await pushNow(); else { pending = true; setSync('offline'); scheduleRetry(); }
+    // Sólo se sube si hay algo que la nube no tenga (cuenta nueva, progreso de
+    // este ordenador sin subir...), y SIN esperar: antes el menú no salía hasta
+    // terminar la subida, y con Firebase lento se tardaba hasta 9 s en entrar.
+    const same = remote && JSON.stringify(plain(migrate(remote))) === JSON.stringify(plain(save));
+    if (!online) { pending = true; setSync('offline'); scheduleRetry(); }
+    else if (same) setSync('ok');
+    else pushNow();
   }
 
   /*
@@ -340,7 +346,8 @@ G.DB = (() => {
   /** Sube la partida fusionándola con lo que haya en la nube (transacción). */
   function pushNow() {
     if (mode !== 'cloud' || guest || !save || !uid) return Promise.resolve();
-    if (pushing) { pending = true; return pushing; }
+    // Si ya hay una subida en marcha, se hace otra justo después (para lo que haya cambiado mientras).
+    if (pushing) { pending = true; return pushing.then(() => (pending ? pushNow() : undefined)); }
     clearTimeout(pushT); pushT = 0; pushDue = 0;
     if (navigator.onLine === false) {
       pending = true; setSync('offline'); scheduleRetry();
@@ -362,7 +369,9 @@ G.DB = (() => {
     let failed = false;
     pushing = Promise.race([tr, timeout]).then(() => {
       fails = 0;
-      if (merged && save) { applyInPlace(merged); write(K_CLOUD + uid, save); }
+      // Se FUSIONA con lo de ahora (no se sobrescribe): si has cambiado algo
+      // mientras se subía (elegir compañero, una compra...), no se pierde.
+      if (merged && save) { applyInPlace(merge(plain(save), merged)); write(K_CLOUD + uid, save); }
       setSync(pending ? 'pending' : 'ok');
       if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
     }).catch(e => {
