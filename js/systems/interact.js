@@ -33,10 +33,12 @@ G.Interact = (() => {
       switch (p.type) {
         case 'spring': spring(dt, pl, p, d2); break;
         case 'altar':
-          if (!p.used && !pl.dead && d2 < 30 * 30) usePower(pl, p);
+          // Contando el tamaño de tu Pokémon: uno grande (Reshiram, Zekrom...) choca
+          // con el altar antes de llegar a 30 y no lo podía activar.
+          if (!p.used && !pl.dead && d2 < Math.max(30, p.r + pl.r + 14) ** 2) usePower(pl, p);
           break;
         case 'bigchest':
-          if (!pl.dead && d2 < 46 * 46) {
+          if (!pl.dead && d2 < Math.max(46, p.r + pl.r + 24) ** 2) {
             if (p.open === 0) G.Audio.sfx('select');
             p.open += dt;
             if (p.open >= CHEST_TIME) { p.open = 0; G.World.breakProp(p); }

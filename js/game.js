@@ -680,7 +680,8 @@ G.Flow = {
     // La base de datos (nube o local) recupera la sesión anterior.
     G.DB.ready().then(restored => {
       document.getElementById('boot').classList.add('hidden');
-      this.tapToStart(() => { if (restored) this.afterLogin(); else this.toLogin(); });
+      // En otra tarea: crear el sonido para comprobarlo cuesta ~60 ms y no debe bloquear la carga.
+      setTimeout(() => this.tapToStart(() => { if (restored) this.afterLogin(); else this.toLogin(); }), 0);
     });
   },
   /**

@@ -225,7 +225,7 @@ G.Icons = (() => {
     const pad = def.outline ? 1 : 0;
     const cv = document.createElement('canvas');
     cv.width = w + pad * 2; cv.height = h + pad * 2;
-    const c = cv.getContext('2d');
+    const c = cv.getContext('2d', { willReadFrequently: true });   // se lee en svgOf()
     const pal = Object.assign({ k: K }, def.pal);
     if (def.outline) {
       c.fillStyle = K;
@@ -247,7 +247,7 @@ G.Icons = (() => {
     const S = 16;
     const cv = document.createElement('canvas');
     cv.width = cv.height = S;
-    const c = cv.getContext('2d');
+    const c = cv.getContext('2d', { willReadFrequently: true });   // se lee en svgOf()
     const col = G.U.TYPE_COLOR[type] || '#b0a99f';
     const dark = shade(col, 0.55), lite = shade(col, 1.3);
     // Disco con contorno, sombra abajo-derecha y brillo arriba-izquierda.
@@ -293,8 +293,59 @@ G.Icons = (() => {
 
   function url(name) {
     let u = urls.get(name);
-    if (!u) { u = canvas(name).toDataURL(); urls.set(name, u); }
+    if (!u) {
+      // Los de interfaz, directamente de su dibujo; los emblemas (tipos, movimientos), del canvas.
+      const plain = !name.startsWith('move:') && !name.startsWith('type:');
+      u = plain ? svgOfRows(UI[name] || UI.star) : svgOf(canvas(name));
+      urls.set(name, u);
+    }
     return u;
+  }
+
+  /**
+   * El icono como SVG de texto (un rectángulo por tramo de píxeles iguales).
+   * toDataURL() hacía lo mismo en PNG, pero la primera vez el navegador tarda
+   * ~175 ms en prepararlo y eso bloqueaba la carga de la página (Lighthouse).
+   */
+  function svgDoc(W, H, rects) {
+    return 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges">${rects}</svg>`);
+  }
+
+  /** Igual que fromRows() pero sin canvas (ni lectura de píxeles). */
+  function svgOfRows(def) {
+    const h = def.rows.length, w = Math.max(...def.rows.map(r => r.length));
+    const pad = def.outline ? 1 : 0;
+    const pal = Object.assign({ k: K }, def.pal);
+    const px = new Map();
+    if (def.outline) def.rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === '.' || ch === ' ') return;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) px.set((x + pad + dx) + ',' + (y + pad + dy), K);
+    }));
+    def.rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === '.' || ch === ' ' || !pal[ch]) return;
+      px.set((x + pad) + ',' + (y + pad), pal[ch]);
+    }));
+    let out = '';
+    for (const [k, c] of px) { const [x, y] = k.split(','); out += `<rect x="${x}" y="${y}" width="1" height="1" fill="${c}"/>`; }
+    return svgDoc(w + pad * 2, h + pad * 2, out);
+  }
+
+  function svgOf(cv) {
+    const W = cv.width, H = cv.height;
+    const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+    let out = '';
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W;) {
+        const i = (y * W + x) * 4, a = d[i + 3];
+        if (!a) { x++; continue; }
+        let n = 1;
+        while (x + n < W && d[i + n * 4] === d[i] && d[i + n * 4 + 1] === d[i + 1] && d[i + n * 4 + 2] === d[i + 2] && d[i + n * 4 + 3] === a) n++;
+        const hex = '#' + ((1 << 24) | (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]).toString(16).slice(1);
+        out += `<rect x="${x}" y="${y}" width="${n}" height="1" fill="${hex}"${a < 255 ? ` fill-opacity="${(a / 255).toFixed(3)}"` : ''}/>`;
+        x += n;
+      }
+    }
+    return svgDoc(W, H, out);
   }
 
   /**
@@ -353,8 +404,8 @@ G.Icons = (() => {
   /** Publica en CSS los iconos que usan las hojas de estilo. */
   function installCss() {
     const r = document.documentElement.style;
-    r.setProperty('--ico-coin', `url(${url('coin')})`);
-    r.setProperty('--ico-cursor', `url(${url('cursor')})`);
+    r.setProperty('--ico-coin', `url("${url('coin')}")`);
+    r.setProperty('--ico-cursor', `url("${url('cursor')}")`);
   }
 
   return { canvas, url, html, draw, twinkle, rarity, RARITY_BALL, installCss, UI, TYPE_GLYPH };

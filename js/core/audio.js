@@ -34,14 +34,18 @@ G.Audio = (() => {
     musicBus.connect(master); sfxBus.connect(master);
 
     // Reverb: respuesta al impulso generada (ruido que se apaga en 1,8 s).
+    // Se rellena un momento después, a trozos: hacerlo de golpe bloqueaba la
+    // carga de la página (~75 ms). Hasta entonces la música suena sin eco.
     reverb = ctx.createConvolver();
     const len = Math.floor(ctx.sampleRate * 1.8);
     const ir = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
+    let ch = 0;
+    const fill = () => {
       const d = ir.getChannelData(ch);
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6);
-    }
-    reverb.buffer = ir;
+      for (let i = 0; i < len; i++) { const g = 1 - i / len; d[i] = (Math.random() * 2 - 1) * g * g * Math.sqrt(g); }
+      if (++ch < 2) setTimeout(fill, 30); else reverb.buffer = ir;
+    };
+    setTimeout(fill, 300);
     wet = ctx.createGain(); wet.gain.value = 0.3;
     reverb.connect(wet).connect(musicBus);
 
