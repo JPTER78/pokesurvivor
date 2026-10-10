@@ -12,7 +12,6 @@
  */
 (() => {
   let nextId = 1;
-  const VANISH = 0.6;            // lo que tarda en desvanecerse un rezagado
   /** Los jefes se agrandan hasta ~110 de alto, según lo grande que ya sea su sprite. */
   function bossScale(dex) {
     const m = G.Sprites.animMeta(dex, 'Idle');
@@ -74,9 +73,9 @@
       this.skillCd = G.U.rand(1, 4);      // escudos / saltos
       this.minions = [];
       this.jump = null;                   // { sx, sy, tx, ty, t, dur }
-      // Rezagados: si se quedan atrás mientras huyes, se desvanecen y
+      // Rezagados: si se quedan atrás, fuera de la vista, mientras huyes,
       // vuelven a salir por delante (ver EnemyMgr.update).
-      this.lagT = 0; this.vanish = 0;
+      this.lagT = 0;
     }
 
     cy() { return this.y; }
@@ -637,7 +636,7 @@
     }
 
     draw(ctx) {
-      const alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : this.vanish > 0 ? G.U.clamp(this.vanish / VANISH, 0, 1) : 1;
+      const alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
       if (alpha <= 0) return;
 
       if ((this.boss || this.shiny) && !this.dead) {
@@ -842,8 +841,8 @@
      * @param players  [jugador local, ...compañeros]. Las estadísticas de la
      *                 run (derrotados, jefes) se apuntan en el primero.
      */
-    // A partir de esta distancia, y tras LAG_T s quedándose atrás, se desvanece.
-    const LAG_R = 130, LAG_T = 0.7;
+    // Segundos que un rezagado tiene que llevar fuera de la vista antes de volver por delante.
+    const LAG_T = 2.5;
 
     function update(dt, players) {
       if (!Array.isArray(players)) players = [players];
@@ -878,22 +877,20 @@
         }
         const near = nearestPlayer(players, e.x, e.y) || pl;
         if (e.boss || e.shiny || G.Rift.inArena) continue;
-        // Rezagados: los que se quedan atrás mientras corres se pierden en el
-        // horizonte (se desvanecen) y vuelven a salir por delante de ti, así
-        // no se forma la cola de enemigos detrás y no se puede huir sin más.
+        // Rezagados: los que se quedan atrás mientras corres y llevan un rato
+        // FUERA DE LA VISTA (de todos) vuelven a salir por delante de ti. Así
+        // no se puede huir sin más, y nunca desaparece uno que estés viendo.
         const d2 = G.U.dist2(e.x, e.y, near.x, near.y);
+        const R = G.Camera.outerRadius() + 40;
+        const unseen = d2 > R * R && !G.Camera.sees(e.x, e.y, 60);
         const sp = Math.hypot(near._vx || 0, near._vy || 0);
-        const behind = sp > 40 && ((e.x - near.x) * near._vx + (e.y - near.y) * near._vy) < -0.35 * Math.sqrt(d2) * sp;
-        if (e.vanish > 0) {
-          if ((e.vanish -= dt) <= 0) {
-            e.vanish = 0; e.lagT = 0;
-            if (!G.Spawner.ahead(e, near)) { list.splice(i, 1); byId.delete(e.id); if (G.Coop.isHost) G.Coop.enemyGone(e, false); }
-          }
-          continue;
+        const behind = sp > 40 && ((e.x - near.x) * near._vx + (e.y - near.y) * near._vy) < -0.2 * Math.sqrt(d2) * sp;
+        if (unseen && behind) e.lagT += dt;
+        else if (!unseen) e.lagT = 0;
+        if ((unseen && e.lagT > LAG_T) || d2 > 1400 * 1400) {
+          e.lagT = 0;
+          if (!G.Spawner.ahead(e, near)) { list.splice(i, 1); byId.delete(e.id); if (G.Coop.isHost) G.Coop.enemyGone(e, false); }
         }
-        if (behind && d2 > LAG_R * LAG_R) e.lagT += dt;
-        else e.lagT = Math.max(0, e.lagT - dt * 2);
-        if (e.lagT > LAG_T || d2 > 1400 * 1400) e.vanish = VANISH;
       }
       for (let i = corpses.length - 1; i >= 0; i--) {
         if (corpses[i].remote) corpses[i].netUpdate(dt); else corpses[i].update(dt, pl);

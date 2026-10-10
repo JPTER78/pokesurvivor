@@ -50,6 +50,10 @@ input { font: inherit; }
   animation: fade .2s ease-out;
 }
 .scr.hidden { display: none; }
+/* Pantallas que se abren con la barra superior a la vista: empiezan debajo de ella. */
+@media (min-height: 521px) {
+  #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 66px; }
+}
 .scr.dim { background: radial-gradient(circle at 50% 40%, rgba(10,20,50,.55), rgba(3,6,16,.88)); }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -232,9 +236,29 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .partner-card .nm { font-size: 24px; font-weight: 700; text-shadow: 3px 3px 0 var(--shadow); }
 .partner-card .lv { color: var(--muted); font-size: 14px; text-shadow: 2px 2px 0 var(--shadow); }
 .menu-right {
-  width: min(380px, 100%); display: flex; flex-direction: column; justify-content: center;
-  padding: 24px; gap: 14px;
+  width: min(380px, 100%); display: flex; flex-direction: column;
+  /* Arriba deja sitio a la barra superior; si no cabe todo, se desplaza
+     (los márgenes auto lo centran sin que se salga por arriba). */
+  padding: 70px 24px 18px; gap: 14px; overflow-y: auto;
   background: linear-gradient(90deg, transparent, rgba(5,10,25,.65) 30%);
+}
+.menu-right > :first-child { margin-top: auto; }
+.menu-right > :last-child { margin-bottom: auto; }
+/* Portátiles con poca altura: menú más compacto y, si hace falta, en dos columnas. */
+@media (max-height: 780px) and (min-height: 521px) {
+  .menu-right { padding-top: 62px; gap: 10px; }
+  .menu-right .box { padding: 10px 14px; }
+  .menu-item { font-size: 17px; padding: 5px 10px; }
+  .menu-item.play { font-size: 24px; }
+  .menu-item small { font-size: 11px; }
+}
+@media (max-height: 660px) and (min-height: 521px) {
+  .menu-right { width: min(500px, 52vw); }
+  .menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
+  .menu-item.play { grid-column: span 2; }
+  .menu-item small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .menu-left .logo .t1 { font-size: clamp(32px, 5vw, 52px); }
+  #menu-partner { height: min(30vh, 200px); width: auto; }
 }
 .topbar {
   position: fixed; top: 14px; right: 16px; z-index: 25;
@@ -557,7 +581,7 @@ a.plink { color: inherit; text-decoration: none; border-bottom: 1px dotted rgba(
 a.plink:hover { color: var(--gold); }
 #user-pill { cursor: pointer; }
 .ach-pop {
-  position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 80;
+  position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 80;
   display: flex; gap: 10px; align-items: center; padding: 10px 16px; animation: pop .2s ease-out;
   border-color: var(--gold) !important;
 }
@@ -613,7 +637,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
  * Todo más compacto: la barra superior deja sitio, el menú va en dos
  * columnas y la línea de créditos se esconde (está en Ajustes → Acerca de). */
 @media (max-height: 520px) {
-  .scr { padding: 44px 10px 6px; }
+  .scr { padding: 50px 10px 6px; }
   /* Sin barra superior encima: no hace falta dejarle hueco. */
   #scr-login, #scr-test, #scr-result, #scr-starters, #scr-nick, #scr-levelup, #scr-pause,
   #scr-over, #scr-item, #scr-settings, #scr-legal, #scr-profile { padding: 6px 10px; }
@@ -634,7 +658,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .sound-panel { top: 40px; }
 
   #scr-menu { flex-direction: row; padding: 0; overflow: hidden; }
-  .menu-left { padding: 40px 8px 6px; }
+  .menu-left { padding: 50px 8px 6px; }
   .menu-left .logo { margin-bottom: 2px; }
   .menu-left .logo .t1 { font-size: 28px; }
   .logo .t2 { font-size: 10px; margin-top: 2px; letter-spacing: 2px; }
@@ -642,9 +666,11 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .partner-card { margin-top: 2px; }
   .partner-card .nm { font-size: 17px; }
   .partner-card .lv { font-size: 12px; }
-  .menu-right { width: min(54vw, 420px); padding: 40px 8px 6px; gap: 6px; justify-content: flex-start; }
+  .menu-right { width: min(54vw, 420px); padding: 50px 8px 6px; gap: 6px; justify-content: flex-start; overflow-y: auto; }
   .menu-right .box { padding: 6px 8px; }
   .menu-right > .box:last-child { display: none; }
+  .menu-right > :first-child { margin-top: 0; }
+  .ach-pop { top: auto; bottom: 8px; }
   .menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 4px; }
   .menu-item { font-size: 15px; padding: 4px 6px; grid-template-columns: 22px 1fr; column-gap: 6px; }
   .menu-item small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -652,6 +678,15 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .menu-item::before { display: none; }
   .mi-ico img { width: 20px; height: 20px; }
   .box.settings { max-height: calc(100dvh - 12px); }
+}
+/* Móviles muy bajos (iPhone SE y similares): sin subtítulos en el menú, para que quepa entero. */
+@media (max-height: 400px) {
+  .menu-right { padding-top: 48px; }
+  .menu-item small { display: none; }
+  .menu-item { font-size: 14px; padding: 5px 6px; }
+  .menu-item.play { font-size: 19px; }
+  .menu-item.play small { display: block; }
+  #menu-partner { height: min(30vh, 110px); }
 }
 
 /* ---------- pantalla de carga (lo primero que se ve y lo que lee Google) ---------- */
