@@ -83,7 +83,7 @@ G.GachaUI = (() => {
     const res = G.Gacha.pull(G.DB.save, n, gen, use);
     if (!res) { G.Audio.sfx('error'); G.UI.toast('No tienes tickets suficientes: consíguelos jugando'); return; }
     G.Progress.checkAch();
-    G.DB.commit();
+    G.DB.commit(true);
     busy = true;
 
     const best = Math.max(...res.map(r => r.rarity));

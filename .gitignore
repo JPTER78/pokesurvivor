@@ -15,3 +15,6 @@ node_modules/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Contactos privados (emails de terceros): nunca al repositorio público
+docs/CONTACTOS_CREADORES.md

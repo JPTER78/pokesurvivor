@@ -260,7 +260,7 @@ G.MenuUI = (() => {
         if (maxed || s.coins < cost) return;
         s.coins -= cost;
         levels[u.id] = lvl + 1;
-        G.DB.commit();
+        G.DB.commit(true);
         G.Audio.sfx('buy');
         G.UI.refreshCoins();
         G.UI.toast(`${mon.name} · ${u.name}: nivel ${lvl + 1}`);

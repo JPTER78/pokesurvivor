@@ -112,8 +112,11 @@ G.Social = (() => {
   }
 
   let playing = false, lastBeat = 0;
+  /** ¿Hay alguien que pueda leer tu "en línea"? (sólo los amigos confirmados) */
+  const hasFriends = () => [...friends.values()].some(f => f.status === 'ok');
   function writeStatus(on = true) {
-    if (!fb || !me) return;
+    // Sin amigos nadie lo lee: no se gasta una escritura (cupo diario de Firebase).
+    if (!fb || !me || !hasFriends()) return;
     lastBeat = Date.now();
     fb.fs.collection('pres').doc(uid).set({ on, at: fts(), room: room ? room.id : '', play: playing }).catch(() => {});
   }
@@ -171,9 +174,14 @@ G.Social = (() => {
       });
       // Un amigo nuevo (o recién aceptado): se mira si está en línea.
       const added = [...next.values()].some(f => f.status === 'ok' && (!friends.has(f.uid) || friends.get(f.uid).status !== 'ok'));
+      const hadFriends = hasFriends();
       friends = next;
       emit('friends');
-      if (added) refreshPresence(true);
+      // Tu primer amigo: ahora sí hay quien lea tu "en línea".
+      if (!hadFriends && hasFriends()) writeStatus();
+      // Se mira si está en línea un momento después: tu amigo también acaba de
+      // recibir la amistad y está apuntando su "en línea" a la vez.
+      if (added) setTimeout(() => { if (started) refreshPresence(true); }, 2500);
     }, e => console.warn('[Social] amigos:', e.code || e.message));
   }
 

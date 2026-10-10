@@ -11,7 +11,7 @@
  *   tabla = modo + periodo:
  *     s_d20261008   solitario, hoy            g_...   en grupo
  *     s_w2026-41    semana ISO                s_m202610  mes
- *     s_y2026       año                       s_all      histórico
+ *     s_all         histórico   (la tabla anual se quitó el 2026-10-10)
  *     s_all_p25     histórico sólo con Pikachu (el filtro por Pokémon sólo
  *                   existe en el histórico: así cada partida escribe la mitad)
  *   id = tu uid (solitario) o los uid del equipo ordenados y unidos con "_".
@@ -22,12 +22,18 @@
  *     no hay que leer nada para saber si has mejorado, y sólo se escribe
  *     donde mejoras.
  *   - El resumen sólo se toca si tu marca entra en el top 50.
+ *   - En diario, semanal y mensual sólo se guardan las marcas del top 50: si
+ *     no entras no se escribe nada y tu puesto sale como "fuera del top 50".
+ *     Tu puesto exacto, aunque estés el 3.000, sólo en el histórico. Con mucha
+ *     gente jugando, ahorra unas 6 de cada 10 escrituras del ranking.
  *
  * Los periodos se cuentan en hora de España (Europe/Madrid).
  */
 G.Ranking = (() => {
   const TZ = 'Europe/Madrid';
-  const PERIODS = [['d', 'Diario'], ['w', 'Semanal'], ['m', 'Mensual'], ['y', 'Anual'], ['a', 'Histórico']];
+  const PERIODS = [['d', 'Diario'], ['w', 'Semanal'], ['m', 'Mensual'], ['a', 'Histórico']];
+  // Periodos en los que sólo se guarda el top 50 (ver arriba).
+  const TOP_ONLY = new Set(['d', 'w', 'm']);
   const TOP = 50;
   const TTL = 10 * 60 * 1000;            // caché de lo leído
 
@@ -103,12 +109,18 @@ G.Ranking = (() => {
 
   // ---------------- guardar ----------------
 
-  /** Al empezar una partida: el servidor apunta la hora (anti-trampas). */
+  /**
+   * Al empezar la PRIMERA partida de la sesión: el servidor apunta la hora
+   * (anti-trampas: ninguna marca puede durar más que el tiempo real desde
+   * entonces). Una vez por sesión y no en cada partida, para ahorrar escrituras.
+   */
+  let runMarked = '';
   function runStarted(mode) {
     const fb = fbx();
-    if (!fb) return;
+    if (!fb || runMarked === fb.uid) return;
+    runMarked = fb.uid;
     fb.fs.collection('runs').doc(fb.uid).set({ startedAt: firebase.firestore.FieldValue.serverTimestamp(), mode })
-      .catch(e => console.warn('[Ranking] inicio:', e.code || e.message));
+      .catch(e => { runMarked = ''; console.warn('[Ranking] inicio:', e.code || e.message); });
   }
 
   const rowOf = (id, v) => ({ id, t: v.t, uids: v.uids || [], names: v.names || [], dex: v.dex || [], shiny: v.shiny || [], lv: v.lv, kills: v.kills });
@@ -129,30 +141,38 @@ G.Ranking = (() => {
         }
         if (known[key] >= entry.t) return;
         const data = Object.assign({}, entry, { at: firebase.firestore.FieldValue.serverTimestamp() });
-        // Si la tabla ya está llena y no llegas al top 50, no hace falta tocar el resumen.
+        // Si la tabla ya está llena y no llegas al top 50, no hace falta tocar el resumen
+        // (y en diario, semanal y mensual, ni siquiera se guarda la marca).
+        const topOnly = TOP_ONLY.has(period);
         const cached = cacheGet('s:' + b);
         const full = cached && Object.keys(cached).length >= TOP;
         const minT = full ? Math.min(...Object.values(cached).map(v => v.t)) : 0;
         if (full && entry.t <= minT && !(id in cached)) {
-          await col(b).doc(id).set(data);
+          if (!topOnly) await col(b).doc(id).set(data);
+          else { known[key] = entry.t; return; }
         } else {
+          let entered = true;
           let newTop = null;
           await fb.fs.runTransaction(async tx => {
             const s = await tx.get(sumRef(b));
             const top = Object.assign({}, s.exists ? s.data().top : {});
-            tx.set(col(b).doc(id), data);
             const mine = { t: entry.t, uids: entry.uids, names: entry.names, dex: entry.dex, shiny: entry.shiny, lv: entry.lv, kills: entry.kills };
             let ev = '';
             if (!(id in top) && Object.keys(top).length >= TOP) {
               const low = sorted(top).pop();
-              if (low.t >= entry.t) { newTop = top; return; }      // no entra en el top
+              if (low.t >= entry.t) {                                // no entra en el top
+                if (!topOnly) tx.set(col(b).doc(id), data);
+                entered = false; newTop = top; return;
+              }
               ev = low.id; delete top[ev];
             }
+            tx.set(col(b).doc(id), data);
             top[id] = mine;
             tx.set(sumRef(b), { top, me: id, ev });
             newTop = top;
           });
           if (newTop) cacheSet('s:' + b, newTop);
+          if (topOnly && !entered) { known[key] = entry.t; return; }
         }
         known[key] = entry.t;
         if (b.startsWith('g_')) known[b + ':*'] = Math.max(known[b + ':*'] || 0, entry.t);
@@ -166,7 +186,7 @@ G.Ranking = (() => {
 
   function announce(better) {
     if (!better.length) return;
-    const names = { d: 'de hoy', w: 'de la semana', m: 'del mes', y: 'del año', a: 'histórico' };
+    const names = { d: 'de hoy', w: 'de la semana', m: 'del mes', a: 'histórico' };
     const best = PERIODS.map(p => p[0]).filter(p => better.includes(p)).pop();
     G.UI.toast('¡Nueva mejor marca ' + names[best] + ' en el ranking!', 3400);
   }
@@ -228,6 +248,8 @@ G.Ranking = (() => {
     if (!friendsOnly) return rows.slice(0, TOP);
     const circle = [fb.uid, ...G.Social.friends.filter(f => f.status === 'ok').map(f => f.uid)].slice(0, 30);
     const inTop = rows.filter(r => r.uids.some(u => circle.includes(u)));
+    // En diario, semanal y mensual no hay marcas fuera del top 50: no hay nada más que buscar.
+    if (TOP_ONLY.has(period)) return inTop;
     // Los amigos que no están en el top 50: se buscan aparte (y se guardan 10 min).
     const ck = 'f:' + b + ':' + circle.slice().sort().join(',');
     let extra = cacheGet(ck);
@@ -256,6 +278,7 @@ G.Ranking = (() => {
     const rows = sorted(await summary(b));
     const i = rows.findIndex(r => r.uids.includes(fb.uid));
     if (i >= 0) return { pos: i + 1, t: rows[i].t, row: rows[i] };
+    if (TOP_ONLY.has(period)) return { out: true };
     const ck = 'r:' + b;
     const c = cacheGet(ck);
     if (c !== undefined) return c;

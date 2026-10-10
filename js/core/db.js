@@ -246,10 +246,11 @@ G.DB = (() => {
 
   let auth = null, fs = null, rtdb = null, uid = null, unlisten = null;
   let pushT = 0, retryT = 0, pending = false, pushing = null, lastPush = 0;
-  // Como mucho una subida cada 30 s (el plan gratuito de Firebase tiene un
-  // cupo diario de escrituras). La copia local se guarda siempre al momento,
-  // y al ocultar o cerrar la pestaña se sube lo pendiente.
-  const PUSH_GAP = 30 * 1000;
+  // Como mucho una subida cada 5 min (el plan gratuito de Firebase tiene un
+  // cupo diario de escrituras); lo que cuesta algo (gacha, mejoras), a los
+  // 30 s. La copia local se guarda siempre al momento (y se fusiona con la
+  // nube al volver a entrar), y al ocultar o cerrar la pestaña se sube lo pendiente.
+  const PUSH_GAP = 5 * 60 * 1000, PUSH_GAP_URGENT = 30 * 1000;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
 
@@ -287,6 +288,7 @@ G.DB = (() => {
     auth.languageCode = 'es';
     addEventListener('online', () => { if (pending) pushNow(); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && pending) pushNow(); });
+    addEventListener('pagehide', () => { if (pending) pushNow(); });
     return true;
   }
 
@@ -339,7 +341,7 @@ G.DB = (() => {
   function pushNow() {
     if (mode !== 'cloud' || guest || !save || !uid) return Promise.resolve();
     if (pushing) { pending = true; return pushing; }
-    clearTimeout(pushT);
+    clearTimeout(pushT); pushT = 0; pushDue = 0;
     if (navigator.onLine === false) {
       pending = true; setSync('offline'); scheduleRetry();
       return Promise.resolve();
@@ -373,7 +375,14 @@ G.DB = (() => {
     return pushing;
   }
 
-  function schedulePush(ms) { clearTimeout(pushT); pushT = setTimeout(pushNow, ms); }
+  // Si ya había una subida programada antes, se respeta (una compra no espera a la siguiente partida).
+  let pushDue = 0;
+  function schedulePush(ms) {
+    const due = Date.now() + ms;
+    if (pushT && pushDue && pushDue <= due) return;
+    clearTimeout(pushT); pushDue = due;
+    pushT = setTimeout(() => { pushT = 0; pushDue = 0; pushNow(); }, ms);
+  }
   function scheduleRetry() { clearTimeout(retryT); retryT = setTimeout(() => { if (pending) pushNow(); }, 15000); }
 
   function authError(e) {
@@ -467,15 +476,18 @@ G.DB = (() => {
     return { ok: true, isNew: true };
   }
 
-  /** Guarda la partida actual (no hace nada en modo invitado). */
-  function commit() {
+  /**
+   * Guarda la partida actual (no hace nada en modo invitado).
+   * @param urgent  lo que ha costado algo (tiradas del gacha, mejoras): se sube antes
+   */
+  function commit(urgent = false) {
     if (guest || !key || !save) return false;
     save.updated = Date.now();
     if (mode === 'local') return write(K_SAVE + key, save);
     write(K_CLOUD + uid, save);
     pending = true;
     setSync('pending');
-    schedulePush(Math.max(1200, PUSH_GAP - (Date.now() - lastPush)));
+    schedulePush(Math.max(1200, (urgent ? PUSH_GAP_URGENT : PUSH_GAP) - (Date.now() - lastPush)));
     return true;
   }
 
