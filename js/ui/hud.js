@@ -202,6 +202,9 @@ G.HUD = (() => {
       ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
     }
 
+    // Eventos: cuenta atrás, flecha al Pokémon perdido / a la marca y a los duendes.
+    G.Events.drawHud(ctx, w, h, pl, F);
+
     // Aviso propio al abrirse una grieta (no lo tapan los otros avisos).
     if (rift && rift.t < 4.5) {
       const a = Math.min(1, rift.t * 4, (4.5 - rift.t) * 2), pop = 1 + Math.max(0, 0.25 - rift.t) * 1.6;

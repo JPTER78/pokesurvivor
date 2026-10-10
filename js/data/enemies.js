@@ -181,8 +181,27 @@ G.Enemies = (() => {
    */
   function bossScale(t) { return { hp: 1 + t / 600, dmg: 1 + t / 600, spd: 1 }; }
 
+  /** Tramo que toca en el segundo `t`. */
+  function tierAt(t) { let ti = 0; TIERS.forEach((tr, i) => { if (t >= tr.from) ti = i; }); return ti; }
+
+  const NO_HORDE = new Set(['bomber', 'healer', 'shielder', 'summoner']);
+  /** Tipos con bastantes Pokémon en el tramo actual para una horda (events.js). */
+  function hordeTypes(t) {
+    const all = candidates(TIERS[tierAt(t)]).filter(p => !NO_HORDE.has(behaviorOf(p)));
+    return Object.keys(G.U.TYPE_COLOR).filter(ty => all.filter(p => p.types.includes(ty)).length >= 3);
+  }
+  /** Hasta 4 Pokémon de un tipo, con los stats del tramo actual. */
+  function hordeDefs(type, t) {
+    const ti = tierAt(t);
+    const pool = candidates(TIERS[ti]).filter(p => p.types.includes(type) && !NO_HORDE.has(behaviorOf(p)));
+    return G.U.pickN(pool, 4).map(p => defFor(p, TIERS[ti], ti));
+  }
+
   /** Bolsa de enemigos disponibles en el segundo `t`. */
   function bagAt(t) {
+    // Durante una horda de un tipo sólo salen los de ese tipo (systems/events.js).
+    const horde = G.Events && G.Events.bag();
+    if (horde) return horde;
     if (!cast) rollRun();
     const bag = [];
     for (const tier of cast) {
@@ -203,7 +222,7 @@ G.Enemies = (() => {
   }
 
   return {
-    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates,
+    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

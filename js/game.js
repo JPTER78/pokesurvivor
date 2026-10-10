@@ -97,6 +97,7 @@ G.Game = (() => {
     G.Pickups.clear();
     G.Spawner.reset();
     G.Rift.reset();
+    G.Events.reset();
     G.Weather.reset();
     G.Path.clear();
     G.Hazards.clear();
@@ -190,6 +191,16 @@ G.Game = (() => {
     lost(msg) { G.UI.toast(msg, 3600); endRun(false); },
     item(id) { offerItem(id); },
     mateLeft() {}
+  };
+
+  /** Has llevado a casa a un Pokémon perdido y se une a ti (events.js). */
+  G.onRescue = (dex, name) => {
+    if (!G.DB.save || !pl) return;
+    const isNew = !G.DB.owns(dex);
+    if (isNew) { G.DB.grant(dex, 'rescue'); G.DB.commit(); }
+    else pl.coins += 150;
+    G.Spawner.say(isNew ? '¡' + name + ' se une a tu equipo!' : '¡' + name + ' te da las gracias! (+150 monedas, ya lo tenías)', 4);
+    G.Audio.sfx('shinyGet');
   };
 
   /** Un shiny salvaje cae: te lo quedas (y la versión normal si no la tenías). */
@@ -462,6 +473,7 @@ G.Game = (() => {
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
+    G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
 
@@ -506,6 +518,7 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
+    if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
       if (it.prop) G.World.drawProp(ctx, it.prop, t);

@@ -504,3 +504,9 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   tiempo; el juego vigila reloj, vida, velocidad, ataque, nivel, monedas y las
   herramientas de prueba. Si algo no cuadra, la partida no cuenta para el
   ranking ni los récords.
+- Eventos a mitad de partida cada 4-5 min (systems/events.js): horda de un tipo
+  (30 s), hora dorada (30 s, doble de experiencia y monedas) y Pokémon perdido
+  (lo llevas a la marca; cura, monedas, ticket y 1 de cada 5 se une a ti).
+  Duendes del tesoro 1-2 por partida: Meowth (monedas) o Gholdengo (ticket ×10;
+  Gimmighoul no tiene sprite). Huyen y se escapan a los 15 s. En grupo, todo
+  compartido.

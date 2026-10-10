@@ -89,6 +89,13 @@
       G.Sprites.preload([this.dex], 4000, true);
     }
 
+    /** Hora dorada (events.js): doble de experiencia y a veces monedas. */
+    makeGolden() {
+      if (this.golden || this.boss || this.behavior === 'thief') return;
+      this.golden = true;
+      this.xp *= 2;
+    }
+
     /** @param eff  'super' | 'weak' | null (tabla de tipos, sólo para enseñarlo) */
     hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0, eff = null) {
       if (this.dead) return;
@@ -167,6 +174,14 @@
         G.Pickups.drop('item', this.x - 26, this.y - 10, G.Items.roll());
       }
       G.Pickups.dropXp(this.x, this.y, this.xp, this.boss);
+      if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
+      // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.
+      if (this.behavior === 'thief') {
+        const n = this.def.loot === 'ticket10' ? 6 : 20;
+        for (let i = 0; i < n; i++) G.Pickups.drop('coin', this.x + G.U.rand(-36, 36), this.y + G.U.rand(-26, 26), 5);
+        if (this.def.loot === 'ticket10') G.Pickups.drop('ticket10', this.x, this.y - 12, 1);
+        G.FX.ring(this.x, this.y, this.r, this.r * 5, '#ffd23f', 0.6, 4);
+      }
       if (this.legend) {
         // El legendario de la grieta: además del ticket ×10 de todo jefe.
         G.Pickups.drop('ticket10', this.x + 20, this.y - 16, 1);
@@ -261,6 +276,21 @@
       const spd = this.spd * (1 - this.slow) * terrainMul * G.Weather.speedFor(this.types);
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
       const dist = G.U.dist(this.x, this.y, pl.x, pl.y);
+      // Duende del tesoro: huye de ti (en zigzag) en cuanto te acercas.
+      if (this.behavior === 'thief') {
+        this.zig = (this.zig || 0) + dt;
+        const near = dist < 300, a = Math.atan2(-dy, -dx) + Math.sin(this.zig * 2.2) * 0.7;
+        const k = near ? 1 : 0.35;
+        const vx0 = Math.cos(a) * spd * k, vy0 = Math.sin(a) * spd * k;
+        const ox = this.x, oy = this.y;
+        this.x += (vx0 + this.kx) * dt; this.y += (vy0 + this.ky) * dt;
+        this.kx *= Math.pow(0.0015, dt); this.ky *= Math.pow(0.0015, dt);
+        if (G.World.collide(this) && Math.hypot(this.x - ox, this.y - oy) < spd * k * dt * 0.3) this.zig += 1.4;
+        if (Math.random() < dt * 6 && G.Camera.sees(this.x, this.y, 0)) G.FX.twinkle(this.x + G.U.rand(-this.r, this.r), this.y - G.U.rand(4, this.bodyH));
+        this.anim.dir = G.Sprites.dirFromAngle(a);
+        this.anim.loop('Walk', 1.4);
+        return;
+      }
       // Corredor: va a donde VAS a estar (te corta el paso si sólo huyes).
       if (this.behavior === 'runner' && pl._vx != null) {
         const lead = G.U.clamp(dist / Math.max(60, spd), 0, 1.4);
@@ -639,10 +669,11 @@
       const alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
       if (alpha <= 0) return;
 
-      if ((this.boss || this.shiny) && !this.dead) {
+      const gold = this.golden || this.behavior === 'thief' || (this.remote && !this.boss && G.Events.golden);
+      if ((this.boss || this.shiny || gold) && !this.dead) {
         ctx.save();
-        ctx.globalAlpha = 0.22 + Math.sin(this.bob * 0.5) * 0.06;
-        ctx.fillStyle = this.ai && this.ai.fury ? '#ff4a4a' : this.shiny ? '#9ae6ff' : '#ffd95e';
+        ctx.globalAlpha = (gold && !this.boss ? 0.32 : 0.22) + Math.sin(this.bob * 0.5) * 0.06;
+        ctx.fillStyle = this.ai && this.ai.fury ? '#ff4a4a' : this.shiny ? '#9ae6ff' : gold ? '#ffd23f' : '#ffd95e';
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.6, this.r * 0.6, 0, 0, 6.2832); ctx.fill();
         ctx.restore();
       }
@@ -876,6 +907,14 @@
           continue;
         }
         const near = nearestPlayer(players, e.x, e.y) || pl;
+        // El duende del tesoro se escapa si no lo atrapas a tiempo.
+        if (e.behavior === 'thief' && (e.life -= dt) <= 0) {
+          G.FX.burst(e.x, e.y - 10, '#ffd23f', 16, 140);
+          G.Spawner.say('¡' + e.name + ' se ha escapado!', 2.4);
+          list.splice(i, 1); byId.delete(e.id);
+          if (G.Coop.isHost) G.Coop.enemyGone(e, false);
+          continue;
+        }
         if (e.boss || e.shiny || G.Rift.inArena) continue;
         // Rezagados: los que se quedan atrás mientras corres y llevan un rato
         // FUERA DE LA VISTA (de todos) vuelven a salir por delante de ti. Así

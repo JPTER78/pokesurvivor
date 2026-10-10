@@ -85,6 +85,7 @@ G.Spawner = (() => {
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
     if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
     if (shiny) e.makeShiny();
+    if (G.Events.golden) e.makeGolden();
     G.EnemyMgr.add(e);
     if (shiny) {
       say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);
@@ -144,6 +145,12 @@ G.Spawner = (() => {
     }
   }
 
+  /** Unos cuantos de golpe desde un lado (al empezar una horda). */
+  function burst(n) {
+    const base = Math.random() * 6.2832, target = anchor() || G.Game.player, t = G.Game.st.time;
+    for (let i = 0; i < n && G.EnemyMgr.count < CAP + 10; i++) spawnOne(target, t, base + G.U.rand(-0.6, 0.6));
+  }
+
   /**
    * Un rezagado vuelve a salir por delante del jugador (hacia donde corre),
    * fuera de la vista. Devuelve false si no hay sitio (entonces se quita).
@@ -171,6 +178,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { G.Guard.flag('debug'); forceShiny = n; } };
 })();
