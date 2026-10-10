@@ -12,6 +12,7 @@
  */
 (() => {
   let nextId = 1;
+  const VANISH = 0.6;            // lo que tarda en desvanecerse un rezagado
   /** Los jefes se agrandan hasta ~110 de alto, según lo grande que ya sea su sprite. */
   function bossScale(dex) {
     const m = G.Sprites.animMeta(dex, 'Idle');
@@ -73,6 +74,9 @@
       this.skillCd = G.U.rand(1, 4);      // escudos / saltos
       this.minions = [];
       this.jump = null;                   // { sx, sy, tx, ty, t, dur }
+      // Rezagados: si se quedan atrás mientras huyes, se desvanecen y
+      // vuelven a salir por delante (ver EnemyMgr.update).
+      this.lagT = 0; this.vanish = 0;
     }
 
     cy() { return this.y; }
@@ -258,6 +262,12 @@
       const spd = this.spd * (1 - this.slow) * terrainMul * G.Weather.speedFor(this.types);
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
       const dist = G.U.dist(this.x, this.y, pl.x, pl.y);
+      // Corredor: va a donde VAS a estar (te corta el paso si sólo huyes).
+      if (this.behavior === 'runner' && pl._vx != null) {
+        const lead = G.U.clamp(dist / Math.max(60, spd), 0, 1.4);
+        [dx, dy] = G.U.norm(pl.x + pl._vx * lead - this.x, pl.y + pl._vy * lead - this.y);
+        if (G.Camera.sees(this.x, this.y, 0) && Math.random() < dt * 10) G.FX.px(this.x - dx * 8 + G.U.rand(-4, 4), this.y, '#e8dcc0', { vy: -12, life: 0.35 });
+      }
 
       // --- personalidad (escudos, saltos, explosión) ---
       if (this.shieldT > 0 && (this.shieldT -= dt) <= 0) this.shield = 0;
@@ -295,7 +305,9 @@
       let vx = dx * spd, vy = dy * spd;
       let animBase = 'Walk';
 
-      if (this.behavior === 'charger') {
+      if (this.boss) {
+        [vx, vy, animBase] = this.bossMove(dt, pl, dist, dx, dy, spd);
+      } else if (this.behavior === 'charger') {
         this.pt -= dt;
         if (this.phase === 'walk') {
           if (dist < 200 && this.pt <= 0) {
@@ -353,6 +365,148 @@
                   : moving ? Math.atan2(vy, vx) : Math.atan2(pl.y - this.y, pl.x - this.x);
       this.anim.dir = G.Sprites.dirFromAngle(faceA);
       this.anim.loop(moving ? animBase : 'Idle', moving ? Math.max(0.6, spd / 70) : 1);
+    }
+
+    // ---------------- jefes ----------------
+    // Cada jefe (y cada legendario de las grietas) tiene 4 ataques: 2 de
+    // cerca (Pisotón siempre + Embestida o Salto) y 2 de lejos según su tipo.
+    // Va alternando entre ir a por ti y pelear a distancia, así que el que
+    // dispara también se te echa encima y el de cuerpo a cuerpo también
+    // dispara. Todo avisa en el suelo. Por debajo de la mitad de vida se
+    // enfurece: más rápido, menos espera y a veces encadena dos ataques.
+
+    bossInit() {
+      const T = this.types, has = (...xs) => xs.some(x => T.includes(x));
+      const melee = ['slam', G.U.hash(this.dex, 3, 7) < 0.5 ? 'dash' : 'leap'];
+      const pref = has('fire', 'ground', 'poison', 'rock', 'grass') ? 'rain'
+                 : has('electric', 'psychic', 'dragon', 'ice', 'steel') ? 'beam'
+                 : has('fairy', 'ghost', 'water', 'flying') ? 'nova' : 'volley';
+      const others = ['rain', 'beam', 'nova', 'volley'].filter(x => x !== pref);
+      const ranged = [pref, others[Math.floor(G.U.hash(this.dex, 5, 9) * 3) % 3]];
+      const far = this.behavior === 'ranged';
+      this.ai = { melee, ranged, farLike: far ? 0.65 : 0.35, mode: far ? 'far' : 'close', modeT: G.U.rand(6, 8),
+                  cd: 1.6, cast: null, fury: false, side: Math.random() < 0.5 ? -1 : 1 };
+    }
+
+    bossMove(dt, pl, dist, dx, dy, spd) {
+      if (!this.ai) this.bossInit();
+      const ai = this.ai;
+      if (!ai.fury && this.hp < this.maxHp * 0.5) this.enrage();
+      const k = ai.fury ? 1.25 : 1;
+      if (ai.cast) return this.bossCast(dt, pl);
+      ai.modeT -= dt; ai.cd -= dt * k;
+      // Alterna siempre: en su distancia favorita está más rato (7-9 s) que en la otra (4-5 s).
+      if (ai.modeT <= 0) {
+        ai.mode = ai.mode === 'far' ? 'close' : 'far';
+        ai.modeT = (ai.mode === 'far') === (ai.farLike > 0.5) ? G.U.rand(7, 9) : G.U.rand(4, 5);
+        ai.side = -ai.side;
+      }
+      let vx = dx * spd * k * 1.1, vy = dy * spd * k * 1.1;
+      const [ddx, ddy] = G.U.norm(pl.x - this.x, pl.y - this.y);
+      if (ai.mode === 'far') {
+        if (dist < 170) { vx = -ddx * spd; vy = -ddy * spd; }
+        else if (dist < 300) { vx = -ddy * spd * 0.55 * ai.side; vy = ddx * spd * 0.55 * ai.side; }   // te rodea
+      }
+      if (ai.cd <= 0) {
+        let id = null;
+        if (ai.mode === 'close') {
+          const ok = ai.melee.filter(m => m === 'slam' ? dist < 125 : dist < 320);
+          // De vez en cuando, aunque esté cerca, también dispara.
+          id = ok.length && Math.random() < 0.8 ? G.U.pick(ok) : dist < 480 ? G.U.pick(ai.ranged) : null;
+        } else {
+          id = dist < 115 ? 'slam' : dist < 430 ? G.U.pick(ai.ranged) : null;
+        }
+        if (id) this.bossStart(id, pl);
+      }
+      return [vx, vy, 'Walk'];
+    }
+
+    enrage() {
+      this.ai.fury = true;
+      this.spd *= 1.15;
+      G.Spawner.say('¡' + this.name + ' se ha enfurecido!', 2.4);
+      G.FX.ring(this.x, this.y, this.r, this.r * 5, '#ff4a4a', 0.6, 5);
+      G.Camera.kick(0.5);
+      G.Audio.sfx('boss');
+    }
+
+    bossStart(id, pl) {
+      const ai = this.ai, f = ai.fury ? 0.8 : 1, type = this.atkType;
+      const col = G.U.TYPE_COLOR[type] || '#ff7a9e';
+      const ang = Math.atan2(pl.y - this.y, pl.x - this.x);
+      const c = ai.cast = { id, t: 0, wind: 0.6 * f, after: 0.35, ang };
+      switch (id) {
+        case 'slam':       // pisotón: onda alrededor
+          c.wind = 0.85 * f;
+          G.Hazards.add({ kind: 'zone', x: this.x, y: this.y, r: 96 + this.r, delay: c.wind, dmg: this.dmg * 1.3, type, color: col });
+          this.anim.play('Charge', { speed: 1.2 });
+          break;
+        case 'dash':       // embestida en línea recta
+          c.wind = 0.75 * f; c.len = 330; c.dur = 0.32;
+          G.Hazards.add({ kind: 'beam', x: this.x, y: this.y, angle: ang, len: c.len + this.r, w: this.r * 2 + 16,
+                          delay: c.wind + c.dur, dmg: this.dmg * 1.2, type, color: col });
+          this.anim.play('Charge', { speed: 1.3 });
+          break;
+        case 'leap':       // salto y caída sobre ti
+          this.jump = { sx: this.x, sy: this.y, tx: pl.x, ty: pl.y, t: -0.5 * f, dur: 0.65 };
+          G.Hazards.add({ kind: 'zone', x: pl.x, y: pl.y, r: 82, delay: 0.5 * f + 0.65, dmg: this.dmg * 1.25, type, color: col });
+          this.anim.play('Charge', { speed: 1.4 });
+          ai.cast = null; ai.cd = G.U.rand(1.4, 2) + 0.6;
+          break;
+        case 'rain': {     // zonas que caen alrededor de ti
+          const n = ai.fury ? 6 : 4;
+          for (let i = 0; i < n; i++) {
+            const a = i ? Math.random() * 6.2832 : 0, d = i ? G.U.rand(40, 120) : 0;
+            G.Hazards.add({ kind: 'zone', x: pl.x + Math.cos(a) * d, y: pl.y + Math.sin(a) * d * 0.8, r: 50,
+                            delay: 1.05 + i * 0.12, dmg: this.shotDmg() * 1.15, type, color: col });
+          }
+          c.wind = 0.5; this.anim.play('Shoot');
+          break;
+        }
+        case 'beam': {     // rayos en abanico
+          const n = ai.fury ? 5 : 3, sp = ai.fury ? 0.42 : 0.5;
+          for (let i = 0; i < n; i++) {
+            G.Hazards.add({ kind: 'beam', x: this.x, y: this.y, angle: ang + (i - (n - 1) / 2) * sp, len: 400, w: 26,
+                            delay: 1.0, dmg: this.shotDmg() * 1.2, type, color: col });
+          }
+          c.wind = 1.0; c.after = 0.25; this.anim.play('Charge', { speed: 1.1 });
+          break;
+        }
+        case 'volley':     // abanico de disparos
+        case 'nova':       // anillo de disparos
+          c.wind = (id === 'nova' ? 0.7 : 0.5) * f;
+          this.anim.play('Charge', { speed: 1.4 });
+          G.FX.ring(this.x, this.y, this.r, this.r * 2.4, col, c.wind, 2);
+          break;
+      }
+    }
+
+    bossCast(dt, pl) {
+      const ai = this.ai, c = ai.cast;
+      c.t += dt;
+      if (c.id === 'dash' && c.t >= c.wind) {
+        if (!c.go) { c.go = true; this.anim.play('Attack', { speed: 1.6 }); }
+        if (c.t >= c.wind + c.dur) return this.bossEnd();
+        const sp = c.len / c.dur;
+        return [Math.cos(c.ang) * sp, Math.sin(c.ang) * sp, 'Walk'];
+      }
+      if (c.t >= c.wind && !c.fired) {
+        c.fired = true;
+        const [ax, ay] = G.U.norm(pl.x - this.x, pl.y - this.y);
+        if (c.id === 'volley') this.shoot(ax, ay, 1.1, ai.fury ? 9 : 7, 0.8);
+        else if (c.id === 'nova') { const n = ai.fury ? 18 : 14; this.shoot(ax, ay, 6.2832 * (n - 1) / n, n, 0.7); }
+        else if (c.id === 'slam') this.anim.play('Attack', { speed: 1.4 });
+      }
+      if (c.t >= c.wind + c.after) return this.bossEnd();
+      return [0, 0, 'Idle'];
+    }
+
+    bossEnd() {
+      const ai = this.ai;
+      ai.cast = null;
+      ai.cd = G.U.rand(1.3, 2.0);
+      if (ai.fury && Math.random() < 0.35) ai.cd = 0.3;    // encadena otro
+      return [0, 0, 'Idle'];
     }
 
     keepsDistance() { return ['ranged', 'fan', 'beamer', 'zoner', 'healer', 'summoner'].includes(this.behavior); }
@@ -483,13 +637,13 @@
     }
 
     draw(ctx) {
-      const alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
+      const alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : this.vanish > 0 ? G.U.clamp(this.vanish / VANISH, 0, 1) : 1;
       if (alpha <= 0) return;
 
       if ((this.boss || this.shiny) && !this.dead) {
         ctx.save();
         ctx.globalAlpha = 0.22 + Math.sin(this.bob * 0.5) * 0.06;
-        ctx.fillStyle = this.shiny ? '#9ae6ff' : '#ffd95e';
+        ctx.fillStyle = this.ai && this.ai.fury ? '#ff4a4a' : this.shiny ? '#9ae6ff' : '#ffd95e';
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.6, this.r * 0.6, 0, 0, 6.2832); ctx.fill();
         ctx.restore();
       }
@@ -688,9 +842,21 @@
      * @param players  [jugador local, ...compañeros]. Las estadísticas de la
      *                 run (derrotados, jefes) se apuntan en el primero.
      */
+    // A partir de esta distancia, y tras LAG_T s quedándose atrás, se desvanece.
+    const LAG_R = 130, LAG_T = 0.7;
+
     function update(dt, players) {
       if (!Array.isArray(players)) players = [players];
       const pl = players[0];
+      // Velocidad suavizada de cada jugador (vale también para los compañeros).
+      for (const p of players) {
+        if (p._px != null && dt > 0) {
+          const k = Math.min(1, dt * 5);
+          p._vx += ((p.x - p._px) / dt - p._vx) * k; p._vy += ((p.y - p._py) / dt - p._vy) * k;
+          if (Math.abs(p.x - p._px) > 200 || Math.abs(p.y - p._py) > 200) p._vx = p._vy = 0;    // teletransporte
+        } else { p._vx = 0; p._vy = 0; }
+        p._px = p.x; p._py = p.y;
+      }
       rebuildGrid();
       for (const e of list) {
         if (e.remote) e.netUpdate(dt);
@@ -711,11 +877,23 @@
           continue;
         }
         const near = nearestPlayer(players, e.x, e.y) || pl;
-        if (!e.boss && !e.shiny && G.U.dist2(e.x, e.y, near.x, near.y) > 1400 * 1400) {
-          list.splice(i, 1);
-          byId.delete(e.id);
-          if (G.Coop.isHost) G.Coop.enemyGone(e, false);
+        if (e.boss || e.shiny || G.Rift.inArena) continue;
+        // Rezagados: los que se quedan atrás mientras corres se pierden en el
+        // horizonte (se desvanecen) y vuelven a salir por delante de ti, así
+        // no se forma la cola de enemigos detrás y no se puede huir sin más.
+        const d2 = G.U.dist2(e.x, e.y, near.x, near.y);
+        const sp = Math.hypot(near._vx || 0, near._vy || 0);
+        const behind = sp > 40 && ((e.x - near.x) * near._vx + (e.y - near.y) * near._vy) < -0.35 * Math.sqrt(d2) * sp;
+        if (e.vanish > 0) {
+          if ((e.vanish -= dt) <= 0) {
+            e.vanish = 0; e.lagT = 0;
+            if (!G.Spawner.ahead(e, near)) { list.splice(i, 1); byId.delete(e.id); if (G.Coop.isHost) G.Coop.enemyGone(e, false); }
+          }
+          continue;
         }
+        if (behind && d2 > LAG_R * LAG_R) e.lagT += dt;
+        else e.lagT = Math.max(0, e.lagT - dt * 2);
+        if (e.lagT > LAG_T || d2 > 1400 * 1400) e.vanish = VANISH;
       }
       for (let i = corpses.length - 1; i >= 0; i--) {
         if (corpses[i].remote) corpses[i].netUpdate(dt); else corpses[i].update(dt, pl);

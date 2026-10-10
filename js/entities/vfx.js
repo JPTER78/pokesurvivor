@@ -320,7 +320,7 @@ G.VFX = (() => {
     'ember':         { proj: 'fire', trail: 'ember' },
     'heat-wave':     { proj: 'fire', trail: 'ember' },
     'fire-spin':     { proj: 'fire', trail: 'ember' },
-    'flamethrower':  { beam: 'fire' },
+    'flamethrower':  { proj: 'fire', trail: 'ember', beam: 'fire' },
     'water-gun':     { proj: 'drop', trail: 'drip' },
     'bubble':        { proj: 'bubble' },
     'hydro-pump':    { beam: 'drop' },
@@ -367,7 +367,19 @@ G.VFX = (() => {
     'night-shade':   { aura: 'shadow', rise: true },
     'swords-dance':  { buff: 'arrow', pal: 'fighting' },
     'agility':       { buff: 'arrow', pal: 'flying' },
-    'harden':        { buff: 'arrow', pal: 'steel' }
+    'harden':        { buff: 'arrow', pal: 'steel' },
+    'bonemerang':    { proj: 'crescent' },
+    'psycho-cut':    { proj: 'crescent' },
+    'spikes':        { proj: 'star' },
+    'toxic-spikes':  { proj: 'star' },
+    'hail':          { proj: 'shard' },
+    'meteor-mash':   { proj: 'rock', trail: 'spark' },
+    'will-o-wisp':   { proj: 'ball', trail: 'ember' },
+    'substitute':    { proj: 'star' },
+    'aerial-ace':    { proj: 'wind' },
+    'flame-wheel':   { proj: 'fire', aura: 'fire' },
+    'bubble-beam':   { proj: 'bubble' },
+    'hex':           { beam: 'shadow', proj: 'shadow' }
   };
 
   const TYPE_SHAPE = {

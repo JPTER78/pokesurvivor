@@ -8,6 +8,15 @@
  *   nova        ráfaga radial en todas las direcciones
  *   aura        círculo de daño continuo alrededor
  *   buff        potencia al propio Pokémon (acumulable, caduca)
+ *   ---- desde 2026-10-10 (mismos gráficos, otra forma de jugar) ----
+ *   boomerang   sale hacia el enemigo y vuelve a ti, golpeando a la ida y a la vuelta
+ *   chain       golpea a uno y salta a los `count` siguientes más cercanos
+ *   mine        minas en el suelo que estallan al pisarlas
+ *   meteor      caen `count` meteoros sobre enemigos cercanos (avisa la sombra)
+ *   turret      deja algo que dispara solo durante `dur` segundos
+ *   dash        cruzas hacia el enemigo golpeando todo el camino (sin recibir daño)
+ *   trail       vas dejando charcos que dañan a lo que los pisa
+ *   cone        muchos disparos cortos en abanico (aliento, chorro...)
  *
  * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
  *
@@ -56,6 +65,54 @@
       { t: 'Golpea un 40% más a menudo',    m: { cd: 0.70 } },
       { t: '+30% radio y +50% daño',        m: { radius: 1.30, dmg: 1.50 } }
     ],
+    boomerang: [
+      { t: '+1 bumerán',                    m: { count: 1 } },
+      { t: '+45% daño',                     m: { dmg: 1.45 } },
+      { t: '+30% alcance',                  m: { radius: 1.30 } },
+      { t: '+1 bumerán y +40% daño',        m: { count: 1, dmg: 1.40 } }
+    ],
+    chain: [
+      { t: '+2 saltos',                     m: { count: 2 } },
+      { t: '+45% daño',                     m: { dmg: 1.45 } },
+      { t: '-25% recarga',                  m: { cd: 0.75 } },
+      { t: '+2 saltos y +40% daño',         m: { count: 2, dmg: 1.40 } }
+    ],
+    mine: [
+      { t: '+1 mina',                       m: { count: 1 } },
+      { t: '+50% daño',                     m: { dmg: 1.50 } },
+      { t: '+30% radio de explosión',       m: { radius: 1.30 } },
+      { t: '+1 mina y -25% recarga',        m: { count: 1, cd: 0.75 } }
+    ],
+    meteor: [
+      { t: '+1 meteoro',                    m: { count: 1 } },
+      { t: '+45% daño',                     m: { dmg: 1.45 } },
+      { t: '+30% radio',                    m: { radius: 1.30 } },
+      { t: '+2 meteoros y -20% recarga',    m: { count: 2, cd: 0.80 } }
+    ],
+    turret: [
+      { t: '+50% daño',                     m: { dmg: 1.50 } },
+      { t: 'Dispara un 35% más rápido',     m: { rate: 0.74 } },
+      { t: '+1 a la vez',                   m: { count: 1 } },
+      { t: '+50% duración y +40% daño',     m: { dur: 1.50, dmg: 1.40 } }
+    ],
+    dash: [
+      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+30% distancia',                m: { radius: 1.30 } },
+      { t: '-25% recarga',                  m: { cd: 0.75 } },
+      { t: '+60% daño y más ancho',         m: { dmg: 1.60, width: 1.40 } }
+    ],
+    trail: [
+      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+40% duración',                 m: { dur: 1.40 } },
+      { t: 'Charcos un 30% más grandes',    m: { radius: 1.30 } },
+      { t: '+50% daño y +30% radio',        m: { dmg: 1.50, radius: 1.30 } }
+    ],
+    cone: [
+      { t: '+3 disparos',                   m: { count: 3 } },
+      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+30% alcance',                  m: { life: 1.30 } },
+      { t: '+3 disparos y +1 perforación',  m: { count: 3, pierce: 1 } }
+    ],
     buff: [
       { t: '+1 acumulación máxima',         m: { stacks: 1 } },
       { t: '+40% potencia',                 m: { amount: 1.40 } },
@@ -70,9 +127,9 @@
       desc: 'Embiste en arco a todo lo que tengas delante.',
       cd: 0.50, dmg: 13, radius: 48, arc: 1.7, knock: 90 },
 
-    { id: 'quick-attack', name: 'Ataque Rápido', type: 'normal', kind: 'projectile',
-      desc: 'Ráfaga veloz y constante. Poco daño, mucha cadencia.',
-      cd: 0.26, dmg: 8, speed: 440, count: 1, spread: 0.10, pierce: 0, life: 0.9, size: 5 },
+    { id: 'quick-attack', name: 'Ataque Rápido', type: 'normal', kind: 'dash',
+      desc: 'Cruzas como un rayo hacia el enemigo y golpeas todo el camino.',
+      cd: 0.75, dmg: 20, radius: 110, width: 34, knock: 40 },
 
     { id: 'swords-dance', name: 'Danza Espada', type: 'normal', kind: 'buff',
       desc: 'No hace daño: acumula ATAQUE mientras esté activo.',
@@ -91,9 +148,9 @@
       desc: 'Bola de fuego al enemigo más cercano.',
       cd: 0.52, dmg: 18, speed: 310, count: 1, spread: 0.12, pierce: 0, life: 1.6, size: 7, burn: 1 },
 
-    { id: 'flamethrower', name: 'Lanzallamas', type: 'fire', kind: 'beam',
-      desc: 'Chorro de fuego que atraviesa todo en línea recta.',
-      cd: 1.10, dmg: 20, radius: 210, width: 36, burn: 1 },
+    { id: 'flamethrower', name: 'Lanzallamas', type: 'fire', kind: 'cone',
+      desc: 'Chorro de llamas en abanico corto que quema.',
+      cd: 0.70, dmg: 7, count: 7, arc: 0.9, speed: 380, life: 0.42, size: 6, pierce: 1, burn: 1 },
 
     { id: 'fire-spin', name: 'Giro Fuego', type: 'fire', kind: 'orbit',
       desc: 'Llamas que giran a tu alrededor. Defensa constante.',
@@ -125,9 +182,9 @@
       desc: 'Látigos de largo alcance en arco amplio.',
       cd: 0.62, dmg: 16, radius: 68, arc: 1.3, knock: 60 },
 
-    { id: 'razor-leaf', name: 'Hoja Afilada', type: 'grass', kind: 'projectile',
-      desc: 'Abanico de tres hojas perforantes.',
-      cd: 0.62, dmg: 9, speed: 330, count: 3, spread: 0.34, pierce: 1, life: 1.4, size: 6 },
+    { id: 'razor-leaf', name: 'Hoja Afilada', type: 'grass', kind: 'boomerang',
+      desc: 'Dos hojas que van y vuelven cortando a la ida y a la vuelta.',
+      cd: 0.90, dmg: 10, speed: 330, count: 2, spread: 0.5, radius: 210, size: 6 },
 
     { id: 'leaf-storm', name: 'Tormenta Floral', type: 'grass', kind: 'orbit',
       desc: 'Un ciclón de hojas gira amplio a tu alrededor.',
@@ -147,9 +204,9 @@
       desc: 'Campo eléctrico permanente alrededor de ti.',
       cd: 0.45, dmg: 8, radius: 70 },
 
-    { id: 'thunderbolt', name: 'Rayo', type: 'electric', kind: 'beam',
-      desc: 'Un rayo instantáneo que perfora en línea.',
-      cd: 0.95, dmg: 23, radius: 230, width: 22 },
+    { id: 'thunderbolt', name: 'Rayo', type: 'electric', kind: 'chain',
+      desc: 'Un rayo que salta de un enemigo a otro.',
+      cd: 0.95, dmg: 21, count: 4, radius: 140 },
 
     // ---------------- PSÍQUICO ----------------
     { id: 'confusion', name: 'Confusión', type: 'psychic', kind: 'projectile',
@@ -195,9 +252,9 @@
       desc: 'Aguijón rápido que envenena.',
       cd: 0.34, dmg: 8, speed: 420, count: 1, spread: 0.08, pierce: 0, life: 1.0, size: 4, poison: 1 },
 
-    { id: 'toxic', name: 'Tóxico', type: 'poison', kind: 'aura',
-      desc: 'Nube venenosa a tu alrededor que intoxica.',
-      cd: 0.6, dmg: 5, radius: 74, poison: 1 },
+    { id: 'toxic', name: 'Tóxico', type: 'poison', kind: 'trail',
+      desc: 'Vas dejando charcos de veneno que intoxican a quien los pisa.',
+      cd: 0.3, dmg: 6, radius: 26, dur: 3, poison: 1 },
 
     // ---------------- TIERRA (extra) ----------------
     { id: 'bulldoze', name: 'Terratemblor', type: 'ground', kind: 'aura',
@@ -209,9 +266,9 @@
       desc: 'Mordisco rápido en arco corto.',
       cd: 0.42, dmg: 11, radius: 44, arc: 1.6, knock: 40 },
 
-    { id: 'string-shot', name: 'Disparo Demora', type: 'bug', kind: 'nova',
-      desc: 'Hilos pegajosos en todas direcciones que frenan mucho.',
-      cd: 1.05, dmg: 7, speed: 220, count: 8, pierce: 1, life: 1.0, size: 6, slow: 0.6 },
+    { id: 'string-shot', name: 'Disparo Demora', type: 'bug', kind: 'mine',
+      desc: 'Deja telarañas en el suelo que atrapan y frenan mucho al que las pisa.',
+      cd: 1.1, dmg: 14, count: 2, radius: 56, dur: 7, slow: 0.6 },
 
     { id: 'bug-buzz', name: 'Zumbido', type: 'bug', kind: 'aura',
       desc: 'Vibración constante que machaca lo cercano.',
@@ -222,9 +279,9 @@
       desc: 'Pedrusco pesado que empuja al enemigo.',
       cd: 0.7, dmg: 24, speed: 260, count: 1, spread: 0.12, pierce: 0, life: 1.4, size: 9, knock: 90 },
 
-    { id: 'rock-slide', name: 'Avalancha', type: 'rock', kind: 'nova',
-      desc: 'Lluvia de rocas alrededor tuyo.',
-      cd: 1.3, dmg: 16, speed: 200, count: 8, pierce: 1, life: 1.0, size: 8, knock: 50 },
+    { id: 'rock-slide', name: 'Avalancha', type: 'rock', kind: 'meteor',
+      desc: 'Caen rocas del cielo sobre los enemigos cercanos.',
+      cd: 1.3, dmg: 26, count: 3, radius: 46, knock: 50 },
 
     // ---------------- HIELO ----------------
     { id: 'ice-beam', name: 'Rayo Hielo', type: 'ice', kind: 'beam',
@@ -291,7 +348,56 @@
 
     { id: 'night-shade', name: 'Tinieblas', type: 'dark', kind: 'aura',
       desc: 'Una sombra te rodea y consume lo cercano.',
-      cd: 0.5, dmg: 9, radius: 72 }
+      cd: 0.5, dmg: 9, radius: 72 },
+
+    // ---------------- NUEVOS (2026-10-10): mismas formas, otras mecánicas ----------------
+    { id: 'bonemerang', name: 'Huesomerang', type: 'ground', kind: 'boomerang',
+      desc: 'Un hueso que va y vuelve golpeando fuerte.',
+      cd: 0.95, dmg: 16, speed: 300, count: 1, radius: 230, size: 8, knock: 40 },
+
+    { id: 'psycho-cut', name: 'Psicocorte', type: 'psychic', kind: 'boomerang',
+      desc: 'Cuchillas psíquicas que vuelven a ti.',
+      cd: 0.8, dmg: 12, speed: 360, count: 2, spread: 0.6, radius: 200, size: 7 },
+
+    { id: 'spikes', name: 'Púas', type: 'ground', kind: 'mine',
+      desc: 'Siembra púas que estallan al pisarlas.',
+      cd: 1.2, dmg: 18, count: 2, radius: 60, dur: 8 },
+
+    { id: 'toxic-spikes', name: 'Púas Tóxicas', type: 'poison', kind: 'mine',
+      desc: 'Púas venenosas que envenenan mucho al estallar.',
+      cd: 1.1, dmg: 11, count: 2, radius: 56, dur: 8, poison: 2 },
+
+    { id: 'hail', name: 'Granizo', type: 'ice', kind: 'meteor',
+      desc: 'Bolas de hielo caen sobre los enemigos y los frenan.',
+      cd: 1.2, dmg: 18, count: 4, radius: 40, slow: 0.4 },
+
+    { id: 'meteor-mash', name: 'Puño Meteoro', type: 'steel', kind: 'meteor',
+      desc: 'Dos meteoros de acero que aplastan donde caen.',
+      cd: 1.4, dmg: 34, count: 2, radius: 54, knock: 80 },
+
+    { id: 'will-o-wisp', name: 'Fuego Fatuo', type: 'fire', kind: 'turret',
+      desc: 'Deja una llama flotante que dispara sola y quema.',
+      cd: 3.5, dmg: 15, rate: 0.55, dur: 6, count: 1, range: 300, speed: 300, size: 7, burn: 1 },
+
+    { id: 'substitute', name: 'Sustituto', type: 'normal', kind: 'turret',
+      desc: 'Un muñeco que se queda disparando por ti.',
+      cd: 4.0, dmg: 14, rate: 0.4, dur: 6, count: 1, range: 280, speed: 320, size: 6 },
+
+    { id: 'aerial-ace', name: 'Golpe Aéreo', type: 'flying', kind: 'dash',
+      desc: 'Te lanzas en picado y cortas todo lo que cruzas.',
+      cd: 0.75, dmg: 18, radius: 120, width: 40, knock: 60 },
+
+    { id: 'flame-wheel', name: 'Rueda Fuego', type: 'fire', kind: 'trail',
+      desc: 'Corres envuelto en fuego y dejas un rastro de llamas.',
+      cd: 0.28, dmg: 10, radius: 28, dur: 2.6, burn: 1 },
+
+    { id: 'bubble-beam', name: 'Rayo Burbuja', type: 'water', kind: 'cone',
+      desc: 'Chorro de burbujas en abanico corto que frena.',
+      cd: 0.65, dmg: 6, count: 7, arc: 1.0, speed: 340, life: 0.45, size: 6, slow: 0.3 },
+
+    { id: 'hex', name: 'Infortunio', type: 'ghost', kind: 'chain',
+      desc: 'Maldición que salta entre enemigos. Mucho más daño si están quemados, envenenados o frenados.',
+      cd: 0.9, dmg: 17, count: 4, radius: 150, hex: 1.7 }
   ];
 
   // Pool de movimientos por tipo. El pool `normal` lo tienen todos.
@@ -324,7 +430,7 @@
     return s;
   }
 
-  const MULT = ['dmg', 'cd', 'speed', 'radius', 'dur', 'amount', 'arc', 'width', 'spread', 'life', 'size'];
+  const MULT = ['dmg', 'cd', 'speed', 'radius', 'dur', 'amount', 'arc', 'width', 'spread', 'life', 'size', 'rate'];
   const ADD = ['count', 'pierce', 'stacks'];
 
   function applyMods(s, m) {
@@ -394,7 +500,13 @@
     'fairy-wind': ['Fuerza Lunar', 'atk'],   'dazzling-gleam': ['Campo de Niebla', 'rgn'],
     'metal-claw': ['Cabeza de Hierro', 'atk'], 'flash-cannon': ['Rayo Metálico', 'def'],
     'bite': ['Triturar', 'atk'],             'dark-pulse': ['Alarido', 'spd'],
-    'night-shade': ['Pesadilla', 'rgn']
+    'night-shade': ['Pesadilla', 'rgn'],
+    'bonemerang': ['Ataque Óseo', 'atk'],    'psycho-cut': ['Psicocolmillo', 'cd'],
+    'spikes': ['Fisura', 'atk'],             'toxic-spikes': ['Lanza Mugre', 'rgn'],
+    'hail': ['Alud', 'cd'],                  'meteor-mash': ['Bomba Imán', 'atk'],
+    'will-o-wisp': ['Infierno', 'cd'],       'substitute': ['Doble Equipo', 'def'],
+    'aerial-ace': ['Acróbata', 'spd'],       'flame-wheel': ['Envite Ígneo', 'spd'],
+    'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag']
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {
@@ -403,7 +515,15 @@
     beam:       { t: '×1,8 daño, rayo un 50% más grueso y más largo', m: { dmg: 1.8, width: 1.5, radius: 1.2, cd: 0.85 } },
     orbit:      { t: '+2 orbes, ×1,7 daño y más radio', m: { count: 2, dmg: 1.7, radius: 1.15 } },
     nova:       { t: '+6 proyectiles, ×1,6 daño y +1 perforación', m: { count: 6, dmg: 1.6, pierce: 1 } },
-    aura:       { t: '×1,8 daño y un 35% más de radio', m: { dmg: 1.8, radius: 1.35 } }
+    aura:       { t: '×1,8 daño y un 35% más de radio', m: { dmg: 1.8, radius: 1.35 } },
+    boomerang:  { t: '×1,8 daño, +1 bumerán y más alcance', m: { dmg: 1.8, count: 1, radius: 1.2, size: 1.2 } },
+    chain:      { t: '×1,7 daño y +3 saltos', m: { dmg: 1.7, count: 3, radius: 1.2 } },
+    mine:       { t: '×1,8 daño, +2 minas y explosión más grande', m: { dmg: 1.8, count: 2, radius: 1.25 } },
+    meteor:     { t: '×1,7 daño, +2 meteoros y más radio', m: { dmg: 1.7, count: 2, radius: 1.2 } },
+    turret:     { t: '×1,8 daño, +1 a la vez y dispara más rápido', m: { dmg: 1.8, count: 1, rate: 0.8 } },
+    dash:       { t: '×1,9 daño, más distancia y menos recarga', m: { dmg: 1.9, radius: 1.25, cd: 0.8 } },
+    trail:      { t: '×1,8 daño, charcos más grandes y duraderos', m: { dmg: 1.8, radius: 1.25, dur: 1.3 } },
+    cone:       { t: '×1,7 daño, +4 disparos y +1 perforación', m: { dmg: 1.7, count: 4, pierce: 1 } }
   };
 
   /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */

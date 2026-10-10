@@ -481,3 +481,26 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 - Enemigos con personalidad: curanderos, escudos, invocadores y ataques con
   aviso (rayos, zonas, kamikazes, abanico, saltos). Ajustados con un piloto
   automático: la supervivencia media es parecida a la de antes (89 s frente a 60 s).
+
+**2026-10-10 · últimos detalles antes de la web**
+- Los Pokémon de tipo Agua no se frenan en el agua ni en el pantano.
+- Se sube de nivel la mitad de rápido (experiencia por nivel ×2).
+- Menos enemigos a la vez (tope 64) pero bastante más duros. Los que se quedan
+  atrás mientras corres se desvanecen y vuelven a salir por delante, así no se
+  forma la cola detrás y no se puede huir sin más. Un "corredor" por tramo
+  (rápido y frágil, va a donde vas a estar).
+- Jefes y legendarios con 4 ataques avisados (pisotón, embestida o salto, y dos
+  de lejos según su tipo: lluvia de zonas, rayos en abanico, anillo o abanico
+  de disparos). Alternan entre ir a por ti y pelear de lejos, y por debajo de
+  la mitad de vida se enfurecen. Más vida (×1,35) y daño (×1,2).
+- Grietas: flecha grande que late, con distancia y tiempo, y aviso propio al
+  abrirse.
+- Pantalla "Pulsa para empezar" (el navegador no deja sonar sin tocar nada) y
+  música también en el inicio de sesión y en las preguntas de personalidad.
+- 8 formas nuevas de atacar con los mismos gráficos: bumerán, cadena, minas,
+  meteoros, torreta, embestida, rastro y abanico corto. 7 movimientos pasan a
+  ellas (mismo id) y hay 12 nuevos (64 en total).
+- Anti-trampas: el servidor rechaza nivel y derrotados imposibles para el
+  tiempo; el juego vigila reloj, vida, velocidad, ataque, nivel, monedas y las
+  herramientas de prueba. Si algo no cuadra, la partida no cuenta para el
+  ranking ni los récords.

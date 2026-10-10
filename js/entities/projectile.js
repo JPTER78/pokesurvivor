@@ -55,6 +55,19 @@ G.Projectiles = (() => {
 
       if (p.t >= p.life) { list.splice(i, 1); continue; }
 
+      // Bumerán: a los `boom` segundos se da la vuelta (y puede volver a
+      // golpear a los mismos) y vuelve a su dueño; al llegar, desaparece.
+      if (p.boom) {
+        const o = p.owner || player;
+        if (!p.back && p.t >= p.boom) { p.back = true; p.hits = new Set(); }
+        if (p.back) {
+          const [dx, dy] = G.U.norm(o.x - p.x, o.y - p.y);
+          p.vx = G.U.damp(p.vx, dx * p.bsp, 7, dt);
+          p.vy = G.U.damp(p.vy, dy * p.bsp, 7, dt);
+          if (G.U.dist2(p.x, p.y, o.x, o.y) < (o.r + 8) ** 2) { list.splice(i, 1); continue; }
+        }
+      }
+
       // Teledirigido: curva la velocidad hacia el enemigo más cercano.
       if (p.homing > 0 && p.friendly) {
         const tg = nearest(enemies, p.x, p.y, 340);

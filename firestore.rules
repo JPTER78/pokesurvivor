@@ -94,15 +94,20 @@ service cloud.firestore {
 
     // Una entrada no puede durar más que el tiempo real desde que empezó tu
     // partida (runs/{uid}), y sólo se puede mejorar, nunca empeorar.
+    // Anti-trampas: el nivel y los derrotados tienen que cuadrar con el tiempo
+    // (con margen de sobra para un jugador muy bueno o un grupo de 4).
     function validEntry(board, id) {
       let d = request.resource.data;
       let run = get(/databases/$(database)/documents/runs/$(me())).data;
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
         && d.t is int && d.t > 0 && d.t <= 21600
         && d.t <= (request.time - run.startedAt).seconds() + 15
+        && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
+        && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
         && d.uids is list && me() in d.uids
         && d.names is list && d.names.size() == d.uids.size()
         && d.dex is list && d.dex.size() == d.uids.size()
+        && d.shiny is list && d.shiny.size() == d.uids.size()
         && d.at == request.time
         && (board.matches('s_.*')
               ? (d.uids.size() == 1 && id == me())

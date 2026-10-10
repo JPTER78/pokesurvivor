@@ -92,6 +92,7 @@ G.Game = (() => {
     G.UI.chrome(false);
     G.FX.clear();
     G.Projectiles.clear();
+    G.Combat.clearFields();
     G.EnemyMgr.clear();
     G.Pickups.clear();
     G.Spawner.reset();
@@ -125,6 +126,7 @@ G.Game = (() => {
     // Para el ranking: el servidor apunta cuándo empezó la partida.
     if (!coop || G.Coop.isHost) G.Ranking.runStarted(coop ? 'g' : 's');
     deathT = 0;
+    G.Guard.start(!!coop);
 
     state = 'playing';
   }
@@ -222,7 +224,9 @@ G.Game = (() => {
       recogidas: pl.coins
     };
     const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
-    const record = time > save.stats.bestTime;
+    // Anti-trampas (core/guard.js): si algo no cuadra, no cuenta para el ranking ni los récords.
+    const clean = G.Guard.end();
+    const record = clean && time > save.stats.bestTime;
 
     save.coins += coins;
     save.tickets = save.tickets || { t1: 0, t10: 0 };
@@ -230,9 +234,11 @@ G.Game = (() => {
     save.tickets.t10 += pl.t10;
     save.stats.runs++;
     save.stats.totalKills += pl.kills;
-    save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
-    if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
-    save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
+    if (clean) {
+      save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
+      if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
+      save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
+    }
     save.stats.coinsEarned += coins;
     G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
     G.Progress.checkAch();
@@ -241,7 +247,8 @@ G.Game = (() => {
 
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.
     const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
-    if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
+    if (!clean) G.UI.toast('Esta partida no cuenta para el ranking: se ha detectado algo raro');
+    else if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
     else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
     G.RunUI.showOver({
@@ -410,6 +417,7 @@ G.Game = (() => {
   function update(dt) {
     const coop = G.Coop.active;
     if (flashT > 0) flashT -= dt;
+    G.Guard.tick(dt, time, pl);
     // Tras caer, deja que se vea la animación de Faint antes del resumen.
     // (En la arena de la grieta no: allí caer sólo te echa de vuelta.)
     if (pl.dead && !coop && !G.Rift.inArena) {
@@ -449,6 +457,7 @@ G.Game = (() => {
     G.Combat.tick(dt, pl, time);
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
     G.Combat.resolve(dt, pl, time);
+    G.Combat.updateFields(dt);
     G.Pickups.update(dt, all, onCollect);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
@@ -486,6 +495,7 @@ G.Game = (() => {
     G.World.drawGround(ctx, cam);
     G.World.drawLiquid(ctx, cam, t);
     G.Hazards.draw(ctx);
+    G.Combat.drawGroundFields(ctx);
     G.Pickups.draw(ctx);
 
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
@@ -513,6 +523,7 @@ G.Game = (() => {
     G.Camera.apply(ctx);
     drawScene(G.Camera, G.Coop.active ? [pl, ...G.Coop.puppets()] : [pl]);
     G.Projectiles.draw(ctx);
+    G.Combat.drawAirFields(ctx);
     G.FX.draw(ctx);
     ctx.restore();
 
@@ -633,7 +644,7 @@ G.Game = (() => {
     function restore() {
       G.World.reset(4242);
       G.World.setBiome(bi, true);
-      G.FX.clear(); G.Projectiles.clear(); G.EnemyMgr.clear(); G.Pickups.clear();
+      G.FX.clear(); G.Projectiles.clear(); G.Combat.clearFields(); G.EnemyMgr.clear(); G.Pickups.clear();
       wanderers = CAST.map(dex => spawn(dex, true));
     }
 
@@ -643,14 +654,14 @@ G.Game = (() => {
   return {
     init, startRun, everyone, levelXp, flash,
     /** Para pruebas: salta el reloj de la run. */
-    debugTime(t) { time = t; },
+    debugTime(t) { G.Guard.flag('debug'); time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
-    debugSpeed(k) { speedK = k; },
+    debugSpeed(k) { if (k > 1) G.Guard.flag('debug'); speedK = k; },
     togglePause,
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
-    debugLevelUp() { pl.level++; pendingLevels++; },
+    debugLevelUp() { G.Guard.flag('debug'); pl.level++; pendingLevels++; },
     toUI() { state = 'ui'; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };
@@ -669,11 +680,33 @@ G.Flow = {
     // La base de datos (nube o local) recupera la sesión anterior.
     G.DB.ready().then(restored => {
       document.getElementById('boot').classList.add('hidden');
-      if (restored) this.afterLogin(); else this.toLogin();
+      this.tapToStart(() => { if (restored) this.afterLogin(); else this.toLogin(); });
     });
   },
-  toLogin() { G.LoginUI.open(); },
+  /**
+   * "Pulsa para empezar": los navegadores no dejan que una web suene hasta
+   * que se toca algo. Con esta pantalla la música empieza en cuanto entras.
+   * (Si el navegador ya deja sonar, no sale.)
+   */
+  tapToStart(then) {
+    G.Audio.unlock();
+    if (G.Audio.canPlay()) { then(); return; }
+    const el = document.getElementById('tap-start');
+    el.classList.remove('hidden');
+    const go = e => {
+      if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(e.key)) return;
+      e.preventDefault(); e.stopPropagation();
+      G.Audio.unlock();
+      el.classList.add('hidden');
+      el.removeEventListener('click', go); removeEventListener('keydown', go, true);
+      then();
+    };
+    el.addEventListener('click', go);
+    addEventListener('keydown', go, true);
+  },
+  toLogin() { G.Audio.music('village'); G.LoginUI.open(); },
   afterLogin() {
+    G.Audio.music('village');
     if (!G.DB.save.partner) G.TestUI.start();
     else this.goMenu();
   },

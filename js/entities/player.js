@@ -71,8 +71,9 @@ G.Player = class Player {
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
   static get REVIVE_TIME() { return 3; }
 
+  // (×2 desde 2026-10-10: se subía de nivel demasiado rápido.)
   static xpFor(level) {
-    return Math.floor(8 + level * 6 + Math.pow(level, 1.75) * 1.6);
+    return Math.floor((8 + level * 6 + Math.pow(level, 1.75) * 1.6) * 2);
   }
 
   cy() { return this.y; }
@@ -126,13 +127,18 @@ G.Player = class Player {
    */
   cast(m) {
     // Vidasfera: cada ataque cuesta un poco de vida (nunca te deja KO).
-    if (this.hasItem('lifeorb') && m.kind !== 'orbit' && !this.remote) {
+    if (this.hasItem('lifeorb') && m.kind !== 'orbit' && m.kind !== 'trail' && !this.remote) {
       this.hp = Math.max(1, this.hp - Math.max(1, this.maxHp * 0.01));
     }
     const anim = { melee: 'Attack', beam: 'Shoot', projectile: 'Shoot', nova: 'Attack',
-                   aura: 'Charge', buff: 'Charge', orbit: 'Charge' }[m.kind] || 'Attack';
+                   aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
+                   mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot' }[m.kind] || 'Attack';
+    // Las familias nuevas suenan como la parecida de las de siempre.
+    const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile' };
+    // El rastro no suena a cada charco (sería un zumbido constante).
+    if (m.kind !== 'trail') G.Audio.sfx('shot', { kind: SND[m.kind] || m.kind, type: m.type });
+    if (m.kind === 'trail') return;
     // No reinicies una animación que va por la mitad: se vería a tirones.
-    G.Audio.sfx('shot', { kind: m.kind, type: m.type });
     if (this.anim.busy() && this.anim.progress() < 0.65) return;
     const meta = G.Sprites.animMeta(this.dex, anim);
     const len = meta ? meta.d.reduce((a, b) => a + b, 0) / 60 : 0.4;

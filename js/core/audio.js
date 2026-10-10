@@ -480,6 +480,8 @@ G.Audio = (() => {
 
   return {
     music, sfx, setVolume, toggleMute, unlock, debugMeter, debugStream,
+    /** ¿Ya puede sonar? (el navegador sólo deja tras tocar algo, salvo excepciones) */
+    canPlay() { return !!ctx && ctx.state === 'running'; },
     get settings() { return settings; },
     get running() { return !!ctx && ctx.state === 'running'; },
     get track() { return current && current.name; }

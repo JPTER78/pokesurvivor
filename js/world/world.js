@@ -201,8 +201,8 @@ G.World = (() => {
    * Los de su tipo no sufren el suyo (Fuego en lava, Veneno en veneno...).
    */
   const LIQ = {
-    water: { slow: 0.6 },
-    swamp: { slow: 0.45 },
+    water: { slow: 0.6, immune: ['water'] },     // los de tipo agua nadan sin frenarse
+    swamp: { slow: 0.45, immune: ['water'] },
     lava:   { dmg: 0.06, flat: 5, every: 0.5, color: '#ff8a3d', immune: ['fire'] },
     poison: { dmg: 0.035, flat: 3, every: 0.5, color: '#c86bdc', immune: ['poison', 'steel'] },
     spark:  { dmg: 0.045, flat: 4, every: 0.7, color: '#ffe14d', immune: ['electric', 'ground'] },

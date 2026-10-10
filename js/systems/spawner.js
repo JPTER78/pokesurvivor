@@ -14,13 +14,13 @@ G.Spawner = (() => {
   // Tope de enemigos a la vez (antes 420: con tantos se ralentizaba). Cuando
   // se llega al tope, los que siguen saliendo son "élite" (más vida, daño y
   // experiencia), así la dificultad no baja.
-  const CAP = 85, ELITE_FROM = 0.85;
-  // Menos Pokémon pero más fuertes (la pantalla no se satura): salen ~32% de
+  const CAP = 64, ELITE_FROM = 0.85;
+  // Menos Pokémon pero más fuertes (la pantalla no se satura): salen ~24% de
   // los de antes, cada uno con más vida, daño y experiencia.
-  const DENSITY = 0.32, DMG_K = 1.42, XP_K = 4.2;
-  // La resistencia extra crece con la run: al principio como antes (×2) y
-  // a partir del minuto 5 hasta ×3,2, cuando ya tienes ataques para tumbarlos.
-  const hpK = t => 2 + Math.min(1.2, t / 250);
+  const DENSITY = 0.24, DMG_K = 2.4, XP_K = 5.6;
+  // La resistencia extra crece con la run: al principio ×3,3 y hasta ×5
+  // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
+  const hpK = t => 3.3 + Math.min(1.7, t / 210);
   const SHINY_RATE = 1 / 4096;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
@@ -144,6 +144,21 @@ G.Spawner = (() => {
     }
   }
 
+  /**
+   * Un rezagado vuelve a salir por delante del jugador (hacia donde corre),
+   * fuera de la vista. Devuelve false si no hay sitio (entonces se quita).
+   */
+  function ahead(e, pl) {
+    if (!players.length) players = [pl];
+    const sp = Math.hypot(pl._vx || 0, pl._vy || 0);
+    const a0 = sp > 20 ? Math.atan2(pl._vy, pl._vx) : Math.random() * 6.2832;
+    const pt = freePoint(pl, a0 + G.U.rand(-0.9, 0.9), e.flying);
+    if (!pt) return false;
+    e.x = pt[0]; e.y = pt[1]; e.kx = e.ky = 0;
+    e.phase = 'walk'; e.pt = 0; e.jump = null; e.jumpLift = 0;
+    return true;
+  }
+
   /** Aviso grande en pantalla (también lo usan el bioma y los shinies). */
   /** @param local  sólo en este ordenador (no se manda a los compañeros) */
   function say(text, secs = 2.6, local = false) {
@@ -156,6 +171,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, tickBanner, banner, say, rate, SHINY_RATE, CAP,
-           debugForceShiny(n = 1) { forceShiny = n; } };
+  return { reset, update, ahead, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+           debugForceShiny(n = 1) { G.Guard.flag('debug'); forceShiny = n; } };
 })();

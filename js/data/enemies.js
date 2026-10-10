@@ -22,6 +22,8 @@
  *   zoner    zonas de daño bajo tus pies que estallan al poco
  *   fan      dispara en abanico
  *   jumper   salta y cae sobre ti (la caída se ve antes en el suelo)
+ *   runner   corredor: muy rápido y frágil, va a donde vas a estar (corta el
+ *            paso al que sólo huye). Uno por tramo: el más rápido del elenco.
  * Los ataques con aviso están en systems/hazards.js.
  *
  * Jefes: Pokémon fuertes NO legendarios (pseudolegendarios, Slaking...), al
@@ -145,6 +147,11 @@ G.Enemies = (() => {
       from: tier.from,
       list: castFor(tier).map(p => defFor(p, tier, ti))
     }));
+    for (const tier of cast) {
+      const plain = tier.list.filter(d => d.behavior === 'chase' || d.behavior === 'charger' || d.behavior === 'tank');
+      const r = plain.sort((a, b) => b.spd - a.spd)[0];
+      if (r) { r.behavior = 'runner'; r.spd = Math.round(r.spd * 1.6); r.hp = Math.round(r.hp * 0.7); }
+    }
     const used = new Set();
     bosses = BOSS_SLOTS.map(slot => {
       const ok = p => !p.leg && G.SPRITE_META[p.dex] && !used.has(p.dex);
@@ -154,8 +161,9 @@ G.Enemies = (() => {
       used.add(p.dex);
       return {
         at: slot.at, dex: p.dex, name: p.name,
-        hp: slot.hp, spd: Math.round(G.U.clamp(40 + baseSpd(p) * 0.5, 40, 100)),
-        dmg: slot.dmg, xp: slot.xp,
+        // (Desde 2026-10-10 más duros: ×1,35 de vida y ×1,2 de daño.)
+        hp: Math.round(slot.hp * 1.35), spd: Math.round(G.U.clamp(40 + baseSpd(p) * 0.5, 40, 100)),
+        dmg: Math.round(slot.dmg * 1.2), xp: slot.xp,
         behavior: behaviorOf(p) === 'ranged' ? 'ranged' : (baseSpd(p) > 90 ? 'charger' : 'chase'),
         shotDmg: Math.round(slot.dmg * 0.55), shotCd: 1.1, range: 260
       };

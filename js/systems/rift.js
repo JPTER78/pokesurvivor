@@ -62,7 +62,7 @@ G.Rift = (() => {
   function show(x, y, ttl) {
     rift = { x, y, ttl, t: 0 };
     asked = false;
-    G.Spawner.say('¡Se ha abierto una grieta misteriosa!', 3.2, true);
+    // (El aviso grande lo dibuja hud.js mientras rift.t < 4,5 s.)
     G.Audio.sfx('rift');
     G.FX.ring(x, y, 6, 80, '#b48aff', 0.7, 5);
   }
@@ -107,6 +107,7 @@ G.Rift = (() => {
     rift = null; asked = false; downT = 0;
     if (authority()) G.EnemyMgr.stash(); else G.EnemyMgr.clearRemote();
     G.Projectiles.clear();
+    G.Combat.clearFields();
     G.Hazards.clear();
     G.World.setArena({ tx: cfg.tx, ty: cfg.ty, r: cfg.r, type: cfg.type });
     G.World.setBiome(G.Tiles.arenaBiome(cfg.type), true);
@@ -129,9 +130,9 @@ G.Rift = (() => {
     const ts = TS();
     const def = {
       dex: mon.dex, name: mon.name,
-      hp: Math.round((2400 + t * 7) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1)),
+      hp: Math.round((3200 + t * 9) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1)),
       spd: Math.round(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105)),
-      dmg: Math.round(30 + t / 22), xp: Math.round(500 + t * 1.2),
+      dmg: Math.round(36 + t / 20), xp: Math.round(500 + t * 1.2),
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
       shotDmg: Math.round(18 + t / 40), shotCd: 0.9, range: 300
     };
@@ -199,6 +200,7 @@ G.Rift = (() => {
     G.Weather.clear();
     if (authority()) G.EnemyMgr.restore(); else G.EnemyMgr.clearRemote();
     G.Projectiles.clear();
+    G.Combat.clearFields();
     G.Hazards.clear();
     for (const p of G.Game.everyone()) { p.x = a.back.x; p.y = a.back.y; }
     pl.x = a.back.x; pl.y = a.back.y;
@@ -248,9 +250,9 @@ G.Rift = (() => {
     get rift() { return rift; }, get arena() { return arena; },
     get inArena() { return !!arena; },
     get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },
-    debugOpen() { open(); },
+    debugOpen() { G.Guard.flag('debug'); open(); },
     /** Para pruebas: arena de un tipo ya. */
-    debugArena(type) { start(type); },
+    debugArena(type) { G.Guard.flag('debug'); start(type); },
     /** Para vídeos: la próxima grieta en la que entres será de este tipo. */
     debugNextType(type) { nextType = type; }
   };
