@@ -21,3 +21,6 @@ docs/CONTACTOS_CREADORES.md
 
 # Caché local de wrangler (Cloudflare)
 .wrangler/
+
+# Espacio de trabajo de los planes (superpowers)
+.superpowers/
