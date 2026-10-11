@@ -219,9 +219,9 @@ G.HUD = (() => {
       ctx.restore();
     }
 
-    // ---------- movimientos (abajo, centrados): 6 huecos, el enfocado sube ----------
+    // ---------- movimientos (abajo, centrados): sólo los huecos que tienes (4 de serie, 6 con la mejora Huecos) ----------
     const S = touch ? 44 : 54, GAP = touch ? 6 : 9;
-    const n = G.Player.MAX_MOVES;
+    const n = Math.max(1, Math.min(G.Player.MAX_MOVES, pl.maxMoves || 4));
     const totalW = n * S + (n - 1) * GAP;
     const sx = (w - totalW) / 2;
     const sy = h - S - 18;
@@ -230,7 +230,6 @@ G.HUD = (() => {
 
     for (let i = 0; i < n; i++) {
       const m = pl.moves[i];
-      const locked = i >= (pl.maxMoves || n);     // hueco que se compra en la tienda (mejora Huecos)
       const on = i === pl.focus && !!m;
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
@@ -239,19 +238,12 @@ G.HUD = (() => {
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
 
       roundRect(ctx, x, y, S, S, 12);
-      ctx.fillStyle = locked ? 'rgba(10,16,28,.2)' : !m ? 'rgba(10,16,28,.35)' : on ? 'rgba(20,30,50,.95)' : 'rgba(10,16,28,.8)';
+      ctx.fillStyle = !m ? 'rgba(10,16,28,.35)' : on ? 'rgba(20,30,50,.95)' : 'rgba(10,16,28,.8)';
       ctx.fill();
       ctx.lineWidth = on ? 2.5 : m && (m.fused || m.evolved) ? 2 : 1.2;
-      // Fusión: borde rosa. Evolucionado: dorado. Hueco vacío: tenue. Bloqueado: punteado.
-      if (locked) ctx.setLineDash([4, 4]);
+      // Fusión: borde rosa. Evolucionado: dorado. Hueco vacío: tenue.
       ctx.strokeStyle = !m ? 'rgba(140,170,210,.14)' : m.fused ? FUSE : m.evolved ? GOLD : on ? col : 'rgba(140,170,210,.22)';
       ctx.stroke();
-      ctx.setLineDash([]);
-      if (locked) {
-        ctx.font = F(700, 8); ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(180,200,230,.35)';
-        ctx.fillText('TIENDA', x + S / 2, y + S / 2 + 3);
-        continue;
-      }
       if (!m) continue;
 
       // recarga: se vacía de abajo a arriba
@@ -289,7 +281,7 @@ G.HUD = (() => {
 
     // ---------- pasivas: fila pequeña encima de los movimientos ----------
     {
-      const P = 26, PG = 6, pn = G.Player.MAX_PASSIVES;
+      const P = touch ? 30 : 34, PG = 6, pn = G.Player.MAX_PASSIVES;
       const pw = pn * P + (pn - 1) * PG;
       const px0 = (w - pw) / 2, py0 = sy - 6 - 18 - P - 6;
       for (let i = 0; i < pn; i++) {
@@ -299,11 +291,12 @@ G.HUD = (() => {
         ctx.fillStyle = p ? 'rgba(10,16,28,.8)' : 'rgba(10,16,28,.3)'; ctx.fill();
         ctx.lineWidth = 1; ctx.strokeStyle = p ? 'rgba(160,185,220,.5)' : 'rgba(140,170,210,.12)'; ctx.stroke();
         if (!p) continue;
-        G.Icons.draw(ctx, p.def.icon, x + 5, py0 + 3, 16);
-        const dots = G.Passives.MAX_LVL, dw = 3, dgap = 1, tw = dots * dw + (dots - 1) * dgap;
+        const PI = touch ? 20 : 22;
+        G.Icons.draw(ctx, p.def.icon, x + (P - PI) / 2, py0 + 4, PI);
+        const dots = G.Passives.MAX_LVL, dw = 4, dgap = 1, tw = dots * dw + (dots - 1) * dgap;
         for (let d = 0; d < dots; d++) {
           ctx.fillStyle = d < p.lvl ? '#9fb1c9' : 'rgba(255,255,255,.15)';
-          ctx.fillRect(x + (P - tw) / 2 + d * (dw + dgap), py0 + P - 5, dw, 2);
+          ctx.fillRect(x + (P - tw) / 2 + d * (dw + dgap), py0 + P - 6, dw, 2);
         }
       }
     }
