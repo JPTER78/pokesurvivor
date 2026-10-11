@@ -74,17 +74,28 @@ Menú principal  (el mundo de fondo, con Pokémon salvajes paseando)
 
 ## 3. Combate
 
-- El Pokémon **ataca solo** con el **movimiento activo** (1 de hasta 4).
-- Cambias el activo con `1`–`4` o `Q`/`E`. Moverse: `WASD` / flechas. Pausa: `Esc`.
+- El Pokémon **ataca solo con todos sus movimientos a la vez** (hasta 6), cada uno
+  con su recarga y su propio objetivo. El **enfocado** (`1`–`6`, `Q`/`E`, o tocar su
+  icono) pega un 25% más y decide a quién mira. Moverse: `WASD` / flechas. Pausa: `Esc`.
 - Cada ataque reproduce la **animación de PMD** que toca: `Attack`, `Shoot` o `Charge`.
-- **Apuntado:** lo que te está tocando > el jefe si está a tiro > el enemigo más
-  cercano > (sin enemigos) la roca o cofre más cercano.
-- **52 movimientos** en 7 familias (proyectil, cuerpo a cuerpo, rayo, orbes,
-  nova, aura, potenciador), 5 niveles cada uno. Cubren los **18 tipos**.
+- **Apuntado por movimiento:** a distancia, el jefe a tiro > lo que te toca > el más
+  cercano; cuerpo a cuerpo, lo que te toca > el jefe > el más cercano. Sin enemigos,
+  la roca o cofre más cercano.
+- **60 movimientos** de ataque en 14 familias (proyectil, cuerpo a cuerpo, rayo,
+  orbes, nova, aura, bumerán, cadena, minas, meteoros, torreta, embestida, rastro,
+  abanico), 5 niveles cada uno. Cubren los **18 tipos**. Cuerpo a cuerpo y
+  embestida pegan ×1,4 (hay que acercarse).
 - El pool de cada Pokémon sale de sus tipos + el pool normal común.
-- Los potenciadores no hacen daño: entras, acumulas y vuelves a uno de ataque.
-  Nunca se ofrecen más de 2.
-- Al subir de nivel: **1 de 3 cartas**.
+- **Pasivas**: hasta 4 (Vigor, Potencia, Carrera, Reflejos, Coraza, Síntesis, Imán,
+  Aprendizaje), 5 niveles. Sustituyen a las cartas de stat.
+- Al subir de nivel: **1 de 3 cartas** (movimiento nuevo, pasiva, subir uno de los
+  dos, evolución dorada, o Baya Zidra / Pokémonedas, que no ocupan hueco).
+- **Reacciones elementales** al golpear a un enemigo con un estado: Vapor (agua
+  sobre quemado), Rotura (roca/acero/lucha/tierra sobre frenado, ×1,6), Detonación
+  (fuego sobre envenenado), Conducción (eléctrico sobre empapado), Congelación
+  (hielo sobre empapado). Los ataques de agua dejan **empapado** 2,5 s.
+- Los enemigos aguantan más cuantos más ataques llevas: ×(1 + 0,4·(ataques − 1)),
+  con la media del equipo (jefes: 0,3).
 
 ## 4. Mundo
 
@@ -94,7 +105,7 @@ desde código (16 px por tile, ×2).
 | Elemento | Efecto |
 |---|---|
 | Formaciones rocosas | Bloquean a quien camina y a los proyectiles |
-| Agua | Ralentiza (×0,6 jugador, ×0,55 enemigos) |
+| Agua | Ralentiza (×0,6 jugador, ×0,55 enemigos). Los de tipo Agua nadan (×1,15, +1 vida/s, reciben +15% daño); los Voladores planean sobre cualquier líquido (sin frenazo ni resbalón, lava a la mitad, recargas +10%) |
 | Lava (bioma volcán) | Quema a quien la pisa — se puede atraer a los enemigos |
 | Árboles / cristales | Bloquean; dan cobertura contra disparos enemigos |
 | Rocas | Se rompen; sueltan XP, monedas o bayas |
@@ -231,9 +242,16 @@ Asalto. Los sueltan **todos los jefes**, los cofres con candado (50%) y a veces
 los normales (8%). Si ya llevas uno, eliges (en solitario el juego se para).
 
 ### 7.2c Evolución de movimientos
-Un movimiento al nivel máximo evoluciona si en esa run has cogido su mejora de
-condición (Ascuas + Potencia → Llamarada, Burbuja + Carrera → Surf...): sale
-una **carta dorada** (siempre, si está lista). Los 47 de ataque evolucionan.
+Un movimiento al nivel máximo evoluciona si **llevas la pasiva** de su condición
+(Ascuas + Potencia → Llamarada, Burbuja + Carrera → Surf...): sale una **carta
+dorada** (siempre, si está lista). Los 60 de ataque evolucionan; las fusiones no.
+
+### 7.2e Fusiones (vínculos)
+Cada legendario vencido da un **vínculo**: fusionas dos movimientos que lleves en
+uno nuevo (16 recetas: Ascuas + Tornado → Tormenta Ígnea, Pistola Agua +
+Impactrueno → Marea Voltio…), al nivel del mayor, que ocupa un solo hueco y sube
+con la escalera de su familia. Sin receta posible, el vínculo da un **Impulso**:
+un movimiento al nivel máximo. Logros Fusión y Alquimista.
 
 ### 7.2d Misiones, logros y perfil
 - **3 diarias + 2 semanales** (premio en tickets y monedas); una diaria se puede
@@ -513,3 +531,16 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 - Más tarde (10-10): subir de nivel otra vez la mitad de rápido (experiencia
   por nivel ×4 respecto al original) y tickets ×1 más raros (1/400 en vez de 1/260).
   Misiones de nivel 8/12/15 y logros de nivel 15 y 30 (antes 12/16/20, 20 y 40).
+
+**2026-10-11 · todos los movimientos a la vez**
+- Combate estilo Vampire Survivors: hasta 6 ataques disparando a la vez (cada uno
+  con su objetivo) y 4 pasivas con nivel. Fuera los potenciadores (sólo tenían
+  sentido con un movimiento activo); Dragoaliento para Dragón. Las teclas 1-6
+  enfocan (×1,25). Cuerpo a cuerpo y embestida ×1,4.
+- Los vínculos pasan a ser fusiones (16 recetas fijas) o un impulso; reacciones
+  elementales automáticas (Vapor, Rotura, Detonación, Conducción, Congelación).
+- Vida enemiga escalada con los ataques que llevas, para que el principio se
+  sienta igual.
+- Agua nada y Volador planea sobre líquidos, cada uno con su pequeño peaje.
+- Código: las familias de movimiento viven en systems/move-kinds.js, todo el daño
+  pasa por Combat.damage(), y hay pruebas en Node (tools/test.js).

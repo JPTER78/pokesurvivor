@@ -153,7 +153,7 @@ FAQ = {
  'es': [
   ('¿PokéSurvivor es gratis?', 'Sí, totalmente. Es un juego de fans sin ánimo de lucro: no tiene anuncios ni compras. Si quieres, puedes apoyarlo con una donación voluntaria, que se usa sólo para los servidores y no da ventajas.'),
   ('¿Hay que descargar algo?', 'No. Se juega en el navegador, en PC, tablet o móvil. Si quieres, puedes instalarlo como app con «Añadir a pantalla de inicio».'),
-  ('¿Se puede jugar en el móvil?', 'Sí, en horizontal. Pon el dedo en cualquier parte de la pantalla y arrastra para moverte (el joystick aparece donde tocas), toca un ataque para cambiarlo y el botón de arriba a la derecha para pausar.'),
+  ('¿Se puede jugar en el móvil?', 'Sí, en horizontal. Pon el dedo en cualquier parte de la pantalla y arrastra para moverte (el joystick aparece donde tocas), toca un ataque para enfocarlo y el botón de arriba a la derecha para pausar.'),
   ('¿Está en inglés?', 'Sí: el juego sale en español o en inglés según el idioma de tu navegador, y se puede cambiar en Ajustes.'),
   ('¿Puedo jugar con mis amigos?', 'Sí: el modo cooperativo online admite hasta 4 jugadores. Añade a tus amigos por su apodo, invítalos a tu sala y empezad la partida. La experiencia se comparte y podéis revivir a un compañero caído quedándoos a su lado.'),
   ('¿Cuántos Pokémon hay?', f'{N} Pokémon de las 9 regiones (de Kanto a Paldea), todos jugables como compañero y con su versión shiny cuando existe.'),
@@ -185,15 +185,15 @@ navegador: eliges un compañero, te mueves por un mapa infinito y tus ataques sa
 {cta(pid, lang, 'Jugar gratis ahora')}
 <h2>Cómo se juega</h2>
 <ul>
-<li><b>En PC:</b> muévete con <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o las flechas. Cambia de ataque con <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> o haciendo clic en su icono. Pausa con <kbd>Esc</kbd>.</li>
-<li><b>En móvil o tablet (horizontal):</b> arrastra el dedo en cualquier parte para moverte, toca un ataque para cambiarlo y el botón de arriba a la derecha para pausar.</li>
-<li>Tu Pokémon <b>ataca solo</b> con el movimiento activo. Tú te encargas de esquivar y de colocarte bien.</li>
+<li><b>En PC:</b> muévete con <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o las flechas. Todos tus movimientos disparan solos; enfoca uno con <kbd>1</kbd>–<kbd>6</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> o haciendo clic en su icono (pega un 25% más). Pausa con <kbd>Esc</kbd>.</li>
+<li><b>En móvil o tablet (horizontal):</b> arrastra el dedo en cualquier parte para moverte, toca un ataque para enfocarlo y el botón de arriba a la derecha para pausar.</li>
+<li>Tu Pokémon <b>ataca solo</b> con todos sus movimientos a la vez (hasta 6) y lleva hasta 4 pasivas. Tú te encargas de esquivar y de colocarte bien.</li>
 <li>Recoge la experiencia para <b>subir de nivel</b> y elige entre tres cartas: <a href="{lk('moves')}">movimientos</a> nuevos, mejorar los que tienes o potenciar a tu Pokémon.</li>
 </ul>
 <h2>Características</h2>
 <ul class="feat">
 <li><b>{N} Pokémon de las 9 regiones</b> (<a href="{lk('pokedex')}">ver la Pokédex</a>), cada uno con sus ataques y sus propias mejoras permanentes.</li>
-<li><b>Los movimientos evolucionan</b>: al nivel máximo y con la mejora adecuada, Ascuas se convierte en Llamarada, Burbuja en Surf…</li>
+<li><b>Los movimientos evolucionan</b>: al nivel máximo y con la pasiva adecuada, Ascuas se convierte en Llamarada, Burbuja en Surf… Y al vencer a un legendario puedes <b>fusionar</b> dos movimientos en uno nuevo.</li>
 <li><b>Enemigos con personalidad</b>: hay Pokémon que curan, ponen escudos, invocan ayuda, explotan o disparan rayos avisando en el suelo.</li>
 <li><b>Jefes</b> y <a href="{lk('legends')}"><b>grietas</b> con 18 arenas legendarias</a>, una por tipo.</li>
 <li><a href="{lk('types')}"><b>Clima y tabla de tipos</b></a>: con lluvia el Agua se potencia y el Fuego se debilita; sol, arena, nieve y niebla.</li>
@@ -227,7 +227,7 @@ How long can you last?</p>
 {cta(pid, lang, 'Play free now')}
 <h2>How to play</h2>
 <ul>
-<li><b>On PC:</b> move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys. Switch moves with <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> or by clicking their icon. Pause with <kbd>Esc</kbd>.</li>
+<li><b>On PC:</b> move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys. Every move you know fires on its own; focus one with <kbd>1</kbd>–<kbd>6</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> or by clicking its icon (it hits 25% harder). Pause with <kbd>Esc</kbd>.</li>
 <li><b>On phone or tablet (landscape):</b> drag your finger anywhere to move, tap a move to switch to it and the top-right button to pause.</li>
 <li>Your Pokémon <b>attacks on its own</b> with the active move. Your job is to dodge and position yourself well.</li>
 <li>Collect experience to <b>level up</b> and pick one of three cards: new <a href="{lk('moves')}">moves</a>, upgrades to the ones you have, or boosts for your Pokémon.</li>
@@ -235,7 +235,7 @@ How long can you last?</p>
 <h2>Features</h2>
 <ul class="feat">
 <li><b>{N} Pokémon from all 9 regions</b> (<a href="{lk('pokedex')}">see the Pokédex</a>), each with its own moves and permanent upgrades.</li>
-<li><b>Moves evolve</b>: at max level with the right upgrade, Ember becomes Fire Blast, Bubble becomes Surf…</li>
+<li><b>Moves evolve</b>: at max level with the right passive, Ember becomes Fire Blast, Bubble becomes Surf… And beating a legendary lets you <b>fuse</b> two moves into a new one.</li>
 <li><b>Enemies with personality</b>: some Pokémon heal, shield their allies, summon help, explode or fire telegraphed beams.</li>
 <li><b>Bosses</b> and <a href="{lk('legends')}"><b>rifts</b> with 18 legendary arenas</a>, one per type.</li>
 <li><a href="{lk('types')}"><b>Weather and type chart</b></a>: in the rain Water gets stronger and Fire weaker; plus sun, sand, snow and fog.</li>
@@ -397,6 +397,20 @@ KIND = {'es': {'projectile': 'Proyectil', 'melee': 'Cuerpo a cuerpo', 'beam': 'R
         'en': {'projectile': 'Projectile', 'melee': 'Melee', 'beam': 'Beam', 'orbit': 'Orbit', 'nova': 'Burst', 'aura': 'Aura', 'buff': 'Buff',
                'boomerang': 'Boomerang', 'chain': 'Chain', 'mine': 'Mines', 'meteor': 'Meteors', 'turret': 'Turret', 'dash': 'Dash',
                'trail': 'Trail', 'cone': 'Spray'}}
+def fusions_html(lang):
+    """Las fusiones (vínculos): dos movimientos → uno nuevo."""
+    fus = D.get('fusions') or []
+    if not fus:
+        return ''
+    by = {m['id']: m for m in D['moves']}
+    items = ''.join(f'<li><b>{esc(L(lang, by[f["pair"][0]]["name"]))} + {esc(L(lang, by[f["pair"][1]]["name"]))} → {esc(L(lang, f["name"]))}</b>'
+                    f'<span>{esc(L(lang, f["desc"]))}</span></li>' for f in fus if f['pair'][0] in by and f['pair'][1] in by)
+    if lang == 'es':
+        return (f'<h2>Fusiones</h2><p>Al vencer a un <b>legendario</b> en una grieta ganas un <b>vínculo</b>: fusiona dos movimientos que lleves '
+                f'en uno nuevo que ocupa un solo hueco ({len(fus)} recetas).</p><ul class="items">{items}</ul>')
+    return (f'<h2>Fusions</h2><p>Beating a <b>legendary</b> in a rift grants a <b>bond</b>: fuse two moves you hold into a new one '
+            f'that takes a single slot ({len(fus)} recipes).</p><ul class="items">{items}</ul>')
+
 def moves_page(lang):
     pid = 'moves'
     rows = []
@@ -412,15 +426,15 @@ def moves_page(lang):
     nm = len(D['moves'])
     if lang == 'es':
         h1 = 'Movimientos de PokéSurvivor y sus evoluciones'
-        intro = (f'<p class="lead">Hay <b>{nm} movimientos</b> de los 18 tipos. Tu Pokémon ataca solo con el activo, y al subir de nivel eliges cartas '
+        intro = (f'<p class="lead">Hay <b>{nm} movimientos</b> de los 18 tipos. Todos los que sabe tu Pokémon (hasta 6) disparan a la vez, cada uno con su recarga, y al subir de nivel eliges cartas '
                  f'para aprender otros o mejorarlos hasta el nivel 5. <b>{nevo} pueden evolucionar</b>: llévalos al nivel máximo, consigue la carta de mejora '
-                 f'que indican (Potencia, Vigor, Reflejos…) y aparecerá una carta dorada de evolución.</p>')
+                 f'que indican (Potencia, Vigor, Reflejos…) y aparecerá una carta dorada de evolución.</p>' + fusions_html(lang))
         title, desc, c = f'Movimientos de PokéSurvivor: los {nm} ataques y sus evoluciones', f'Lista de los {nm} movimientos de PokéSurvivor por tipo, qué hace cada uno y en qué evoluciona (Ascuas → Llamarada, Burbuja → Surf…).', 'Pruébalos: jugar gratis'
     else:
         h1 = 'PokéSurvivor moves and their evolutions'
-        intro = (f'<p class="lead">There are <b>{nm} moves</b> across all 18 types. Your Pokémon attacks on its own with the active one, and when you level up '
+        intro = (f'<p class="lead">There are <b>{nm} moves</b> across all 18 types. All the moves your Pokémon knows (up to 6) fire at once, each on its own cooldown, and when you level up '
                  f'you pick cards to learn new moves or upgrade them up to level 5. <b>{nevo} of them can evolve</b>: max them out, get the upgrade card they ask for '
-                 f'(Power, Vigor, Reflexes…) and a golden evolution card will appear.</p>')
+                 f'(Power, Vigor, Reflexes…) and a golden evolution card will appear.</p>' + fusions_html(lang))
         title, desc, c = f'PokéSurvivor moves: all {nm} attacks and their evolutions', f'All {nm} PokéSurvivor moves by type, what each one does and what it evolves into (Ember → Fire Blast, Bubble → Surf…).', 'Try them: play free'
     body = f'<article class="doc wide"><h1>{h1}</h1>{intro}<div class="tablewrap"><table class="list"><thead><tr>{th}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>{cta(pid, lang, c)}</article>'
     write(pid, lang, page(pid, lang, title, desc, body, {'@context': 'https://schema.org', '@graph': [crumbs(pid, lang, h1)]}))
