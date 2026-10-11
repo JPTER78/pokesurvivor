@@ -99,6 +99,23 @@ test('nombres nuevos tienen traducción', () => {
   for (const es of ['Dragoaliento', 'Pulso Dragón']) ok(G.I18n.t(es) !== es, es);
 });
 
+// ---- Task 3
+load('js/data/passives.js');
+test('8 pasivas, ids únicos, cubren las condiciones de evolución', () => {
+  eq(G.Passives.LIST.length, 8);
+  eq(new Set(G.Passives.LIST.map(p => p.id)).size, 8);
+  for (const [, needs] of Object.values(G.Moves.EVO)) ok(G.Passives.BY[needs], 'evolución pide pasiva inexistente: ' + needs);
+  eq(G.Passives.MAX, 4); eq(G.Passives.MAX_LVL, 5);
+});
+test('aplicar Potencia sube el daño un 10%', () => {
+  const pl = { atkMul: 1 };
+  G.Passives.BY.atk.apply(pl);
+  ok(Math.abs(pl.atkMul - 1.1) < 1e-9);
+});
+test('las descripciones de las pasivas tienen traducción', () => {
+  for (const p of G.Passives.LIST) ok(G.I18n.t(p.desc) !== p.desc, p.id);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

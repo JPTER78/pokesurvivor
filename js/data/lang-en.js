@@ -520,4 +520,13 @@ G.I18n.add({
   'Dragoaliento': 'Dragon Breath', 'Pulso Dragón': 'Dragon Pulse',
   'Aliento dracónico en abanico corto que entumece.': 'Short fan of draconic breath that numbs.',
   '+50% daño': '+50% damage', 'Golpea en 360° y +60% daño': 'Hits in 360° and +60% damage',
+  '+20 de vida máxima por nivel (y la recupera).': '+20 max HP per level (and heals it).',
+  '+10% de daño con todos los movimientos por nivel.': '+10% damage with every move per level.',
+  '+7% de velocidad de movimiento por nivel.': '+7% movement speed per level.',
+  '-8% de recarga en todos los movimientos por nivel.': '-8% cooldown on every move per level.',
+  '+6% de reducción de daño recibido por nivel.': '+6% damage reduction per level.',
+  '+0.9 de vida regenerada por segundo por nivel.': '+0.9 HP regenerated per second per level.',
+  '+30% de radio de recogida por nivel.': '+30% pickup radius per level.',
+  '+12% de experiencia ganada por nivel.': '+12% experience gained per level.',
+  'Pasiva': 'Passive',
 });
