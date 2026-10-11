@@ -245,18 +245,19 @@
       const btn = $('lobby-start');
       btn.classList.toggle('hidden', !room.isHost);
       const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
-      btn.disabled = !room.isHost || ms.length < 2 || connecting;
+      const outdated = ms.some(m => m.protocol !== 2);
+      btn.disabled = !room.isHost || ms.length < 2 || connecting || outdated;
       btn.textContent = 'Empezar partida (' + ms.length + '/' + G.Social.MAX_PLAYERS + ')';
-      $('lobby-note').textContent = !room.isHost ? 'Cuando el anfitrión empiece, entraréis todos a la vez.'
+      $('lobby-note').textContent = outdated ? 'Todos deben actualizar el juego antes de empezar.' : !room.isHost ? 'Cuando el anfitrión empiece, entraréis todos a la vez.'
         : ms.length < 2 ? 'Necesitas al menos un amigo en la sala.'
         : connecting ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.';
     }
 
     function start() {
       const room = G.Social.room;
-      if (!room || !room.isHost || room.members.length < 2) return;
+      if (!room || !room.isHost || room.members.length < 2 || room.members.some(m => m.protocol !== 2)) return;
       const cfg = {
-        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host,
+        k: 'start', protocol: 2, session: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2), seed: Math.floor(Math.random() * 1e6), host: room.host,
         members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny }))
       };
       G.Social.setOpen(false);

@@ -255,7 +255,7 @@ G.Social = (() => {
 
   function memberInfo() {
     const s = G.DB.save;
-    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts() };
+    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts(), protocol: 2, online: true };
   }
 
   /**
@@ -289,7 +289,14 @@ G.Social = (() => {
     if (open !== true) { rtOff(); return { ok: false, error: 'La partida de esa sala ya ha empezado.' }; }
     try { await fb.rtdb.ref('rooms/' + id + '/m/' + uid).set(memberInfo()); }
     catch (e) { rtOff(); return { ok: false, error: 'No se pudo entrar en la sala.' }; }
-    const n = (await fb.rtdb.ref('rooms/' + id + '/m').get()).numChildren();
+    const members = await fb.rtdb.ref('rooms/' + id + '/m').get();
+    const hostMember = (members.val() || {})[host];
+    // Sin borrar salas ajenas: no entrar en un lobby abandonado por su anfitrión.
+    if (!hostMember || (hostMember.online === false && Date.now() - msOf(hostMember.offlineAt) > 30000)) {
+      await fb.rtdb.ref('rooms/' + id + '/m/' + uid).remove();
+      rtOff(); return { ok: false, error: 'El anfitrión ya no está en esa sala.' };
+    }
+    const n = members.numChildren();
     if (n > MAX_PLAYERS) {
       await fb.rtdb.ref('rooms/' + id + '/m/' + uid).remove();
       rtOff();
@@ -315,16 +322,26 @@ G.Social = (() => {
     href.on('value', s => { if (room && room.id === id && !s.val()) closedRoom(); }, () => closedRoom());
     const oref = fb.rtdb.ref('rooms/' + id + '/open');
     oref.on('value', s => { if (room && room.id === id) { room.open = s.val() === true; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref];
+    roomRefs.push(mref, href, oref);
     writeStatus();
     emit('room');
   }
 
-  /** Si se cierra el navegador, la sala (anfitrión) o tu plaza (invitado) se borran solas. */
+  /** La presencia puede caerse sin borrar la sala ni la plaza del jugador. */
   function watchRoomDisconnect() {
-    if (!room) return;
-    const ref = room.isHost ? fb.rtdb.ref('rooms/' + room.id) : fb.rtdb.ref('rooms/' + room.id + '/m/' + uid);
-    ref.onDisconnect().remove();
+    const r = room;
+    const ref = fb.rtdb.ref('rooms/' + r.id + '/m/' + uid);
+    const conn = fb.rtdb.ref('.info/connected');
+    conn.on('value', async snap => {
+      if (!snap.val() || room !== r) return;
+      try {
+        // Registrar primero la desconexión; se vuelve a registrar en cada conexión.
+        await ref.onDisconnect().update({ online: false, offlineAt: ts() });
+        if (room !== r) { await ref.onDisconnect().cancel(); return; }
+        await ref.update({ online: true, offlineAt: null, protocol: 2 });
+      } catch (e) { console.warn('[Social] presencia de sala:', e.code || e.message); }
+    });
+    roomRefs.push(conn);
   }
 
   function detachRoom() {
@@ -348,7 +365,7 @@ G.Social = (() => {
     detachRoom();
     room = null;
     const ref = r.isHost ? fb.rtdb.ref('rooms/' + r.id) : fb.rtdb.ref('rooms/' + r.id + '/m/' + uid);
-    ref.onDisconnect().cancel().catch(() => {});
+    fb.rtdb.ref('rooms/' + r.id + '/m/' + uid).onDisconnect().cancel().catch(() => {});
     await ref.remove().catch(() => {});
     retractInvites();
     writeStatus();
@@ -364,7 +381,7 @@ G.Social = (() => {
   /** Actualiza tu Pokémon en la sala (si cambias de compañero). */
   function refreshMember() {
     if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update(
-      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner) }).catch(() => {});
+      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner), protocol: 2 }).catch(() => {});
   }
 
   // ---------------- invitaciones ----------------
@@ -480,6 +497,10 @@ G.Social = (() => {
   return {
     start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
     createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence,
+    removeRoomMember(u) {
+      if (room && room.isHost && u !== uid)
+        fb.rtdb.ref('rooms/' + room.id + '/m/' + u).remove().catch(() => {});
+    },
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

@@ -209,6 +209,7 @@ G.Game = (() => {
     },
     lost(msg) { G.UI.toast(msg, 3600); endRun(false); },
     item(id) { offerItem(id); },
+    connection(text) { G.UI.toast(text, 3000); },
     mateLeft() {}
   };
 
@@ -481,10 +482,11 @@ G.Game = (() => {
 
     handleKeys();
 
-    if (state === 'playing') update(dt);
+    if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick();
+    if (state === 'playing' && !G.Coop.paused) update(dt);
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
     // La red se atiende siempre (también con las cartas de nivel abiertas).
-    if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
+    // Coop mantiene su propio reloj y latido, incluso sin fotogramas.
 
     if (pl && state !== 'ui') render(); else Backdrop.render(ctx, w, h, dpr, dt);
     G.UI.tick(dt);
