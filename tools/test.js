@@ -290,6 +290,52 @@ test('las fusiones tienen traducción de nombre y descripción', () => {
   for (const f of G.Fusions.LIST) { ok(G.I18n.t(f.name) !== f.name, f.name); ok(G.I18n.t(f.desc) !== f.desc, f.id + ' desc'); }
 });
 
+// ---- Task 9
+load('js/systems/reactions.js');
+const reactPl = () => { const m = G.Moves.instance('water-gun', 1); return { x: 0, y: 0, atk: 1, level: 1, moves: [m], focus: 0, focused() { return m; }, dmgMul: () => 1, onDealt: noop, dmgDealt: 0 }; };
+const stEnemy = (extra = {}) => Object.assign(enemyAt(0, 0), { burn: 0, poison: 0, slow: 0, wet: 0, frozenT: 0, reactCd: 0, remote: false, maxHp: 100,
+  hits: [], hurt(d) { this.hits.push(d); }, applyWet() { this.wet = 1; }, applyFreeze() { this.frozenT = 1.2; }, applySlow(f) { this.slow = Math.max(this.slow, f); },
+  clearStatus(k) { if (k === 'burn') this.burn = 0; if (k === 'poison') this.poison = 0; if (k === 'slow') this.slow = 0; if (k === 'wet') this.wet = 0; } }, extra);
+test('Vapor: agua sobre quemado consume la quemadura y hace daño de área', () => {
+  const e = stEnemy({ burn: 3 }), n = stEnemy({ x: 30 });
+  G.EnemyMgr.queryCircle = () => [e, n];
+  const k = G.Reactions.check(reactPl(), e, G.Moves.instance('water-gun', 1), 10);
+  eq(k, 1); eq(e.burn, 0); ok(n.hits.length === 1, 'vecino dañado'); ok(e.reactCd > 0);
+  G.EnemyMgr.queryCircle = () => [];
+});
+test('Rotura: roca sobre frenado ×1,6 (cuerpo a cuerpo desde 0,25)', () => {
+  const e = stEnemy({ slow: 0.45 });
+  eq(G.Reactions.check(reactPl(), e, G.Moves.instance('rock-throw', 1), 10), 1.6);
+  const e2 = stEnemy({ slow: 0.3 });
+  eq(G.Reactions.check(reactPl(), e2, G.Moves.instance('rock-throw', 1), 10), 1, 'proyectil necesita 0,4');
+  eq(G.Reactions.check(reactPl(), stEnemy({ slow: 0.3 }), G.Moves.instance('karate-chop', 1), 10), 1.6, 'melee desde 0,25');
+});
+test('Conducción, Congelación y Detonación', () => {
+  const wet = stEnemy({ wet: 1 });
+  G.EnemyMgr.queryCircle = () => [wet, stEnemy({ x: 40 })];
+  eq(G.Reactions.check(reactPl(), wet, G.Moves.instance('thunder-shock', 1), 10), 1);
+  G.EnemyMgr.queryCircle = () => [];
+  const wet2 = stEnemy({ wet: 1 });
+  G.Reactions.check(reactPl(), wet2, G.Moves.instance('ice-beam', 1), 10);
+  eq(wet2.wet, 0); ok(wet2.frozenT > 0);
+  const poi = stEnemy({ poison: 2 }), near = stEnemy({ x: 40 });
+  G.EnemyMgr.queryCircle = () => [poi, near];
+  G.Reactions.check(reactPl(), poi, G.Moves.instance('ember', 1), 10);
+  eq(poi.poison, 0); ok(near.hits.length >= 1, 'explosión alcanza al vecino');
+  G.EnemyMgr.queryCircle = () => [];
+});
+test('cooldown de reacción por enemigo y sin reacción en remotos sin bits', () => {
+  const e = stEnemy({ burn: 2, reactCd: 0.3 });
+  eq(G.Reactions.check(reactPl(), e, G.Moves.instance('water-gun', 1), 10), 1); eq(e.burn, 2);
+  const r = stEnemy({ remote: true, net: { st: 0 }, burn: 5 });
+  eq(G.Reactions.check(reactPl(), r, G.Moves.instance('water-gun', 1), 10), 1); eq(r.burn, 5);
+  const r2 = stEnemy({ remote: true, net: { st: 1 } });
+  ok(G.Reactions.has(r2, 'burn'));
+});
+test('las etiquetas de reacción tienen traducción', () => {
+  for (const r of G.Reactions.LIST) ok(G.I18n.t(r.label) !== r.label, r.label);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

@@ -150,7 +150,7 @@ G.Coop = (() => {
       if (e.dead || G.U.dist2(e.x, e.y, near.x, near.y) > r2n) continue;
       const a = ANIMS.indexOf(e.anim.cur);
       out.push([e.id, r1(e.x), r1(e.y), Math.ceil(e.hp), a < 0 ? 0 : a, e.anim.dir,
-                (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0)]);
+                (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0) | (e.slow >= 0.4 ? 8 : 0) | (e.wet > 0 ? 16 : 0)]);
     }
     return out;
   }
@@ -242,6 +242,9 @@ G.Coop = (() => {
           if (ev[2] === 'b') e.applyBurn(ev[3]);
           else if (ev[2] === 'p') e.applyPoison(ev[3]);
           else if (ev[2] === 's') e.applySlow(ev[3]);
+          else if (ev[2] === 'w') e.applyWet(ev[3]);
+          else if (ev[2] === 'f') e.applyFreeze(ev[3]);
+          else if (ev[2] === 'x') e.clearStatus(ev[3]);
           break;
         }
         case 'c':

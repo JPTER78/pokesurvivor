@@ -523,6 +523,7 @@ G.I18n.add({
   '+30% de radio de recogida por nivel.': '+30% pickup radius per level.',
   '+12% de experiencia ganada por nivel.': '+12% experience gained per level.',
   'Pasiva': 'Passive',
+  '¡Vapor!': 'Steam!', '¡Rotura!': 'Shatter!', '¡Detonación!': 'Detonation!', '¡Conducción!': 'Conduction!', '¡Congelación!': 'Freeze!',
   'Tormenta Ígnea': 'Fire Tornado', 'Marea Voltio': 'Volt Tide', 'Alud Glacial': 'Glacial Avalanche', 'Llama Tóxica': 'Toxic Blaze',
   'Golpe Umbrío': 'Phantom Strike', 'Cepo Mandíbula': 'Jaw Lock', 'Maldición Voltio': 'Volt Hex', 'Filos Pétalo': 'Petal Blades',
   'Rugido Ígneo': 'Eruption Roar', 'Picado Extremo': 'Extreme Dive', 'Campo de Púas': 'Spike Field', 'Señuelo Fatuo': 'Wisp Decoy',

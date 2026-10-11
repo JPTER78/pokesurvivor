@@ -52,6 +52,9 @@
       this.slow = 0; this.slowT = 0;
       this.burn = 0; this.burnT = 0; this.burnTick = 0;
       this.poison = 0; this.poisonT = 0; this.poisonTick = 0;
+      this.wet = 0; this.wetT = 0;        // empapado (agua): Conducción y Congelación
+      this.frozenT = 0;                   // congelado: ni se mueve ni ataca
+      this.reactCd = 0;                   // pausa entre reacciones elementales
       this.lavaTick = 0;
       this.kx = 0; this.ky = 0;
       this.touchCd = 0;
@@ -149,6 +152,24 @@
     applyPoison(stacks = 1) {
       if (this.remote) { G.Coop.status(this, 'p', stacks); return; }
       this.poison = Math.min(8, this.poison + stacks); this.poisonT = 4;
+    }
+    applyWet(dur = 2.5) {
+      if (this.remote) { G.Coop.status(this, 'w', dur); return; }
+      this.wet = 1; this.wetT = Math.max(this.wetT, dur);
+    }
+    /** Congelado: no se mueve ni ataca. */
+    applyFreeze(dur = 1.2) {
+      if (this.remote) { G.Coop.status(this, 'f', dur); return; }
+      this.frozenT = Math.max(this.frozenT, dur);
+      this.applySlow(1, dur);
+    }
+    /** Una reacción ha consumido un estado. */
+    clearStatus(kind) {
+      if (this.remote) { G.Coop.status(this, 'x', kind); return; }
+      if (kind === 'burn') this.burn = 0;
+      else if (kind === 'poison') this.poison = 0;
+      else if (kind === 'slow') { this.slow = 0; this.slowT = 0; }
+      else if (kind === 'wet') { this.wet = 0; this.wetT = 0; }
     }
 
     die() {
@@ -258,6 +279,13 @@
         this.poisonT -= dt; this.poisonTick -= dt;
         if (this.poisonTick <= 0) { this.poisonTick = 0.6; this.hurt(this.maxHp * 0.012 * this.poison + 1, '#d47cf0'); }
         if (this.poisonT <= 0) this.poison = 0;
+      }
+      if (this.wet > 0) { this.wetT -= dt; if (this.wetT <= 0) this.wet = 0; }
+      if (this.reactCd > 0) this.reactCd -= dt;
+      if (this.frozenT > 0) {
+        this.frozenT -= dt;
+        if (Math.random() < dt * 4 && G.Camera.sees(this.x, this.y, 0)) G.FX.px(this.x + G.U.rand(-this.r, this.r), this.y - G.U.rand(2, this.bodyH), '#cfefff', { vy: -10, life: 0.4 });
+        return;                              // congelado: ni se mueve ni ataca (los estados sí hacen tic)
       }
       if (this.dead) return;
 
@@ -701,10 +729,11 @@
         ctx.restore();
       }
 
-      if (this.burn > 0 || this.poison > 0 || (this.net && this.net.st & 3)) {
+      if (this.burn > 0 || this.poison > 0 || this.wet > 0 || (this.net && this.net.st & 19)) {
         ctx.save();
         ctx.globalAlpha = 0.45;
-        ctx.fillStyle = this.burn > 0 || (this.net && this.net.st & 1) ? '#ff8a3d' : '#c86bdc';
+        ctx.fillStyle = this.burn > 0 || (this.net && this.net.st & 1) ? '#ff8a3d'
+                      : this.poison > 0 || (this.net && this.net.st & 2) ? '#c86bdc' : '#7fc9ff';
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.2, this.r * 0.5, 0, 0, 6.2832); ctx.fill();
         ctx.restore();
       }
