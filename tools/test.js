@@ -474,6 +474,18 @@ test('la cámara se ancla al origen durante la embestida', () => {
   eq(pl.anchor(), { x: 40, y: 20 }); ok(!pl.lunge);
 });
 
+test('si caminas durante la embestida, el origen (y la cámara) siguen avanzando y aterrizas más adelante', () => {
+  const pl = mkPlayer(); pl.x = 0; pl.y = 0;
+  const axis = G.Input.axis; G.Input.axis = () => [0, 1];        // hacia abajo
+  pl.startLunge(1, 0, 100);                                        // embestida hacia la derecha
+  let anchorMoved = 0;
+  for (let i = 0; i < 6; i++) { pl.update(0.02); anchorMoved = Math.max(anchorMoved, pl.anchor().y); }
+  ok(anchorMoved > 5, 'el ancla no avanza durante la embestida: ' + anchorMoved);
+  for (let i = 0; i < 40; i++) pl.update(0.02);
+  G.Input.axis = axis;
+  ok(!pl.lunge); ok(Math.abs(pl.x) < 1e-6, 'x debe volver al origen: ' + pl.x); ok(pl.y > 20, 'aterriza más adelante: ' + pl.y);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

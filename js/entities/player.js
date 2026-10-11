@@ -230,7 +230,7 @@ G.Player = class Player {
   /**
    * Te lanzas `len` unidades en la dirección (dx, dy) y vuelves al punto de
    * partida (seno de 0 a π: sale rápido, frena en la punta y regresa). Mientras
-   * dura no te mueves con las teclas y no te pueden tocar.
+   * dura no te pueden tocar; las teclas siguen moviendo el punto de partida.
    */
   startLunge(dx, dy, len) {
     if (len <= 0) return;
@@ -335,10 +335,20 @@ G.Player = class Player {
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
 
-    // --- embestida en curso: ida y vuelta, sin hacer caso a las teclas ---
+    // --- embestida en curso: ida y vuelta sobre un origen que sigue caminando ---
+    // (Si el origen se parase, la cámara se pararía con él y daría sensación de
+    // cámara lenta: las teclas mueven el origen a velocidad normal y aterrizas ahí.)
     if (this.lunge) {
       const L = this.lunge;
       L.t += dt;
+      const [lx, ly] = this.frozen ? [0, 0] : G.Input.axis();
+      if (lx || ly) {
+        const sp = this.spd;
+        this.x = L.x0 + lx * sp * dt; this.y = L.y0 + ly * sp * dt;
+        G.World.collide(this);
+        L.x0 = this.x; L.y0 = this.y;
+        this.moveAngle = Math.atan2(ly, lx);
+      }
       const k = Math.min(1, L.t / L.dur);
       const s = Math.sin(k * Math.PI);
       this.x = L.x0 + L.dx * L.len * s;
