@@ -373,6 +373,17 @@ test('cdK sube un 10% al planear', () => {
   eq(pl.cdK, 1); pl.hover = true; ok(Math.abs(pl.cdK - 1.1) < 1e-9);
 });
 
+// ---- Task 12
+test('un compañero reconstruye su lista de movimientos del estado y aguanta basura', () => {
+  const p = mkPlayer(); p.remote = true;
+  p.net = { x: 0, y: 0, ang: 0, walk: 0, hp: 10, maxHp: 10, dead: 0, mvs: 'ember:2:0,tackle:1:0', mag: 78, aim: 0, rev: 0 };
+  p.netUpdate(0.016);
+  eq(p.moves.map(m => [m.id, m.lvl]), [['ember', 2], ['tackle', 1]]);
+  p.net.mvs = 'zzz:9';
+  p.netUpdate(0.016);
+  eq(p.moves.map(m => m.id), ['ember', 'tackle'], 'basura: se queda la lista anterior');
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

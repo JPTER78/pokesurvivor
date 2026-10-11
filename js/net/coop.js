@@ -62,7 +62,7 @@ G.Coop = (() => {
       const p = new G.Player(mon, {}, !!m.shiny);
       p.remote = true; p.uid = m.uid; p.tag = m.name; p.tagColor = COLORS[i]; p.revLabel = 'Quédate a su lado';
       p.x = x; p.y = y;
-      p.net = { x, y, ang: Math.PI / 2, walk: 0, hp: p.maxHp, maxHp: p.maxHp, dead: 0, mv: G.startMoveOf(mon.dex), ml: 1, mag: 78, aim: Math.PI / 2, rev: 0 };
+      p.net = { x, y, ang: Math.PI / 2, walk: 0, hp: p.maxHp, maxHp: p.maxHp, dead: 0, mvs: G.startMoveOf(mon.dex) + ':1:0', mag: 78, aim: Math.PI / 2, rev: 0 };
       G.Sprites.preload([mon.dex], 8000, p.shiny);
       mates.set(m.uid, { uid: m.uid, name: m.name, color: COLORS[i], pl: p, connected: true, q: [], flushT: 0, xpMul: 1 });
     });
@@ -112,17 +112,15 @@ G.Coop = (() => {
   const r1 = v => Math.round(v), r2 = v => Math.round(v * 100) / 100;
 
   function myState() {
-    // Con un vínculo se manda la órbita si la hay (es lo único que los demás no ven por los 'c').
-    const g = local.activeGroup();
-    const m = g.find(x => x.kind === 'orbit') || g[0];
+    // Toda la lista de movimientos ("id:nivel:evolucionado,..."): el HUD, los orbes y los fantasmas de los demás.
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
-            local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
+            local.dead ? 1 : 0, G.Player.packMoves(local.moves), r1(local.magnet), r2(local.aim), r2(local.xpMul),
             r2(local.reviveT || 0)];
   }
 
   function readState(a) {
-    return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12] };
+    return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mvs: a[7],
+             mag: a[8], aim: a[9], xpMul: a[10], rev: a[11] };
   }
 
   // ---------------- envío ----------------
