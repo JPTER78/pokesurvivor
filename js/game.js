@@ -113,7 +113,7 @@ G.Game = (() => {
     if (perks.startMoves >= 2) {
       const pool = G.Moves.poolFor(mon).filter(id => !pl.hasMove(id) && G.Moves.BY_ID[id].kind !== 'buff');
       if (pool.length) pl.addMove(G.U.pick(pool));
-      pl.setActive(0);
+      pl.setFocus(0);
     }
 
     if (coop) {
@@ -406,7 +406,7 @@ G.Game = (() => {
       return;
     }
     if (G.UI.isOpen('scr-bond')) {
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < G.Player.MAX_MOVES; i++) {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pickBond(i);
       }
       return;
@@ -425,8 +425,8 @@ G.Game = (() => {
     }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
-    for (let i = 0; i < 4; i++) {
-      if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
+    for (let i = 0; i < G.Player.MAX_MOVES; i++) {
+      if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setFocus(i);
     }
     if (G.Input.tap('keyq')) pl.cycle(-1);
     if (G.Input.tap('keye') || G.Input.tap('tab')) pl.cycle(1);

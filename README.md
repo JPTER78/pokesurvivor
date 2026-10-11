@@ -29,8 +29,8 @@ de personalidad y a la mazmorra.
 | Tecla | Acción |
 |---|---|
 | `W` `A` `S` `D` / flechas | Moverse |
-| `1` `2` `3` `4` | Elegir el movimiento activo |
-| `Q` / `E` | Ciclar movimientos |
+| `1` … `6` | Enfocar un movimiento (pega un 25% más y manda en el apuntado) |
+| `Q` / `E` | Ciclar el movimiento enfocado |
 | `Esc` / `P` | Pausa |
 
 **En móvil o tablet** (en horizontal): pon el dedo en cualquier sitio y arrastra
@@ -39,9 +39,10 @@ cambiarlo y el botón de arriba a la derecha para pausar. Se puede instalar como
 app ("Añadir a pantalla de inicio"). En **Ajustes** hay sonido, calidad gráfica
 (con modo automático), números de daño, menos sacudidas, FPS y la cuenta.
 
-El Pokémon ataca solo con el movimiento activo (o con todos los de un
-**vínculo**: cada legendario vencido deja fusionar movimientos para lanzarlos a
-la vez desde un solo hueco, hasta 4). Las rocas, cofres y la hierba
+El Pokémon ataca solo con **todos** sus movimientos a la vez (hasta 6), cada
+uno con su recarga, y lleva hasta 4 **pasivas** con nivel. El movimiento
+**enfocado** pega un 25% más. Al vencer a un legendario ganas un **vínculo**
+para **fusionar** dos movimientos en uno nuevo. Las rocas, cofres y la hierba
 alta se rompen; las paredes y los árboles bloquean los disparos enemigos; el
 agua frena y la lava quema (también a los enemigos).
 
