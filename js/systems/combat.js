@@ -115,7 +115,10 @@ G.Combat = (() => {
   }
 
   function inArc(px, py, x, y, aim, half) {
-    const a = Math.atan2(y - py, x - px);
+    const dx = x - px, dy = y - py;
+    // A bocajarro (pegado a ti) el ángulo es ruido: un enemigo ahí siempre cuenta.
+    if (dx * dx + dy * dy < 36) return true;
+    const a = Math.atan2(dy, dx);
     return Math.abs(((a - aim + Math.PI * 3) % 6.2832) - Math.PI) <= half;
   }
 

@@ -369,6 +369,13 @@
         }
       }
 
+      // No te atravieses: frénate al tocar al jugador en vez de meterte encima
+      // suyo. Si no, dos cuerpos acababan en el mismo punto exacto y ni el
+      // empuje del golpe (dirección nula) ni el "a qué lado te apuntas" del
+      // cuerpo a cuerpo sabían resolverlo: quedaba pegado, sin poder matarlo,
+      // mientras seguía haciendo daño de contacto cada medio segundo.
+      if (!this.boss && this.phase !== 'dash' && dist < this.r + pl.r) vx = vy = 0;
+
       // --- integración ---
       const ox = this.x, oy = this.y;
       this.x += this.kx * dt; this.y += this.ky * dt;
