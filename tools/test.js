@@ -164,6 +164,49 @@ test('packMoves / parseMoves ida y vuelta, y basura → null', () => {
   eq(legacy.length, 1); eq(legacy[0].id, 'ember'); eq(legacy[0].lvl, 1);
 });
 
+// ---- Task 5
+load('js/entities/projectile.js');
+load('js/systems/move-kinds.js');
+load('js/systems/combat.js');
+const enemyAt = (x, y, extra = {}) => Object.assign({ x, y, r: 10, bodyH: 20, cy() { return this.y; }, dead: false, boss: false, types: ['normal'], id: Math.random(), hurt: noop, applyBurn: noop, applyPoison: noop, applySlow: noop, applyWet: noop }, extra);
+test('aimFor: a distancia prefiere al jefe; cuerpo a cuerpo a quien te toca', () => {
+  const pl = { x: 0, y: 0, r: 12, aim: 0, moveAngle: 0, walking: false, remote: false };
+  const touching = enemyAt(15, 0), boss = enemyAt(200, 0, { boss: true }), far = enemyAt(400, 0);
+  const all = [touching, boss, far];
+  const proj = G.Moves.instance('ember', 1), melee = G.Moves.instance('tackle', 1);
+  eq(G.Combat.aimFor(pl, proj, all).target, boss);
+  eq(G.Combat.aimFor(pl, melee, all).target, touching);
+  ok(Math.abs(proj.aim) < 1e-9, 'aim guardado en el movimiento');
+});
+test('aimFor sin enemigos apunta a donde caminas y no revienta', () => {
+  const pl = { x: 0, y: 0, r: 12, aim: 1, moveAngle: 2, walking: true };
+  const m = G.Moves.instance('heat-wave', 1);
+  const r = G.Combat.aimFor(pl, m, []);
+  eq(r.target, null); eq(m.aim, 2);
+});
+test('damage aplica tabla de tipos y ×1,25 al enfocado', () => {
+  let got = 0;
+  const e = enemyAt(0, 0, { types: ['grass'], hurt: d => { got = d; } });
+  const m = G.Moves.instance('ember', 1);
+  const pl = { x: 0, y: 0, atk: 1, moves: [m], focus: 0, focused() { return this.moves[this.focus]; }, dmgMul(x) { return x === this.focused() ? 1.25 : 1; }, onDealt: noop, dmgDealt: 0, level: 1 };
+  const dealt = G.Combat.damage(pl, e, 10, m, 1, 0, 0);
+  ok(Math.abs(dealt - 10 * 1.6 * 1.25) < 1e-6, 'fuego vs planta ×1,6 y enfocado ×1,25: ' + dealt);
+  ok(Math.abs(got - dealt) < 1e-6);
+});
+test('todos los kinds del catálogo existen en MoveKinds', () => {
+  for (const m of G.Moves.ALL) ok(G.MoveKinds.KINDS[m.kind], m.kind);
+  ok(!G.MoveKinds.KINDS.buff);
+});
+test('tick lanza TODOS los movimientos, cada uno con su recarga', () => {
+  const casts = [];
+  const pl = { x: 0, y: 0, r: 12, aim: 0, moveAngle: 0, walking: false, dead: false, cdK: 1, atk: 1, level: 1,
+               moves: [G.Moves.instance('heat-wave', 1), G.Moves.instance('hyper-voice', 1)], focus: 0,
+               focused() { return this.moves[0]; }, dmgMul: () => 1, cast: m => casts.push(m.id), onDealt: noop, dmgDealt: 0 };
+  G.Combat.tick(0.016, pl, 0);
+  eq(casts.sort(), ['heat-wave', 'hyper-voice']);
+  ok(pl.moves[0].t > 0 && pl.moves[1].t > 0);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;
