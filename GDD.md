@@ -74,7 +74,8 @@ Menú principal  (el mundo de fondo, con Pokémon salvajes paseando)
 
 ## 3. Combate
 
-- El Pokémon **ataca solo con todos sus movimientos a la vez** (hasta 6), cada uno
+- El Pokémon **ataca solo con todos sus movimientos a la vez** (4 huecos de serie,
+  hasta 6 con la mejora Huecos de la tienda), cada uno
   con su recarga y su propio objetivo. El **enfocado** (`1`–`6`, `Q`/`E`, o tocar su
   icono) pega un 25% más y decide a quién mira. Moverse: `WASD` / flechas. Pausa: `Esc`.
 - Cada ataque reproduce la **animación de PMD** que toca: `Attack`, `Shoot` o `Charge`.
@@ -233,7 +234,8 @@ Las monedas sirven para las **mejoras**; el gacha va con tickets.
 
 ### 7.2 Mejoras permanentes — de cada Pokémon
 Vitalidad, Fuerza, Zancada, Reflejos, Coraza, Síntesis, Imán, Sabiduría, Fortuna
-y **Repertorio (empezar con 2 movimientos)**. Cada Pokémon tiene las suyas y
+**Repertorio (empezar con 2 movimientos)** y **Huecos (+1 hueco de movimiento,
+2 niveles: de 4 huecos de serie a 6)**. Cada Pokémon tiene las suyas y
 sólo cuentan cuando juegas con él (en la pantalla de Mejoras se elige cuál).
 Las que se compraron cuando eran de la cuenta pasaron al compañero de entonces.
 

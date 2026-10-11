@@ -56,7 +56,7 @@ function throws(fn, msg = 'no lanzó') { let t = false; try { fn(); } catch (e) 
 
 // ---------------- carga base ----------------
 for (const f of ['js/core/util.js', 'js/core/i18n.js', 'js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js',
-                 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js', 'js/data/starters.js', 'js/data/items.js']) load(f);
+                 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js', 'js/data/starters.js', 'js/data/items.js', 'js/data/upgrades.js']) load(f);
 stubs();
 
 // ---- Task 1
@@ -118,9 +118,19 @@ test('las descripciones de las pasivas tienen traducción', () => {
 
 // ---- Task 4
 load('js/entities/player.js');
-const mkPlayer = (types = ['fire']) => new G.Player({ dex: 4, name: 'Charmander', types, hp: 100, spd: 100, atk: 1 }, {}, false);
-test('hasta 6 movimientos, el primero queda enfocado', () => {
+const mkPlayer = (types = ['fire'], perks = {}) => new G.Player({ dex: 4, name: 'Charmander', types, hp: 100, spd: 100, atk: 1 }, perks, false);
+test('de serie 4 huecos de movimiento; con la mejora Huecos de la tienda, 6', () => {
   const pl = mkPlayer();
+  eq(pl.maxMoves, 4);
+  for (const id of ['ember', 'flamethrower', 'fire-spin', 'heat-wave']) ok(pl.addMove(id), id);
+  ok(!pl.addMove('tackle'), 'quinto sin la mejora');
+  eq(G.Upgrades.BY.slots.max, 2);
+  eq(G.Upgrades.perks({ slots: 2 }).moveSlots, 6); eq(G.Upgrades.perks({}).moveSlots, 4);
+  const pl6 = mkPlayer(['fire'], G.Upgrades.perks({ slots: 2 }));
+  eq(pl6.maxMoves, 6);
+});
+test('hasta 6 movimientos, el primero queda enfocado', () => {
+  const pl = mkPlayer(['fire'], { moveSlots: 6 });
   for (const id of ['ember', 'flamethrower', 'fire-spin', 'heat-wave', 'tackle', 'quick-attack']) ok(pl.addMove(id), id);
   ok(!pl.addMove('body-slam'), 'séptimo');
   eq(pl.moves.length, 6); eq(pl.focus, 0); eq(pl.focused().id, 'ember');
@@ -210,7 +220,7 @@ test('tick lanza TODOS los movimientos, cada uno con su recarga', () => {
 // ---- Task 6
 load('js/systems/levelup.js');
 const fakePl = (types, moves = [], passives = []) => ({
-  mon: { types }, moves, passives, coins: 0, maxHp: 100, hp: 50,
+  mon: { types }, moves, passives, maxMoves: 6, coins: 0, maxHp: 100, hp: 50,
   hasMove(id) { return this.moves.some(m => m.id === id); },
   hasPassive(id) { return this.passives.some(p => p.id === id); },
   passive(id) { return this.passives.find(p => p.id === id) || null; },
@@ -230,6 +240,11 @@ test('pool agotado: no se ofrecen movimientos nuevos; pasivas sí si hay hueco',
   const c = G.LevelUp.candidates(pl);
   eq(c.filter(x => x.type === 'new').length, 0);
   ok(c.filter(x => x.type === 'passive').length > 0);
+});
+test('con 4 huecos de serie no se ofrecen movimientos nuevos al tener 4', () => {
+  const pl = fakePl(['fire', 'flying'], ['ember', 'flamethrower', 'fire-spin', 'gust'].map(id => G.Moves.instance(id, 1)));
+  pl.maxMoves = 4;
+  eq(G.LevelUp.candidates(pl).filter(x => x.type === 'new').length, 0);
 });
 test('la evolución lista sale siempre, en dorado', () => {
   const m = G.Moves.instance('ember', 5);

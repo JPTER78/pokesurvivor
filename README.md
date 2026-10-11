@@ -39,7 +39,8 @@ cambiarlo y el botón de arriba a la derecha para pausar. Se puede instalar como
 app ("Añadir a pantalla de inicio"). En **Ajustes** hay sonido, calidad gráfica
 (con modo automático), números de daño, menos sacudidas, FPS y la cuenta.
 
-El Pokémon ataca solo con **todos** sus movimientos a la vez (hasta 6), cada
+El Pokémon ataca solo con **todos** sus movimientos a la vez (4 huecos, hasta 6
+con la mejora Huecos de la tienda), cada
 uno con su recarga, y lleva hasta 4 **pasivas** con nivel. El movimiento
 **enfocado** pega un 25% más. Al vencer a un legendario ganas un **vínculo**
 para **fusionar** dos movimientos al nivel máximo en uno nuevo, que empieza en

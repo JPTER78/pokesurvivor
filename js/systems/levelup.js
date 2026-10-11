@@ -1,6 +1,6 @@
 /* ============ levelup.js — las tres cartas de subida de nivel ============
  * Tipos de carta:
- *   new      aprender un movimiento nuevo (si quedan huecos de los 6)
+ *   new      aprender un movimiento nuevo (si quedan huecos: 4 de serie, 6 con la mejora Huecos)
  *   passive  una pasiva nueva (si quedan huecos de los 4)
  *   up       subir de nivel un movimiento o una pasiva que ya tienes
  *   evo      evolución (dorada): movimiento al máximo + llevas su pasiva
@@ -20,7 +20,7 @@ G.LevelUp = (() => {
     const has = id => pl.hasPassive(id);
 
     // --- movimientos nuevos ---
-    if (pl.moves.length < G.Player.MAX_MOVES) {
+    if (pl.moves.length < pl.maxMoves) {
       const pool = G.Moves.poolFor(pl.mon).filter(id => !pl.hasMove(id));
       for (const id of G.U.pickN(pool, 6)) {
         const d = G.Moves.BY_ID[id];

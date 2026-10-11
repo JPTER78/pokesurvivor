@@ -34,6 +34,7 @@ G.Player = class Player {
     this.baseAtk = mon.atk;
 
     this.moves = [];           // movimientos de ataque (todos se lanzan a la vez)
+    this.maxMoves = perks.moveSlots || 4;   // huecos: 4 de serie, hasta MAX_MOVES con la mejora Huecos
     this.passives = [];        // [{ id, lvl, def }] (data/passives.js)
     this.focus = 0;            // índice del movimiento enfocado
     this.bonds = 0;            // vínculos por gastar (premio de los legendarios): fusiones
@@ -66,7 +67,7 @@ G.Player = class Player {
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
   static get REVIVE_TIME() { return 3; }
 
-  static get MAX_MOVES() { return 6; }
+  static get MAX_MOVES() { return 6; }          // tope absoluto (la mejora Huecos llega hasta aquí)
   static get MAX_PASSIVES() { return 4; }
   static get FOCUS_MUL() { return 1.25; }
 
@@ -113,7 +114,7 @@ G.Player = class Player {
 
   // ---------------- movimientos ----------------
   addMove(id) {
-    if (this.moves.length >= Player.MAX_MOVES || this.hasMove(id) || !G.Moves.BY_ID[id]) return false;
+    if (this.moves.length >= this.maxMoves || this.hasMove(id) || !G.Moves.BY_ID[id]) return false;
     this.moves.push(G.Moves.instance(id, 1));
     if (this.moves.length === 1) this.focus = 0;
     return true;

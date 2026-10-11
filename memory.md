@@ -35,7 +35,8 @@ los textos del juego están en español; el inglés sale de un diccionario
 
 ## Estado del combate (rama `movimientos-a-la-vez`, octubre 2026)
 
-- **Todos los movimientos aprendidos disparan a la vez** (hasta 6), cada uno
+- **Todos los movimientos aprendidos disparan a la vez** (4 huecos de serie; la
+  mejora permanente Huecos de la tienda añade hasta 2 más), cada uno
   con su recarga y su propio objetivo (`G.Combat.aimFor`). El **enfocado**
   (teclas 1-6, Q/E, o tocar su icono) pega ×1,25 y decide a dónde mira el
   Pokémon. Cinta Elección impide cambiar el enfoque.

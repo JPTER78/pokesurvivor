@@ -230,6 +230,7 @@ G.HUD = (() => {
 
     for (let i = 0; i < n; i++) {
       const m = pl.moves[i];
+      const locked = i >= (pl.maxMoves || n);     // hueco que se compra en la tienda (mejora Huecos)
       const on = i === pl.focus && !!m;
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
@@ -238,12 +239,19 @@ G.HUD = (() => {
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
 
       roundRect(ctx, x, y, S, S, 12);
-      ctx.fillStyle = !m ? 'rgba(10,16,28,.35)' : on ? 'rgba(20,30,50,.95)' : 'rgba(10,16,28,.8)';
+      ctx.fillStyle = locked ? 'rgba(10,16,28,.2)' : !m ? 'rgba(10,16,28,.35)' : on ? 'rgba(20,30,50,.95)' : 'rgba(10,16,28,.8)';
       ctx.fill();
       ctx.lineWidth = on ? 2.5 : m && (m.fused || m.evolved) ? 2 : 1.2;
-      // Fusión: borde rosa. Evolucionado: dorado. Hueco vacío: tenue.
+      // Fusión: borde rosa. Evolucionado: dorado. Hueco vacío: tenue. Bloqueado: punteado.
+      if (locked) ctx.setLineDash([4, 4]);
       ctx.strokeStyle = !m ? 'rgba(140,170,210,.14)' : m.fused ? FUSE : m.evolved ? GOLD : on ? col : 'rgba(140,170,210,.22)';
       ctx.stroke();
+      ctx.setLineDash([]);
+      if (locked) {
+        ctx.font = F(700, 8); ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(180,200,230,.35)';
+        ctx.fillText('TIENDA', x + S / 2, y + S / 2 + 3);
+        continue;
+      }
       if (!m) continue;
 
       // recarga: se vacía de abajo a arriba
@@ -325,6 +333,10 @@ G.HUD = (() => {
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ffd23f';
         ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
+      } else {
+        // Vacío: que se vea que es el hueco del objeto y no un séptimo movimiento.
+        ctx.font = F(700, 8); ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,210,63,.4)';
+        ctx.fillText('OBJETO', ix + S / 2, iy + S / 2 + 3);
       }
     }
 
