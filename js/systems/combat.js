@@ -183,6 +183,8 @@ G.Combat = (() => {
           const last = p.hitLog.get(e.id) || -99;
           if (now - last < p.rehit) continue;
           p.hitLog.set(e.id, now);
+          // Las órbitas duran toda la partida: se olvidan los golpes viejos.
+          if (p.hitLog.size > 300) for (const [k, t] of p.hitLog) if (now - t > p.rehit) p.hitLog.delete(k);
         } else {
           if (p.hits.has(e.id)) continue;
           p.hits.add(e.id);

@@ -156,10 +156,19 @@ G.DB = (() => {
   }
 
   /** Sustituye el contenido de `save` sin cambiar el objeto (otros módulos lo tienen). */
-  function applyInPlace(s) {
-    for (const k of Object.keys(save)) if (!(k in s)) delete save[k];
-    Object.assign(save, s);
+  // Copia `s` sobre la partida SIN cambiar los objetos de dentro (mejoras,
+  // Pokémon...): las pantallas abiertas guardan referencias a ellos. Antes se
+  // sustituían y una compra hecha justo después de subir la partida se
+  // apuntaba en la copia vieja: se cobraban las monedas y la mejora se perdía.
+  const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
+  function assignDeep(dst, src) {
+    for (const k of Object.keys(dst)) if (!(k in src)) delete dst[k];
+    for (const k in src) {
+      if (isObj(src[k]) && isObj(dst[k])) assignDeep(dst[k], src[k]);
+      else dst[k] = src[k];
+    }
   }
+  function applyInPlace(s) { assignDeep(save, s); }
 
   const VALID = /^[A-Za-z0-9_ñÑáéíóúÁÉÍÓÚ]{3,16}$/;
 

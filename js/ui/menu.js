@@ -267,13 +267,17 @@ G.MenuUI = (() => {
         <button class="btn small ${maxed ? '' : 'gold'}" data-sfx="none" ${maxed || s.coins < cost ? 'disabled' : ''}>
           ${maxed ? 'Máx.' : `<span class="coin"></span> ${cost}`}</button>`;
       el.querySelector('button').onclick = () => {
-        if (maxed || s.coins < cost) return;
-        s.coins -= cost;
-        levels[u.id] = lvl + 1;
+        // Se vuelve a leer todo al pulsar (la partida puede haber cambiado desde que se dibujó).
+        const sv = G.DB.save, lv = G.DB.upgradesOf(upgDex), now = lv[u.id] || 0;
+        if (now >= u.max) { renderUpgrades(); return; }
+        const price = G.Upgrades.cost(u.id, now);
+        if (sv.coins < price) { renderUpgrades(); return; }
+        sv.coins -= price;
+        lv[u.id] = now + 1;
         G.DB.commit(true);
         G.Audio.sfx('buy');
         G.UI.refreshCoins();
-        G.UI.toast(`${mon.name} · ${u.name}: nivel ${lvl + 1}`);
+        G.UI.toast(`${mon.name} · ${u.name}: nivel ${now + 1}`);
         renderUpgrades();
       };
       box.appendChild(el);

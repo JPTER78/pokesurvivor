@@ -107,6 +107,7 @@ G.Game = (() => {
     time = 0; pendingLevels = 0;
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    banked = { t1: 0, t10: 0 };
     caught = [];
     pl.addMove(G.startMoveOf(mon.dex));
     // Mejora "Repertorio": un segundo movimiento de ataque al azar.
@@ -156,6 +157,23 @@ G.Game = (() => {
   }
   function summary() { return { t: time, ki: pl.kills, bo: pl.bosses, co: pl.coins, lv: pl.level, t1: pl.t1, t10: pl.t10 }; }
 
+  /**
+   * Los tickets recogidos se guardan en cuanto los coges (como los shinies):
+   * antes sólo al acabar, y si la pestaña se cerraba de golpe se perdían.
+   * `banked` = los de esta partida que ya están en la partida guardada.
+   */
+  let banked = { t1: 0, t10: 0 };
+  function bankTickets(save_ = true) {
+    const sv = G.DB.save;
+    if (!sv || !pl) return;
+    sv.tickets = sv.tickets || { t1: 0, t10: 0 };
+    const d1 = Math.max(0, pl.t1 - banked.t1), d10 = Math.max(0, pl.t10 - banked.t10);
+    if (!d1 && !d10) return;
+    sv.tickets.t1 += d1; sv.tickets.t10 += d10;
+    banked = { t1: pl.t1, t10: pl.t10 };
+    if (save_) G.DB.commit();
+  }
+
   /** Lo que el cooperativo necesita del juego. */
   const coopApi = {
     team: teamState,
@@ -168,6 +186,7 @@ G.Game = (() => {
       pl.kills = t.kills; pl.bosses = t.bosses; pl.coins = t.coins;
       if (t.t1 > pl.t1 || t.t10 > pl.t10) G.Audio.sfx('shiny');
       pl.t1 = t.t1 || 0; pl.t10 = t.t10 || 0;
+      bankTickets();
     },
     levelStart(level) {
       state = 'levelup';
@@ -240,9 +259,7 @@ G.Game = (() => {
     const record = clean && time > save.stats.bestTime;
 
     save.coins += coins;
-    save.tickets = save.tickets || { t1: 0, t10: 0 };
-    save.tickets.t1 += pl.t1;
-    save.tickets.t10 += pl.t10;
+    bankTickets(false);
     save.stats.runs++;
     save.stats.totalKills += pl.kills;
     if (clean) {
@@ -371,6 +388,7 @@ G.Game = (() => {
     }
     if (p.kind === 'ticket' || p.kind === 'ticket10') {
       if (p.kind === 'ticket') pl.t1++; else pl.t10++;
+      bankTickets();
       G.FX.dmgText(who.x, who.y - who.bodyH - 8, p.kind === 'ticket' ? '+1 ticket' : '¡Ticket ×10!', p.kind === 'ticket' ? '#ffd23f' : '#d9a6ff', true);
       G.FX.ring(who.x, who.y, 6, 50, p.kind === 'ticket' ? '#ffd23f' : '#c47bff', 0.4, 3);
       return;

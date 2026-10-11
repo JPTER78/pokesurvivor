@@ -65,6 +65,20 @@ G.Sprites = (() => {
     return m.a[name] || null;
   }
 
+  // Hojas en memoria como mucho. Antes no se soltaba ninguna: en partidas de
+  // más de una hora pasaban cientos de especies, se llenaba la memoria gráfica
+  // y la pantalla se quedaba en negro hasta que el navegador recargaba la página.
+  const MAX_SHEETS = 200, IDLE_MS = 20000;   // ~0,66 MB cada una ya dibujada: ~130 MB
+  function evict(now) {
+    const old = [...sheets].filter(([, s]) => now - s.at > IDLE_MS).sort((a, b) => a[1].at - b[1].at);
+    const drop = old.slice(0, Math.max(sheets.size - Math.floor(MAX_SHEETS * 0.75), 0));
+    for (const [k, s] of drop) {
+      sheets.delete(k);
+      s.img.onload = s.img.onerror = null;
+      s.img.src = '';                 // suelta la imagen decodificada
+    }
+  }
+
   function sheet(dex, anim, shiny = false) {
     const m = meta(dex);
     shiny = shiny && !!(m && m.sh);
@@ -72,12 +86,15 @@ G.Sprites = (() => {
     if (!name) return null;
     const k = dex + '/' + name + (shiny ? '/s' : '');
     let s = sheets.get(k);
+    const now = Date.now();
     if (s) {
+      s.at = now;
       // Si la descarga se cortó (red mala, servidor saturado), reintenta más tarde.
       if (s.failed && performance.now() > s.retryAt) { s.failed = false; s.img.src = s.src + '?r=' + s.tries; }
       return s;
     }
-    s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0,
+    if (sheets.size >= MAX_SHEETS) evict(now);
+    s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0, at: now,
           src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png` };
     s.img.onload = () => { s.ready = true; };
     s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
@@ -242,5 +259,5 @@ G.Sprites = (() => {
   }
 
   return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
-           drawShadow, Animator, ANIMS };
+           drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; } };
 })();
