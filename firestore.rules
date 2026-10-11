@@ -16,6 +16,34 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function me() { return request.auth.uid; }
 
+    function validSave(s) {
+      return s.keys().hasAll(['v', 'name', 'coins'])
+        && s.v is int
+        && s.name is string && s.name.size() >= 3 && s.name.size() <= 16
+        && s.coins is int && s.coins >= 0 && s.coins <= 10000000
+        && (!('tickets' in s) || (s.tickets is map
+            && (!('t1' in s.tickets) || (s.tickets.t1 is int && s.tickets.t1 >= 0 && s.tickets.t1 <= 99999))
+            && (!('t10' in s.tickets) || (s.tickets.t10 is int && s.tickets.t10 >= 0 && s.tickets.t10 <= 99999))))
+        && (!('stats' in s) || s.stats is map)
+        && (!('owned' in s) || s.owned is map)
+        && (!('shiny' in s) || s.shiny is map)
+        && (!('upgrades' in s) || s.upgrades is map)
+        && (!('pupg' in s) || s.pupg is map)
+        && (!('pity' in s) || s.pity is map)
+        && (!('legends' in s) || s.legends is map)
+        && (!('arenas' in s) || s.arenas is map)
+        && (!('itemsFound' in s) || s.itemsFound is map)
+        && (!('evoMoves' in s) || s.evoMoves is map)
+        && (!('ach' in s) || s.ach is map)
+        && (!('missions' in s) || s.missions is map)
+        && (!('profile' in s) || s.profile is map)
+        && (!('partner' in s) || s.partner == null || (s.partner is int && s.partner >= 1 && s.partner <= 1025))
+        && (!('partnerShiny' in s) || s.partnerShiny is bool)
+        && (!('starter' in s) || s.starter == null || (s.starter is int && s.starter >= 1 && s.starter <= 1025))
+        && (!('created' in s) || s.created is int)
+        && (!('updated' in s) || s.updated is int);
+    }
+
     match /saves/{uid} {
       allow read, delete: if signedIn() && me() == uid;
 
@@ -23,6 +51,7 @@ service cloud.firestore {
         && me() == uid
         && request.resource.data.keys().hasOnly(['save', 'updatedAt', 'v'])
         && request.resource.data.save is map
+        && validSave(request.resource.data.save)
         && request.resource.data.v is int
         && request.resource.data.updatedAt == request.time;
     }
@@ -35,8 +64,20 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uid'])
         && request.resource.data.uid == me()
         && lower.size() >= 3 && lower.size() <= 16
-        && lower == lower.lower();
+        && lower == lower.lower()
+        && getAfter(/databases/$(database)/documents/profiles/$(me())).data.lower == lower;
       allow delete: if signedIn() && resource.data.uid == me();
+    }
+
+    function validProfileBest(b) {
+      return b.keys().hasOnly(['solo', 'group', 'level', 'bosses', 'legends', 'kills', 'medals'])
+        && (!('solo' in b) || (b.solo is int && b.solo >= 0 && b.solo <= 21600))
+        && (!('group' in b) || (b.group is int && b.group >= 0 && b.group <= 21600))
+        && (!('level' in b) || (b.level is int && b.level >= 0 && b.level <= 1000))
+        && (!('bosses' in b) || (b.bosses is int && b.bosses >= 0))
+        && (!('legends' in b) || (b.legends is int && b.legends >= 0 && b.legends <= 100))
+        && (!('kills' in b) || (b.kills is int && b.kills >= 0 && b.kills <= 10000000))
+        && (!('medals' in b) || (b.medals is int && b.medals >= 0 && b.medals <= 100));
     }
 
     // Perfil público: apodo, 3 favoritos, título, mejores marcas y medallas.
@@ -50,7 +91,7 @@ service cloud.firestore {
         && request.resource.data.at == request.time
         && (!('favs' in request.resource.data) || (request.resource.data.favs is list && request.resource.data.favs.size() <= 3))
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
-        && (!('best' in request.resource.data) || request.resource.data.best is map)
+        && (!('best' in request.resource.data) || (request.resource.data.best is map && validProfileBest(request.resource.data.best)))
         && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
         && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
       allow delete: if signedIn() && me() == uid;
@@ -111,8 +152,11 @@ service cloud.firestore {
         && d.at == request.time
         && (board.matches('s_.*')
               ? (d.uids.size() == 1 && id == me())
-              : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')))
-        && (resource == null || d.t > resource.data.t);
+              : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')
+                 && d.uids[0] < d.uids[1]
+                 && (d.uids.size() < 3 || d.uids[1] < d.uids[2])
+                 && (d.uids.size() < 4 || d.uids[2] < d.uids[3])))
+        && (resource == null || (d.t > resource.data.t && resource.data.uids == d.uids));
     }
 
     match /lb/{board}/e/{id} {
@@ -139,10 +183,18 @@ service cloud.firestore {
     function addMine(board, d, old, changed) {
       let e = getAfter(/databases/$(database)/documents/lb/$(board)/e/$(d.me)).data;
       let row = d.top[d.me];
+      let alreadyIn = d.me in old;
+      let full = old.size() >= 50;
       return me() in e.uids
-        && changed.hasOnly([d.me, d.ev])
+        && (d.me in d.top)
+        && (d.ev == '' ? changed.hasOnly([d.me]) : changed.hasOnly([d.me, d.ev]))
         && row.t == e.t && row.uids == e.uids && row.names == e.names && row.dex == e.dex
-        && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t));
+        && row.lv == e.lv && row.kills == e.kills && row.shiny == e.shiny
+        && (alreadyIn
+            ? (d.ev == '')
+            : (full
+                ? (d.ev != '' && !(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t)
+                : (d.ev == '')));
     }
     function removeMine(d, old, changed) {
       return d.ev in old && me() in old[d.ev].uids && !(d.ev in d.top) && changed.hasOnly([d.ev]);

@@ -152,7 +152,17 @@ G.DB = (() => {
     if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; }
     r.created = Math.min(a.created || Date.now(), b.created || Date.now());
     r.updated = Math.max(a.updated || 0, b.updated || 0);
-    return r;
+    return sanitize(r);
+  }
+
+  function sanitize(s) {
+    if (!s) return s;
+    if (typeof s.coins === 'number') s.coins = Math.max(0, Math.min(10000000, Math.floor(s.coins)));
+    if (s.tickets) {
+      if (typeof s.tickets.t1 === 'number') s.tickets.t1 = Math.max(0, Math.min(99999, Math.floor(s.tickets.t1)));
+      if (typeof s.tickets.t10 === 'number') s.tickets.t10 = Math.max(0, Math.min(99999, Math.floor(s.tickets.t10)));
+    }
+    return s;
   }
 
   /** Sustituye el contenido de `save` sin cambiar el objeto (otros módulos lo tienen). */
@@ -372,6 +382,7 @@ G.DB = (() => {
       const snap = await tx.get(ref);
       const remote = snap.exists ? migrate(snap.data().save) : null;
       merged = remote ? merge(plain(save), remote) : plain(save);
+      sanitize(merged);
       tx.set(ref, { save: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION });
     });
     // Si la red se cae a medias, Firestore puede quedarse esperando: tope de 12 s.
@@ -528,6 +539,7 @@ G.DB = (() => {
    */
   function commit(urgent = false) {
     if (guest || !key || !save) return false;
+    sanitize(save);
     save.updated = Date.now();
     if (mode === 'local') return write(K_SAVE + key, save);
     write(K_CLOUD + uid, save);
