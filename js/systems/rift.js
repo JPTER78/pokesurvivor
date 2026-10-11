@@ -93,7 +93,7 @@ G.Rift = (() => {
       // La arena es la de uno de sus tipos, al azar.
       type: forceType || G.U.pick(mon.types)
     };
-    if (G.Coop.isHost) G.Coop.broadcast(['arena', cfg]);
+    if (G.Coop.isHost) { G.Coop.advanceWorld(); G.Coop.broadcast(['arena', cfg]); }
     begin(cfg);
     spawnLegend();
   }
@@ -117,8 +117,8 @@ G.Rift = (() => {
     const th = G.Tiles.ARENA_THEMES[cfg.type];
     if (th && th.weather) G.Weather.force(th.weather, ARENA_TIME + 15);
     // Todos al sur de la arena, en fila; el legendario aparece al norte.
-    const ps = G.Game.everyone();
-    ps.forEach((p, i) => { p.x = arena.x + (i - (ps.length - 1) / 2) * 34; p.y = arena.y + ts * 3; });
+    const ps = G.Game.everyone().slice().sort((a, b) => (a.uid || '').localeCompare(b.uid || ''));
+    ps.forEach((p, i) => teleport(p, arena.x + (i - (ps.length - 1) / 2) * 34, arena.y + ts * 3));
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     G.Game.flash('#c9a6ff', 0.9);
     G.Audio.sfx('rift');
@@ -173,6 +173,7 @@ G.Rift = (() => {
       if (downT > 1.4 || arena.t > ARENA_TIME) { G.Coop.isHost && G.Coop.broadcast(['al']); lost(); }
       return;
     }
+    if (!authority()) return;
     arena.endT -= dt;
     if (arena.endT <= 0) finish();
   }
@@ -200,7 +201,19 @@ G.Rift = (() => {
   }
 
   /** En cada ordenador: vuelta al mapa. */
+  function teleport(p, x, y) {
+    p.x = x; p.y = y;
+    if (p.net) { p.net.x = x; p.net.y = y; p.net.walk = 0; }
+    p._px = x; p._py = y; p._vx = p._vy = 0;
+  }
+
   function finish() {
+    if (!arena) return;
+    if (G.Coop.isHost) {
+      G.Coop.advanceWorld();
+      // Antes de restaurar: el invitado limpia la arena antes de recibir los 'ne'.
+      G.Coop.broadcast(['arend']);
+    }
     const pl = G.Game.player;
     const a = arena;
     arena = null;
@@ -210,8 +223,7 @@ G.Rift = (() => {
     G.Projectiles.clear();
     G.Combat.clearFields();
     G.Hazards.clear();
-    for (const p of G.Game.everyone()) { p.x = a.back.x; p.y = a.back.y; }
-    pl.x = a.back.x; pl.y = a.back.y;
+    for (const p of G.Game.everyone()) teleport(p, a.back.x, a.back.y);
     if (pl.dead) pl.revive(0.3);
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     G.Game.flash('#c9a6ff', 0.8);
@@ -251,6 +263,7 @@ G.Rift = (() => {
       case 'arena': begin(ev[1]); break;
       case 'aw': won(); break;
       case 'al': lost(); break;
+      case 'arend': finish(); break;
     }
   }
 

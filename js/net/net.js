@@ -116,7 +116,10 @@ G.Net = (() => {
     catch (e) { p.mode = 'relay'; emitPeer(u); return p; }
     pc.onicecandidate = e => { if (e.candidate) signal(u, { c: e.candidate.toJSON() }); };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed' && p.mode !== 'closed') useRelay(u);
+      if (['failed', 'disconnected'].includes(pc.connectionState) && p.mode !== 'closed') useRelay(u);
+      else if (pc.connectionState === 'connected' && p.dc && p.dc.readyState === 'open' && peers.get(u) === p) {
+        p.mode = 'direct'; emitPeer(u);
+      }
     };
     // Si en unos segundos no hay canal directo, se sigue por el relé.
     p.timer = setTimeout(() => { if (p.mode === 'connecting') useRelay(u); }, DIRECT_TIMEOUT);
@@ -152,7 +155,7 @@ G.Net = (() => {
 
   function useRelay(u) {
     const p = peers.get(u);
-    if (!p || p.mode === 'direct' || p.mode === 'closed') return;
+    if (!p || p.mode === 'relay' || p.mode === 'closed') return;
     p.mode = 'relay';
     emitPeer(u);
   }
@@ -225,7 +228,7 @@ G.Net = (() => {
     if (!roomId) return;
     const p = peers.get(to);
     stats.sent++;
-    if (p && p.dc && p.dc.readyState === 'open') {
+    if (p && p.mode === 'direct' && p.dc && p.dc.readyState === 'open') {
       try { p.dc.send(JSON.stringify(msg)); return; } catch (e) { /* cae al relé */ }
     }
     stats.relaySent++;

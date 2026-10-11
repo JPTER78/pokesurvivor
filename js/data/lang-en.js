@@ -4,6 +4,13 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  'Todos deben actualizar el juego antes de empezar.': 'Everyone must refresh the game before starting.',
+  'El anfitrión ya no está en esa sala.': 'The host is no longer in that room.',
+  'El anfitrión ha estado ausente demasiado tiempo.': 'The host has been away for too long.',
+  'No se pudo recuperar la conexión con el anfitrión.': 'The connection to the host could not be restored.',
+  'Has dejado la partida tras perder la conexión.': 'You left the run after losing the connection.',
+  'Partida pausada: esperando a tus compañeros…': 'Run paused: waiting for your teammates…',
+  'Conexión recuperada.': 'Connection restored.',
   // ---------------- tipos y regiones ----------------
   'Acero': 'Steel', 'Agua': 'Water', 'Bicho': 'Bug', 'Dragón': 'Dragon', 'Eléctrico': 'Electric', 'Fantasma': 'Ghost',
   'Fuego': 'Fire', 'Hada': 'Fairy', 'Hielo': 'Ice', 'Lucha': 'Fighting', 'Planta': 'Grass', 'Psíquico': 'Psychic',
