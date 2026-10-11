@@ -293,14 +293,14 @@ test('las fusiones tienen traducción de nombre y descripción', () => {
 // ---- Task 9
 load('js/systems/reactions.js');
 const reactPl = () => { const m = G.Moves.instance('water-gun', 1); return { x: 0, y: 0, atk: 1, level: 1, moves: [m], focus: 0, focused() { return m; }, dmgMul: () => 1, onDealt: noop, dmgDealt: 0 }; };
-const stEnemy = (extra = {}) => Object.assign(enemyAt(0, 0), { burn: 0, poison: 0, slow: 0, wet: 0, frozenT: 0, reactCd: 0, remote: false, maxHp: 100,
+const stEnemy = (extra = {}) => Object.assign(enemyAt(0, 0), { burn: 0, poison: 0, slow: 0, wet: 0, frozenT: 0, remote: false, maxHp: 100,
   hits: [], hurt(d) { this.hits.push(d); }, applyWet() { this.wet = 1; }, applyFreeze() { this.frozenT = 1.2; }, applySlow(f) { this.slow = Math.max(this.slow, f); },
   clearStatus(k) { if (k === 'burn') this.burn = 0; if (k === 'poison') this.poison = 0; if (k === 'slow') this.slow = 0; if (k === 'wet') this.wet = 0; } }, extra);
 test('Vapor: agua sobre quemado consume la quemadura y hace daño de área', () => {
   const e = stEnemy({ burn: 3 }), n = stEnemy({ x: 30 });
   G.EnemyMgr.queryCircle = () => [e, n];
   const k = G.Reactions.check(reactPl(), e, G.Moves.instance('water-gun', 1), 10);
-  eq(k, 1); eq(e.burn, 0); ok(n.hits.length === 1, 'vecino dañado'); ok(e.reactCd > 0);
+  eq(k, 1); eq(e.burn, 0); ok(n.hits.length === 1, 'vecino dañado'); ok(e.reactT > 0);
   G.EnemyMgr.queryCircle = () => [];
 });
 test('Rotura: roca sobre frenado ×1,6 (cuerpo a cuerpo desde 0,25)', () => {
@@ -325,7 +325,7 @@ test('Conducción, Congelación y Detonación', () => {
   G.EnemyMgr.queryCircle = () => [];
 });
 test('cooldown de reacción por enemigo y sin reacción en remotos sin bits', () => {
-  const e = stEnemy({ burn: 2, reactCd: 0.3 });
+  const e = stEnemy({ burn: 2, reactT: sandbox.performance.now() });   // el reloj del sandbox, no el de Node
   eq(G.Reactions.check(reactPl(), e, G.Moves.instance('water-gun', 1), 10), 1); eq(e.burn, 2);
   const r = stEnemy({ remote: true, net: { st: 0 }, burn: 5 });
   eq(G.Reactions.check(reactPl(), r, G.Moves.instance('water-gun', 1), 10), 1); eq(r.burn, 5);
@@ -382,6 +382,40 @@ test('un compañero reconstruye su lista de movimientos del estado y aguanta bas
   p.net.mvs = 'zzz:9';
   p.netUpdate(0.016);
   eq(p.moves.map(m => m.id), ['ember', 'tackle'], 'basura: se queda la lista anterior');
+});
+
+// ---- Revisión final: arreglos
+test('un enemigo congelado no te golpea por contacto', () => {
+  G.Projectiles.clear();
+  let hits = 0;
+  const e = { x: 5, y: 0, r: 10, touchCd: 0, behavior: 'chase', frozenT: 1, strike: noop, dmg: 5, atkType: 'normal', kx: 0, ky: 0, dead: false };
+  const pl = { x: 0, y: 0, r: 12, dead: false, level: 1, hurt: () => { hits++; }, hasItem: () => false };
+  G.EnemyMgr.queryCircle = () => [e];
+  G.Combat.resolve(0.016, pl, 0);
+  G.EnemyMgr.queryCircle = () => [];
+  eq(hits, 0, 'congelado y aun así golpea');
+});
+test('en un invitado la pausa entre reacciones caduca sola (sin Enemy.update)', async () => {
+  let labels = 0;
+  const orig = G.FX.dmgText; G.FX.dmgText = () => { labels++; };
+  const r = stEnemy({ remote: true, net: { st: 1 } });
+  G.Reactions.check(reactPl(), r, G.Moves.instance('water-gun', 1), 10);
+  await new Promise(res => setTimeout(res, 550));
+  G.Reactions.check(reactPl(), r, G.Moves.instance('water-gun', 1), 10);
+  G.FX.dmgText = orig;
+  eq(labels, 2, 'la segunda reacción no salió');
+});
+test('la pista de la pausa en dev.html tiene traducción', () => {
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'dev.html'), 'utf8');
+  ok(!html.includes('toca un ataque para cambiarlo'), 'dev.html sigue con "cambiarlo"');
+  const es = 'Arrastra el dedo para moverte · toca un ataque para enfocarlo';
+  ok(G.I18n.t(es) !== es, 'sin traducción');
+});
+test('la carta de subir un movimiento sale entera en inglés (pista de evolución incluida)', () => {
+  const m = G.Moves.instance('ember', 4);
+  const pl = fakePl(['fire'], [m], []);
+  const c = G.LevelUp.candidates(pl).find(x => x.key === 'up:ember');
+  ok(c, 'sin carta'); ok(!/Evoluciona/.test(c.desc), c.desc); ok(/Evolves with Power\.$/.test(c.desc), c.desc);
 });
 
 // ---------------- ejecutar ----------------

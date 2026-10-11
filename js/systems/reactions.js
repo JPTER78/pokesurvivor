@@ -1,8 +1,9 @@
 /* ============ reactions.js — reacciones elementales ============
  * Cuando el TIPO de un ataque encuentra un ESTADO que ya sufre el enemigo,
  * pasa algo más: los combos automáticos del juego. Las mira G.Combat.damage()
- * en cada golpe. Cada enemigo tiene un pequeño cooldown (reactCd) para que un
- * abanico de 7 burbujas no dispare 7 reacciones.
+ * en cada golpe. Cada enemigo lleva la hora de su última reacción (reactT) para
+ * que un abanico de 7 burbujas no dispare 7 reacciones (también en las copias
+ * remotas, que no pasan por Enemy.update).
  *
  *   Vapor         agua sobre quemado: consume la quemadura, nube que daña y frena
  *   Rotura        roca/acero/lucha/tierra sobre frenado: ese golpe ×1,6
@@ -70,11 +71,13 @@ G.Reactions = (() => {
   ];
 
   function check(pl, e, m, dmg) {
-    if (!e || e.dead || (e.reactCd || 0) > 0 || !m || !m.type) return 1;
+    if (!e || e.dead || !m || !m.type) return 1;
+    const now = performance.now();
+    if (now - (e.reactT || -1e9) < CD * 1000) return 1;
     for (const r of LIST) {
       if (!r.types.includes(m.type) || !has(e, r.needs)) continue;
       if (r.test && !r.test(e, m)) continue;
-      e.reactCd = CD;
+      e.reactT = now;
       label(e, r);
       if (G.Camera.sees(e.x, e.y, 40)) G.Audio.sfx('break');
       return r.fire(pl, e, m, dmg) || 1;

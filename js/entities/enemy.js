@@ -54,7 +54,7 @@
       this.poison = 0; this.poisonT = 0; this.poisonTick = 0;
       this.wet = 0; this.wetT = 0;        // empapado (agua): Conducción y Congelación
       this.frozenT = 0;                   // congelado: ni se mueve ni ataca
-      this.reactCd = 0;                   // pausa entre reacciones elementales
+      this.reactT = 0;                    // hora de la última reacción elemental
       this.lavaTick = 0;
       this.kx = 0; this.ky = 0;
       this.touchCd = 0;
@@ -281,7 +281,6 @@
         if (this.poisonT <= 0) this.poison = 0;
       }
       if (this.wet > 0) { this.wetT -= dt; if (this.wetT <= 0) this.wet = 0; }
-      if (this.reactCd > 0) this.reactCd -= dt;
       if (this.frozenT > 0) {
         this.frozenT -= dt;
         if (Math.random() < dt * 4 && G.Camera.sees(this.x, this.y, 0)) G.FX.px(this.x + G.U.rand(-this.r, this.r), this.y - G.U.rand(2, this.bodyH), '#cfefff', { vy: -10, life: 0.4 });

@@ -54,9 +54,10 @@ G.LevelUp = (() => {
       if (!txt) continue;
       // En el penúltimo nivel se avisa de qué pasiva hace falta para evolucionar.
       const ev = G.Moves.evoInfo(Object.assign({}, m, { lvl: m.def.maxLvl }), has);
-      const hint = m.lvl === m.def.maxLvl - 1 && ev && !ev.ready ? ' Evoluciona con ' + ev.needName + '.' : '';
+      // (Cada trozo se traduce por separado: juntos no casarían con ninguna entrada del diccionario.)
+      const hint = m.lvl === m.def.maxLvl - 1 && ev && !ev.ready ? ' ' + G.I18n.t('Evoluciona con ' + ev.needName + '.') : '';
       out.push({ w: 8, type: 'up', key: 'up:' + m.id, icon: 'move:' + m.id, color: G.U.TYPE_COLOR[m.type],
-                 tag: 'Nv.' + m.lvl + ' > ' + (m.lvl + 1), title: m.name, desc: txt + hint, apply: () => G.Moves.levelUp(m) });
+                 tag: 'Nv.' + m.lvl + ' > ' + (m.lvl + 1), title: m.name, desc: G.I18n.t(txt) + hint, apply: () => G.Moves.levelUp(m) });
     }
 
     // --- pasivas nuevas (las que desbloquean una evolución salen siempre y en dorado) ---
