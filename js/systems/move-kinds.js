@@ -223,7 +223,11 @@ G.MoveKinds = (() => {
     G.FX.ring(pl.x, pl.y, 4, 30, col, 0.3, 2);
   }
 
-  /** Embestida: cruzas como un rayo hacia el enemigo y golpeas a todo lo del camino. */
+  /**
+   * Embestida: te lanzas hacia el enemigo golpeando a todo lo del camino y
+   * VUELVES a tu sitio (ida y vuelta en Player.startLunge, invulnerable
+   * mientras). Quedarse en medio de la horda era morir.
+   */
   function dash(pl, m, ghost) {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     const ca = Math.cos(m.aim), sa = Math.sin(m.aim);
@@ -233,20 +237,19 @@ G.MoveKinds = (() => {
       if (!G.World.isFree(sx + ca * d, sy + sa * d, pl.r * 0.8, true)) break;
       len = d;
     }
+    const ex = sx + ca * len, ey = sy + sa * len;
     // Estela: varias copias del golpe a lo largo del recorrido.
     for (let d = 0; d <= len; d += 22) G.FX.sp(vis.proj || 'streak', vis.pal, sx + ca * d, sy + sa * d - G.LIFT * 0.6, { life: 0.22, angle: m.aim });
-    G.FX.slash(sx + ca * len, sy + sa * len - G.LIFT * 0.5, m.aim, 34, 2.2, col, vis);
+    G.FX.slash(ex, ey - G.LIFT * 0.5, m.aim, 34, 2.2, col, vis);
     if (ghost) return;
-    pl.x = sx + ca * len; pl.y = sy + sa * len;
-    G.World.collide(pl);
-    pl.invuln = Math.max(pl.invuln || 0, 0.3);
+    pl.startLunge(ca, sa, len);
     const w = m.width || 34;
-    const mx = sx + ca * len / 2, my = sy + sa * len / 2;
+    const mx = (sx + ex) / 2, my = (sy + ey) / 2;
     for (const e of G.EnemyMgr.queryCircle(mx, my, len / 2 + w)) {
-      if (segDist2(sx, sy, pl.x, pl.y, e.x, e.y) <= (w / 2 + e.r) ** 2) G.Combat.damage(pl, e, m.dmg * pl.atk, m, ca, sa, m.knock || 0);
+      if (segDist2(sx, sy, ex, ey, e.x, e.y) <= (w / 2 + e.r) ** 2) G.Combat.damage(pl, e, m.dmg * pl.atk, m, ca, sa, m.knock || 0);
     }
     for (const p of G.World.propsInCircle(mx, my, len / 2 + w)) {
-      if (segDist2(sx, sy, pl.x, pl.y, p.x, p.y) <= (w / 2 + p.r) ** 2) G.World.damageProp(p, m.dmg * pl.atk, col);
+      if (segDist2(sx, sy, ex, ey, p.x, p.y) <= (w / 2 + p.r) ** 2) G.World.damageProp(p, m.dmg * pl.atk, col);
     }
     kick(pl, 0.12);
   }

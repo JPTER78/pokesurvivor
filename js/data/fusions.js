@@ -41,7 +41,7 @@ G.Fusions = (() => {
       desc: 'Un rugido de fuego en todas direcciones que atraviesa y quema.',
       cd: 1.2, dmg: 44, speed: 260, count: 24, pierce: 2, life: 1.1, size: 8, burn: 1 },
     { pair: ['quick-attack', 'aerial-ace'], id: 'extreme-dive', name: 'Picado Extremo', type: 'flying', kind: 'dash',
-      desc: 'Un picado larguísimo y ancho que corta todo lo que cruza.',
+      desc: 'Un picado larguísimo y ancho que corta todo lo que cruza; vuelves a tu sitio.',
       cd: 0.75, dmg: 245, radius: 200, width: 60, knock: 70 },
     { pair: ['spikes', 'toxic-spikes'], id: 'spike-field', name: 'Campo de Púas', type: 'poison', kind: 'mine',
       desc: 'Seis púas que estallan y envenenan mucho.',

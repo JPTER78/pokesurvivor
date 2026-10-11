@@ -41,6 +41,8 @@ los textos del juego están en español; el inglés sale de un diccionario
   pasiva de su condición.
 - **60 movimientos** de ataque en 14 familias; los potenciadores (buff) ya no
   existen. Cuerpo a cuerpo y embestida pegan ×1,4 de base.
+  La embestida es de ida y vuelta (Player.startLunge): golpea el camino,
+  invulnerable, y el Pokémon regresa a su sitio.
 - **Fusiones (vínculos):** cada legendario vencido da un vínculo. Fusiona dos
   movimientos que lleves, **los dos al nivel máximo**, en uno nuevo que ocupa
   un hueco. 30 recetas en `js/data/fusions.js`, cada uno de los 60 movimientos

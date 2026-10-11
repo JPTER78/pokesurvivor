@@ -84,7 +84,9 @@ Menú principal  (el mundo de fondo, con Pokémon salvajes paseando)
 - **60 movimientos** de ataque en 14 familias (proyectil, cuerpo a cuerpo, rayo,
   orbes, nova, aura, bumerán, cadena, minas, meteoros, torreta, embestida, rastro,
   abanico), 5 niveles cada uno. Cubren los **18 tipos**. Cuerpo a cuerpo y
-  embestida pegan ×1,4 (hay que acercarse).
+  embestida pegan ×1,4 (hay que acercarse). La embestida es de **ida y vuelta**:
+  golpeas todo el camino, invulnerable, y regresas a tu sitio (quedarse en
+  medio de la horda era morir).
 - El pool de cada Pokémon sale de sus tipos + el pool normal común.
 - **Pasivas**: hasta 4 (Vigor, Potencia, Carrera, Reflejos, Coraza, Síntesis, Imán,
   Aprendizaje), 5 niveles. Sustituyen a las cartas de stat.

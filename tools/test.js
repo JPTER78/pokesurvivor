@@ -446,6 +446,23 @@ test('la carta de subir un movimiento sale entera en inglés (pista de evolució
   ok(c, 'sin carta'); ok(!/Evoluciona/.test(c.desc), c.desc); ok(/Evolves with Power\.$/.test(c.desc), c.desc);
 });
 
+// ---- Embestidas: ida y vuelta
+test('la embestida golpea el camino pero el Pokémon vuelve a su sitio', async () => {
+  const pl = mkPlayer(); pl.addMove('quick-attack');
+  const m = pl.moves[0]; m.aim = 0; m.target = null;
+  G.MoveKinds.run(pl, m, false);
+  ok(pl.lunge, 'no hay embestida en curso'); ok(pl.invuln >= 0.3, 'sin invulnerabilidad');
+  // A mitad de la embestida está lejos; al acabar, de vuelta en el origen.
+  let far = 0;
+  for (let t = 0; t < 0.6; t += 0.02) { pl.update(0.02); far = Math.max(far, pl.x); }
+  ok(far > m.radius * 0.8, 'no se alejó: ' + far);
+  ok(Math.abs(pl.x) < 1e-6 && Math.abs(pl.y) < 1e-6, 'no volvió: ' + pl.x);
+  ok(!pl.lunge, 'la embestida no terminó');
+});
+test('las descripciones de las embestidas tienen traducción', () => {
+  for (const id of ['quick-attack', 'aerial-ace', 'extreme-dive']) { const d = G.Moves.BY_ID[id].desc; ok(/vuelves/.test(d), id + ' no dice que vuelve'); ok(G.I18n.t(d) !== d, id); }
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

@@ -131,7 +131,7 @@
       cd: 0.50, dmg: 18, radius: 48, arc: 1.7, knock: 90 },
 
     { id: 'quick-attack', name: 'Ataque Rápido', type: 'normal', kind: 'dash',
-      desc: 'Cruzas como un rayo hacia el enemigo y golpeas todo el camino.',
+      desc: 'Te lanzas como un rayo hacia el enemigo, golpeas todo el camino y vuelves a tu sitio.',
       cd: 0.75, dmg: 28, radius: 110, width: 34, knock: 40 },
 
 
@@ -374,7 +374,7 @@
       cd: 4.0, dmg: 14, rate: 0.4, dur: 6, count: 1, range: 280, speed: 320, size: 6 },
 
     { id: 'aerial-ace', name: 'Golpe Aéreo', type: 'flying', kind: 'dash',
-      desc: 'Te lanzas en picado y cortas todo lo que cruzas.',
+      desc: 'Te lanzas en picado, cortas todo lo que cruzas y vuelves a tu sitio.',
       cd: 0.75, dmg: 25, radius: 120, width: 40, knock: 60 },
 
     { id: 'flame-wheel', name: 'Rueda Fuego', type: 'fire', kind: 'trail',

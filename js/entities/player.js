@@ -226,6 +226,20 @@ G.Player = class Player {
     this.attackFace = 0.35;
   }
 
+  // ---------------- embestida: ida y vuelta ----------------
+  /**
+   * Te lanzas `len` unidades en la dirección (dx, dy) y vuelves al punto de
+   * partida (seno de 0 a π: sale rápido, frena en la punta y regresa). Mientras
+   * dura no te mueves con las teclas y no te pueden tocar.
+   */
+  startLunge(dx, dy, len) {
+    if (len <= 0) return;
+    const dur = 0.22 + len / 900;
+    this.lunge = { x0: this.x, y0: this.y, dx, dy, len, t: 0, dur };
+    this.invuln = Math.max(this.invuln || 0, dur + 0.1);
+    this.attackFace = Math.max(this.attackFace, dur);
+  }
+
   // ---------------- daño y curación ----------------
   /** @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual */
   hurt(amount, type = null) {
@@ -318,9 +332,20 @@ G.Player = class Player {
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
 
+    // --- embestida en curso: ida y vuelta, sin hacer caso a las teclas ---
+    if (this.lunge) {
+      const L = this.lunge;
+      L.t += dt;
+      const k = Math.min(1, L.t / L.dur);
+      const s = Math.sin(k * Math.PI);
+      this.x = L.x0 + L.dx * L.len * s;
+      this.y = L.y0 + L.dy * L.len * s;
+      if (k >= 1) { this.x = L.x0; this.y = L.y0; this.lunge = null; }
+      G.World.collide(this);
+    }
     // --- movimiento con colisiones ---
     // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
-    const [ax, ay] = this.frozen ? [0, 0] : G.Input.axis();
+    const [ax, ay] = this.frozen || this.lunge ? [0, 0] : G.Input.axis();
     this.walking = ax !== 0 || ay !== 0;
     const s = this.spd;
     // Hielo: resbalas (la velocidad cambia despacio).
