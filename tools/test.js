@@ -67,6 +67,38 @@ test('cada movimiento de ataque tiene evolución', () => {
   for (const m of G.Moves.ALL) if (m.kind !== 'buff') ok(G.Moves.EVO[m.id], m.id + ' sin evolución');
 });
 
+// ---- Task 2
+test('ya no hay potenciadores en el catálogo', () => {
+  eq(G.Moves.ALL.filter(m => m.kind === 'buff').length, 0);
+  for (const id of ['swords-dance', 'agility', 'harden', 'aqua-ring', 'dragon-dance']) ok(!G.Moves.BY_ID[id], id + ' sigue');
+});
+test('Dragón tiene dos ataques: Furia Dragón y Dragoaliento', () => {
+  eq(G.Moves.POOL.dragon.slice().sort(), ['dragon-breath', 'dragon-rage']);
+  eq(G.Moves.EVO['dragon-breath'], ['Pulso Dragón', 'cd']);
+});
+test('cuerpo a cuerpo y embestida pegan ×1,4 (Placaje 18, Ataque Rápido 28)', () => {
+  eq(G.Moves.BY_ID.tackle.dmg, 18); eq(G.Moves.BY_ID['quick-attack'].dmg, 28); eq(G.Moves.BY_ID['body-slam'].dmg, 42);
+});
+test('la escalera de cuerpo a cuerpo sube +50% y +60%', () => {
+  const L = G.Moves.BY_ID.tackle.ups;
+  eq(L[0].m.dmg, 1.5); eq(L[3].m.dmg, 1.6);
+});
+test('register añade un movimiento sin meterlo en el pool', () => {
+  G.Moves.register({ id: 'zz-test', name: 'Prueba', type: 'fire', kind: 'nova', desc: '', cd: 1, dmg: 1, speed: 1, count: 3, life: 1, size: 1 });
+  ok(G.Moves.BY_ID['zz-test']); eq(G.Moves.BY_ID['zz-test'].maxLvl, 5);
+  ok(!G.Moves.POOL.fire.includes('zz-test'));
+  const i = G.Moves.instance('zz-test', 3); eq(i.lvl, 3); eq(i.count, 7);   // nova: +4 proyectiles en el nivel 2
+});
+test('evoInfo mira si LLEVAS la pasiva', () => {
+  const m = G.Moves.instance('ember', 5);
+  ok(!G.Moves.evoInfo(m, () => false).ready);
+  ok(G.Moves.evoInfo(m, id => id === 'atk').ready);
+  eq(G.Moves.evoInfo(m, () => false).needs, 'atk');
+});
+test('nombres nuevos tienen traducción', () => {
+  for (const es of ['Dragoaliento', 'Pulso Dragón']) ok(G.I18n.t(es) !== es, es);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;
