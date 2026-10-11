@@ -27,6 +27,7 @@ G.Player = class Player {
     this.magnet = 78 * (perks.magnetMul || 1);
     this.xpMul = perks.xpMul || 1;
     this.coinMul = perks.coinMul || 1;
+    this.ticketMul = perks.ticketMul || 1;   // mejora Suerte: más tickets del gacha
 
     this.maxHp = mon.hp + (perks.hp || 0);
     this.hp = this.maxHp;

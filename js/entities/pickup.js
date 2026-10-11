@@ -23,9 +23,18 @@ G.Pickups = (() => {
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
     item:     { color: '#ffd23f', glow: '#c08a10', r: 9 }       // value = id del objeto
   };
-  /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
-  const BOSS_T10 = 1 / 3;               // ticket ×10 de un jefe normal (el legendario, siempre)
-  const TICKET_RATE = 1 / 400;          // (antes 1/260; más raros desde 2026-10-10)
+  // Tickets del gacha. Con todos los movimientos disparando a la vez se derrota
+  // a más Pokémon, así que de base son más raros (2026-10-11: 1/400 → 1/600 y
+  // 1/3 → 1/4) y la mejora permanente Suerte (+15% por nivel) los multiplica.
+  const BOSS_T10 = 1 / 4;               // ticket ×10 de un jefe normal (el legendario, siempre)
+  const TICKET_RATE = 1 / 600;          // ticket ×1 por Pokémon derrotado
+
+  /** Probabilidades de ticket ahora: la Suerte de quien crea los objetos (en grupo, el anfitrión). */
+  function ticketRates() {
+    const pl = G.Game && G.Game.player;
+    const k = pl && pl.ticketMul ? pl.ticketMul : 1;
+    return { t1: Math.min(1, TICKET_RATE * k), t10: Math.min(1, BOSS_T10 * k) };
+  }
 
   function clear() { list = []; }
   function all() { return list; }
@@ -77,12 +86,12 @@ G.Pickups = (() => {
       }
       push(orb('heal', x + 24, y, 0));
       push(orb('magnet', x - 24, y, 0));
-      // Ticket ×10: siempre el legendario de la grieta; un jefe normal, 1 de cada 3 veces.
-      if (legend || Math.random() < BOSS_T10) push(orb('ticket10', x, y - 20, 1));
+      // Ticket ×10: siempre el legendario de la grieta; un jefe normal, 1 de cada 4 veces (más con Suerte).
+      if (legend || Math.random() < ticketRates().t10) push(orb('ticket10', x, y - 20, 1));
       return;
     }
     push(orb(value >= 20 ? 'xpBig' : 'xp', x, y, value));
-    if (Math.random() < TICKET_RATE) push(orb('ticket', x + G.U.rand(-6, 6), y, 1));
+    if (Math.random() < ticketRates().t1) push(orb('ticket', x + G.U.rand(-6, 6), y, 1));
 
     // Drops ocasionales.
     const r = Math.random();
@@ -196,5 +205,5 @@ G.Pickups = (() => {
     ctx.globalAlpha = 1;
   }
 
-  return { clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };
+  return { ticketRates,  clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };
 })();

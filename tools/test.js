@@ -501,6 +501,25 @@ test('si caminas durante la embestida, el origen (y la cámara) siguen avanzando
   ok(!pl.lunge); ok(Math.abs(pl.x) < 1e-6, 'x debe volver al origen: ' + pl.x); ok(pl.y > 20, 'aterriza más adelante: ' + pl.y);
 });
 
+// ---- Tickets del gacha: más raros de base, mejora Suerte en la tienda
+load('js/entities/pickup.js');
+test('mejora Suerte: +15% tickets por nivel, hasta 5', () => {
+  eq(G.Upgrades.BY.tickets.max, 5);
+  ok(Math.abs(G.Upgrades.perks({ tickets: 5 }).ticketMul - 1.75) < 1e-9);
+  eq(G.Upgrades.perks({}).ticketMul, 1);
+  eq(mkPlayer().ticketMul, 1); ok(Math.abs(mkPlayer(['fire'], { ticketMul: 1.3 }).ticketMul - 1.3) < 1e-9);
+});
+test('los tickets caen 1/600 por derrota y ×10 de jefe 1/4; la Suerte los multiplica', () => {
+  G.Game.player = mkPlayer();
+  let r = G.Pickups.ticketRates();
+  ok(Math.abs(r.t1 - 1 / 600) < 1e-9, 't1 ' + r.t1); ok(Math.abs(r.t10 - 0.25) < 1e-9, 't10 ' + r.t10);
+  G.Game.player.ticketMul = 1.75;
+  r = G.Pickups.ticketRates();
+  ok(Math.abs(r.t1 - 1.75 / 600) < 1e-9); ok(Math.abs(r.t10 - 0.4375) < 1e-9);
+  G.Game.player = null;
+  r = G.Pickups.ticketRates(); ok(Math.abs(r.t1 - 1 / 600) < 1e-9, 'sin jugador, tasa base');
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

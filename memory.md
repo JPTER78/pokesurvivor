@@ -69,6 +69,9 @@ los textos del juego están en español; el inglés sale de un diccionario
   vida/s, reciben +15% daño); los Voladores planean (sin frenazo ni resbalón,
   lava a la mitad, recargas +10%).
 
+- **Tickets del gacha:** 1/600 por derrota y ×10 de jefe 1/4 (`js/entities/pickup.js`,
+  `ticketRates()`); la mejora de tienda Suerte (+15% por nivel, 5) los multiplica.
+
 ## Dónde está cada cosa
 
 | Qué | Dónde |

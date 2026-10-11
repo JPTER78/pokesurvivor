@@ -13,7 +13,8 @@ G.Upgrades = (() => {
     { id: 'xp',     icon: 'book', name: 'Sabiduría',      unit: '+5% experiencia',    max: 8,  base: 100, grow: 1.42 },
     { id: 'coins',  icon: 'coin', name: 'Fortuna',        unit: '+8% Pokémonedas',    max: 8,  base: 120, grow: 1.45 },
     { id: 'moves',  icon: 'cards', name: 'Repertorio',     unit: 'Empiezas con 2 movimientos', max: 1, base: 1500, grow: 1 },
-    { id: 'slots',  icon: 'up',    name: 'Huecos',         unit: '+1 hueco de movimiento (hasta 6)', max: 2, base: 1800, grow: 1.6 }
+    { id: 'slots',  icon: 'up',    name: 'Huecos',         unit: '+1 hueco de movimiento (hasta 6)', max: 2, base: 1800, grow: 1.6 },
+    { id: 'tickets', icon: 'ticket', name: 'Suerte',       unit: '+15% tickets del gacha', max: 5, base: 200, grow: 1.5 }
   ];
   const BY = {};
   for (const u of LIST) BY[u.id] = u;
@@ -37,7 +38,8 @@ G.Upgrades = (() => {
       xpMul: 1 + L('xp') * 0.05,
       coinMul: 1 + L('coins') * 0.08,
       startMoves: 1 + L('moves'),
-      moveSlots: 4 + L('slots')              // huecos de movimiento: 4 de serie, hasta 6
+      moveSlots: 4 + L('slots'),             // huecos de movimiento: 4 de serie, hasta 6
+      ticketMul: 1 + L('tickets') * 0.15     // tickets del gacha que sueltan los enemigos
     };
   }
 

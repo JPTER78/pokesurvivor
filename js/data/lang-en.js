@@ -522,7 +522,7 @@ G.I18n.add({
   '+0.9 de vida regenerada por segundo por nivel.': '+0.9 HP regenerated per second per level.',
   '+30% de radio de recogida por nivel.': '+30% pickup radius per level.',
   '+12% de experiencia ganada por nivel.': '+12% experience gained per level.',
-  'Pasiva': 'Passive', 'Huecos': 'Slots', '+1 hueco de movimiento (hasta 6)': '+1 move slot (up to 6)', 'OBJETO': 'ITEM',
+  'Pasiva': 'Passive', 'Huecos': 'Slots', 'Suerte': 'Luck', '+15% tickets del gacha': '+15% gacha tickets', '+1 hueco de movimiento (hasta 6)': '+1 move slot (up to 6)', 'OBJETO': 'ITEM',
   '¡Vapor!': 'Steam!', '¡Rotura!': 'Shatter!', '¡Detonación!': 'Detonation!', '¡Conducción!': 'Conduction!', '¡Congelación!': 'Freeze!',
   'Tormenta Ígnea': 'Fire Tornado', 'Marea Voltio': 'Volt Tide', 'Alud Glacial': 'Glacial Avalanche', 'Llama Tóxica': 'Toxic Blaze',
   'Golpe Umbrío': 'Phantom Strike', 'Cepo Mandíbula': 'Jaw Lock', 'Maldición Voltio': 'Volt Hex', 'Filos Pétalo': 'Petal Blades',

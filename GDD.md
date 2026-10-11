@@ -234,8 +234,9 @@ Las monedas sirven para las **mejoras**; el gacha va con tickets.
 
 ### 7.2 Mejoras permanentes — de cada Pokémon
 Vitalidad, Fuerza, Zancada, Reflejos, Coraza, Síntesis, Imán, Sabiduría, Fortuna
-**Repertorio (empezar con 2 movimientos)** y **Huecos (+1 hueco de movimiento,
-2 niveles: de 4 huecos de serie a 6)**. Cada Pokémon tiene las suyas y
+**Repertorio (empezar con 2 movimientos)**, **Huecos (+1 hueco de movimiento,
+2 niveles: de 4 huecos de serie a 6)** y **Suerte (+15% tickets del gacha, 5
+niveles)**. Cada Pokémon tiene las suyas y
 sólo cuentan cuando juegas con él (en la pantalla de Mejoras se elige cuál).
 Las que se compraron cuando eran de la cuenta pasaron al compañero de entonces.
 
@@ -270,10 +271,14 @@ siguiente fusión). Logros Fusión y Alquimista.
   título, mejores marcas y las 8 mejores medallas.
 
 ### 7.2b Tickets del gacha
-- **Ticket** (×1): cada Pokémon derrotado tiene 1/400 de soltar uno; los cofres
-  con candado dan 1-3.
-- **Ticket ×10**: los jefes, el legendario de la grieta (2) y, a veces, los
-  cofres con candado.
+- **Ticket** (×1): cada Pokémon derrotado tiene 1/600 de soltar uno (era 1/400:
+  con todos los movimientos a la vez se derrota a más); los cofres con candado
+  dan 1-3.
+- **Ticket ×10**: los jefes (1 de cada 4; era 1 de cada 3), el legendario de la
+  grieta (siempre, +2) y, a veces, los cofres con candado.
+- La mejora permanente **Suerte** (+15% por nivel, 5 niveles) multiplica las
+  dos probabilidades (al máximo, ×1,75: mejor que antes). En grupo cuenta la
+  Suerte del anfitrión, que es quien crea los objetos.
 - En grupo los tickets son del equipo: todos se llevan los que se recogen.
 
 ### 7.3 Gacha — un banner por región
