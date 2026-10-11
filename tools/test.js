@@ -207,6 +207,50 @@ test('tick lanza TODOS los movimientos, cada uno con su recarga', () => {
   ok(pl.moves[0].t > 0 && pl.moves[1].t > 0);
 });
 
+// ---- Task 6
+load('js/systems/levelup.js');
+const fakePl = (types, moves = [], passives = []) => ({
+  mon: { types }, moves, passives, coins: 0, maxHp: 100, hp: 50,
+  hasMove(id) { return this.moves.some(m => m.id === id); },
+  hasPassive(id) { return this.passives.some(p => p.id === id); },
+  passive(id) { return this.passives.find(p => p.id === id) || null; },
+  addMove: () => true, addPassive: () => true, levelPassive: () => true, heal: noop
+});
+test('con todo al máximo y el pool agotado quedan las dos cartas extra (Baya Zidra y Pokémonedas)', () => {
+  const moves = ['tackle', 'quick-attack', 'body-slam', 'hyper-voice', 'substitute'].map(id => G.Moves.instance(id, 5));
+  const passives = ['hp', 'atk', 'spd', 'cd'].map(id => ({ id, lvl: 5, def: G.Passives.BY[id] }));
+  const pl = fakePl(['normal'], moves, passives);
+  for (const m of moves) G.Moves.evolve(m);
+  const cards = G.LevelUp.offer(pl);
+  eq(cards.length, 2, 'sólo quedan las dos de bonus');
+  ok(cards.every(c => c.type === 'bonus'));
+});
+test('pool agotado: no se ofrecen movimientos nuevos; pasivas sí si hay hueco', () => {
+  const pl = fakePl(['normal'], ['tackle', 'quick-attack', 'body-slam', 'hyper-voice', 'substitute'].map(id => G.Moves.instance(id, 1)));
+  const c = G.LevelUp.candidates(pl);
+  eq(c.filter(x => x.type === 'new').length, 0);
+  ok(c.filter(x => x.type === 'passive').length > 0);
+});
+test('la evolución lista sale siempre, en dorado', () => {
+  const m = G.Moves.instance('ember', 5);
+  const pl = fakePl(['fire'], [m], [{ id: 'atk', lvl: 1, def: G.Passives.BY.atk }]);
+  const cards = G.LevelUp.offer(pl);
+  eq(cards[0].type, 'evo'); eq(cards[0].title, 'Ascuas → Llamarada');
+});
+test('pasiva que desbloquea una evolución sale marcada', () => {
+  const m = G.Moves.instance('ember', 5);
+  const pl = fakePl(['fire'], [m], []);
+  const c = G.LevelUp.candidates(pl).find(x => x.type === 'passive' && x.key === 'passive:atk');
+  ok(c && c.color === '#ffd23f' && /Ascuas/.test(c.tag), JSON.stringify(c && c.tag));
+});
+test('nunca más de 6 ataques ni 4 pasivas nuevas', () => {
+  const pl = fakePl(['fire', 'flying'], ['ember', 'flamethrower', 'fire-spin', 'heat-wave', 'gust', 'wing-attack'].map(id => G.Moves.instance(id, 1)),
+                    ['hp', 'atk', 'spd', 'cd'].map(id => ({ id, lvl: 1, def: G.Passives.BY[id] })));
+  const c = G.LevelUp.candidates(pl);
+  eq(c.filter(x => x.type === 'new').length, 0); eq(c.filter(x => x.type === 'passive').length, 0);
+  ok(c.filter(x => x.type === 'up').length >= 6);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

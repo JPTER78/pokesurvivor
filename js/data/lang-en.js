@@ -529,4 +529,5 @@ G.I18n.add({
   '+30% de radio de recogida por nivel.': '+30% pickup radius per level.',
   '+12% de experiencia ganada por nivel.': '+12% experience gained per level.',
   'Pasiva': 'Passive',
+  '+40 Pokémonedas para esta run.': '+40 Pokécoins for this run.', 'Extra': 'Extra', 'Evoluciona con {x}.': 'Evolves with {x}.',
 });

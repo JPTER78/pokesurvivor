@@ -14,11 +14,9 @@ G.RunUI = (() => {
     list.forEach((c, i) => {
       const el = document.createElement('div');
       el.className = 'card';
-      const tag = c.type === 'new'
-        ? `<span class="tag-chip" style="background:${c.color}">Nuevo · ${c.tag}</span>`
-        : c.type === 'up' || c.type === 'evo'
-          ? `<span class="tag-chip" style="background:${c.color}">${c.tag}</span>`
-          : `<span class="tag-chip" style="background:${c.color === '#ffd23f' ? '#ffd23f' : '#9fb1c9'}">${c.tag}</span>`;
+      // Movimientos: chip del color de su tipo. Pasivas y extras: pizarra (dorado si desbloquean una evolución).
+      const chipBg = c.type === 'new' || c.type === 'up' || c.type === 'evo' ? c.color : c.color === '#ffd23f' ? '#ffd23f' : '#9fb1c9';
+      const tag = `<span class="tag-chip" style="background:${chipBg}">${c.type === 'new' ? 'Nuevo · ' : ''}${c.tag}</span>`;
       if (c.type === 'evo') el.classList.add('evo');
       el.innerHTML =
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
