@@ -250,9 +250,12 @@ dorada** (siempre, si está lista). Los 60 de ataque evolucionan; las fusiones n
 Cada legendario vencido da un **vínculo**: fusionas dos movimientos que lleves,
 **los dos al nivel máximo**, en uno nuevo (30 recetas, cada uno de los 60
 movimientos en una sola: Ascuas + Tornado → Tormenta Ígnea, Pistola Agua +
-Impactrueno → Marea Voltio…), que ocupa un solo hueco y nace al máximo de su
-escalera. Sin receta posible, el vínculo da un **Impulso**: un movimiento al
-nivel máximo (y así acercas la siguiente fusión). Logros Fusión y Alquimista.
+Impactrueno → Marea Voltio…), que ocupa un solo hueco. La fusión **empieza en
+nivel 1** pero ya rinde ~15% más que su mejor origen al máximo y evolucionado
+(modelo de `tools/fusion-balance.js`, comprobado en las pruebas), y su escalera
+propia sólo da **+20% daño y −8% recarga por nivel**. Sin receta posible, el
+vínculo da un **Impulso**: un movimiento al nivel máximo (y así acercas la
+siguiente fusión). Logros Fusión y Alquimista.
 
 ### 7.2d Misiones, logros y perfil
 - **3 diarias + 2 semanales** (premio en tickets y monedas); una diaria se puede
@@ -538,7 +541,8 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   con su objetivo) y 4 pasivas con nivel. Fuera los potenciadores (sólo tenían
   sentido con un movimiento activo); Dragoaliento para Dragón. Las teclas 1-6
   enfocan (×1,25). Cuerpo a cuerpo y embestida ×1,4.
-- Los vínculos pasan a ser fusiones (30 recetas fijas, los dos al máximo) o un impulso; reacciones
+- Los vínculos pasan a ser fusiones (30 recetas fijas, los dos al máximo; la fusión
+  nace en nivel 1 con escalera propia de daño y velocidad) o un impulso; reacciones
   elementales automáticas (Vapor, Rotura, Detonación, Conducción, Congelación).
 - Vida enemiga escalada con los ataques que llevas, para que el principio se
   sienta igual.

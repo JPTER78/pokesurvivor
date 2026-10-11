@@ -157,11 +157,11 @@ G.Player = class Player {
   /** Recetas posibles ahora: [{ recipe, a, b }]. */
   fusionOptions() { return G.Fusions.available(this.moves); }
 
-  /** Fusiona los dos movimientos de la receta en uno (al nivel del mayor) y gasta un vínculo. */
+  /** Fusiona los dos movimientos de la receta en uno nuevo (nivel 1, con su propia escalera) y gasta un vínculo. */
   fuse(recipe) {
     const a = this.moves.find(m => m.id === recipe.pair[0]), b = this.moves.find(m => m.id === recipe.pair[1]);
     if (!a || !b) return null;
-    const lvl = Math.max(a.lvl, b.lvl);
+    const lvl = 1;
     const wasFocused = this.focused() === a || this.focused() === b;
     const keep = this.hasItem('choiceband') ? this.focused() : null;
     this.removeMove(a); this.removeMove(b);

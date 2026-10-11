@@ -152,7 +152,7 @@ G.RunUI = (() => {
         el.className = 'card bond';
         el.innerHTML =
           `<div class="ico" style="background:${col}33">${G.Icons.html('move:' + recipe.id, 32)}</div>
-           <div class="txt"><div class="nm">${recipe.name} <span class="tag-chip" style="background:${col}">Nv.${Math.max(a.lvl, b.lvl)}</span></div>
+           <div class="txt"><div class="nm">${recipe.name} <span class="tag-chip" style="background:${col}">Nv.1</span></div>
            <div class="ds">${G.Icons.html('move:' + a.id, 14)} ${a.name} + ${G.Icons.html('move:' + b.id, 14)} ${b.name} · ${recipe.desc}</div></div>
            <div class="key">${i + 1}</div>`;
       } else {

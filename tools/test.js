@@ -291,12 +291,27 @@ test('fuse: quita los dos, mete la fusión al nivel mayor, gasta el vínculo y e
   pl.setFocus(2); pl.bonds = 1;
   const f = pl.fuse(G.Fusions.BY['fire-tornado']);
   eq(pl.moves.map(m => m.id), ['tackle', 'fire-tornado']);
-  eq(f.lvl, 5); ok(f.fused); eq(pl.bonds, 0);
+  eq(f.lvl, 1, 'la fusión empieza en nivel 1'); ok(f.fused); eq(pl.bonds, 0);
   eq(pl.focused().id, 'fire-tornado'); ok(pl.focus < pl.moves.length);
 });
 test('boostMove sube al máximo y gasta el vínculo', () => {
   const pl = mkPlayer(); pl.addMove('ember'); pl.bonds = 1;
   pl.boostMove(pl.moves[0]); eq(pl.moves[0].lvl, 5); eq(pl.bonds, 0);
+});
+test('las fusiones tienen su propia escalera: +20% daño y -8% recarga por nivel', () => {
+  const f = G.Moves.BY_ID['fire-tornado'];
+  eq(f.ups.length, 4); eq(f.ups[0].m, { dmg: 1.2, cd: 0.92 });
+  const i = G.Moves.instance('fire-tornado', 5);
+  ok(Math.abs(i.dmg - f.dmg * 1.2 ** 4) < 1e-6); ok(Math.abs(i.cd - f.cd * 0.92 ** 4) < 1e-6);
+  eq(i.count, f.count, 'la escalera de fusión no toca el número de proyectiles');
+});
+test('una fusión en nivel 1 rinde más que su mejor origen al máximo y evolucionado (modelo de tools/fusion-balance.js)', () => {
+  const bal = require('./fusion-balance.js');
+  for (const f of G.Fusions.LIST) {
+    const best = Math.max(...f.pair.map(id => { const m = G.Moves.instance(id, 5); G.Moves.evolve(m); return bal.power(m); }));
+    const got = bal.power(G.Moves.instance(f.id, 1));
+    ok(got >= best * 1.05 && got <= best * 1.6, f.id + ': ' + got.toFixed(0) + ' frente a ' + best.toFixed(0));
+  }
 });
 test('Pokémonedas se traduce a Pokécoins', () => { eq(G.I18n.t('Pokémonedas'), 'Pokécoins'); });
 test('las fusiones tienen traducción de nombre y descripción', () => {

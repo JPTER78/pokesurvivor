@@ -112,6 +112,14 @@
       { t: '+40% daño',                     m: { dmg: 1.40 } },
       { t: '+30% alcance',                  m: { life: 1.30 } },
       { t: '+3 disparos y +1 perforación',  m: { count: 3, pierce: 1 } }
+    ],
+    // Fusiones (data/fusions.js): nacen en nivel 1 ya por encima de un movimiento
+    // normal al máximo, y cada nivel sólo les da daño y velocidad.
+    fusion: [
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } },
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } },
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } },
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } }
     ]
   };
 
@@ -389,7 +397,7 @@
   const BY_ID = {};
   /** Da de alta un movimiento (los del catálogo y las fusiones de data/fusions.js). No entra en POOL. */
   function register(def) {
-    def.ups = LADDERS[def.kind];
+    def.ups = def.fused ? LADDERS.fusion : LADDERS[def.kind];
     if (!def.ups) throw new Error('movimiento sin escalera: ' + def.id + ' (' + def.kind + ')');
     def.maxLvl = def.ups.length + 1;
     BY_ID[def.id] = def;
