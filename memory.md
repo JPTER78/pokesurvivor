@@ -27,6 +27,9 @@ los textos del juego están en español; el inglés sale de un diccionario
   scripts. Si ves código viejo tras cambiar algo: recarga forzada
   (Ctrl+Shift+R) o en DevTools → Application → Service Workers → Unregister
   y borrar Cache Storage.
+  Además, python http.server no manda cabeceras de caché y Chrome reutiliza los
+  scripts de la caché HTTP: en DevTools → Network marca "Disable cache", o haz
+  fetch(url, { cache: "reload" }) de cada script antes de recargar.
 - El sonido se guarda en `localStorage` (`ps.audio`); el juego arranca con
   música tras el primer clic.
 
@@ -43,6 +46,7 @@ los textos del juego están en español; el inglés sale de un diccionario
   existen. Cuerpo a cuerpo y embestida pegan ×1,4 de base.
   La embestida es de ida y vuelta (Player.startLunge): golpea el camino,
   invulnerable, y el Pokémon regresa a su sitio.
+  La cámara sigue pl.anchor(): durante la embestida, el origen (no da bandazos).
 - **Fusiones (vínculos):** cada legendario vencido da un vínculo. Fusiona dos
   movimientos que lleves, **los dos al nivel máximo**, en uno nuevo que ocupa
   un hueco. 30 recetas en `js/data/fusions.js`, cada uno de los 60 movimientos

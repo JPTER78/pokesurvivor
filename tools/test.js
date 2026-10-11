@@ -463,6 +463,17 @@ test('las descripciones de las embestidas tienen traducción', () => {
   for (const id of ['quick-attack', 'aerial-ace', 'extreme-dive']) { const d = G.Moves.BY_ID[id].desc; ok(/vuelves/.test(d), id + ' no dice que vuelve'); ok(G.I18n.t(d) !== d, id); }
 });
 
+test('la cámara se ancla al origen durante la embestida', () => {
+  const pl = mkPlayer(); pl.x = 40; pl.y = 20;
+  eq(pl.anchor(), { x: 40, y: 20 });
+  pl.startLunge(1, 0, 100);
+  for (let i = 0; i < 4; i++) pl.update(0.02);
+  ok(pl.x > 45, 'no se ha movido: ' + pl.x);
+  eq(pl.anchor(), { x: 40, y: 20 }, 'la cámara debe quedarse en el origen');
+  for (let i = 0; i < 40; i++) pl.update(0.02);
+  eq(pl.anchor(), { x: 40, y: 20 }); ok(!pl.lunge);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

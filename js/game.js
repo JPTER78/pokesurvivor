@@ -485,7 +485,7 @@ G.Game = (() => {
       pl.update(dt);
       G.EnemyMgr.update(dt * 0.3, pl);
       G.FX.update(dt);
-      G.Camera.follow(pl.x, pl.y, dt);
+      { const a = pl.anchor(); G.Camera.follow(a.x, a.y, dt); }
       if (deathT > 1.3) { deathT = 0; endRun(true); }
       return;
     }
@@ -506,7 +506,7 @@ G.Game = (() => {
       for (const p of G.Coop.puppets()) { p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time); }
       if (pl.dead) reviveTick(dt);
     }
-    G.Camera.follow(pl.x, pl.y, dt);
+    { const a = pl.anchor(); G.Camera.follow(a.x, a.y, dt); }
     G.World.update(dt, G.Camera);
 
     const all = everyone();

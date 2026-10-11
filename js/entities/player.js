@@ -240,6 +240,9 @@ G.Player = class Player {
     this.attackFace = Math.max(this.attackFace, dur);
   }
 
+  /** Punto que sigue la cámara: durante una embestida, el origen (si no, la cámara da bandazos). */
+  anchor() { return this.lunge ? { x: this.lunge.x0, y: this.lunge.y0 } : { x: this.x, y: this.y }; }
+
   // ---------------- daño y curación ----------------
   /** @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual */
   hurt(amount, type = null) {
