@@ -236,6 +236,8 @@ G.Player = class Player {
       eff = G.Types.label(k);
       amount *= k * G.Weather.mult(type);
     }
+    // Nadando se recibe algo más de daño.
+    if (this.inLiquid) { const le = G.World.liquidEffect(this.mon.types); if (le.dmgTaken) amount *= le.dmgTaken; }
     const d = Math.max(1, amount * (1 - this.reduction));
     this.hp -= d;
     this.invuln = 0.45;
@@ -332,8 +334,9 @@ G.Player = class Player {
 
     // --- terreno líquido ---
     this.inLiquid = G.World.isLiquid(this.x, this.y);
+    const le = this.inLiquid ? G.World.liquidEffect(this.mon.types) : {};
+    this.hover = !!le.hover;
     if (this.inLiquid) {
-      const le = G.World.liquidEffect(this.mon.types);
       if (le.dmg) {
         this.lavaTick -= dt;
         if (this.lavaTick <= 0) {
@@ -341,6 +344,13 @@ G.Player = class Player {
           this.hurt(Math.max(le.flat, this.maxHp * le.dmg * 0.5));
           G.FX.burst(this.x, this.y - 4, le.color, 5, 70);
         }
+      } else if (le.regen) {
+        // Nadar (tipo Agua): cura un poco y suelta burbujas.
+        this.hp = Math.min(this.maxHp, this.hp + le.regen * dt);
+        if (Math.random() < dt * 5) G.FX.burst(this.x + G.U.rand(-this.r, this.r), this.y, '#b3defa', 1, 30);
+      } else if (le.hover) {
+        // Planear (tipo Volador): plumas sueltas al moverse.
+        if (this.walking && Math.random() < dt * 4) G.FX.px(this.x + G.U.rand(-this.r, this.r), this.y - 2, '#ffffff', { vy: -14, life: 0.3 });
       } else if (this.walking && Math.random() < dt * 8) {
         G.FX.burst(this.x, this.y, le.slide ? '#ffffff' : '#b3defa', 2, 40);
       }

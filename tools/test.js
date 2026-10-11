@@ -348,6 +348,31 @@ test('powerK: 1 ataque → ×1; 6 ataques → ×3 (jefe ×2,5); listas vacías c
   ok(Math.abs(G.Spawner.powerK([mk(2), mk(4)]) - 1.8) < 1e-9, 'media de 3 ataques');
 });
 
+// ---- Task 11
+load('js/world/liquid.js');
+test('agua: los de tipo agua nadan; los voladores planean; el resto se frena', () => {
+  eq(G.Liquid.effect('water', ['normal']).slow, 0.6);
+  const sw = G.Liquid.effect('water', ['water', 'ground']);
+  ok(sw.swim && sw.speed === 1.15 && sw.regen === 1 && sw.dmgTaken === 1.15);
+  const hv = G.Liquid.effect('swamp', ['flying', 'normal']);
+  ok(hv.hover && !hv.slow && !hv.slide);
+});
+test('lava: fuego inmune, volador la mitad, agua se quema igual', () => {
+  eq(G.Liquid.effect('lava', ['fire']), {});
+  const hv = G.Liquid.effect('lava', ['flying']);
+  ok(hv.hover && Math.abs(hv.dmg - 0.03) < 1e-9 && hv.flat === 2.5);
+  eq(G.Liquid.effect('lava', ['water']).dmg, 0.06);
+});
+test('hielo: el de hielo no resbala, el volador tampoco, el resto sí', () => {
+  eq(G.Liquid.effect('ice', ['ice']), {});
+  ok(!G.Liquid.effect('ice', ['flying']).slide);
+  ok(G.Liquid.effect('ice', ['fire']).slide);
+});
+test('cdK sube un 10% al planear', () => {
+  const pl = mkPlayer(['flying']); pl.cdMul = 1;
+  eq(pl.cdK, 1); pl.hover = true; ok(Math.abs(pl.cdK - 1.1) < 1e-9);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;
