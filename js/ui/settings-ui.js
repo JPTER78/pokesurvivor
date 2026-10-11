@@ -117,9 +117,9 @@ G.SettingsUI = (() => {
   function renderAccount(box) {
     const st = G.DB.guest ? 'guest' : G.DB.syncState;
     const SYNC = { ok: 'Guardado en la nube', syncing: 'Guardando…', pending: 'Pendiente de subir (cada 30 s como mucho)',
-                   offline: 'Sin conexión: se subirá al volver', local: 'Guardado sólo en este navegador', guest: 'Invitado: no se guarda' };
+                   offline: 'Sin conexión: se subirá al volver', local: 'Guardado sólo en este navegador', guest: 'Invitado: guardado en este dispositivo' };
     if (G.DB.guest) {
-      box.innerHTML = section('Cuenta', 'Estás jugando como <b>invitado</b>: tu progreso no se guarda al salir.')
+      box.innerHTML = section('Cuenta', 'Estás jugando como <b>invitado</b>: tu progreso se guarda en este dispositivo, pero se borra si cierras la sesión o entras con una cuenta.')
         + `<button class="btn gold" id="set-login">Crear cuenta o entrar</button>`;
       return;
     }

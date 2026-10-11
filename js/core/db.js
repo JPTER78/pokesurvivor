@@ -22,11 +22,14 @@
  *       ps.save.<clave>  partida de esa cuenta
  *       ps.session       última cuenta con sesión iniciada
  *
- * El modo invitado juega con una partida en memoria que no se guarda.
+ *   INVITADO
+ *     Sin cuenta: la partida se guarda igualmente en este dispositivo
+ *     (ps.guest), para que un refresco accidental no la borre. Se pierde al
+ *     cerrar sesión a propósito o al entrar con una cuenta de verdad.
  */
 G.DB = (() => {
   const K_ACC = 'ps.accounts', K_SES = 'ps.session', K_SAVE = 'ps.save.';
-  const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.';
+  const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.', K_GUEST = 'ps.guest';
   const VERSION = 3;
   const START_COINS = 500;
   const SDK = 'https://www.gstatic.com/firebasejs/13.0.0/';
@@ -442,11 +445,11 @@ G.DB = (() => {
     readyP = (async () => {
       try { if (await initCloud()) mode = 'cloud'; }
       catch (e) { console.warn('[DB] sin nube:', e.message); localReason = 'error'; mode = 'local'; }
-      if (mode === 'local') { setSync('local'); return restoreLocal(); }
+      if (mode === 'local') { setSync('local'); return restoreLocal() || resumeGuest(); }
       const u = await new Promise(res => { const off = auth.onAuthStateChanged(x => { off(); res(x); }); });
-      if (!u) return false;
+      if (!u) return resumeGuest();
       try { await openCloud(u); return true; }
-      catch (e) { console.warn('[DB] no se pudo abrir la partida:', e.code || e.message); return false; }
+      catch (e) { console.warn('[DB] no se pudo abrir la partida:', e.code || e.message); return resumeGuest(); }
     })();
     return readyP;
   }
@@ -499,13 +502,26 @@ G.DB = (() => {
     return { ok: true, isNew: true };
   }
 
+  /** Si habías dejado una partida de invitado a medias (un refresco, cerrar la
+   * pestaña sin salir...), la recupera para no empezar de cero. */
+  function resumeGuest() {
+    const s = read(K_GUEST);
+    if (!s) return false;
+    user = 'Invitado'; key = null; guest = true; uid = null;
+    save = migrate(s, 'Invitado');
+    return true;
+  }
+
   /**
-   * Guarda la partida actual (no hace nada en modo invitado).
+   * Guarda la partida actual. Como invitado no hay cuenta, pero se guarda
+   * igual en este navegador (ps.guest) para sobrevivir a un refresco.
    * @param urgent  lo que ha costado algo (tiradas del gacha, mejoras): se sube antes
    */
   function commit(urgent = false) {
-    if (guest || !key || !save) return false;
+    if (!save) return false;
     save.updated = Date.now();
+    if (guest) return write(K_GUEST, save);
+    if (!key) return false;
     if (mode === 'local') return write(K_SAVE + key, save);
     write(K_CLOUD + uid, save);
     pending = true;
@@ -519,11 +535,13 @@ G.DB = (() => {
 
   async function logout() {
     for (const fn of leaveHooks) { try { await fn('logout'); } catch (e) { /* nada */ } }
-    if (mode === 'cloud' && !guest && save) {
+    if (guest) {
+      remove(K_GUEST);
+    } else if (mode === 'cloud' && save) {
       if (pending) { try { await pushNow(); } catch (e) { /* queda la copia local */ } }
       stopListening();
       try { await auth.signOut(); } catch (e) { /* nada */ }
-    } else if (mode === 'local' && !guest) {
+    } else if (mode === 'local') {
       commit();
       remove(K_SES);
     }
