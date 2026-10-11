@@ -116,6 +116,54 @@ test('las descripciones de las pasivas tienen traducción', () => {
   for (const p of G.Passives.LIST) ok(G.I18n.t(p.desc) !== p.desc, p.id);
 });
 
+// ---- Task 4
+load('js/entities/player.js');
+const mkPlayer = (types = ['fire']) => new G.Player({ dex: 4, name: 'Charmander', types, hp: 100, spd: 100, atk: 1 }, {}, false);
+test('hasta 6 movimientos, el primero queda enfocado', () => {
+  const pl = mkPlayer();
+  for (const id of ['ember', 'flamethrower', 'fire-spin', 'heat-wave', 'tackle', 'quick-attack']) ok(pl.addMove(id), id);
+  ok(!pl.addMove('body-slam'), 'séptimo');
+  eq(pl.moves.length, 6); eq(pl.focus, 0); eq(pl.focused().id, 'ember');
+  ok(!pl.addMove('ember'), 'repetido');
+});
+test('enfocar: 1-6 y ciclar, ×1,25 al enfocado', () => {
+  const pl = mkPlayer();
+  pl.addMove('ember'); pl.addMove('tackle');
+  pl.setFocus(1); eq(pl.focused().id, 'tackle');
+  eq(pl.dmgMul(pl.moves[1]), 1.25); eq(pl.dmgMul(pl.moves[0]), 1);
+  pl.cycle(1); eq(pl.focus, 0); pl.cycle(-1); eq(pl.focus, 1);
+  pl.setFocus(5); eq(pl.focus, 1, 'índice fuera de rango se ignora');
+});
+test('Cinta Elección impide cambiar el enfoque', () => {
+  const pl = mkPlayer(); pl.addMove('ember'); pl.addMove('tackle');
+  pl.item = 'choiceband';
+  pl.setFocus(1); eq(pl.focus, 0);
+});
+test('pasivas: hasta 4, con nivel hasta 5, y hasPassive', () => {
+  const pl = mkPlayer();
+  ok(pl.addPassive('atk')); ok(!pl.addPassive('atk'), 'repetida');
+  ok(pl.hasPassive('atk')); ok(!pl.hasPassive('spd'));
+  ok(Math.abs(pl.atkMul - 1.1) < 1e-9);
+  for (let i = 0; i < 4; i++) pl.levelPassive(pl.passive('atk'));
+  eq(pl.passive('atk').lvl, 5); ok(!pl.levelPassive(pl.passive('atk')), 'tope');
+  ok(pl.addPassive('spd')); ok(pl.addPassive('cd')); ok(pl.addPassive('def')); ok(!pl.addPassive('rgn'), 'quinta');
+});
+test('removeMove recoloca el enfoque', () => {
+  const pl = mkPlayer(); pl.addMove('ember'); pl.addMove('tackle'); pl.addMove('fire-spin');
+  pl.setFocus(2); pl.removeMove(pl.moves[2]);
+  eq(pl.moves.length, 2); eq(pl.focus, 1);
+});
+test('packMoves / parseMoves ida y vuelta, y basura → null', () => {
+  const pl = mkPlayer(); pl.addMove('ember'); pl.addMove('tackle'); G.Moves.levelUp(pl.moves[1]); G.Moves.evolve(pl.moves[1]);
+  const s = G.Player.packMoves(pl.moves);
+  eq(s, 'ember:1:0,tackle:2:1');
+  const back = G.Player.parseMoves(s);
+  eq(back.map(m => [m.id, m.lvl, !!m.evolved]), [['ember', 1, false], ['tackle', 2, true]]);
+  eq(G.Player.parseMoves('nope:x'), null); eq(G.Player.parseMoves(''), null);
+  const legacy = G.Player.parseMoves('ember');          // formato viejo: sólo el id
+  eq(legacy.length, 1); eq(legacy[0].id, 'ember'); eq(legacy[0].lvl, 1);
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;
