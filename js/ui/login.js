@@ -4,6 +4,15 @@ G.LoginUI = (() => {
   let mode = 'login';
 
   function init() {
+    const languageGroup = document.querySelector('#login-language');
+    if (languageGroup) {
+      const labels = { es: 'Idioma', en: 'Language', 'zh-HK': '語言' };
+      languageGroup.setAttribute('aria-label', labels[G.I18n.lang] || 'Language');
+    }
+    document.querySelectorAll('#login-language [data-lang]').forEach(b => {
+      b.classList.toggle('on', b.dataset.lang === G.I18n.lang);
+      b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); };
+    });
     document.querySelectorAll('#scr-login .tab').forEach(t => {
       t.onclick = () => setMode(t.dataset.tab);
     });

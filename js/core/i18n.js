@@ -1,6 +1,6 @@
-/* ============ i18n.js — idiomas (español / inglés) ============
- * El juego está escrito en español. Si el idioma es inglés, todo texto que
- * se enseña se traduce con el diccionario de js/data/lang-en.js, sin tener que
+/* ============ i18n.js — idiomas (español / inglés / chino tradicional) ============
+ * El juego está escrito en español. El texto visible usa el diccionario del idioma activo:
+ * js/data/lang-en.js o los archivos lang-zh-hk-*.js, sin tener que
  * tocar cada pantalla:
  *   - el DOM (menús, cartas, avisos...) con un MutationObserver,
  *   - el canvas (HUD, avisos, números) envolviendo fillText/strokeText,
@@ -13,8 +13,8 @@
  *   3. trozos dentro de un texto más largo, sólo palabras enteras
  * Lo que escriben los jugadores (apodos) va marcado con translate="no".
  *
- * Idioma: el elegido en Ajustes; si no, /en/ en la dirección o el del navegador
- * (español si el navegador está en español, inglés en cualquier otro caso).
+ * Idioma: preferencia guardada; si no, /en/ en la dirección y después el idioma del navegador.
+ * El chino tradicional se selecciona en navegadores chinos; los navegadores en español conservan el español y los demás usan inglés.
  */
 G.I18n = (() => {
   const KEY = 'ps.lang';
@@ -22,7 +22,7 @@ G.I18n = (() => {
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
   const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
   const nav = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-  const lang = saved === 'es' || saved === 'en' ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const lang = saved === 'es' || saved === 'en' || saved === 'zh-HK' ? saved : byPath || (nav.startsWith('es') ? 'es' : nav.startsWith('zh') ? 'zh-HK' : 'en');
   document.documentElement.lang = lang;
 
   const exact = new Map(), exactLow = new Map();
@@ -32,7 +32,8 @@ G.I18n = (() => {
   const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   /** Añade traducciones { 'texto en español': 'English text' }. */
-  function add(dict) {
+  function add(dict, locale = 'en') {
+    if (lang !== locale) return;
     const fr = [];
     for (const [es, en] of Object.entries(dict)) {
       if (!en || es === en) continue;

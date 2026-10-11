@@ -93,6 +93,14 @@
       <div class="t2">Mundo Misterioso</div>
     </div>
     <p class="login-tag">Sobrevive a las hordas con tu compañero Pokémon · gratis, en PC y móvil</p>
+    <div class="center" style="margin:0 0 12px">
+      <div class="sub" id="login-language-label">Idioma</div>
+      <div class="chips" id="login-language" role="group" aria-label="Language" translate="no" style="justify-content:center">
+        <button class="chip" data-lang="es">Español</button>
+        <button class="chip" data-lang="en">English</button>
+        <button class="chip" data-lang="zh-HK">繁體中文（香港）</button>
+      </div>
+    </div>
     <div class="tabs">
       <div class="tab on" data-tab="login">Entrar</div>
       <div class="tab" data-tab="register">Crear cuenta</div>
@@ -277,12 +285,12 @@
   (function () {
     var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
     var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-    var l = s === 'es' || s === 'en' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('es') === 0 ? 'es' : 'en'));
+    var l = s === 'es' || s === 'en' || s === 'zh-HK' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('es') === 0 ? 'es' : (n.indexOf('zh') === 0 ? 'zh-HK' : 'en')));
     document.documentElement.lang = l;
-    if (l === 'en') {
+    if (l === 'en' || l === 'zh-HK') {
       var p = document.querySelectorAll('#boot p');
-      p[0].textContent = 'A Pokémon survival game, free in your browser and on mobile.';
-      p[1].textContent = 'Loading…';
+      p[0].textContent = l === 'en' ? 'A Pokémon survival game, free in your browser and on mobile.' : '寶可夢生存遊戲，可在瀏覽器和手機免費遊玩。';
+      p[1].textContent = l === 'en' ? 'Loading…' : '載入中…';
     }
   })();
 </script>
@@ -508,6 +516,9 @@
 <script defer src="js/core/util.js"></script>
 <script defer src="js/core/i18n.js"></script>
 <script defer src="js/data/lang-en.js"></script>
+<script defer src="js/data/lang-zh-hk-game.js"></script>
+<script defer src="js/data/lang-zh-hk-ui.js"></script>
+<script defer src="js/data/lang-zh-hk-extra.js"></script>
 <script defer src="js/core/settings.js"></script>
 <script defer src="js/data/music.js"></script>
 <script defer src="js/data/pokedex.js"></script>
