@@ -87,6 +87,9 @@ export default {
       const r = await env.MAU.get(env.MAU.idFromName(monthKey())).fetch('https://mau/?seed=' + (n > 0 ? n : 0));
       return new Response(r.body, { status: r.status, headers: { 'content-type': 'application/json' } });
     }
+    // Sin tope (LIMIT = 0): no se cuenta nada ni se despierta al Durable Object.
+    if (LIMIT <= 0 && new URL(req.url).pathname.startsWith('/mau') && new URL(req.url).pathname !== '/mau/seed')
+      return new Response('{"open":true,"v":3}', { headers: { ...h, 'content-type': 'application/json', 'cache-control': 'no-store' } });
     if (new URL(req.url).pathname === '/mau/new') {
       if (!env.MAU_SECRET || req.headers.get('X-PS-Secret') !== env.MAU_SECRET) return new Response('{"error":"no autorizado"}', { status: 401 });
       const uid = new URL(req.url).searchParams.get('uid') || '';
@@ -106,7 +109,10 @@ export default {
       const r = await stub.fetch('https://mau/?uid=' + encodeURIComponent(uid));
       return new Response(r.body, { status: r.status, headers: { ...h, 'content-type': 'application/json', 'cache-control': 'no-store' } });
     }
-    if (new URL(req.url).pathname === '/online') {
+    // El contador "jugando ahora" ya no está en el juego: las pestañas antiguas
+    // reciben un 404 al momento, sin tocar el Durable Object.
+    if (new URL(req.url).pathname === '/online') return new Response('{}', { status: 404, headers: h });
+    if (new URL(req.url).pathname === '/online-old') {
       // ?s=1: el recuento por muestreo (1 de cada 10 pestañas avisa); sin él, el antiguo.
       const r = await env.ONLINE.get(env.ONLINE.idFromName(new URL(req.url).searchParams.get('s') ? 'sample' : 'global')).fetch(req);
       return new Response(r.body, { status: r.status, headers: { ...h, 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -161,7 +167,11 @@ export class Online {
 
 // ---------------- tope de cuentas del mes ----------------
 
-const LIMIT = 48000;          // por debajo de las 50.000 gratis (margen por el retraso)
+// Tope de cuentas del mes. 0 = sin tope (desde el 11-10-2026: se aceptan todas;
+// pasadas las 50.000 gratis Firebase cobra ~0,0055 $ por cuenta). Para volver a
+// ponerlo: un número (p. ej. 48000) y `npx wrangler deploy`. Se sigue contando igual.
+const LIMIT = 0;
+const full = n => LIMIT > 0 && n >= LIMIT;
 
 /** Mes de facturación de Google (hora del Pacífico, aproximada). */
 function monthKey() { return new Date(Date.now() - 8 * 3600e3).toISOString().slice(0, 7); }
@@ -177,11 +187,11 @@ export class Mau {
     if (seed > n) { n = seed; await this.ctx.storage.put('n', n); }
     const known = uid && (await this.ctx.storage.get('u:' + uid));
     // Cuenta NUEVA con el tope alcanzado: no se apunta y se dice que no.
-    if (q.get('new') && !known && n >= LIMIT) return new Response(JSON.stringify({ n, limit: LIMIT, open: false }));
+    if (q.get('new') && !known && full(n)) return new Response(JSON.stringify({ n, limit: LIMIT, open: false }));
     if (uid && !known) {
       n++;
       await this.ctx.storage.put({ ['u:' + uid]: 1, n });
     }
-    return new Response(JSON.stringify({ n, limit: LIMIT, open: n < LIMIT, v: 2 }));
+    return new Response(JSON.stringify({ n, limit: LIMIT, open: !full(n), v: 3 }));
   }
 }

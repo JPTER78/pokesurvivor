@@ -15,6 +15,10 @@
  * token va en el cuerpo como texto (así el navegador no hace la consulta
  * previa OPTIONS, que también contaría).
  * Si el Worker no responde, no se bloquea nada.
+ *
+ * APAGADO desde el 11-10-2026: se aceptan todas las cuentas (sin tope) y así no
+ * se gastan llamadas al Worker. Para volver a encenderlo: OFF = false, un
+ * LIMIT en cloudflare/turn-worker.js y volver a activar el portero.
  */
 G.Signups = (() => {
   const URL = 'https://turn.pokesurvivor.com/mau';
@@ -26,7 +30,8 @@ G.Signups = (() => {
   } catch (e) { /* nada */ }
 
   const month = () => new Date(Date.now() - 8 * 3600e3).toISOString().slice(0, 7);
-  const enabled = () => /^https?:$/.test(location.protocol) && !(G.FIREBASE_CONFIG || {}).emulator;
+  const OFF = true;
+  const enabled = () => !OFF && /^https?:$/.test(location.protocol) && !(G.FIREBASE_CONFIG || {}).emulator;
   const reportedKey = uid => 'ps.mau.' + uid + '.' + month();
 
   function remember(j) {
