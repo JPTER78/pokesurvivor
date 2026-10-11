@@ -336,6 +336,18 @@ test('las etiquetas de reacción tienen traducción', () => {
   for (const r of G.Reactions.LIST) ok(G.I18n.t(r.label) !== r.label, r.label);
 });
 
+// ---- Task 10
+load('js/systems/spawner.js');
+test('powerK: 1 ataque → ×1; 6 ataques → ×3 (jefe ×2,5); listas vacías cuentan como 1', () => {
+  const mk = n => ({ moves: new Array(n).fill(0), dead: false });
+  eq(G.Spawner.powerK([mk(1)]), 1);
+  ok(Math.abs(G.Spawner.powerK([mk(6)]) - 3) < 1e-9);
+  ok(Math.abs(G.Spawner.powerK([mk(6)], true) - 2.5) < 1e-9);
+  eq(G.Spawner.powerK([]), 1);
+  eq(G.Spawner.powerK([{ moves: [] }, mk(1)]), 1);
+  ok(Math.abs(G.Spawner.powerK([mk(2), mk(4)]) - 1.8) < 1e-9, 'media de 3 ataques');
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;
