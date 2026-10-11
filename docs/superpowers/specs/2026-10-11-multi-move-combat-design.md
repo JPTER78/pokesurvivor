@@ -178,11 +178,32 @@ existing `Coop.hit` path.
 
 ### 3.5 Balance
 
+**Close range bonus.** Melee and dash moves demand being next to the enemy,
+which costs HP in a horde, so they pay better: both kinds get base damage ×1.4
+in the catalogue (every melee/dash row, fusions included), their melee ladder
+steps grow from +40% to +50%, and ¡Rotura! triggers for them from slow ≥ 0.25
+instead of 0.4. Aura, nova, mine and trail are mid range and stay as they are.
+
 Enemy HP at spawn is multiplied by `powerK = 1 + 0.4 × (attacks − 1)` where
 `attacks` is the average number of attack moves across living players (host
 decides). Bosses use `1 + 0.3 × (attacks − 1)`. XP per enemy is unchanged, so
 the level curve stays roughly where it is. Fusions count as one move; their
 strength is the reward for the legendary.
+
+### 3.5b Water and flying privileges on liquid
+
+Today water types swim through water and swamp without the slow; flying types
+get nothing. New rules, applied in `Player.spd`, `Player.update` and
+`World.liquidEffect(types)`:
+
+| Type | In water / swamp | Small debuff while there |
+|---|---|---|
+| Water | no slow, speed ×1.15, +1 HP/s ("nada") | takes 15% more damage |
+| Flying | hovers: no slow, no slide on ice, half lava damage | cooldowns 10% longer (busy flapping) |
+
+Both privileges show as a small bubble/feather particle under the Pokémon
+while active, so the player can tell the terrain is helping. Enemies keep the
+current rule (fliers ignore terrain). Ice-type immunity to sliding stays.
 
 ### 3.6 Code structure
 
@@ -253,7 +274,8 @@ passives so the static moves page can list them. The GDD decision log gets a
   at least one Pokémon in `G.DEX` through `poolFor`; passive ids are unique and
   match `EVO` conditions; every Spanish string introduced in the new files has
   an EN entry. Run before every commit of this work.
-- **Logic tests** in the same runner with a stub `G`: `aimFor` priority for
+- **Logic tests** in the same runner with a stub `G`: `liquidEffect` for
+  water, flying and plain types; `aimFor` priority for
   ranged vs melee; `LevelUp.offer` never returns an empty hand and never
   exceeds 6 attacks / 4 passives; `powerK` values; reaction table triggers and
   per-enemy cooldown; coop state string round-trip.
