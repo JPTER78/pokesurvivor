@@ -7,7 +7,6 @@
  *   orbit       orbes que giran alrededor mientras el movimiento está activo
  *   nova        ráfaga radial en todas las direcciones
  *   aura        círculo de daño continuo alrededor
- *   buff        potencia al propio Pokémon (acumulable, caduca)
  *   ---- desde 2026-10-10 (mismos gráficos, otra forma de jugar) ----
  *   boomerang   sale hacia el enemigo y vuelve a ti, golpeando a la ida y a la vuelta
  *   chain       golpea a uno y salta a los `count` siguientes más cercanos
@@ -18,7 +17,8 @@
  *   trail       vas dejando charcos que dañan a lo que los pisa
  *   cone        muchos disparos cortos en abanico (aliento, chorro...)
  *
- * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
+ * Todos los movimientos aprendidos se lanzan a la vez, cada uno con su recarga;
+ * el ENFOCADO (1-6 / Q / E) pega un 25% más y manda en el apuntado.
  *
  * El icono no se guarda aquí: G.Icons lo compone (emblema del tipo +
  * insignia de la familia), ver ui/icons.js.
@@ -36,10 +36,10 @@
       { t: '+1 proyectil y +1 perforación',   m: { count: 1, pierce: 1, spread: 1.2 } }
     ],
     melee: [
-      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+50% daño',                     m: { dmg: 1.50 } },
       { t: '+25% alcance',                  m: { radius: 1.25 } },
       { t: '-25% recarga',                  m: { cd: 0.75 } },
-      { t: 'Golpea en 360° y +50% daño',    m: { arc: 9, dmg: 1.50 } }
+      { t: 'Golpea en 360° y +60% daño',    m: { arc: 9, dmg: 1.60 } }
     ],
     beam: [
       { t: '+45% daño',                     m: { dmg: 1.45 } },
@@ -96,7 +96,7 @@
       { t: '+50% duración y +40% daño',     m: { dur: 1.50, dmg: 1.40 } }
     ],
     dash: [
-      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+50% daño',                     m: { dmg: 1.50 } },
       { t: '+30% distancia',                m: { radius: 1.30 } },
       { t: '-25% recarga',                  m: { cd: 0.75 } },
       { t: '+60% daño y más ancho',         m: { dmg: 1.60, width: 1.40 } }
@@ -113,35 +113,27 @@
       { t: '+30% alcance',                  m: { life: 1.30 } },
       { t: '+3 disparos y +1 perforación',  m: { count: 3, pierce: 1 } }
     ],
-    buff: [
-      { t: '+1 acumulación máxima',         m: { stacks: 1 } },
-      { t: '+40% potencia',                 m: { amount: 1.40 } },
-      { t: '+50% duración',                 m: { dur: 1.50 } },
-      { t: '+1 acumulación y +40% potencia', m: { stacks: 1, amount: 1.40 } }
+    // Fusiones (data/fusions.js): nacen en nivel 1 ya por encima de un movimiento
+    // normal al máximo, y cada nivel sólo les da daño y velocidad.
+    fusion: [
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } },
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } },
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } },
+      { t: '+20% daño y -8% recarga',       m: { dmg: 1.20, cd: 0.92 } }
     ]
   };
 
   const RAW = [
     // ---------------- NORMAL (pool común a todos) ----------------
+    // Cuerpo a cuerpo y embestida: ×1,4 de daño base (hay que pegarse al enemigo).
     { id: 'tackle', name: 'Placaje', type: 'normal', kind: 'melee',
       desc: 'Embiste en arco a todo lo que tengas delante.',
-      cd: 0.50, dmg: 13, radius: 48, arc: 1.7, knock: 90 },
+      cd: 0.50, dmg: 18, radius: 48, arc: 1.7, knock: 90 },
 
     { id: 'quick-attack', name: 'Ataque Rápido', type: 'normal', kind: 'dash',
-      desc: 'Cruzas como un rayo hacia el enemigo y golpeas todo el camino.',
-      cd: 0.75, dmg: 20, radius: 110, width: 34, knock: 40 },
+      desc: 'Te lanzas como un rayo hacia el enemigo, golpeas todo el camino y vuelves a tu sitio.',
+      cd: 0.75, dmg: 28, radius: 110, width: 34, knock: 40 },
 
-    { id: 'swords-dance', name: 'Danza Espada', type: 'normal', kind: 'buff',
-      desc: 'No hace daño: acumula ATAQUE mientras esté activo.',
-      cd: 0.85, stat: 'atk', amount: 0.13, dur: 7, stacks: 5 },
-
-    { id: 'agility', name: 'Agilidad', type: 'normal', kind: 'buff',
-      desc: 'No hace daño: acumula VELOCIDAD mientras esté activo.',
-      cd: 0.85, stat: 'spd', amount: 0.10, dur: 7, stacks: 5 },
-
-    { id: 'harden', name: 'Fortaleza', type: 'normal', kind: 'buff',
-      desc: 'No hace daño: acumula DEFENSA mientras esté activo.',
-      cd: 0.85, stat: 'def', amount: 0.07, dur: 7, stacks: 5 },
 
     // ---------------- FUEGO ----------------
     { id: 'ember', name: 'Ascuas', type: 'fire', kind: 'projectile',
@@ -173,14 +165,11 @@
       desc: 'Cañonazo de agua lento pero devastador.',
       cd: 1.50, dmg: 29, radius: 250, width: 30 },
 
-    { id: 'aqua-ring', name: 'Acua Aro', type: 'water', kind: 'buff',
-      desc: 'No hace daño: acumula REGENERACIÓN de vida.',
-      cd: 0.90, stat: 'regen', amount: 1.6, dur: 8, stacks: 4 },
 
     // ---------------- PLANTA ----------------
     { id: 'vine-whip', name: 'Látigo Cepa', type: 'grass', kind: 'melee',
       desc: 'Látigos de largo alcance en arco amplio.',
-      cd: 0.62, dmg: 16, radius: 68, arc: 1.3, knock: 60 },
+      cd: 0.62, dmg: 22, radius: 68, arc: 1.3, knock: 60 },
 
     { id: 'razor-leaf', name: 'Hoja Afilada', type: 'grass', kind: 'boomerang',
       desc: 'Dos hojas que van y vuelven cortando a la ida y a la vuelta.',
@@ -236,12 +225,12 @@
 
     { id: 'wing-attack', name: 'Ataque Ala', type: 'flying', kind: 'melee',
       desc: 'Barrido de alas amplio que empuja.',
-      cd: 0.55, dmg: 14, radius: 58, arc: 1.9, knock: 70 },
+      cd: 0.55, dmg: 20, radius: 58, arc: 1.9, knock: 70 },
 
     // ---------------- NORMAL (extra) ----------------
     { id: 'body-slam', name: 'Golpe Cuerpo', type: 'normal', kind: 'melee',
       desc: 'Placaje con todo el peso: lento, corto y brutal.',
-      cd: 0.95, dmg: 30, radius: 46, arc: 2.2, knock: 140 },
+      cd: 0.95, dmg: 42, radius: 46, arc: 2.2, knock: 140 },
 
     { id: 'hyper-voice', name: 'Vozarrón', type: 'normal', kind: 'nova',
       desc: 'Onda sonora que sale en todas direcciones.',
@@ -264,7 +253,7 @@
     // ---------------- BICHO ----------------
     { id: 'bug-bite', name: 'Picadura', type: 'bug', kind: 'melee',
       desc: 'Mordisco rápido en arco corto.',
-      cd: 0.42, dmg: 11, radius: 44, arc: 1.6, knock: 40 },
+      cd: 0.42, dmg: 15, radius: 44, arc: 1.6, knock: 40 },
 
     { id: 'string-shot', name: 'Disparo Demora', type: 'bug', kind: 'mine',
       desc: 'Deja telarañas en el suelo que atrapan y frenan mucho al que las pisa.',
@@ -295,7 +284,7 @@
     // ---------------- LUCHA ----------------
     { id: 'karate-chop', name: 'Golpe Kárate', type: 'fighting', kind: 'melee',
       desc: 'Golpe seco y potente al frente.',
-      cd: 0.5, dmg: 18, radius: 50, arc: 1.2, knock: 110 },
+      cd: 0.5, dmg: 25, radius: 50, arc: 1.2, knock: 110 },
 
     { id: 'aura-sphere', name: 'Esfera Aural', type: 'fighting', kind: 'projectile',
       desc: 'Esfera de energía que nunca falla.',
@@ -304,7 +293,7 @@
     // ---------------- FANTASMA ----------------
     { id: 'lick', name: 'Lengüetazo', type: 'ghost', kind: 'melee',
       desc: 'Lametazo espectral que paraliza un poco.',
-      cd: 0.48, dmg: 12, radius: 48, arc: 1.8, slow: 0.4 },
+      cd: 0.48, dmg: 17, radius: 48, arc: 1.8, slow: 0.4 },
 
     { id: 'shadow-ball', name: 'Bola Sombra', type: 'ghost', kind: 'projectile',
       desc: 'Esfera oscura que atraviesa a varios.',
@@ -315,9 +304,10 @@
       desc: 'Llamarada dracónica en línea recta.',
       cd: 1.0, dmg: 24, radius: 230, width: 34 },
 
-    { id: 'dragon-dance', name: 'Danza Dragón', type: 'dragon', kind: 'buff',
-      desc: 'No hace daño: acumula ATAQUE más rápido que Danza Espada.',
-      cd: 0.7, stat: 'atk', amount: 0.11, dur: 7, stacks: 5 },
+    { id: 'dragon-breath', name: 'Dragoaliento', type: 'dragon', kind: 'cone',
+      desc: 'Aliento dracónico en abanico corto que entumece.',
+      cd: 0.7, dmg: 8, count: 7, arc: 0.95, speed: 370, life: 0.42, size: 6, pierce: 1, slow: 0.3 },
+
 
     // ---------------- HADA ----------------
     { id: 'fairy-wind', name: 'Viento Feérico', type: 'fairy', kind: 'nova',
@@ -331,7 +321,7 @@
     // ---------------- ACERO ----------------
     { id: 'metal-claw', name: 'Garra Metal', type: 'steel', kind: 'melee',
       desc: 'Zarpazo de acero en arco.',
-      cd: 0.5, dmg: 15, radius: 50, arc: 1.6, knock: 60 },
+      cd: 0.5, dmg: 21, radius: 50, arc: 1.6, knock: 60 },
 
     { id: 'flash-cannon', name: 'Foco Resplandor', type: 'steel', kind: 'beam',
       desc: 'Rayo de luz metálica que perfora.',
@@ -340,7 +330,7 @@
     // ---------------- SINIESTRO ----------------
     { id: 'bite', name: 'Mordisco', type: 'dark', kind: 'melee',
       desc: 'Dentellada rápida que hace retroceder.',
-      cd: 0.45, dmg: 14, radius: 46, arc: 1.5, knock: 70 },
+      cd: 0.45, dmg: 20, radius: 46, arc: 1.5, knock: 70 },
 
     { id: 'dark-pulse', name: 'Pulso Umbrío', type: 'dark', kind: 'nova',
       desc: 'Onda de energía oscura en todas direcciones.',
@@ -384,8 +374,8 @@
       cd: 4.0, dmg: 14, rate: 0.4, dur: 6, count: 1, range: 280, speed: 320, size: 6 },
 
     { id: 'aerial-ace', name: 'Golpe Aéreo', type: 'flying', kind: 'dash',
-      desc: 'Te lanzas en picado y cortas todo lo que cruzas.',
-      cd: 0.75, dmg: 18, radius: 120, width: 40, knock: 60 },
+      desc: 'Te lanzas en picado, cortas todo lo que cruzas y vuelves a tu sitio.',
+      cd: 0.75, dmg: 25, radius: 120, width: 40, knock: 60 },
 
     { id: 'flame-wheel', name: 'Rueda Fuego', type: 'fire', kind: 'trail',
       desc: 'Corres envuelto en fuego y dejas un rastro de llamas.',
@@ -405,11 +395,15 @@
   for (const m of RAW) (POOL[m.type] = POOL[m.type] || []).push(m.id);
 
   const BY_ID = {};
-  for (const m of RAW) {
-    m.ups = LADDERS[m.kind];
-    m.maxLvl = m.ups.length + 1;
-    BY_ID[m.id] = m;
+  /** Da de alta un movimiento (los del catálogo y las fusiones de data/fusions.js). No entra en POOL. */
+  function register(def) {
+    def.ups = def.fused ? LADDERS.fusion : LADDERS[def.kind];
+    if (!def.ups) throw new Error('movimiento sin escalera: ' + def.id + ' (' + def.kind + ')');
+    def.maxLvl = def.ups.length + 1;
+    BY_ID[def.id] = def;
+    return def;
   }
+  for (const m of RAW) register(m);
 
   /** Movimientos que este Pokémon puede aprender (sus tipos + normal). */
   function poolFor(mon) {
@@ -470,9 +464,9 @@
 
   // ---------------- evolución de movimientos ----------------
   /*
-   * Un movimiento al NIVEL MÁXIMO evoluciona si en esa run has cogido alguna
-   * vez la mejora de su condición (`needs`, un id de LevelUp.STATS). Sale una
-   * carta dorada. Los potenciadores (buff) no evolucionan.
+   * Un movimiento al NIVEL MÁXIMO evoluciona si LLEVAS la pasiva de su
+   * condición (`needs`, un id de G.Passives). Sale una carta dorada. Las
+   * fusiones no evolucionan (ya son la cima).
    */
   const NEED_NAME = { hp: 'Vigor', atk: 'Potencia', spd: 'Carrera', cd: 'Reflejos', def: 'Coraza',
                       rgn: 'Síntesis', mag: 'Imán', xp: 'Aprendizaje' };
@@ -496,7 +490,7 @@
     'rock-slide': ['Trampa Rocas', 'cd'],    'ice-beam': ['Ventisca', 'atk'],
     'powder-snow': ['Viento Hielo', 'spd'],  'karate-chop': ['A Bocajarro', 'atk'],
     'aura-sphere': ['Onda Certera', 'cd'],   'lick': ['Puño Sombra', 'atk'],
-    'shadow-ball': ['Golpe Fantasma', 'cd'], 'dragon-rage': ['Cometa Draco', 'atk'],
+    'shadow-ball': ['Golpe Fantasma', 'cd'], 'dragon-rage': ['Cometa Draco', 'atk'],   'dragon-breath': ['Pulso Dragón', 'cd'],
     'fairy-wind': ['Fuerza Lunar', 'atk'],   'dazzling-gleam': ['Campo de Niebla', 'rgn'],
     'metal-claw': ['Cabeza de Hierro', 'atk'], 'flash-cannon': ['Rayo Metálico', 'def'],
     'bite': ['Triturar', 'atk'],             'dark-pulse': ['Alarido', 'spd'],
@@ -526,13 +520,13 @@
     cone:       { t: '×1,7 daño, +4 disparos y +1 perforación', m: { dmg: 1.7, count: 4, pierce: 1 } }
   };
 
-  /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */
-  function evoInfo(m, statsTaken) {
+  /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null. `hasPassive(id)` dice si llevas esa pasiva. */
+  function evoInfo(m, hasPassive) {
     const e = EVO[m.id];
-    if (!e || m.evolved || m.lvl < m.def.maxLvl || !EVO_MODS[m.kind]) return null;
+    if (!e || m.evolved || m.fused || m.lvl < m.def.maxLvl || !EVO_MODS[m.kind]) return null;
     const [name, needs] = e;
     return { name, needs, needName: NEED_NAME[needs], text: EVO_MODS[m.kind].t,
-             ready: !!(statsTaken && statsTaken[needs]) };
+             ready: !!(hasPassive && hasPassive(needs)) };
   }
 
   /** Evoluciona una instancia (cambia nombre y potencia; sigue siendo del mismo tipo). */
@@ -546,6 +540,6 @@
     return true;
   }
 
-  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
-              EVO, NEED_NAME, evoInfo, evolve };
+  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor, register,
+              MELEE_KINDS: ['melee', 'dash'], EVO, NEED_NAME, evoInfo, evolve };
 })();

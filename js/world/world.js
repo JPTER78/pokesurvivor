@@ -196,23 +196,10 @@ G.World = (() => {
   function liquidKind() { return G.Tiles.BIOMES[biome].liquid; }
 
   /**
-   * Efecto del charco actual sobre un Pokémon de estos tipos:
-   *   { slow, dmg, every, color, slide }  (dmg en % de vida máxima)
-   * Los de su tipo no sufren el suyo (Fuego en lava, Veneno en veneno...).
+   * Efecto del charco actual sobre un Pokémon de estos tipos (ver world/liquid.js):
+   *   { slow, dmg, every, color, slide }  o los privilegios { swim... } / { hover... }
    */
-  const LIQ = {
-    water: { slow: 0.6, immune: ['water'] },     // los de tipo agua nadan sin frenarse
-    swamp: { slow: 0.45, immune: ['water'] },
-    lava:   { dmg: 0.06, flat: 5, every: 0.5, color: '#ff8a3d', immune: ['fire'] },
-    poison: { dmg: 0.035, flat: 3, every: 0.5, color: '#c86bdc', immune: ['poison', 'steel'] },
-    spark:  { dmg: 0.045, flat: 4, every: 0.7, color: '#ffe14d', immune: ['electric', 'ground'] },
-    ice:    { slide: true, immune: ['ice'] }
-  };
-  function liquidEffect(types) {
-    const e = LIQ[liquidKind()] || LIQ.water;
-    if (e.immune && types && types.some(t => e.immune.includes(t))) return {};
-    return e;
-  }
+  function liquidEffect(types) { return G.Liquid.effect(liquidKind(), types); }
 
   function propAtTile(tx, ty) {
     const cx = Math.floor(tx / N), cy = Math.floor(ty / N);
@@ -224,7 +211,7 @@ G.World = (() => {
   function walkable(tx, ty) {
     const t = terrainAt(tx, ty);
     if (t === WALL) return false;
-    if (t === LIQUID && (LIQ[liquidKind()] || {}).dmg) return false;   // lava, veneno, descarga
+    if (t === LIQUID && (G.Liquid.TABLE[liquidKind()] || {}).dmg) return false;   // lava, veneno, descarga
     const p = propAtTile(tx, ty);
     return !(p && p.solid);
   }

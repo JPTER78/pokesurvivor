@@ -476,10 +476,9 @@
 <section id="scr-bond" class="scr dim hidden">
   <div class="box center">
     <h2 class="bond-title">¡Vínculo!</h2>
-    <p class="sub bond-hint">Los movimientos unidos se lanzan a la vez y ocupan un solo hueco</p>
+    <p class="sub bond-hint">Fusiona dos movimientos al nivel máximo en uno nuevo más fuerte: ocupa un solo hueco, empieza en nivel 1 y cada nivel le da daño y velocidad</p>
     <p id="bond-sub" class="sub"></p>
     <div id="bond-cards" class="cards"></div>
-    <div class="row" style="justify-content:center"><button id="bond-back" class="btn hidden">Atrás</button></div>
   </div>
 </section>
 
@@ -494,8 +493,8 @@
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
-    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
-    <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
+    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>6</kbd> enfocar · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
+    <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para enfocarlo</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
     <div id="pause-sound" class="sound-inline"></div>
     <div class="row" style="justify-content:center">
@@ -534,6 +533,8 @@
 <script defer src="js/core/guard.js"></script>
 <!-- datos de juego -->
 <script defer src="js/data/moves.js"></script>
+<script defer src="js/data/passives.js"></script>
+<script defer src="js/data/fusions.js"></script>
 <script defer src="js/data/types.js"></script>
 <script defer src="js/data/starters.js"></script>
 <script defer src="js/data/enemies.js"></script>
@@ -544,6 +545,7 @@
 <script defer src="js/data/funding.js"></script>
 <!-- mundo -->
 <script defer src="js/world/tiles.js"></script>
+<script defer src="js/world/liquid.js"></script>
 <script defer src="js/world/world.js"></script>
 <!-- entidades -->
 <script defer src="js/entities/vfx.js"></script>
@@ -553,6 +555,8 @@
 <script defer src="js/entities/pickup.js"></script>
 <script defer src="js/entities/player.js"></script>
 <!-- sistemas -->
+<script defer src="js/systems/move-kinds.js"></script>
+<script defer src="js/systems/reactions.js"></script>
 <script defer src="js/systems/combat.js"></script>
 <script defer src="js/systems/spawner.js"></script>
 <script defer src="js/systems/levelup.js"></script>

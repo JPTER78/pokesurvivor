@@ -21,19 +21,21 @@ for (const f of ['js/core/util.js', 'js/core/i18n.js']) load(f);
 // Captura el diccionario inglés (clave en español).
 const add = G.I18n.add;
 G.I18n.add = d => { Object.assign(EN, d); add(d); };
-for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js',
+for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/passives.js', 'js/data/fusions.js', 'js/data/types.js',
                  'js/data/items.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
   try { load(f); } catch (e) { console.warn('aviso', f, e.message); }
 }
-const moves = Object.values(G.Moves.BY_ID).map(m => {
+const moves = Object.values(G.Moves.BY_ID).filter(m => !m.fused).map(m => {
   const inst = G.Moves.instance(m.id, m.maxLvl || 5);
-  const evo = G.Moves.evoInfo(inst, {});
+  const evo = G.Moves.evoInfo(inst, () => false);
   return { id: m.id, name: m.name, type: m.type, kind: m.kind, desc: m.desc, maxLvl: m.maxLvl, evo: evo ? { name: evo.name, needs: evo.needName, text: evo.text } : null };
 });
 const out = {
   dex: G.DEX,
   legends: G.DEX.filter(p => p.leg).map(p => p.dex),
   moves,
+  fusions: G.Fusions.LIST.map(f => ({ id: f.id, name: f.name, type: f.type, kind: f.kind, desc: f.desc, pair: f.pair })),
+  passives: G.Passives.LIST.map(p => ({ id: p.id, name: p.name, desc: p.desc })),
   items: (G.Items.LIST || []).map(i => ({ id: i.id, name: i.name, desc: i.desc })),
   achievements: (G.AchDefs.LIST || []).map(a => ({ id: a.id, cat: a.cat, name: a.name, desc: a.desc, tier: a.tier, title: a.title || '', reward: a.reward || {} })),
   achCats: G.AchDefs.CATS || null,

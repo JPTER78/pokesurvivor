@@ -101,10 +101,9 @@ G.Gacha = (() => {
 
       let isNew = false, refund = 0;
       if (shiny) {
-        isNew = !save.shiny[mon.dex];
-        if (isNew) save.shiny[mon.dex] = { at: Date.now(), from: 'gacha' };
-        else refund = REFUND[rarity] * 3;
-        if (!save.owned[mon.dex]) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
+        // Por G.DB.grantShiny, como los salvajes: da la normal si faltaba y, si es tu compañero, lo pone en shiny.
+        isNew = G.DB.grantShiny(mon.dex, 'gacha');
+        if (!isNew) refund = REFUND[rarity] * 3;
       } else {
         isNew = !save.owned[mon.dex];
         if (isNew) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };

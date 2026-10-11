@@ -611,11 +611,16 @@ G.DB = (() => {
     return save.pupg[dex] || (save.pupg[dex] = {});
   }
 
-  /** Da la versión shiny (y la normal, si no la tenía). Devuelve true si es nueva. */
+  /**
+   * Da la versión shiny (y la normal, si no la tenía). Devuelve true si es nueva.
+   * Si es el shiny de tu compañero actual, pasas a jugar con él en shiny: si no,
+   * la Pokédex enseña la etiqueta pero el Pokémon sigue saliendo normal.
+   */
   function grantShiny(dex, from) {
     grant(dex, from);
     if (save.shiny[dex]) return false;
     save.shiny[dex] = { at: Date.now(), from };
+    if (dex === save.partner) save.partnerShiny = true;
     return true;
   }
 

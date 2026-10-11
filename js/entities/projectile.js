@@ -36,8 +36,8 @@ G.Projectiles = (() => {
     }, o));
   }
 
-  /** Borra los orbes de un jugador (o todos) al cambiar de movimiento activo. */
-  function clearOrbs(owner) { list = list.filter(p => !p.orb || (owner && p.owner !== owner)); }
+  /** Borra los orbes de un jugador (o todos); con `mid`, sólo los de ese movimiento. */
+  function clearOrbs(owner, mid) { list = list.filter(p => !p.orb || (owner && p.owner !== owner) || (mid && p.mid !== mid)); }
 
   function update(dt, player, enemies) {
     for (let i = list.length - 1; i >= 0; i--) {

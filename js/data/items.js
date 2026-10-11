@@ -13,7 +13,7 @@ G.Items = (() => {
     { id: 'leftovers', name: 'Restos', desc: 'Recuperas un 1,5% de tu vida por segundo.',
       on: p => { p.regenFlat += p.maxHp * 0.015; p._itemRegen = p.maxHp * 0.015; },
       off: p => { p.regenFlat -= p._itemRegen || 0; } },
-    { id: 'choiceband', name: 'Cinta Elección', desc: '+40% de daño, pero no puedes cambiar de movimiento.',
+    { id: 'choiceband', name: 'Cinta Elección', desc: '+40% de daño, pero no puedes cambiar el movimiento enfocado.',
       on: p => { p.atkMul *= 1.4; }, off: p => { p.atkMul /= 1.4; } },
     { id: 'quickclaw', name: 'Garra Rápida', desc: '-20% de recarga en todos tus movimientos.',
       on: p => { p.cdMul *= 0.8; }, off: p => { p.cdMul /= 0.8; } },

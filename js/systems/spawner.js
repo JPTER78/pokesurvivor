@@ -8,7 +8,7 @@
  *
  * Cooperativo (sólo en el anfitrión): aparecen alrededor de un jugador vivo
  * al azar, fuera de la vista de TODOS, y hay más y más fuertes según cuántos
- * jugáis (ver G.Coop.scaleRate / scaleHp).
+ * jugáis (ver G.Coop.scaleRate / scaleHp) y con cuántos ataques lleváis (powerK).
  */
 G.Spawner = (() => {
   // Tope de enemigos a la vez (antes 420: con tantos se ralentizaba). Cuando
@@ -21,6 +21,17 @@ G.Spawner = (() => {
   // La resistencia extra crece con la run: al principio ×3,3 y hasta ×5
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
   const hpK = t => 3.3 + Math.min(1.7, t / 210);
+  /**
+   * Cuantos más ataques lleváis, más aguantan: ×(1 + 0,4·(ataques − 1)), con la
+   * media de ataques de los jugadores (los jefes, 0,3). Así el principio se
+   * siente como antes y el final llena la pantalla.
+   */
+  function powerK(players, boss = false) {
+    const live = (players || []).filter(p => p);
+    if (!live.length) return 1;
+    const avg = live.reduce((a, p) => a + Math.max(1, (p.moves && p.moves.length) || 0), 0) / live.length;
+    return 1 + (boss ? 0.3 : 0.4) * (avg - 1);
+  }
   const SHINY_RATE = 1 / 4096;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
@@ -81,7 +92,7 @@ G.Spawner = (() => {
     const pt = freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
-    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
+    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t) * powerK(players)));
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
     if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
     if (shiny) e.makeShiny();
@@ -96,7 +107,7 @@ G.Spawner = (() => {
 
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
-    const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
+    const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1) * powerK(players, true)), true);
     if (rollShiny(b.dex)) e.makeShiny();
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
@@ -178,6 +189,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  return { powerK, reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { G.Guard.flag('debug'); forceShiny = n; } };
 })();
