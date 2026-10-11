@@ -4,6 +4,16 @@ G.MenuUI = (() => {
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
+  /**
+   * ¿Se enseña este Pokémon en shiny? Si tienes su shiny, sí; el compañero,
+   * en la variante que hayas elegido (partnerShiny). Lo usan la cuadrícula y
+   * la ficha, para que un shiny recién conseguido se vea shiny de verdad.
+   */
+  function shinyView(save, dex) {
+    if (!(save.shiny && save.shiny[dex])) return false;
+    return dex === save.partner ? !!save.partnerShiny : true;
+  }
+
   function init() {
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
@@ -141,7 +151,7 @@ G.MenuUI = (() => {
       cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}</span>`);
       if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
-      const useShiny = sh && p.dex === s.partner && s.partnerShiny;
+      const useShiny = shinyView(s, p.dex);
       cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
       cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
       cell.onclick = () => {
@@ -165,7 +175,7 @@ G.MenuUI = (() => {
     const hasSh = G.DB.ownsShiny(dex);
     const isPartner = dex === s.partner;
     if (!hasSh) viewShiny = false;
-    else if (isPartner && dex !== showDetail.last) viewShiny = !!s.partnerShiny;
+    else if (dex !== showDetail.last) viewShiny = shinyView(s, dex);
     showDetail.last = dex;
 
     const max = { hp: 183, atk: 1.55, spd: 137 };
@@ -270,5 +280,5 @@ G.MenuUI = (() => {
     }
   }
 
-  return { init, open, GEN_NAMES };
+  return { init, open, shinyView, GEN_NAMES };
 })();

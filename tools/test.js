@@ -520,6 +520,41 @@ test('los tickets caen 1/600 por derrota y ×10 de jefe 1/4; la Suerte los multi
   r = G.Pickups.ticketRates(); ok(Math.abs(r.t1 - 1 / 600) < 1e-9, 'sin jugador, tasa base');
 });
 
+// ---- Shiny: la versión shiny se usa de verdad (informe: gacha la enseña, Pokédex y partida no)
+load('js/core/db.js');
+load('js/systems/gacha.js');
+G.UI = G.UI || { $: () => null };
+load('js/ui/menu.js');
+test('conseguir el shiny de tu compañero lo pone a jugar en shiny; otro shiny no toca al compañero', () => {
+  G.DB.playAsGuest();
+  const s = G.DB.save;
+  s.partner = 25; s.owned[25] = { at: 1, from: 'test' }; s.partnerShiny = false;
+  ok(G.DB.grantShiny(1, 'test')); eq(s.partnerShiny, false, 'otro Pokémon');
+  ok(G.DB.grantShiny(25, 'test')); eq(s.partnerShiny, true, 'el compañero');
+  ok(!G.DB.grantShiny(25, 'test'), 'repetido');
+});
+test('el gacha da los shiny por G.DB.grantShiny (misma regla que los salvajes)', () => {
+  G.DB.playAsGuest();
+  const s = G.DB.save; s.tickets.t1 = 5;
+  const calls = []; const orig = G.DB.grantShiny, hs = G.Sprites.hasShiny;
+  G.DB.grantShiny = (dex, from) => { calls.push([dex, from]); return orig(dex, from); };
+  G.Sprites.hasShiny = () => true;
+  G.Gacha.debugForceShiny(1);
+  const res = G.Gacha.pull(s, 1, 1, 't1');
+  G.DB.grantShiny = orig; G.Sprites.hasShiny = hs;
+  ok(res && res[0].shiny, 'la tirada forzada debe ser shiny');
+  eq(calls.length, 1); eq(calls[0][1], 'gacha'); ok(s.shiny[res[0].dex], 'apuntado en la partida');
+});
+test('Pokédex: un shiny que tienes se ve shiny en la cuadrícula y en la ficha; el compañero, en la variante elegida', () => {
+  G.DB.playAsGuest();
+  const s = G.DB.save;
+  s.partner = 25; s.owned[25] = { at: 1 }; s.owned[1] = { at: 1 }; s.shiny[1] = { at: 1 }; s.shiny[25] = { at: 1 }; s.partnerShiny = false;
+  eq(G.MenuUI.shinyView(s, 1), true, 'shiny que no es compañero');
+  eq(G.MenuUI.shinyView(s, 25), false, 'compañero en normal');
+  s.partnerShiny = true; eq(G.MenuUI.shinyView(s, 25), true, 'compañero en shiny');
+  eq(G.MenuUI.shinyView(s, 4), false, 'sin shiny');
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;
