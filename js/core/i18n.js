@@ -1,6 +1,6 @@
-/* ============ i18n.js — idiomas (español / inglés) ============
- * El juego está escrito en español. Si el idioma es inglés, todo texto que
- * se enseña se traduce con el diccionario de js/data/lang-en.js, sin tener que
+/* ============ i18n.js — idiomas (español / inglés / chino tradicional) ============
+ * El juego está escrito en español. El texto visible usa el diccionario del idioma activo:
+ * js/data/lang-en.js o los archivos lang-zh-hk-*.js, sin tener que
  * tocar cada pantalla:
  *   - el DOM (menús, cartas, avisos...) con un MutationObserver,
  *   - el canvas (HUD, avisos, números) envolviendo fillText/strokeText,
@@ -13,16 +13,17 @@
  *   3. trozos dentro de un texto más largo, sólo palabras enteras
  * Lo que escriben los jugadores (apodos) va marcado con translate="no".
  *
- * Idioma: el elegido en Ajustes; si no, /en/ en la dirección o el del navegador
- * (español si el navegador está en español, inglés en cualquier otro caso).
+ * Idioma: el elegido en el selector; si no, /en/ en la dirección o chino tradicional por defecto
+ * (zh-HK), para que la versión china abra en el idioma esperado.
  */
 G.I18n = (() => {
   const KEY = 'ps.lang';
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
-  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
-  const nav = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-  const lang = saved === 'es' || saved === 'en' ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en'
+    : /\/zh-hk(\/|$)/i.test(location.pathname) ? 'zh-HK' : null;
+  const supported = ['es', 'en', 'zh-HK'];
+  const lang = supported.includes(saved) ? saved : byPath || 'zh-HK';
   document.documentElement.lang = lang;
 
   const exact = new Map(), exactLow = new Map();
@@ -32,7 +33,8 @@ G.I18n = (() => {
   const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   /** Añade traducciones { 'texto en español': 'English text' }. */
-  function add(dict) {
+  function add(dict, locale = 'en') {
+    if (lang !== locale) return;
     const fr = [];
     for (const [es, en] of Object.entries(dict)) {
       if (!en || es === en) continue;
@@ -126,6 +128,13 @@ G.I18n = (() => {
   }
 
   function startDom() {
+    if (document.title === 'PokéSurvivor – 免費寶可夢生存遊戲') {
+      document.title = ({
+        es: 'PokéSurvivor – Juego Pokémon de supervivencia gratis',
+        en: 'PokéSurvivor – Free Pokémon Survival Game',
+        'zh-HK': document.title
+      })[lang];
+    }
     if (lang === 'es') return;
     // Los enlaces a las páginas de la web, a su versión en inglés.
     const EN_LINKS = { 'guia/': 'en/guide/', 'pokedex/': 'en/pokedex/' };

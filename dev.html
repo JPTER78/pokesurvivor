@@ -1,12 +1,12 @@
 <!doctype html>
 <!-- dev.html: página fuente. Aquí se edita; index.html lo genera tools/build.js. -->
-<html lang="es">
+<html lang="zh-HK">
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io</title>
-<meta name="description" content="Sobrevive a hordas de Pokémon con tu compañero en este fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo con amigos. Sin descargas ni anuncios.">
+<title>PokéSurvivor – 免費寶可夢生存遊戲</title>
+<meta name="description" content="與寶可夢夥伴一同迎戰 Pokémon 大軍！免費網頁生存遊戲，收錄 966 隻寶可夢、色違與傳說寶可夢，支援好友合作。毋須下載，沒有廣告。">
 <!-- seo:begin -->
 <link rel="canonical" href="https://pokesurvivor.com/">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -15,17 +15,17 @@
 <!-- Compartir en redes (WhatsApp, Discord, Twitter/X...) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PokéSurvivor">
-<meta property="og:locale" content="es_ES">
+<meta property="og:locale" content="zh_HK">
 <meta property="og:url" content="https://pokesurvivor.com/">
-<meta property="og:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">
-<meta property="og:description" content="Fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo hasta 4 amigos. Sin descargas ni anuncios.">
+<meta property="og:title" content="PokéSurvivor – 迎戰寶可夢大軍">
+<meta property="og:description" content="免費網頁及手機生存遊戲：收錄 966 隻寶可夢、色違與傳說寶可夢，最多支援 4 人合作。毋須下載，沒有廣告。">
 <meta property="og:image" content="https://pokesurvivor.com/assets/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="PokéSurvivor: un Pokémon rodeado de hordas en un mapa pixel art">
+<meta property="og:image:alt" content="PokéSurvivor：像素風地圖上的寶可夢迎戰大軍">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">
-<meta name="twitter:description" content="Fan game gratis para navegador y móvil, con cooperativo hasta 4. Sin descargas ni anuncios.">
+<meta name="twitter:title" content="PokéSurvivor – 迎戰寶可夢大軍">
+<meta name="twitter:description" content="免費網頁及手機生存遊戲，最多支援 4 人合作。毋須下載，沒有廣告。">
 <meta name="twitter:image" content="https://pokesurvivor.com/assets/og-image.jpg">
 <script>window.PS_PAGES = true;</script>
 <!-- seo:end -->
@@ -53,20 +53,20 @@
       "@id": "https://pokesurvivor.com/#web",
       "url": "https://pokesurvivor.com/",
       "name": "PokéSurvivor",
-      "inLanguage": "es"
+      "inLanguage": "zh-HK"
     },
     {
       "@type": ["VideoGame", "WebApplication"],
       "@id": "https://pokesurvivor.com/#juego",
       "name": "PokéSurvivor",
       "url": "https://pokesurvivor.com/",
-      "description": "Fan game gratuito de supervivencia (bullet heaven, estilo Survivor.io) con Pokémon: elige compañero, sobrevive a hordas, sube de nivel, evoluciona tus ataques, enfréntate a legendarios en grietas y juega en cooperativo con hasta 4 amigos.",
+      "description": "免費寶可夢生存遊戲：選擇夥伴、迎戰大軍、提升等級、強化招式、挑戰傳說寶可夢，並與最多 4 位好友合作遊玩。",
       "image": "https://pokesurvivor.com/assets/og-image.jpg",
-      "inLanguage": "es",
-      "genre": ["Roguelike", "Bullet heaven", "Acción", "Supervivencia"],
-      "gamePlatform": ["Navegador web", "PC", "Android", "iOS"],
+      "inLanguage": "zh-HK",
+      "genre": ["Roguelike", "Bullet heaven", "Action", "Survival"],
+      "gamePlatform": ["Web browser", "PC", "Android", "iOS"],
       "applicationCategory": "GameApplication",
-      "operatingSystem": "Cualquiera con navegador web moderno",
+      "operatingSystem": "Any modern web browser",
       "playMode": ["SinglePlayer", "CoOp", "MultiPlayer"],
       "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 4 },
       "isAccessibleForFree": true,
@@ -93,6 +93,14 @@
       <div class="t2">Mundo Misterioso</div>
     </div>
     <p class="login-tag">Sobrevive a las hordas con tu compañero Pokémon · gratis, en PC y móvil</p>
+    <div class="center" style="margin:0 0 12px">
+      <div class="sub" id="login-language-label">Idioma</div>
+      <div class="chips" id="login-language" role="group" aria-label="Idioma" translate="no" style="justify-content:center">
+        <button class="chip" data-lang="es">Español</button>
+        <button class="chip" data-lang="en">English</button>
+        <button class="chip" data-lang="zh-HK">繁體中文（香港）</button>
+      </div>
+    </div>
     <div class="tabs">
       <div class="tab on" data-tab="login">Entrar</div>
       <div class="tab" data-tab="register">Crear cuenta</div>
@@ -276,13 +284,12 @@
 <script>
   (function () {
     var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
-    var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-    var l = s === 'es' || s === 'en' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('es') === 0 ? 'es' : 'en'));
+    var l = s === 'es' || s === 'en' || s === 'zh-HK' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : 'zh-HK');
     document.documentElement.lang = l;
-    if (l === 'en') {
+    if (l === 'en' || l === 'zh-HK') {
       var p = document.querySelectorAll('#boot p');
-      p[0].textContent = 'A Pokémon survival game, free in your browser and on mobile.';
-      p[1].textContent = 'Loading…';
+      p[0].textContent = l === 'en' ? 'A Pokémon survival game, free in your browser and on mobile.' : '寶可夢生存遊戲，可在瀏覽器和手機免費遊玩。';
+      p[1].textContent = l === 'en' ? 'Loading…' : '載入中…';
     }
   })();
 </script>
@@ -508,6 +515,9 @@
 <script defer src="js/core/util.js"></script>
 <script defer src="js/core/i18n.js"></script>
 <script defer src="js/data/lang-en.js"></script>
+<script defer src="js/data/lang-zh-hk-game.js"></script>
+<script defer src="js/data/lang-zh-hk-ui.js"></script>
+<script defer src="js/data/lang-zh-hk-extra.js"></script>
 <script defer src="js/core/settings.js"></script>
 <script defer src="js/data/music.js"></script>
 <script defer src="js/data/pokedex.js"></script>
