@@ -153,6 +153,32 @@ G.Player = class Player {
     this.setFocus((this.focus + dir + this.moves.length) % this.moves.length);
   }
 
+  // ---------------- vínculos: fusiones ----------------
+  /** Recetas posibles ahora: [{ recipe, a, b }]. */
+  fusionOptions() { return G.Fusions.available(this.moves); }
+
+  /** Fusiona los dos movimientos de la receta en uno (al nivel del mayor) y gasta un vínculo. */
+  fuse(recipe) {
+    const a = this.moves.find(m => m.id === recipe.pair[0]), b = this.moves.find(m => m.id === recipe.pair[1]);
+    if (!a || !b) return null;
+    const lvl = Math.max(a.lvl, b.lvl);
+    const wasFocused = this.focused() === a || this.focused() === b;
+    const keep = this.hasItem('choiceband') ? this.focused() : null;
+    this.removeMove(a); this.removeMove(b);
+    const f = G.Moves.instance(recipe.id, lvl);
+    this.moves.push(f);
+    const k = keep ? this.moves.indexOf(keep) : -1;
+    this.focus = k >= 0 ? k : wasFocused || !this.moves[this.focus] ? this.moves.length - 1 : this.focus;
+    this.bonds = Math.max(0, this.bonds - 1);
+    return f;
+  }
+
+  /** Impulso: sin receta posible, el vínculo sube un movimiento al nivel máximo. */
+  boostMove(m) {
+    while (G.Moves.levelUp(m)) { /* hasta el tope */ }
+    this.bonds = Math.max(0, this.bonds - 1);
+  }
+
   // ---------------- pasivas ----------------
   passive(id) { return this.passives.find(p => p.id === id) || null; }
   hasPassive(id) { return !!this.passive(id); }

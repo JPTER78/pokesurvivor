@@ -251,6 +251,45 @@ test('nunca más de 6 ataques ni 4 pasivas nuevas', () => {
   ok(c.filter(x => x.type === 'up').length >= 6);
 });
 
+// ---- Task 8
+load('js/data/fusions.js');
+test('16 fusiones registradas, con pares que existen y escalera de su kind', () => {
+  eq(G.Fusions.LIST.length, 16);
+  for (const f of G.Fusions.LIST) {
+    ok(G.Moves.BY_ID[f.pair[0]] && G.Moves.BY_ID[f.pair[1]], f.id + ' par desconocido');
+    ok(G.Moves.BY_ID[f.id] && G.Moves.BY_ID[f.id].fused, f.id + ' no registrada');
+    eq(G.Moves.BY_ID[f.id].maxLvl, 5, f.id);
+  }
+});
+test('cada fusión la puede conseguir algún Pokémon (ambos movimientos en su pool)', () => {
+  for (const f of G.Fusions.LIST) {
+    const can = G.DEX.some(p => { const pool = G.Moves.poolFor(p); return pool.includes(f.pair[0]) && pool.includes(f.pair[1]); });
+    ok(can, f.id + ' inalcanzable');
+  }
+});
+test('available encuentra la receta sin importar el orden', () => {
+  const ms = [G.Moves.instance('gust', 1), G.Moves.instance('ember', 1)];
+  const av = G.Fusions.available(ms);
+  eq(av.length, 1); eq(av[0].recipe.id, 'fire-tornado'); eq(av[0].a.id, 'ember');   // a y b siguen el orden de la receta
+});
+test('fuse: quita los dos, mete la fusión al nivel mayor, gasta el vínculo y enfoca bien', () => {
+  const pl = mkPlayer(['fire', 'flying']);
+  pl.addMove('ember'); pl.addMove('tackle'); pl.addMove('gust');
+  G.Moves.levelUp(pl.moves[2]); G.Moves.levelUp(pl.moves[2]);   // Tornado nv.3
+  pl.setFocus(2); pl.bonds = 1;
+  const f = pl.fuse(G.Fusions.BY['fire-tornado']);
+  eq(pl.moves.map(m => m.id), ['tackle', 'fire-tornado']);
+  eq(f.lvl, 3); ok(f.fused); eq(pl.bonds, 0);
+  eq(pl.focused().id, 'fire-tornado'); ok(pl.focus < pl.moves.length);
+});
+test('boostMove sube al máximo y gasta el vínculo', () => {
+  const pl = mkPlayer(); pl.addMove('ember'); pl.bonds = 1;
+  pl.boostMove(pl.moves[0]); eq(pl.moves[0].lvl, 5); eq(pl.bonds, 0);
+});
+test('las fusiones tienen traducción de nombre y descripción', () => {
+  for (const f of G.Fusions.LIST) { ok(G.I18n.t(f.name) !== f.name, f.name); ok(G.I18n.t(f.desc) !== f.desc, f.id + ' desc'); }
+});
+
 // ---------------- ejecutar ----------------
 (async () => {
   let failed = 0;

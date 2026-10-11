@@ -293,32 +293,33 @@ G.Game = (() => {
     });
   }
 
-  // ---------------- vínculos ----------------
+  // ---------------- vínculos: fusiones ----------------
 
   /**
-   * Vínculo de un legendario: eliges qué movimientos se fusionan.
-   * Si ahora no se puede (no hay dos sueltos), se guarda hasta que aprendas
-   * otro movimiento. Se mira en cada fotograma: si otra pantalla la tapa (cartas
-   * de nivel en grupo, pausa), vuelve a salir al cerrarla.
-   * @param quiet  no avisar si todavía no se puede
+   * Vínculo de un legendario: fusionas dos movimientos (o, sin receta posible,
+   * subes uno al máximo). Se mira en cada fotograma: si otra pantalla la tapa
+   * (cartas de nivel en grupo, pausa), vuelve a salir al cerrarla.
    */
-  function offerBond(quiet = false) {
+  function offerFusion() {
     if (!pl || pl.bonds <= 0 || pl.dead || state !== 'playing' || G.Rift.inArena) return;
     if (['scr-bond', 'scr-pause', 'scr-item', 'scr-levelup'].some(G.UI.isOpen)) return;
-    const opt = pl.bondOptions();
-    if (!opt) {
-      if (!quiet) G.Spawner.say('Guardas el vínculo: aprende otro movimiento para usarlo', 3, true);
-      return;
-    }
+    const opts = pl.fusionOptions();
+    if (!opts.length && !pl.moves.some(m => m.lvl < m.def.maxLvl)) return;   // nada que hacer aún: se guarda
     // En solitario se para el juego; en grupo sigue (como con los objetos).
     if (!G.Coop.active) state = 'choice';
     G.Audio.sfx('levelup');
-    G.RunUI.showBond(opt, picked => {
-      const group = pl.fuse(picked, opt.group);
+    G.RunUI.showFusion(opts, pl.moves, picked => {
+      if (picked.recipe) {
+        const f = pl.fuse(picked.recipe);
+        G.Progress.event('fuse', { id: f.id });
+        G.Spawner.say('¡Fusión! ' + f.name, 2.6, true);
+      } else {
+        pl.boostMove(picked.boost);
+        G.Spawner.say('¡Impulso! ' + picked.boost.name + ' al máximo', 2.6, true);
+      }
       G.Audio.sfx('legend');
       G.FX.ring(pl.x, pl.y, 8, 130, '#ff8ad8', 0.8, 6);
       G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffb3e6', 40, 240);
-      G.Spawner.say('¡Vínculo! ' + group.length + ' movimientos a la vez', 2.6, true);
       if (state === 'choice') state = 'playing';
     });
   }
@@ -407,7 +408,7 @@ G.Game = (() => {
     }
     if (G.UI.isOpen('scr-bond')) {
       for (let i = 0; i < G.Player.MAX_MOVES; i++) {
-        if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pickBond(i);
+        if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pickFusion(i);
       }
       return;
     }
@@ -527,7 +528,7 @@ G.Game = (() => {
 
     G.Audio.music(G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
-    if (pl.bonds > 0) offerBond(true);
+    if (pl.bonds > 0) offerFusion();
     if (G.Coop.isHost) checkAllDown(dt);
   }
 
@@ -714,7 +715,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond,
+    init, startRun, everyone, levelXp, flash, offerFusion,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { G.Guard.flag('debug'); time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

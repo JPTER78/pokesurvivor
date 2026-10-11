@@ -5,6 +5,7 @@
  *   chest     cofre con candado abierto
  *   item      { id }        objeto equipado
  *   evolve    { move }      movimiento evolucionado
+ *   fuse      { id }        fusión hecha con un vínculo
  *   rift      { type }      pelea de grieta ganada
  *   runEnd    { time, level, coins, types, group }
  *   missionDone { daily }   (lo lanza claim)
@@ -143,6 +144,9 @@ G.Progress = (() => {
       case 'evolve':
         S.evolutions = (S.evolutions || 0) + 1;
         s.evoMoves = s.evoMoves || {}; s.evoMoves[d.move] = s.evoMoves[d.move] || Date.now();
+        break;
+      case 'fuse':
+        S.fusions = (S.fusions || 0) + 1;
         break;
       case 'item':
         s.itemsFound = s.itemsFound || {}; s.itemsFound[d.id] = s.itemsFound[d.id] || Date.now();

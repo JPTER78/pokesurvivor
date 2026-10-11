@@ -125,68 +125,55 @@ G.RunUI = (() => {
     G.UI.show('scr-item');
   }
 
-  // ---------------- vínculo: qué movimientos se fusionan ----------------
+  // ---------------- vínculo: fusiones ----------------
 
-  let bond = null;          // { opt, cb, first, list }
+  let fusion = null;          // { list: [{ kind: 'fuse', opt } | { kind: 'boost', m }], cb }
 
   /**
-   * @param opt  pl.bondOptions(): 'add' (uno suelto al grupo) o 'pair' (dos sueltos, en dos pasos)
-   * @param cb   recibe la lista de movimientos que se juntan
+   * @param options  pl.fusionOptions(): [{ recipe, a, b }]
+   * @param moves    pl.moves (para el Impulso si no hay receta)
+   * @param cb       recibe { recipe } o { boost: movimiento }
    */
-  function showBond(opt, cb) {
-    bond = { opt, cb, first: null, list: [] };
-    $('bond-back').onclick = bondBack;
-    renderBond();
+  function showFusion(options, moves, cb) {
+    const list = options.length ? options.map(opt => ({ kind: 'fuse', opt })) : moves.filter(m => m.lvl < m.def.maxLvl).map(m => ({ kind: 'boost', m }));
+    fusion = { list, cb };
+    $('bond-sub').textContent = options.length ? 'Elige qué dos movimientos se fusionan en uno nuevo'
+      : 'No hay ninguna fusión posible con tus movimientos: el vínculo sube uno al nivel máximo';
+    const box = $('bond-cards');
+    box.innerHTML = '';
+    list.forEach((it, i) => {
+      const el = document.createElement('div');
+      if (it.kind === 'fuse') {
+        const { recipe, a, b } = it.opt;
+        const col = G.U.TYPE_COLOR[recipe.type];
+        el.className = 'card bond';
+        el.innerHTML =
+          `<div class="ico" style="background:${col}33">${G.Icons.html('move:' + recipe.id, 32)}</div>
+           <div class="txt"><div class="nm">${recipe.name} <span class="tag-chip" style="background:${col}">Nv.${Math.max(a.lvl, b.lvl)}</span></div>
+           <div class="ds">${G.Icons.html('move:' + a.id, 14)} ${a.name} + ${G.Icons.html('move:' + b.id, 14)} ${b.name} · ${recipe.desc}</div></div>
+           <div class="key">${i + 1}</div>`;
+      } else {
+        const col = G.U.TYPE_COLOR[it.m.type];
+        el.className = 'card';
+        el.innerHTML =
+          `<div class="ico" style="background:${col}33">${G.Icons.html('move:' + it.m.id, 32)}</div>
+           <div class="txt"><div class="nm">Impulso: ${it.m.name} <span class="tag-chip" style="background:${col}">Nv.${it.m.lvl} > ${it.m.def.maxLvl}</span></div>
+           <div class="ds">Sube ${it.m.name} al nivel máximo.</div></div>
+           <div class="key">${i + 1}</div>`;
+      }
+      el.dataset.sfx = 'none';
+      el.onclick = () => pickFusion(i);
+      box.appendChild(el);
+    });
     G.UI.show('scr-bond');
   }
 
-  function renderBond() {
-    const { opt, first } = bond;
-    const names = ms => ms.map(m => m.name).join(' + ');
-    const step2 = opt.mode === 'pair' && first;
-    $('bond-sub').textContent = opt.mode === 'add' ? 'Elige qué movimiento se une a ' + names(opt.group)
-      : step2 ? '¿Con cuál unes ' + first.name + '?' : 'Elige el primer movimiento que vas a unir';
-    $('bond-back').classList.toggle('hidden', !step2);
-    bond.list = step2 ? opt.loose.filter(m => m !== first) : opt.loose;
-    const box = $('bond-cards');
-    box.innerHTML = '';
-    bond.list.forEach((m, i) => {
-      const col = G.U.TYPE_COLOR[m.type];
-      const desc = opt.mode === 'add' ? 'Se lanzará a la vez que ' + names(opt.group) + '.'
-        : step2 ? 'Se lanzará a la vez que ' + first.name + '. Queda un hueco libre.'
-        : m.desc || '';
-      const el = document.createElement('div');
-      el.className = 'card' + (opt.mode === 'add' || step2 ? ' bond' : '');
-      el.innerHTML =
-        `<div class="ico" style="background:${col}33">${G.Icons.html('move:' + m.id, 32)}</div>
-         <div class="txt"><div class="nm">${m.name} <span class="tag-chip" style="background:${col}">Nv.${m.lvl}</span></div><div class="ds">${desc}</div></div>
-         <div class="key">${i + 1}</div>`;
-      el.dataset.sfx = 'none';
-      el.onclick = () => pickBond(i);
-      box.appendChild(el);
-    });
-  }
-
-  function pickBond(i) {
-    if (!bond || !bond.list[i]) return;
-    const m = bond.list[i];
-    if (bond.opt.mode === 'pair' && !bond.first) {
-      bond.first = m;
-      G.Audio.sfx('select');
-      renderBond();
-      return;
-    }
-    const picked = bond.opt.mode === 'add' ? [m] : [bond.first, m];
-    const cb = bond.cb;
-    bond = null;
+  function pickFusion(i) {
+    if (!fusion || !fusion.list[i]) return;
+    const it = fusion.list[i], cb = fusion.cb;
+    fusion = null;
     G.UI.hide('scr-bond');
-    cb(picked);
-  }
-
-  function bondBack() {
-    if (!bond) return;
-    bond.first = null;
-    renderBond();
+    cb(it.kind === 'fuse' ? { recipe: it.opt.recipe } : { boost: it.m });
   }
 
   function showPause(coop = false) {
@@ -201,5 +188,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, showItemChoice, showFusion, pickFusion, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
 })();
