@@ -137,8 +137,11 @@ G.RunUI = (() => {
   function showFusion(options, moves, cb) {
     const list = options.length ? options.map(opt => ({ kind: 'fuse', opt })) : moves.filter(m => m.lvl < m.def.maxLvl).map(m => ({ kind: 'boost', m }));
     fusion = { list, cb };
-    $('bond-sub').textContent = options.length ? 'Elige qué dos movimientos se fusionan en uno nuevo'
-      : 'No hay ninguna fusión posible con tus movimientos: el vínculo sube uno al nivel máximo';
+    // Pares que llevas pero sin los dos al máximo: se avisa para que sepas qué subir.
+    const pend = G.Fusions.pending(moves).map(h => `${h.a.name} (Nv.${h.a.lvl}) + ${h.b.name} (Nv.${h.b.lvl}) → ${h.recipe.name}`).join(' · ');
+    $('bond-sub').textContent = (options.length ? 'Elige qué dos movimientos se fusionan en uno nuevo'
+      : 'No hay ninguna fusión posible con tus movimientos: el vínculo sube uno al nivel máximo')
+      + (pend ? ' · Pendientes (los dos al nivel máximo): ' + pend : '');
     const box = $('bond-cards');
     box.innerHTML = '';
     list.forEach((it, i) => {

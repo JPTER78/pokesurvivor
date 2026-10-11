@@ -253,8 +253,8 @@ test('nunca más de 6 ataques ni 4 pasivas nuevas', () => {
 
 // ---- Task 8
 load('js/data/fusions.js');
-test('16 fusiones registradas, con pares que existen y escalera de su kind', () => {
-  eq(G.Fusions.LIST.length, 16);
+test('30 fusiones registradas, con pares que existen y escalera de su kind', () => {
+  eq(G.Fusions.LIST.length, 30);
   for (const f of G.Fusions.LIST) {
     ok(G.Moves.BY_ID[f.pair[0]] && G.Moves.BY_ID[f.pair[1]], f.id + ' par desconocido');
     ok(G.Moves.BY_ID[f.id] && G.Moves.BY_ID[f.id].fused, f.id + ' no registrada');
@@ -267,25 +267,38 @@ test('cada fusión la puede conseguir algún Pokémon (ambos movimientos en su p
     ok(can, f.id + ' inalcanzable');
   }
 });
+test('las 30 fusiones usan los 60 movimientos, cada uno una sola vez', () => {
+  const used = G.Fusions.LIST.flatMap(f => f.pair);
+  eq(used.length, 60); eq(new Set(used).size, 60);
+  for (const m of G.Moves.ALL) ok(used.includes(m.id), m.id + ' sin fusión');
+});
+test('available sólo con los dos al nivel máximo; pending lista los pares a medias', () => {
+  const a = G.Moves.instance('gust', 5), b = G.Moves.instance('ember', 3);
+  eq(G.Fusions.available([a, b]).length, 0);
+  eq(G.Fusions.pending([a, b]).map(p => p.recipe.id), ['fire-tornado']);
+  G.Moves.levelUp(b); G.Moves.levelUp(b);
+  eq(G.Fusions.available([a, b]).length, 1); eq(G.Fusions.pending([a, b]).length, 0);
+});
 test('available encuentra la receta sin importar el orden', () => {
-  const ms = [G.Moves.instance('gust', 1), G.Moves.instance('ember', 1)];
+  const ms = [G.Moves.instance('gust', 5), G.Moves.instance('ember', 5)];
   const av = G.Fusions.available(ms);
   eq(av.length, 1); eq(av[0].recipe.id, 'fire-tornado'); eq(av[0].a.id, 'ember');   // a y b siguen el orden de la receta
 });
 test('fuse: quita los dos, mete la fusión al nivel mayor, gasta el vínculo y enfoca bien', () => {
   const pl = mkPlayer(['fire', 'flying']);
   pl.addMove('ember'); pl.addMove('tackle'); pl.addMove('gust');
-  G.Moves.levelUp(pl.moves[2]); G.Moves.levelUp(pl.moves[2]);   // Tornado nv.3
+  for (const m of [pl.moves[0], pl.moves[2]]) while (G.Moves.levelUp(m)) { /* al máximo */ }
   pl.setFocus(2); pl.bonds = 1;
   const f = pl.fuse(G.Fusions.BY['fire-tornado']);
   eq(pl.moves.map(m => m.id), ['tackle', 'fire-tornado']);
-  eq(f.lvl, 3); ok(f.fused); eq(pl.bonds, 0);
+  eq(f.lvl, 5); ok(f.fused); eq(pl.bonds, 0);
   eq(pl.focused().id, 'fire-tornado'); ok(pl.focus < pl.moves.length);
 });
 test('boostMove sube al máximo y gasta el vínculo', () => {
   const pl = mkPlayer(); pl.addMove('ember'); pl.bonds = 1;
   pl.boostMove(pl.moves[0]); eq(pl.moves[0].lvl, 5); eq(pl.bonds, 0);
 });
+test('Pokémonedas se traduce a Pokécoins', () => { eq(G.I18n.t('Pokémonedas'), 'Pokécoins'); });
 test('las fusiones tienen traducción de nombre y descripción', () => {
   for (const f of G.Fusions.LIST) { ok(G.I18n.t(f.name) !== f.name, f.name); ok(G.I18n.t(f.desc) !== f.desc, f.id + ' desc'); }
 });

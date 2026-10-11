@@ -1,9 +1,10 @@
 /* ============ fusions.js — fusiones de movimientos (vínculos) ============
  * Cada legendario vencido en una grieta da un VÍNCULO. Con él se fusionan dos
- * movimientos que lleves en uno nuevo, más fuerte, que ocupa un solo hueco.
- * Las recetas son fijas (par → resultado). Se dan de alta en G.Moves.BY_ID
- * con `fused: true`: usan la escalera de su `kind` para subir de nivel y no
- * evolucionan (ya son la cima del árbol). No entran en los pools.
+ * movimientos que lleves, LOS DOS AL NIVEL MÁXIMO, en uno nuevo, más fuerte,
+ * que ocupa un solo hueco y nace ya al nivel máximo de su escalera.
+ * Las recetas son fijas (par → resultado): 30, y cada uno de los 60 movimientos
+ * está en una sola. Se dan de alta en G.Moves.BY_ID con `fused: true`: usan
+ * la escalera de su `kind` y no evolucionan (ya son la cima). No entran en los pools.
  *
  * Cuerpo a cuerpo y embestida ya llevan el ×1,4 de data/moves.js.
  */
@@ -18,7 +19,7 @@ G.Fusions = (() => {
     { pair: ['ice-beam', 'rock-throw'], id: 'glacial-avalanche', name: 'Alud Glacial', type: 'ice', kind: 'meteor',
       desc: 'Cinco peñascos helados caen sobre los enemigos, los frenan y los empujan.',
       cd: 1.2, dmg: 34, count: 5, radius: 52, slow: 0.6, knock: 70 },
-    { pair: ['sludge', 'ember'], id: 'toxic-blaze', name: 'Llama Tóxica', type: 'fire', kind: 'trail',
+    { pair: ['sludge', 'flame-wheel'], id: 'toxic-blaze', name: 'Llama Tóxica', type: 'fire', kind: 'trail',
       desc: 'Dejas charcos de fuego venenoso que queman e intoxican.',
       cd: 0.28, dmg: 12, radius: 32, dur: 3.2, burn: 1, poison: 1 },
     { pair: ['confusion', 'shadow-ball'], id: 'phantom-force', name: 'Golpe Umbrío', type: 'ghost', kind: 'projectile',
@@ -56,7 +57,50 @@ G.Fusions = (() => {
       cd: 1.3, dmg: 40, radius: 320, width: 60 },
     { pair: ['mud-shot', 'bulldoze'], id: 'earthquake-wave', name: 'Onda Sísmica', type: 'ground', kind: 'nova',
       desc: 'Dieciséis olas de tierra que frenan y empujan.',
-      cd: 1.1, dmg: 16, speed: 220, count: 16, pierce: 1, life: 1.1, size: 9, slow: 0.5, knock: 60 }
+      cd: 1.1, dmg: 16, speed: 220, count: 16, pierce: 1, life: 1.1, size: 9, slow: 0.5, knock: 60 },
+    // ---- las otras 14, para que cada uno de los 60 movimientos tenga su fusión ----
+    { pair: ['tackle', 'body-slam'], id: 'colossal-slam', name: 'Golpe Colosal', type: 'normal', kind: 'melee',
+      desc: 'Un placaje con todo el cuerpo en arco amplio que manda lejos a lo que toca.',
+      cd: 0.7, dmg: 48, radius: 62, arc: 2.6, knock: 200 },
+    { pair: ['flamethrower', 'dragon-breath'], id: 'inferno-breath', name: 'Aliento Infernal', type: 'fire', kind: 'cone',
+      desc: 'Un aliento de fuego dracónico, ancho y denso, que quema y entumece.',
+      cd: 0.7, dmg: 10, count: 12, arc: 1.1, speed: 390, life: 0.46, size: 7, pierce: 2, burn: 1, slow: 0.3 },
+    { pair: ['fire-spin', 'leaf-storm'], id: 'blazing-petals', name: 'Pétalos Ardientes', type: 'fire', kind: 'orbit',
+      desc: 'Un ciclón de pétalos en llamas gira amplio a tu alrededor.',
+      cd: 0.26, dmg: 20, count: 6, radius: 84, speed: 2.7, size: 10, burn: 1 },
+    { pair: ['bubble-beam', 'string-shot'], id: 'tide-net', name: 'Red Marina', type: 'water', kind: 'mine',
+      desc: 'Redes empapadas en el suelo que atrapan, frenan muchísimo y dejan empapado.',
+      cd: 1.0, dmg: 20, count: 4, radius: 64, dur: 8, slow: 0.7, wet: 1 },
+    { pair: ['giga-drain', 'bug-buzz'], id: 'devouring-swarm', name: 'Enjambre Devorador', type: 'grass', kind: 'aura',
+      desc: 'Un enjambre que roe todo lo cercano y te devuelve un poco de vida.',
+      cd: 0.5, dmg: 14, radius: 100, drain: 1 },
+    { pair: ['discharge', 'flash-cannon'], id: 'magnet-cannon', name: 'Cañón Magnético', type: 'electric', kind: 'beam',
+      desc: 'Un rayo magnético enorme que frena a quien atraviesa.',
+      cd: 1.1, dmg: 32, radius: 300, width: 50, slow: 0.3 },
+    { pair: ['psybeam', 'fairy-wind'], id: 'psychic-gleam', name: 'Resplandor Psíquico', type: 'psychic', kind: 'nova',
+      desc: 'Un estallido de luz psíquica en todas direcciones que busca a los enemigos.',
+      cd: 1.2, dmg: 16, speed: 240, count: 18, pierce: 1, life: 1.5, size: 8, homing: 2 },
+    { pair: ['psychic', 'dazzling-gleam'], id: 'moonlight-field', name: 'Luz Lunar', type: 'psychic', kind: 'aura',
+      desc: 'Un campo de luz lunar muy amplio que machaca lo cercano.',
+      cd: 0.45, dmg: 16, radius: 120 },
+    { pair: ['poison-sting', 'bug-bite'], id: 'lethal-sting', name: 'Aguijón Letal', type: 'poison', kind: 'projectile',
+      desc: 'Cuatro aguijones rapidísimos que atraviesan y envenenan mucho.',
+      cd: 0.4, dmg: 12, speed: 450, count: 4, spread: 0.2, pierce: 2, life: 1.1, size: 5, poison: 2 },
+    { pair: ['toxic', 'night-shade'], id: 'cursed-mist', name: 'Niebla Maldita', type: 'poison', kind: 'trail',
+      desc: 'Dejas una niebla oscura que intoxica mucho a quien la cruza.',
+      cd: 0.3, dmg: 10, radius: 40, dur: 4, poison: 2 },
+    { pair: ['bonemerang', 'rock-slide'], id: 'bone-avalanche', name: 'Avalancha Ósea', type: 'ground', kind: 'meteor',
+      desc: 'Seis huesos y rocas caen del cielo sobre los enemigos y los empujan.',
+      cd: 1.2, dmg: 30, count: 6, radius: 50, knock: 80 },
+    { pair: ['wing-attack', 'dark-pulse'], id: 'dark-gale', name: 'Ráfaga Oscura', type: 'flying', kind: 'nova',
+      desc: 'Un vendaval de plumas oscuras que atraviesa y empuja en todas direcciones.',
+      cd: 1.1, dmg: 15, speed: 270, count: 14, pierce: 1, life: 1.0, size: 8, knock: 60 },
+    { pair: ['hail', 'aura-sphere'], id: 'glacial-sphere', name: 'Esfera Glacial', type: 'ice', kind: 'projectile',
+      desc: 'Dos esferas de hielo que nunca fallan y frenan mucho.',
+      cd: 0.65, dmg: 30, speed: 290, count: 2, spread: 0.3, pierce: 1, life: 2.0, size: 9, homing: 4, slow: 0.5 },
+    { pair: ['lick', 'meteor-mash'], id: 'spectral-fist', name: 'Puño Espectral', type: 'ghost', kind: 'melee',
+      desc: 'Un puñetazo espectral de acero que paraliza y empuja.',
+      cd: 0.55, dmg: 40, radius: 60, arc: 2.2, slow: 0.5, knock: 90 }
   ];
   const BY = {};
   for (const f of LIST) {
@@ -67,8 +111,10 @@ G.Fusions = (() => {
 
   function forPair(a, b) { return LIST.find(f => (f.pair[0] === a && f.pair[1] === b) || (f.pair[0] === b && f.pair[1] === a)) || null; }
 
-  /** Recetas posibles con estos movimientos: [{ recipe, a, b }] (a y b son las instancias). */
-  function available(moves) {
+  const maxed = m => m.lvl >= m.def.maxLvl;
+
+  /** Pares de la receta que llevas: [{ recipe, a, b }] (a y b son las instancias). */
+  function held(moves) {
     const out = [];
     for (const f of LIST) {
       const a = moves.find(m => m.id === f.pair[0]), b = moves.find(m => m.id === f.pair[1]);
@@ -77,5 +123,11 @@ G.Fusions = (() => {
     return out;
   }
 
-  return { LIST, BY, forPair, available };
+  /** Recetas posibles ahora: los dos movimientos al nivel máximo. */
+  function available(moves) { return held(moves).filter(h => maxed(h.a) && maxed(h.b)); }
+
+  /** Recetas que llevas pero a medias (alguno sin llegar al máximo): para avisar. */
+  function pending(moves) { return held(moves).filter(h => !(maxed(h.a) && maxed(h.b))); }
+
+  return { LIST, BY, forPair, held, available, pending };
 })();

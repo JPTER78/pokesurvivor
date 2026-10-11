@@ -42,7 +42,7 @@ app ("Añadir a pantalla de inicio"). En **Ajustes** hay sonido, calidad gráfic
 El Pokémon ataca solo con **todos** sus movimientos a la vez (hasta 6), cada
 uno con su recarga, y lleva hasta 4 **pasivas** con nivel. El movimiento
 **enfocado** pega un 25% más. Al vencer a un legendario ganas un **vínculo**
-para **fusionar** dos movimientos en uno nuevo. Las rocas, cofres y la hierba
+para **fusionar** dos movimientos al nivel máximo en uno nuevo. Las rocas, cofres y la hierba
 alta se rompen; las paredes y los árboles bloquean los disparos enemigos; el
 agua frena y la lava quema (también a los enemigos).
 
