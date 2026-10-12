@@ -45,6 +45,10 @@ G.CHANGELOG = [
     ['Las runs de menos de 1 minuto ya no cuentan para el ranking.',
      'Runs shorter than 1 minute no longer count for the leaderboard.']
   ], fix: [
+    ['Cooperativo: elegir objeto o fusión ya para la partida para todos de verdad. Si a la vez subíais de nivel (al vencer a un jefe o abrir un cofre grande), el menú desaparecía, la partida seguía y a veces se quedaba parada para siempre. Ahora salen primero las cartas y después tu menú, y nadie juega hasta que elige el último.',
+     'Co-op: choosing a held item or a fusion now really pauses the run for everyone. If you levelled up at the same time (after beating a boss or opening a big chest), the menu vanished, the run kept going and sometimes froze forever. Now the cards come first, then your menu, and nobody plays until the last one has chosen.'],
+    ['Cooperativo: mientras esperas a que otro elija, ya puedes abrir la pausa para salir de la partida.',
+     'Co-op: while waiting for someone else to choose, you can now open the pause menu to leave the run.'],
     ['iPhone (Safari y Chrome): a veces no se podía cambiar de movimiento tocando los iconos, sobre todo con el otro dedo en el joystick. Además los botones quedan por encima de la barra de inicio.',
      'iPhone (Safari and Chrome): sometimes you could not switch moves by tapping the icons, especially with your other finger on the joystick. Buttons also sit above the home bar now.'],
     ['En las partidas de más de 84 minutos la pantalla se quedaba en negro, el juego se paraba o empezabas a subir de nivel sin fin. Ya puedes jugar todo lo que aguantes.',

@@ -26,9 +26,13 @@ const tmp = path.join(ROOT, 'tools', 'cache', 'app.js');
 fs.mkdirSync(path.dirname(tmp), { recursive: true });
 fs.writeFileSync(tmp, joined);
 const outJs = path.join(ROOT, 'js', 'app.min.js');
-const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-execFileSync(npx, ['--yes', 'terser@5', tmp, '--compress', 'passes=1', '--mangle', '--comments', 'false', '--ecma', '2020', '-o', outJs],
-  { stdio: 'inherit', shell: process.platform === 'win32' });
+const win = process.platform === 'win32';
+const npx = win ? 'npx.cmd' : 'npx';
+// En Windows va por la shell y las rutas con espacios ("VSCode projects") se
+// partían: entre comillas (12-10-2026).
+const q = s => (win ? `"${s}"` : s);
+execFileSync(npx, ['--yes', 'terser@5', q(tmp), '--compress', 'passes=1', '--mangle', '--comments', 'false', '--ecma', '2020', '-o', q(outJs)],
+  { stdio: 'inherit', shell: win });
 const min = fs.readFileSync(outJs);
 const hash = crypto.createHash('sha1').update(min).digest('hex').slice(0, 10);
 
