@@ -400,6 +400,47 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .stats > div > span:first-child { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .stats b { font-size: 22px; }
 
+/* ---------- caracteristicas en subida de nivel (estilo Pokemon) ---------- */
+.lvl-stats-box { width: min(560px, 100%); margin: 0 0 12px; }
+.lvl-stats-badge {
+  background: rgba(14, 24, 48, 0.85); border: 2px solid rgba(255, 210, 63, 0.7);
+  border-radius: 12px; padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(255, 210, 63, 0.12);
+  animation: pop 0.25s ease-out;
+}
+.lvl-stats-title {
+  font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--gold); margin-bottom: 8px; text-align: center;
+}
+.lvl-stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+@media (max-width: 580px) { .lvl-stats-grid { grid-template-columns: repeat(3, 1fr); } }
+.stat-pill {
+  background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(244, 248, 255, 0.18);
+  border-radius: 8px; padding: 6px 4px; display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+}
+.stat-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.stat-lbl.stat-hp  { color: #ff5f6d; }
+.stat-lbl.stat-atk { color: #ff8e4d; }
+.stat-lbl.stat-def { color: #5fb4ff; }
+.stat-lbl.stat-spa { color: #d07fff; }
+.stat-lbl.stat-spd { color: #5fe08a; }
+.stat-lbl.stat-spe { color: #ffd23f; }
+.stat-val { font-size: 16px; font-weight: 800; color: #fff; text-shadow: 0 0 6px rgba(255, 255, 255, 0.5); }
+
+.pause-stat-badge {
+  background: rgba(14, 24, 48, 0.85); border: 2px solid rgba(244, 248, 255, 0.25);
+  border-radius: 12px; padding: 10px 14px; text-align: center;
+}
+
+#lvl-skip {
+  background: rgba(79, 209, 255, 0.15); border: 2px solid rgba(127, 224, 255, 0.6);
+  color: #eaf2ff; transition: background .12s, transform .08s, border-color .12s;
+}
+#lvl-skip:hover {
+  background: rgba(79, 209, 255, 0.3); border-color: #7fe0ff; transform: translateY(-1px);
+}
+
 kbd {
   display: inline-block; padding: 0 6px; border: 2px solid rgba(244,248,255,.4); border-bottom-width: 3px;
   border-radius: 5px; font: inherit; font-size: 13px; text-shadow: none;
@@ -810,4 +851,410 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   /* El botón de elegir, pegado abajo de la ficha: se ve aunque la ficha no quepa. */
   #dex-detail .btn { position: sticky; bottom: 0; order: 9; margin-top: auto; padding: 8px 6px; font-size: 15px;
     box-shadow: 0 -6px 10px rgba(5,10,25,.6); }
+}
+
+/* ============ Ficha de datos Pokémon estilo GBA (scr-stats) ============ */
+.poke-status-card {
+  width: min(640px, 96vw);
+  max-height: calc(100dvh - 36px);
+  padding: 0 !important;
+  background: linear-gradient(180deg, #162447, #0d152a);
+  border: 3px solid var(--edge);
+  border-radius: 14px;
+  box-shadow: 0 0 0 3px var(--edge-out), inset 0 0 0 2px var(--edge-in), 0 20px 50px rgba(0,0,0,.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+
+.poke-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: linear-gradient(90deg, #6c5496, #8e6ecc);
+  border-bottom: 2px solid #3c2a5c;
+  color: #fff;
+  text-shadow: 1px 1px 0 #281742;
+}
+.poke-status-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.poke-status-title-icon {
+  font-size: 10px;
+  color: #ffd23f;
+}
+.poke-status-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.3);
+  border: 1px solid rgba(0,0,0,.4);
+}
+.pdot.active {
+  background: #ffffff;
+  box-shadow: 0 0 4px #fff;
+}
+.poke-status-x {
+  padding: 2px 8px;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
+}
+
+.poke-status-body {
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* Columna izquierda: Pokémon */
+.poke-status-col-left {
+  background: linear-gradient(180deg, rgba(62,148,118,.25), rgba(22,54,42,.35));
+  border: 2px solid rgba(82,192,152,.6);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.poke-dex-no-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #8be5be;
+  margin-bottom: 6px;
+}
+.poke-status-symbols {
+  font-size: 10px;
+  color: rgba(255,255,255,.45);
+  letter-spacing: 2px;
+}
+.poke-sprite-box {
+  width: 140px;
+  height: 110px;
+  border: 2px solid rgba(82,192,152,.5);
+  border-radius: 6px;
+  background-color: rgba(10,25,20,.6);
+  background-image: repeating-linear-gradient(180deg, rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) 2px, transparent 2px, transparent 4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.poke-sprite-canvas {
+  width: 140px;
+  height: 110px;
+}
+.poke-stat-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.poke-stat-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.poke-stat-meta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.poke-stat-level {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffcb3d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.poke-ball-ico {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  background: radial-gradient(circle at 35% 35%, #fff 2px, transparent 3px), linear-gradient(180deg, #ff3b30 50%, #fff 50%);
+  border-radius: 50%;
+  border: 1.5px solid #222;
+  box-shadow: 0 1px 2px rgba(0,0,0,.5);
+}
+.poke-stat-types {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Columna derecha: Sub-secciones */
+.poke-status-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.poke-section {
+  background: rgba(8, 16, 34, 0.7);
+  border: 2px solid rgba(255, 210, 63, 0.35);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.poke-section-ribbon {
+  background: linear-gradient(90deg, #ffe37a, #f0a31e);
+  color: #301a00;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 2px 10px;
+  text-shadow: 1px 1px 0 rgba(255,255,255,.3);
+}
+.poke-section-ribbon.ribbon-buffs {
+  background: linear-gradient(90deg, #7fe0ff, #5fb4ff);
+  color: #051a30;
+}
+.poke-section-content {
+  padding: 7px 10px;
+}
+
+/* Objeto */
+.poke-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.poke-item-text {
+  display: flex;
+  flex-direction: column;
+}
+.poke-item-name {
+  font-size: 14px;
+  color: var(--gold);
+}
+.poke-item-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.poke-item-none {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Características Grid */
+.poke-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 14px;
+  row-gap: 5px;
+  font-size: 13px;
+}
+.pstat-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,.04);
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+.pstat-lbl {
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: .5px;
+}
+.pstat-val {
+  font-weight: 700;
+  color: #ffffff;
+}
+.buff-bonus {
+  font-size: 10px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.c-hp { color: #ff5f6d; }
+.c-atk { color: #ff8e4d; }
+.c-def { color: #5fb4ff; }
+.c-spa { color: #d07fff; }
+.c-spd { color: #5fe08a; }
+.c-spe { color: #ffd23f; }
+
+/* Stats ganados en la partida actual */
+.poke-run-gains-row {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px dashed rgba(255,255,255,.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.poke-run-gains-title {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+.poke-run-gains-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pgain-pill {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Experiencia */
+.poke-exp-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.poke-exp-lbl {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 11px;
+}
+.poke-exp-val {
+  color: #fff;
+  font-size: 13px;
+  margin-left: 4px;
+}
+.poke-exp-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.poke-exp-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gold);
+}
+.poke-exp-bar-track {
+  flex: 1;
+  height: 9px;
+  background: rgba(0,0,0,.5);
+  border: 1.5px solid rgba(255,255,255,.3);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.poke-exp-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #3aa0ff, #7fe0ff);
+  transition: width .2s ease-out;
+}
+
+/* Buffs activos */
+.poke-buffs-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.poke-buff-pill {
+  background: rgba(0,0,0,.45);
+  border: 1.5px solid #ffd23f;
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-size: 11px;
+}
+.poke-buff-pill .buff-timer {
+  color: #ffd23f;
+  font-weight: 700;
+}
+
+/* Footer */
+.poke-status-footer {
+  padding: 8px 14px 12px;
+  display: flex;
+  justify-content: center;
+  background: rgba(0,0,0,.2);
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.poke-status-footer .btn {
+  padding: 7px 22px;
+  font-size: 15px;
+}
+
+@media (max-width: 580px) {
+  .poke-status-body {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .poke-status-col-left {
+    padding: 6px;
+  }
+  .poke-sprite-box {
+    width: 120px;
+    height: 90px;
+  }
+  .poke-sprite-canvas {
+    width: 120px;
+    height: 90px;
+  }
+}
+
+/* ============ Contenedor de Pausa con Ficha Pokémon al lado ============ */
+.pause-container {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 16px;
+  width: min(980px, 98vw);
+  max-height: calc(100dvh - 28px);
+}
+.pause-container .poke-status-card {
+  flex: 1.25;
+  width: auto;
+  min-width: 0;
+  max-width: 580px;
+}
+.pause-container .pause-menu-card {
+  flex: 0.85;
+  min-width: 290px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 22px;
+}
+@media (max-width: 860px) {
+  .pause-container {
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    max-height: calc(100dvh - 20px);
+    gap: 12px;
+  }
+  .pause-container .poke-status-card,
+  .pause-container .pause-menu-card {
+    width: 100%;
+    max-width: 560px;
+    flex: none;
+  }
 }

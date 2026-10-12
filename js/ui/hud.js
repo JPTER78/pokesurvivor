@@ -3,6 +3,8 @@
  */
 G.HUD = (() => {
   const F = (w, s) => `${w} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`;
+  let showStats = false;
+  function toggleStats() { showStats = !showStats; }
 
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
@@ -57,22 +59,139 @@ G.HUD = (() => {
     ctx.textAlign = 'center';
     ctx.fillText(Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), px + 48 + 84, py + 26);
 
-    // buffs activos
+    // Botón para alternar estadísticas en tiempo real
+    const btnStatsX = px + 48 + 168 + 8, btnStatsY = py + 16, btnStatsW = 54, btnStatsH = 14;
+    roundRect(ctx, btnStatsX, btnStatsY, btnStatsW, btnStatsH, 4);
+    ctx.fillStyle = showStats ? '#ffd23f' : 'rgba(8, 14, 28, 0.7)';
+    ctx.fill();
+    ctx.strokeStyle = '#ffd23f';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.font = F(800, 8.5);
+    ctx.fillStyle = showStats ? '#10131a' : '#ffd23f';
+    ctx.textAlign = 'center';
+    ctx.fillText('[C] STATS', btnStatsX + btnStatsW / 2, btnStatsY + 10.5);
+    G.Touch.addButton(btnStatsX, btnStatsY, btnStatsW, btnStatsH, toggleStats);
+
+    // buffs activos con temporizador y barra de drenado continuo
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     const LBL = { atk: 'ATK', spd: 'VEL', def: 'DEF', regen: 'REG' };
     let bx = px;
     ctx.textAlign = 'left';
+    let hasBuffs = false;
     for (const k in pl.buffs) {
       const b = pl.buffs[k];
       if (b.n <= 0) continue;
+      hasBuffs = true;
+
+      const pct = Math.round(b.n * b.amount * 100);
+      const timeStr = b.t >= 10 ? Math.ceil(b.t) + 's' : b.t.toFixed(1) + 's';
       ctx.font = F(800, 9);
-      const txt = LBL[k] + ' ×' + b.n;
-      const tw = ctx.measureText(txt).width + 12;
-      roundRect(ctx, bx, py + 34, tw, 15, 7);
-      ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fill();
+      const labelTxt = LBL[k] + ' ×' + b.n + ' (+' + pct + '%)';
+      const labelW = ctx.measureText(labelTxt).width;
+      ctx.font = F(700, 8);
+      const timeW = ctx.measureText(timeStr).width;
+      const tw = labelW + timeW + 16;
+      const th = 17;
+      const by = py + 34;
+
+      // 1. Fondo base oscuro
+      roundRect(ctx, bx, by, tw, th, 5);
+      ctx.fillStyle = 'rgba(8, 14, 28, 0.8)'; ctx.fill();
+
+      // 2. Barra de tiempo decreciente (se drena de derecha a izquierda según b.t)
+      const frac = G.U.clamp(b.t / (b.dur || 5), 0, 1);
+      ctx.save();
+      roundRect(ctx, bx, by, tw, th, 5);
+      ctx.clip();
+      ctx.fillStyle = COL[k] + '33';
+      ctx.fillRect(bx, by, tw * frac, th);
+      // Barrita inferior de progreso visible
       ctx.fillStyle = COL[k];
-      ctx.fillText(txt, bx + 6, py + 45);
-      bx += tw + 5;
+      ctx.fillRect(bx, by + th - 2.5, tw * frac, 2.5);
+      ctx.restore();
+
+      // 3. Borde del color del stat
+      ctx.strokeStyle = COL[k] + 'aa';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // 4. Texto de la etiqueta y porcentaje
+      ctx.font = F(800, 9);
+      ctx.fillStyle = COL[k];
+      ctx.fillText(labelTxt, bx + 5, by + 11.5);
+
+      // 5. Tiempo restante en segundos
+      ctx.font = F(700, 8);
+      ctx.fillStyle = '#fffdf0';
+      ctx.fillText(timeStr, bx + 5 + labelW + 4, by + 11.5);
+
+      bx += tw + 6;
+    }
+
+    // Poder de altar activo (estatua / bendición)
+    if (pl.power) {
+      const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
+      ctx.font = F(800, 9);
+      ctx.textAlign = 'left';
+      const tw = ctx.measureText(txt).width + 12;
+      roundRect(ctx, bx, py + 34, tw, 17, 6);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.strokeStyle = pw.def.color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = pw.def.color;
+      ctx.fillText(txt, bx + 6, py + 45.5);
+      bx += tw + 6;
+    }
+
+    const hasBadges = bx > px;
+
+    // ---------- panel de estadísticas en tiempo real (tecla C o click en [C] STATS) ----------
+    if (showStats) {
+      const sx = px, sy = py + (hasBadges ? 56 : 36);
+      const sw = 236, sh = 92;
+
+      roundRect(ctx, sx, sy, sw, sh, 6);
+      ctx.fillStyle = 'rgba(8, 14, 28, 0.94)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 210, 63, 0.75)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+      ctx.textAlign = 'left';
+      ctx.font = F(800, 10);
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillText('ESTADÍSTICAS EN VIVO', sx + 8, sy + 15);
+
+      ctx.textAlign = 'right';
+      ctx.font = F(600, 8.5);
+      ctx.fillStyle = '#8fa3c4';
+      ctx.fillText('(C para cerrar)', sx + sw - 8, sy + 15);
+
+      const atkBuff = pl.buffs.atk.n > 0 ? ` (+${Math.round(pl.buffs.atk.n * pl.buffs.atk.amount * 100)}%)` : '';
+      const defBuff = pl.buffs.def.n > 0 ? ` (+${Math.round(pl.buffs.def.n * pl.buffs.def.amount * 100)}%)` : '';
+      const spdBuff = pl.buffs.spd.n > 0 ? ` (+${Math.round(pl.buffs.spd.n * pl.buffs.spd.amount * 100)}%)` : '';
+      const rgnBuff = pl.buffs.regen.n > 0 ? ` (+${(pl.buffs.regen.n * pl.buffs.regen.amount).toFixed(1)}/s)` : '';
+
+      const lines = [
+        { lbl: 'PS:', val: `${Math.ceil(pl.hp)} / ${Math.round(pl.maxHp)}`, col: '#ff5f6d' },
+        { lbl: 'ATQ:', val: `×${pl.atk.toFixed(2)}${atkBuff}`, col: pl.buffs.atk.n > 0 ? '#ff8e4d' : '#eaf2ff' },
+        { lbl: 'DEF:', val: `${Math.round(pl.reduction * 100)}%${defBuff}`, col: pl.buffs.def.n > 0 ? '#5fb4ff' : '#eaf2ff' },
+        { lbl: 'VEL:', val: `${Math.round(pl.spd)} px/s${spdBuff}`, col: pl.buffs.spd.n > 0 ? '#ffd23f' : '#eaf2ff' },
+        { lbl: 'REC:', val: `-${Math.round((1 - pl.cdMul) * 100)}%`, col: '#d07fff' },
+        { lbl: 'REG:', val: `+${pl.regen.toFixed(1)}/s${rgnBuff}`, col: pl.buffs.regen.n > 0 ? '#5fe08a' : '#eaf2ff' }
+      ];
+
+      ctx.textAlign = 'left';
+      ctx.font = F(700, 9);
+      for (let i = 0; i < lines.length; i++) {
+        const col = i < 3 ? 0 : 1;
+        const row = i % 3;
+        const lx = sx + 8 + col * 116;
+        const ly = sy + 32 + row * 19;
+        ctx.fillStyle = '#8fa3c4';
+        ctx.fillText(lines[i].lbl, lx, ly);
+        ctx.fillStyle = lines[i].col;
+        ctx.fillText(lines[i].val, lx + 26, ly);
+      }
     }
 
     // ---------- reloj / bioma / kills ----------
@@ -132,20 +251,7 @@ G.HUD = (() => {
       ctx.restore();
     }
 
-    // Poder de altar activo.
-    if (pl.power) {
-      const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
-      ctx.font = F(800, 9);
-      ctx.textAlign = 'left';
-      const tw = ctx.measureText(txt).width + 12;
-      roundRect(ctx, bx, py + 34, tw, 15, 7);
-      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
-      ctx.fillStyle = pw.def.color;
-      ctx.fillText(txt, bx + 6, py + 45);
-      bx += tw + 5;
-    }
-
-    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (bx > px ? 56 : 40));
+    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (showStats ? (hasBadges ? 56 : 36) + 98 : (bx > px ? 56 : 40)));
 
     // Grieta: flecha grande que late en el borde si no se ve, y si se ve, una
     // flecha que bota encima; en la arena, cuenta atrás.
@@ -459,5 +565,5 @@ G.HUD = (() => {
     }
   }
 
-  return { draw, roundRect, bar };
+  return { draw, roundRect, bar, toggleStats, get showStats() { return showStats; } };
 })();

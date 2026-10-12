@@ -10,8 +10,35 @@ G.RunUI = (() => {
     $('lvl-wait').textContent = '';
     $('lvl-wait').classList.toggle('hidden', !coop);
     $('cards').classList.remove('done');
+
+    const p = G.Game.player;
+    const statBox = $('lvl-stat-gains');
+    if (statBox) {
+      const g = (p && p.consumeStatGains) ? p.consumeStatGains() : null;
+      if (g) {
+        statBox.innerHTML = `
+          <div class="lvl-stats-badge">
+            <div class="lvl-stats-title">▲ ¡Características aumentadas!</div>
+            <div class="lvl-stats-grid">
+              <div class="stat-pill"><span class="stat-lbl stat-hp">PS</span><span class="stat-val">+${g.hp}</span></div>
+              <div class="stat-pill"><span class="stat-lbl stat-atk">ATAQUE</span><span class="stat-val">+${g.atk}</span></div>
+              <div class="stat-pill"><span class="stat-lbl stat-def">DEFENSA</span><span class="stat-val">+${g.def}</span></div>
+              <div class="stat-pill"><span class="stat-lbl stat-spa">AT. ESP.</span><span class="stat-val">+${g.spatk}</span></div>
+              <div class="stat-pill"><span class="stat-lbl stat-spd">DEF. ESP.</span><span class="stat-val">+${g.spdef}</span></div>
+              <div class="stat-pill"><span class="stat-lbl stat-spe">VELOCIDAD</span><span class="stat-val">+${g.spd}</span></div>
+            </div>
+          </div>`;
+        statBox.classList.remove('hidden');
+      } else {
+        statBox.innerHTML = '';
+        statBox.classList.add('hidden');
+      }
+    }
+
     renderCards(list);
     $('lvl-reroll').onclick = reroll;
+    $('lvl-skip').classList.remove('hidden');
+    $('lvl-skip').onclick = skip;
     G.UI.show('scr-levelup');
   }
 
@@ -64,12 +91,29 @@ G.RunUI = (() => {
     const c = offers[i], cb = offerCb;
     offers = null; offerCb = null;
     $('lvl-reroll').classList.add('hidden');
+    $('lvl-skip').classList.add('hidden');
     if (coopMode) {
       // Se queda la carta elegida a la vista mientras eligen los demás.
       $('cards').querySelectorAll('.card').forEach((el, j) => el.classList.toggle('picked', j === i));
       $('cards').classList.add('done');
     } else G.UI.hide('scr-levelup');
     cb(c);
+  }
+
+  /**
+   * Omitir recompensa: no coge cartas y potencia aún más las estadísticas del Pokémon.
+   */
+  function skip() {
+    if (!offerCb) return;
+    const cb = offerCb;
+    offers = null; offerCb = null;
+    $('lvl-reroll').classList.add('hidden');
+    $('lvl-skip').classList.add('hidden');
+    if (coopMode) {
+      $('cards').querySelectorAll('.card').forEach(el => el.classList.remove('picked'));
+      $('cards').classList.add('done');
+    } else G.UI.hide('scr-levelup');
+    cb(null);
   }
 
   /** Cooperativo: quién falta por elegir. */
@@ -86,6 +130,7 @@ G.RunUI = (() => {
   function closeLevelUp() {
     offers = null; offerCb = null;
     $('cards').classList.remove('done');
+    $('lvl-skip').classList.add('hidden');
     G.UI.hide('scr-levelup');
   }
 
@@ -114,6 +159,8 @@ G.RunUI = (() => {
         <div style="font-size:12px;color:var(--muted)">${r.breakdown}</div></div>
       ${r.t1 || r.t10 ? `<div style="grid-column:1/-1"><span>Tickets del gacha</span><b>
         ${r.t1 ? G.Icons.html('ticket', 22) + ' +' + r.t1 + ' ' : ''}${r.t10 ? G.Icons.html('ticket10', 22) + ' +' + r.t10 + ' ×10' : ''}</b></div>` : ''}
+      ${r.runStats ? `<div style="grid-column:1/-1"><span>Stats ganados al subir de nivel</span><b style="font-size:13px;color:var(--gold)">
+        PS +${r.runStats.hp} · ATQ +${r.runStats.atk} · DEF +${r.runStats.def} · AT.ESP +${r.runStats.spatk} · DEF.ESP +${r.runStats.spdef} · VEL +${r.runStats.spd}</b></div>` : ''}
       <div style="grid-column:1/-1"><span>Movimientos</span><b style="font-size:15px">
         ${r.moves.map(m => `${G.Icons.html('move:' + m.id, 16)} ${m.name} Nv.${m.lvl}`).join(' · ') || '—'}</b></div>
       ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
@@ -220,17 +267,128 @@ G.RunUI = (() => {
     renderBond();
   }
 
+  function populateStatsCard(p) {
+    if (!p) return;
+    const dex = p.dex;
+    const mon = p.mon;
+    const dexNum = String(dex).padStart(3, '0');
+
+    const dexEl = $('poke-stat-dex');
+    if (dexEl) dexEl.textContent = 'Nº ' + dexNum;
+    const nameEl = $('poke-stat-name');
+    if (nameEl) nameEl.textContent = mon.name;
+    const lvlEl = $('poke-stat-lvl');
+    if (lvlEl) lvlEl.textContent = 'Nv. ' + p.level;
+
+    const shinyBadge = $('poke-stat-shiny-badge');
+    if (shinyBadge) {
+      shinyBadge.innerHTML = p.shiny ? `<span title="Shiny" style="color:var(--gold);font-size:16px;margin-left:4px">★</span>` : '';
+    }
+
+    const typesEl = $('poke-stat-types');
+    if (typesEl) {
+      typesEl.innerHTML = G.UI.typeChips(mon.types);
+    }
+
+    const cv = $('poke-stat-sprite');
+    if (cv) {
+      G.UI.sprite(cv, dex, { shiny: p.shiny, lively: true, hero: true, scale: 2.2 });
+    }
+
+    // Objeto
+    const itemEl = $('poke-stat-item');
+    if (itemEl) {
+      if (p.item && G.Items.BY[p.item]) {
+        const it = G.Items.BY[p.item];
+        itemEl.innerHTML = `
+          <div class="poke-item-row">
+            <div class="poke-item-ico">${G.Icons.html(it.id, 28)}</div>
+            <div class="poke-item-text">
+              <b class="poke-item-name">${it.name}</b>
+              <div class="poke-item-desc">${it.desc}</div>
+            </div>
+          </div>`;
+      } else {
+        itemEl.innerHTML = `<span class="poke-item-none">NO TIENE</span>`;
+      }
+    }
+
+    // Características
+    const atkBuff = p.buffs.atk.n > 0 ? ` <small class="buff-bonus">(+${Math.round(p.buffs.atk.n * p.buffs.atk.amount * 100)}%)</small>` : '';
+    const defBuff = p.buffs.def.n > 0 ? ` <small class="buff-bonus">(+${Math.round(p.buffs.def.n * p.buffs.def.amount * 100)}%)</small>` : '';
+    const spdBuff = p.buffs.spd.n > 0 ? ` <small class="buff-bonus">(+${Math.round(p.buffs.spd.n * p.buffs.spd.amount * 100)}%)</small>` : '';
+    const rgnBuff = p.buffs.regen.n > 0 ? ` <small class="buff-bonus">(+${(p.buffs.regen.n * p.buffs.regen.amount).toFixed(1)}/s)</small>` : '';
+
+    if ($('pstat-val-hp')) $('pstat-val-hp').innerHTML = `${Math.ceil(p.hp)} / ${Math.round(p.maxHp)}`;
+    if ($('pstat-val-spa')) $('pstat-val-spa').innerHTML = `-${Math.round((1 - p.cdMul) * 100)}%`;
+    if ($('pstat-val-atk')) $('pstat-val-atk').innerHTML = `×${p.atk.toFixed(2)}${atkBuff}`;
+    if ($('pstat-val-spd')) $('pstat-val-spd').innerHTML = `+${p.regen.toFixed(1)}/s${rgnBuff}`;
+    if ($('pstat-val-def')) $('pstat-val-def').innerHTML = `${Math.round(p.reduction * 100)}%${defBuff}`;
+    if ($('pstat-val-spe')) $('pstat-val-spe').innerHTML = `${Math.round(p.spd)} px/s${spdBuff}`;
+
+    // Stats ganados en la run
+    const s = p.runStats || { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spd: 0 };
+    const gainsEl = $('poke-stat-gains');
+    if (gainsEl) {
+      gainsEl.innerHTML = `
+        <span class="pgain-pill c-hp">PS +${s.hp}</span>
+        <span class="pgain-pill c-atk">ATQ +${s.atk}</span>
+        <span class="pgain-pill c-def">DEF +${s.def}</span>
+        <span class="pgain-pill c-spa">AT.ESP +${s.spatk}</span>
+        <span class="pgain-pill c-spd">DF.ESP +${s.spdef}</span>
+        <span class="pgain-pill c-spe">VEL +${s.spd}</span>`;
+    }
+
+    // Experiencia
+    const curXp = Math.floor(p.xp);
+    const neededXp = Math.max(0, Math.ceil(p.xpNext - p.xp));
+    const xpPct = G.U.clamp(p.xp / p.xpNext * 100, 0, 100);
+    if ($('poke-stat-xp')) $('poke-stat-xp').textContent = curXp.toLocaleString('es');
+    if ($('poke-stat-xpnext')) $('poke-stat-xpnext').textContent = neededXp.toLocaleString('es');
+    const xpBar = $('poke-stat-xpbar');
+    if (xpBar) xpBar.style.width = xpPct + '%';
+
+    // Buffs activos
+    const buffsBox = $('poke-stat-buffs-box');
+    const buffsList = $('poke-stat-buffs-list');
+    if (buffsBox && buffsList) {
+      const active = [];
+      if (p.buffs.atk.n > 0) active.push({ name: 'Ataque', txt: `+${Math.round(p.buffs.atk.n * p.buffs.atk.amount * 100)}%`, t: p.buffs.atk.t, col: '#ff6b4d' });
+      if (p.buffs.def.n > 0) active.push({ name: 'Defensa', txt: `+${Math.round(p.buffs.def.n * p.buffs.def.amount * 100)}%`, t: p.buffs.def.t, col: '#5fb4ff' });
+      if (p.buffs.spd.n > 0) active.push({ name: 'Velocidad', txt: `+${Math.round(p.buffs.spd.n * p.buffs.spd.amount * 100)}%`, t: p.buffs.spd.t, col: '#ffd23f' });
+      if (p.buffs.regen.n > 0) active.push({ name: 'Regeneración', txt: `+${(p.buffs.regen.n * p.buffs.regen.amount).toFixed(1)}/s`, t: p.buffs.regen.t, col: '#5fe08a' });
+      if (p.power) active.push({ name: p.power.def.name, txt: 'Altar', t: p.power.t, col: p.power.def.color });
+
+      if (active.length > 0) {
+        buffsBox.classList.remove('hidden');
+        buffsList.innerHTML = active.map(b => `
+          <div class="poke-buff-pill" style="border-color:${b.col}">
+            <b style="color:${b.col}">${b.name}:</b> ${b.txt} · <span class="buff-timer">${b.t.toFixed(1)}s</span>
+          </div>
+        `).join('');
+      } else {
+        buffsBox.classList.add('hidden');
+        buffsList.innerHTML = '';
+      }
+    }
+  }
+
   function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
+
+    const p = G.Game.player;
+    if (p) populateStatsCard(p);
+
     G.UI.show('scr-pause');
   }
 
   function wirePause(onResume, onQuit) {
     $('btn-resume').onclick = onResume;
     $('btn-quit').onclick = onQuit;
+    $('btn-pause-settings').onclick = () => G.SettingsUI.open();
   }
 
-  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, reroll, skip, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause, populateStatsCard };
 })();

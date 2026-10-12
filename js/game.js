@@ -82,6 +82,10 @@ G.Game = (() => {
     else if (state === 'paused') { state = 'playing'; G.UI.hideAll(); }
   }
 
+  function toggleStats() {
+    G.HUD.toggleStats();
+  }
+
   // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
@@ -201,8 +205,16 @@ G.Game = (() => {
       G.UI.hide('scr-pause');
       G.Audio.sfx('levelup');
       G.RunUI.showLevelUp(level, G.LevelUp.offer(pl), card => {
-        G.Audio.sfx('confirm');
-        card.apply(pl);
+        if (card) {
+          G.Audio.sfx('confirm');
+          card.apply(pl);
+        } else {
+          pl.skipRewardAndBoostStats();
+          G.Audio.sfx('legend');
+          G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#7fe0ff', 30, 220);
+          G.FX.ring(pl.x, pl.y, 8, 110, '#7fe0ff', 0.8, 6);
+          G.FX.dmgText(pl.x, pl.y - pl.bodyH - 12, '¡Stats extra!', '#7fe0ff', true);
+        }
         G.Coop.localPicked();
       }, true);
     },
@@ -316,7 +328,7 @@ G.Game = (() => {
 
     G.RunUI.showOver({
       dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
-      moves: pl.moves, caught,
+      moves: pl.moves, caught, runStats: pl.runStats,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
@@ -338,9 +350,19 @@ G.Game = (() => {
     pendingLevels--;
     state = 'levelup';
     G.Audio.sfx('levelup');
+    G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffd23f', 24, 180);
+    G.FX.ring(pl.x, pl.y, 8, 80, '#ffd23f', 0.6, 5);
     G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
-      G.Audio.sfx('confirm');
-      card.apply(pl);
+      if (card) {
+        G.Audio.sfx('confirm');
+        card.apply(pl);
+      } else {
+        pl.skipRewardAndBoostStats();
+        G.Audio.sfx('legend');
+        G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#7fe0ff', 30, 220);
+        G.FX.ring(pl.x, pl.y, 8, 110, '#7fe0ff', 0.8, 6);
+        G.FX.dmgText(pl.x, pl.y - pl.bodyH - 12, '¡Stats extra!', '#7fe0ff', true);
+      }
       state = 'playing';
     });
   }
@@ -467,6 +489,7 @@ G.Game = (() => {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
       }
       if (G.Input.tap('keyr')) G.RunUI.reroll();
+      if (G.Input.tap('space') || G.Input.tap('keyo') || G.Input.tap('digit0') || G.Input.tap('numpad0')) G.RunUI.skip();
       return;
     }
     if (G.UI.isOpen('scr-bond')) {
@@ -489,6 +512,7 @@ G.Game = (() => {
     }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
+    if (G.Input.tap('keyc')) { toggleStats(); return; }
     for (let i = 0; i < 4; i++) {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
     }
@@ -793,7 +817,7 @@ G.Game = (() => {
     debugTime(t) { G.Guard.flag('debug'); time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
     debugSpeed(k) { if (k > 1) G.Guard.flag('debug'); speedK = k; },
-    togglePause,
+    togglePause, toggleStats,
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */

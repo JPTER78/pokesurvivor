@@ -38,10 +38,10 @@ G.Player = class Player {
     this.bonds = 0;            // vínculos por usar (premio de los legendarios)
 
     this.buffs = {
-      atk: { n: 0, t: 0, amount: 0 },
-      spd: { n: 0, t: 0, amount: 0 },
-      def: { n: 0, t: 0, amount: 0 },
-      regen: { n: 0, t: 0, amount: 0 }
+      atk: { n: 0, t: 0, amount: 0, dur: 0, maxStacks: 5 },
+      spd: { n: 0, t: 0, amount: 0, dur: 0, maxStacks: 5 },
+      def: { n: 0, t: 0, amount: 0, dur: 0, maxStacks: 5 },
+      regen: { n: 0, t: 0, amount: 0, dur: 0, maxStacks: 5 }
     };
 
     this.level = 1;
@@ -73,6 +73,9 @@ G.Player = class Player {
     this.sashT = -999;         // última vez que salvó la Banda Focus
     this.bellHeal = 0;         // curación pendiente del Cascabel Concha
     this.statsTaken = {};      // mejoras de stat cogidas (condición de evolución)
+    this.runStats = { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spd: 0 };
+    this.latestStatGains = null;
+    this.pendingStatGains = null;
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -265,6 +268,72 @@ G.Player = class Player {
 
   addMaxHp(amount) { this.maxHp += amount; this.hp += amount; }
 
+  /**
+   * Sube las caracteristicas del Pokemon al azar entre 1 y 3 (como el juego original).
+   * Afecta a los atributos de la run directamente sin necesidad de cartas de stat.
+   */
+  rollLevelStats() {
+    const gains = {
+      hp: Math.floor(Math.random() * 3) + 1,
+      atk: Math.floor(Math.random() * 3) + 1,
+      def: Math.floor(Math.random() * 3) + 1,
+      spatk: Math.floor(Math.random() * 3) + 1,
+      spdef: Math.floor(Math.random() * 3) + 1,
+      spd: Math.floor(Math.random() * 3) + 1
+    };
+    if (!this.pendingStatGains) {
+      this.pendingStatGains = { ...gains };
+    } else {
+      for (const k in gains) this.pendingStatGains[k] += gains[k];
+    }
+    this.latestStatGains = { ...this.pendingStatGains };
+
+    for (const k in gains) {
+      this.runStats[k] = (this.runStats[k] || 0) + gains[k];
+    }
+
+    // Efectos reales en los stats de la run:
+    this.addMaxHp(gains.hp * 2);
+    this.atkMul *= (1 + gains.atk * 0.015);
+    this.dmgReduce = Math.min(0.70, this.dmgReduce + gains.def * 0.003);
+    this.cdMul = Math.max(0.25, this.cdMul * (1 - gains.spatk * 0.006));
+    this.regenFlat += gains.spdef * 0.03;
+    this.baseSpd += gains.spd * 0.6;
+
+    return gains;
+  }
+
+  consumeStatGains() {
+    const g = this.pendingStatGains || this.latestStatGains;
+    this.pendingStatGains = null;
+    return g;
+  }
+
+  /**
+   * Omitir la recompensa de subida de nivel para entrenar y aumentar aún más las estadísticas.
+   * Otorga +1 a +3 puntos extra a cada estadística.
+   */
+  skipRewardAndBoostStats() {
+    const bonus = {
+      hp: Math.floor(Math.random() * 3) + 1,
+      atk: Math.floor(Math.random() * 3) + 1,
+      def: Math.floor(Math.random() * 3) + 1,
+      spatk: Math.floor(Math.random() * 3) + 1,
+      spdef: Math.floor(Math.random() * 3) + 1,
+      spd: Math.floor(Math.random() * 3) + 1
+    };
+    for (const k in bonus) {
+      this.runStats[k] = (this.runStats[k] || 0) + bonus[k];
+    }
+    this.addMaxHp(bonus.hp * 2);
+    this.atkMul *= (1 + bonus.atk * 0.015);
+    this.dmgReduce = Math.min(0.70, this.dmgReduce + bonus.def * 0.003);
+    this.cdMul = Math.max(0.25, this.cdMul * (1 - bonus.spatk * 0.006));
+    this.regenFlat += bonus.spdef * 0.03;
+    this.baseSpd += bonus.spd * 0.6;
+    return bonus;
+  }
+
   /** Devuelve cuántos niveles ha subido (pueden ser varios de golpe). */
   gainXp(amount) {
     this.xp += amount * this.xpMul;
@@ -273,6 +342,7 @@ G.Player = class Player {
       this.xp -= this.xpNext;
       this.level++;
       this.xpNext = Player.xpFor(this.level);
+      this.rollLevelStats();
       leveled++;
     }
     return leveled;
@@ -304,8 +374,10 @@ G.Player = class Player {
     const b = this.buffs[stat];
     if (!b) return;
     b.amount = amount;
-    b.n = Math.min(maxStacks, b.n + 1);
+    b.maxStacks = maxStacks || 5;
+    b.n = Math.min(b.maxStacks, b.n + 1);
     b.t = dur;
+    b.dur = dur;
   }
 
   // ---------------- ciclo ----------------
@@ -318,7 +390,10 @@ G.Player = class Player {
 
     for (const k in this.buffs) {
       const b = this.buffs[k];
-      if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
+      if (b.n > 0) {
+        b.t -= dt;
+        if (b.t <= 0) { b.n = 0; b.t = 0; b.dur = 0; }
+      }
     }
     if (this.slowT > 0) this.slowT -= dt;
     if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
@@ -453,19 +528,41 @@ G.Player = class Player {
     const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
 
-    // Arcos de buff alrededor de los pies.
+    // Arcos de buff alrededor de los pies: representan la acumulación y el tiempo restante que disminuye a 0.
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     let i = 0;
     for (const k in this.buffs) {
       const b = this.buffs[k];
-      if (b.n <= 0) continue;
+      if (b.n <= 0 || b.t <= 0 || this.dead) continue;
+      const rx = this.r * 1.8 + i * 5;
+      const ry = rx * 0.42;
+      const dur = b.dur || 7;
+      const timeFrac = G.U.clamp(b.t / dur, 0, 1);
+      const maxStacks = b.maxStacks || 5;
+      const maxArc = 6.2832 * Math.min(1, b.n / maxStacks);
+      const currentArc = maxArc * timeFrac;
+
       ctx.save();
-      ctx.globalAlpha = 0.6;
-      ctx.strokeStyle = COL[k];
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(this.x, this.y, this.r * 1.8 + i * 5, (this.r * 1.8 + i * 5) * 0.42, 0, 0, 6.2832 * (b.n / 5));
-      ctx.stroke();
+      // Pista de fondo tenue mostrando el nivel máximo alcanzado por los lanzamientos
+      if (timeFrac < 0.98) {
+        ctx.globalAlpha = 0.22;
+        ctx.strokeStyle = COL[k];
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y, rx, ry, 0, -Math.PI / 2, -Math.PI / 2 + maxArc);
+        ctx.stroke();
+      }
+
+      // Arco activo que va disminuyendo en tiempo real hasta llegar a 0
+      if (currentArc > 0.02) {
+        const blink = b.t < 1.8 ? (Math.floor(performance.now() / 120) % 2 ? 0.35 : 1) : 1;
+        ctx.globalAlpha = 0.8 * blink;
+        ctx.strokeStyle = COL[k];
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y, rx, ry, 0, -Math.PI / 2, -Math.PI / 2 + currentArc);
+        ctx.stroke();
+      }
       ctx.restore();
       i++;
     }
