@@ -104,6 +104,10 @@ G.I18n.add({
   '+2 orbes, ×1,7 daño y más radio': '+2 orbs, ×1.7 damage and more radius',
   '+6 proyectiles, ×1,6 daño y +1 perforación': '+6 projectiles, ×1.6 damage and +1 pierce',
   '×1,8 daño y un 35% más de radio': '×1.8 damage and 35% more radius',
+  // ---------------- ficha de movimiento (barra de habilidades) ----------------
+  'Daño': 'Damage', 'Recarga': 'Cooldown', 'Duración': 'Duration',
+  'Siguiente:': 'Next:', 'Evolución:': 'Evolution:', 'necesita': 'needs', '¡lista!': 'ready!',
+
   'Vigor': 'Vigor', 'Potencia': 'Power', 'Carrera': 'Sprint', 'Reflejos': 'Reflexes', 'Coraza': 'Armor', 'Síntesis': 'Synthesis',
   'Imán': 'Magnet', 'Aprendizaje': 'Learning',
 
