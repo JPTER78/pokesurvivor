@@ -361,13 +361,21 @@ G.Player = class Player {
     //   cuerpo a cuerpo y el resto:   lo que te toca > el jefe > el más cercano
     // Con una horda encima casi siempre te toca algo; si eso ganara siempre,
     // los ataques a distancia no le darían nunca al jefe.
+    // Cofre pequeño cerca: si te acercas a él, se le apunta aunque haya enemigos
+    // (si no, sólo le das cuando queda de casualidad entre tú y un enemigo).
+    //   pegado (CHEST_NEAR): gana incluso a lo que te toca
+    //   cerca  (CHEST_FAR):  gana al jefe y al más cercano, no a lo que te toca
     // Sin enemigos, apunta a la roca o cofre más cercano.
     const all = G.EnemyMgr.all();
     const m = this.activeMove();
     const ranged = !!m && (m.kind === 'projectile' || m.kind === 'beam');
     const threat = G.Projectiles.nearest(all, this.x, this.y, this.r + 24);
     const boss = all.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
-    const tg = (ranged ? boss || threat : threat || boss)
+    const CHEST_NEAR = 60, CHEST_FAR = 100;
+    const chest = G.World.nearestBreakable(this.x, this.y, CHEST_FAR, 'chest');
+    const chestNear = chest && G.U.dist(this.x, this.y, chest.x, chest.y) <= CHEST_NEAR ? chest : null;
+    const foe = ranged ? boss || threat : threat || boss;
+    const tg = chestNear || (threat ? foe : chest || foe)
             || G.Projectiles.nearest(all, this.x, this.y, 520)
             || G.World.nearestBreakable(this.x, this.y, 200);
     this.target = tg;
