@@ -30,7 +30,14 @@ G.Combat = (() => {
     m.t -= dt;
     if (m.t > 0) return;
     // Los ataques que necesitan blanco esperan a tenerlo (no gastes animación al aire).
-    if (needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
+    // Con "Apuntado: hacia el cursor" se dispara siempre hacia el cursor, haya o no blanco.
+    // Excepción: la cadena necesita un enemigo cerca del cursor; si no hay, espera.
+    const cursorAim = G.Settings && G.Settings.get('aim') === 'cursor' && !(G.Touch && G.Touch.active);
+    if (cursorAim && m.kind === 'chain' && !(pl.target && pl.target.hurt && !pl.target.dead)) {
+      m.t = 0.05;
+      return;
+    }
+    if (!cursorAim && needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
       m.t = 0.05;
       return;
     }
@@ -271,7 +278,17 @@ G.Combat = (() => {
   function meteors(pl, m) {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     const n = Math.max(1, m.count | 0);
-    const near = G.EnemyMgr.queryCircle(pl.x, pl.y, reach(m)).filter(e => !e.dead);
+    // Con "Apuntado: hacia el cursor", caen sobre lo que haya cerca del cursor
+    // (pero sin pasar del alcance desde el jugador).
+    let near;
+    if (G.Settings && G.Settings.get('aim') === 'cursor' && !(G.Touch && G.Touch.active)) {
+      const w = G.Input.worldMouse();
+      if (w) {
+        near = G.EnemyMgr.queryCircle(w.x, w.y, 170).filter(e => !e.dead && G.U.dist(pl.x, pl.y, e.x, e.y) <= reach(m));
+        if (!near.length) near = G.EnemyMgr.queryCircle(pl.x, pl.y, reach(m)).filter(e => !e.dead);
+      }
+    }
+    if (!near) near = G.EnemyMgr.queryCircle(pl.x, pl.y, reach(m)).filter(e => !e.dead);
     G.U.shuffle ? G.U.shuffle(near) : near.sort(() => Math.random() - 0.5);
     for (let i = 0; i < n; i++) {
       const e = near[i];

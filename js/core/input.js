@@ -40,6 +40,30 @@ G.Input = (() => {
     /** true sólo en el frame en que se pulsó. */
     tap(c) { return pressed.has(c); },
     mouse() { return { x: mx, y: my, down: mdown }; },
+    /**
+     * Posición del cursor en coordenadas de mundo (para "Apuntado: hacia el
+     * cursor"). Se convierte el píxel CSS sobre el canvas con la escala y el
+     * origen de G.Camera. Sin cámara lista, devuelve null.
+     */
+    worldMouse() {
+      if (!G.Camera || !G.Camera.scale) return null;
+      const cv = document.getElementById('game');
+      const r = cv ? cv.getBoundingClientRect() : null;
+      const dx = r ? mx - r.left : mx, dy = r ? my - r.top : my;
+      const s = G.Camera.scale;
+      return { x: G.Camera.left() + dx / s, y: G.Camera.top() + dy / s };
+    },
+    /**
+     * Ángulo desde (x, y) hacia donde apunta el cursor, o null si no hay
+     * cursor utilizable (p. ej. en táctil).
+     */
+    cursorAim(x, y) {
+      if (G.Touch && G.Touch.active) return null;
+      const w = this.worldMouse();
+      if (!w) return null;
+      if (Math.hypot(w.x - x, w.y - y) < 2) return null;
+      return Math.atan2(w.y - y, w.x - x);
+    },
     endFrame() { pressed.clear(); }
   };
 })();

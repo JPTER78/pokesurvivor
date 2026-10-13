@@ -98,7 +98,10 @@ G.SettingsUI = (() => {
              <div><kbd>Q</kbd> / <kbd>E</kbd></div><span>ataque anterior / siguiente</span>
              <div><kbd>Esc</kbd> o <kbd>P</kbd></div><span>pausa</span>
              <div><kbd>1</kbd>–<kbd>3</kbd></div><span>elegir carta al subir de nivel</span>
-           </div>`;
+           </div>`
+        + section('Apuntado', 'Hacia dónde dispara tu movimiento activo.')
+        + choice('aim', [['auto', 'Automático'], ['cursor', 'Hacia el cursor']])
+        + `<p class="sub">Automático: el juego elige el blanco solo. Hacia el cursor: disparas hacia donde apunta el ratón (sólo PC).</p>`;
     } else if (tab === 'acc') {
       renderAccount(box);
     } else {
