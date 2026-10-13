@@ -104,13 +104,13 @@ service cloud.firestore {
     function mx(a, b) { return a > b ? a : b; }
     // <logros> (generado por tools/make_rules.js, no editar a mano)
     function achNew() { return request.resource.data.save.get('ach', {}).diff(resource.data.save.get('ach', {})).addedKeys(); }
-    function achV() { return 1 * achNew().intersection(['own10', 'lvl20', 'kills1k', 'boss1', 'group1'].toSet()).size()
-        + 2 * achNew().intersection(['shiny1', 'evo1', 'items5', 'rift1', 'mis10'].toSet()).size()
+    function achV() { return 1 * achNew().intersection(['own10', 'size1', 'lvl20', 'kills1k', 'boss1', 'group1'].toSet()).size()
+        + 2 * achNew().intersection(['shiny1', 'sizeXS', 'sizeXL', 'evo1', 'items5', 'rift1', 'mis10'].toSet()).size()
         + 3 * achNew().intersection(['time10'].toSet()).size()
-        + 4 * achNew().intersection(['own50'].toSet()).size()
-        + 10 * achNew().intersection(['own100', 'shiny5', 'pulls100', 'time15', 'lvl40', 'judge', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
+        + 4 * achNew().intersection(['own50', 'size25'].toSet()).size()
+        + 10 * achNew().intersection(['own100', 'shiny5', 'pulls100', 'size100', 'sizeSet', 'time15', 'lvl40', 'judge', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
         + 20 * achNew().intersection(['own250', 'shiny20', 'time20', 'judge60', 'judgeBoss', 'boss100', 'arenas', 'leg30'].toSet()).size()
-        + 30 * achNew().intersection(['own500', 'kills100k', 'evoAll', 'mis200'].toSet()).size()
+        + 30 * achNew().intersection(['own500', 'size500', 'kills100k', 'evoAll', 'mis200'].toSet()).size()
         + 50 * achNew().intersection(['legAll'].toSet()).size()
         + 100 * achNew().intersection(['ownAll'].toSet()).size()
         + 0.333 * achNew().intersection(['own1'].toSet()).size()
