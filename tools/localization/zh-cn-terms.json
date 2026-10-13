@@ -1,0 +1,5626 @@
+{
+  "checked": "2026-10-13",
+  "pokeapiRevision": "81d20919845b6a445969b9265aab5cec6b04cece",
+  "officialUrl": "https://pokedex.pokemon.cn/play/pokedex/api/v1",
+  "corrections": [
+    {
+      "dex": 233,
+      "candidate": "多边兽２型",
+      "official": "多边兽2型"
+    },
+    {
+      "dex": 312,
+      "candidate": "負电拍拍",
+      "official": "负电拍拍"
+    }
+  ],
+  "species": {
+    "1": {
+      "source": "Bulbasaur",
+      "zh": "妙蛙种子"
+    },
+    "2": {
+      "source": "Ivysaur",
+      "zh": "妙蛙草"
+    },
+    "3": {
+      "source": "Venusaur",
+      "zh": "妙蛙花"
+    },
+    "4": {
+      "source": "Charmander",
+      "zh": "小火龙"
+    },
+    "5": {
+      "source": "Charmeleon",
+      "zh": "火恐龙"
+    },
+    "6": {
+      "source": "Charizard",
+      "zh": "喷火龙"
+    },
+    "7": {
+      "source": "Squirtle",
+      "zh": "杰尼龟"
+    },
+    "8": {
+      "source": "Wartortle",
+      "zh": "卡咪龟"
+    },
+    "9": {
+      "source": "Blastoise",
+      "zh": "水箭龟"
+    },
+    "10": {
+      "source": "Caterpie",
+      "zh": "绿毛虫"
+    },
+    "11": {
+      "source": "Metapod",
+      "zh": "铁甲蛹"
+    },
+    "12": {
+      "source": "Butterfree",
+      "zh": "巴大蝶"
+    },
+    "13": {
+      "source": "Weedle",
+      "zh": "独角虫"
+    },
+    "14": {
+      "source": "Kakuna",
+      "zh": "铁壳蛹"
+    },
+    "15": {
+      "source": "Beedrill",
+      "zh": "大针蜂"
+    },
+    "16": {
+      "source": "Pidgey",
+      "zh": "波波"
+    },
+    "17": {
+      "source": "Pidgeotto",
+      "zh": "比比鸟"
+    },
+    "18": {
+      "source": "Pidgeot",
+      "zh": "大比鸟"
+    },
+    "19": {
+      "source": "Rattata",
+      "zh": "小拉达"
+    },
+    "20": {
+      "source": "Raticate",
+      "zh": "拉达"
+    },
+    "21": {
+      "source": "Spearow",
+      "zh": "烈雀"
+    },
+    "22": {
+      "source": "Fearow",
+      "zh": "大嘴雀"
+    },
+    "23": {
+      "source": "Ekans",
+      "zh": "阿柏蛇"
+    },
+    "24": {
+      "source": "Arbok",
+      "zh": "阿柏怪"
+    },
+    "25": {
+      "source": "Pikachu",
+      "zh": "皮卡丘"
+    },
+    "26": {
+      "source": "Raichu",
+      "zh": "雷丘"
+    },
+    "27": {
+      "source": "Sandshrew",
+      "zh": "穿山鼠"
+    },
+    "28": {
+      "source": "Sandslash",
+      "zh": "穿山王"
+    },
+    "29": {
+      "source": "Nidoran♀",
+      "zh": "尼多兰"
+    },
+    "30": {
+      "source": "Nidorina",
+      "zh": "尼多娜"
+    },
+    "31": {
+      "source": "Nidoqueen",
+      "zh": "尼多后"
+    },
+    "32": {
+      "source": "Nidoran♂",
+      "zh": "尼多朗"
+    },
+    "33": {
+      "source": "Nidorino",
+      "zh": "尼多力诺"
+    },
+    "34": {
+      "source": "Nidoking",
+      "zh": "尼多王"
+    },
+    "35": {
+      "source": "Clefairy",
+      "zh": "皮皮"
+    },
+    "36": {
+      "source": "Clefable",
+      "zh": "皮可西"
+    },
+    "37": {
+      "source": "Vulpix",
+      "zh": "六尾"
+    },
+    "38": {
+      "source": "Ninetales",
+      "zh": "九尾"
+    },
+    "39": {
+      "source": "Jigglypuff",
+      "zh": "胖丁"
+    },
+    "40": {
+      "source": "Wigglytuff",
+      "zh": "胖可丁"
+    },
+    "41": {
+      "source": "Zubat",
+      "zh": "超音蝠"
+    },
+    "42": {
+      "source": "Golbat",
+      "zh": "大嘴蝠"
+    },
+    "43": {
+      "source": "Oddish",
+      "zh": "走路草"
+    },
+    "44": {
+      "source": "Gloom",
+      "zh": "臭臭花"
+    },
+    "45": {
+      "source": "Vileplume",
+      "zh": "霸王花"
+    },
+    "46": {
+      "source": "Paras",
+      "zh": "派拉斯"
+    },
+    "47": {
+      "source": "Parasect",
+      "zh": "派拉斯特"
+    },
+    "48": {
+      "source": "Venonat",
+      "zh": "毛球"
+    },
+    "49": {
+      "source": "Venomoth",
+      "zh": "摩鲁蛾"
+    },
+    "50": {
+      "source": "Diglett",
+      "zh": "地鼠"
+    },
+    "51": {
+      "source": "Dugtrio",
+      "zh": "三地鼠"
+    },
+    "52": {
+      "source": "Meowth",
+      "zh": "喵喵"
+    },
+    "53": {
+      "source": "Persian",
+      "zh": "猫老大"
+    },
+    "54": {
+      "source": "Psyduck",
+      "zh": "可达鸭"
+    },
+    "55": {
+      "source": "Golduck",
+      "zh": "哥达鸭"
+    },
+    "56": {
+      "source": "Mankey",
+      "zh": "猴怪"
+    },
+    "57": {
+      "source": "Primeape",
+      "zh": "火暴猴"
+    },
+    "58": {
+      "source": "Growlithe",
+      "zh": "卡蒂狗"
+    },
+    "59": {
+      "source": "Arcanine",
+      "zh": "风速狗"
+    },
+    "60": {
+      "source": "Poliwag",
+      "zh": "蚊香蝌蚪"
+    },
+    "61": {
+      "source": "Poliwhirl",
+      "zh": "蚊香君"
+    },
+    "62": {
+      "source": "Poliwrath",
+      "zh": "蚊香泳士"
+    },
+    "63": {
+      "source": "Abra",
+      "zh": "凯西"
+    },
+    "64": {
+      "source": "Kadabra",
+      "zh": "勇基拉"
+    },
+    "65": {
+      "source": "Alakazam",
+      "zh": "胡地"
+    },
+    "66": {
+      "source": "Machop",
+      "zh": "腕力"
+    },
+    "67": {
+      "source": "Machoke",
+      "zh": "豪力"
+    },
+    "68": {
+      "source": "Machamp",
+      "zh": "怪力"
+    },
+    "69": {
+      "source": "Bellsprout",
+      "zh": "喇叭芽"
+    },
+    "70": {
+      "source": "Weepinbell",
+      "zh": "口呆花"
+    },
+    "71": {
+      "source": "Victreebel",
+      "zh": "大食花"
+    },
+    "72": {
+      "source": "Tentacool",
+      "zh": "玛瑙水母"
+    },
+    "73": {
+      "source": "Tentacruel",
+      "zh": "毒刺水母"
+    },
+    "74": {
+      "source": "Geodude",
+      "zh": "小拳石"
+    },
+    "75": {
+      "source": "Graveler",
+      "zh": "隆隆石"
+    },
+    "76": {
+      "source": "Golem",
+      "zh": "隆隆岩"
+    },
+    "77": {
+      "source": "Ponyta",
+      "zh": "小火马"
+    },
+    "78": {
+      "source": "Rapidash",
+      "zh": "烈焰马"
+    },
+    "79": {
+      "source": "Slowpoke",
+      "zh": "呆呆兽"
+    },
+    "80": {
+      "source": "Slowbro",
+      "zh": "呆壳兽"
+    },
+    "81": {
+      "source": "Magnemite",
+      "zh": "小磁怪"
+    },
+    "82": {
+      "source": "Magneton",
+      "zh": "三合一磁怪"
+    },
+    "83": {
+      "source": "Farfetch’d",
+      "zh": "大葱鸭"
+    },
+    "84": {
+      "source": "Doduo",
+      "zh": "嘟嘟"
+    },
+    "85": {
+      "source": "Dodrio",
+      "zh": "嘟嘟利"
+    },
+    "86": {
+      "source": "Seel",
+      "zh": "小海狮"
+    },
+    "87": {
+      "source": "Dewgong",
+      "zh": "白海狮"
+    },
+    "88": {
+      "source": "Grimer",
+      "zh": "臭泥"
+    },
+    "89": {
+      "source": "Muk",
+      "zh": "臭臭泥"
+    },
+    "90": {
+      "source": "Shellder",
+      "zh": "大舌贝"
+    },
+    "91": {
+      "source": "Cloyster",
+      "zh": "刺甲贝"
+    },
+    "92": {
+      "source": "Gastly",
+      "zh": "鬼斯"
+    },
+    "93": {
+      "source": "Haunter",
+      "zh": "鬼斯通"
+    },
+    "94": {
+      "source": "Gengar",
+      "zh": "耿鬼"
+    },
+    "95": {
+      "source": "Onix",
+      "zh": "大岩蛇"
+    },
+    "96": {
+      "source": "Drowzee",
+      "zh": "催眠貘"
+    },
+    "97": {
+      "source": "Hypno",
+      "zh": "引梦貘人"
+    },
+    "98": {
+      "source": "Krabby",
+      "zh": "大钳蟹"
+    },
+    "99": {
+      "source": "Kingler",
+      "zh": "巨钳蟹"
+    },
+    "100": {
+      "source": "Voltorb",
+      "zh": "霹雳电球"
+    },
+    "101": {
+      "source": "Electrode",
+      "zh": "顽皮雷弹"
+    },
+    "102": {
+      "source": "Exeggcute",
+      "zh": "蛋蛋"
+    },
+    "103": {
+      "source": "Exeggutor",
+      "zh": "椰蛋树"
+    },
+    "104": {
+      "source": "Cubone",
+      "zh": "卡拉卡拉"
+    },
+    "105": {
+      "source": "Marowak",
+      "zh": "嘎啦嘎啦"
+    },
+    "106": {
+      "source": "Hitmonlee",
+      "zh": "飞腿郎"
+    },
+    "107": {
+      "source": "Hitmonchan",
+      "zh": "快拳郎"
+    },
+    "108": {
+      "source": "Lickitung",
+      "zh": "大舌头"
+    },
+    "109": {
+      "source": "Koffing",
+      "zh": "瓦斯弹"
+    },
+    "110": {
+      "source": "Weezing",
+      "zh": "双弹瓦斯"
+    },
+    "111": {
+      "source": "Rhyhorn",
+      "zh": "独角犀牛"
+    },
+    "112": {
+      "source": "Rhydon",
+      "zh": "钻角犀兽"
+    },
+    "113": {
+      "source": "Chansey",
+      "zh": "吉利蛋"
+    },
+    "114": {
+      "source": "Tangela",
+      "zh": "蔓藤怪"
+    },
+    "115": {
+      "source": "Kangaskhan",
+      "zh": "袋兽"
+    },
+    "116": {
+      "source": "Horsea",
+      "zh": "墨海马"
+    },
+    "117": {
+      "source": "Seadra",
+      "zh": "海刺龙"
+    },
+    "118": {
+      "source": "Goldeen",
+      "zh": "角金鱼"
+    },
+    "119": {
+      "source": "Seaking",
+      "zh": "金鱼王"
+    },
+    "120": {
+      "source": "Staryu",
+      "zh": "海星星"
+    },
+    "121": {
+      "source": "Starmie",
+      "zh": "宝石海星"
+    },
+    "122": {
+      "source": "Mr. Mime",
+      "zh": "魔墙人偶"
+    },
+    "123": {
+      "source": "Scyther",
+      "zh": "飞天螳螂"
+    },
+    "124": {
+      "source": "Jynx",
+      "zh": "迷唇姐"
+    },
+    "125": {
+      "source": "Electabuzz",
+      "zh": "电击兽"
+    },
+    "126": {
+      "source": "Magmar",
+      "zh": "鸭嘴火兽"
+    },
+    "127": {
+      "source": "Pinsir",
+      "zh": "凯罗斯"
+    },
+    "128": {
+      "source": "Tauros",
+      "zh": "肯泰罗"
+    },
+    "129": {
+      "source": "Magikarp",
+      "zh": "鲤鱼王"
+    },
+    "130": {
+      "source": "Gyarados",
+      "zh": "暴鲤龙"
+    },
+    "131": {
+      "source": "Lapras",
+      "zh": "拉普拉斯"
+    },
+    "132": {
+      "source": "Ditto",
+      "zh": "百变怪"
+    },
+    "133": {
+      "source": "Eevee",
+      "zh": "伊布"
+    },
+    "134": {
+      "source": "Vaporeon",
+      "zh": "水伊布"
+    },
+    "135": {
+      "source": "Jolteon",
+      "zh": "雷伊布"
+    },
+    "136": {
+      "source": "Flareon",
+      "zh": "火伊布"
+    },
+    "137": {
+      "source": "Porygon",
+      "zh": "多边兽"
+    },
+    "138": {
+      "source": "Omanyte",
+      "zh": "菊石兽"
+    },
+    "139": {
+      "source": "Omastar",
+      "zh": "多刺菊石兽"
+    },
+    "140": {
+      "source": "Kabuto",
+      "zh": "化石盔"
+    },
+    "141": {
+      "source": "Kabutops",
+      "zh": "镰刀盔"
+    },
+    "142": {
+      "source": "Aerodactyl",
+      "zh": "化石翼龙"
+    },
+    "143": {
+      "source": "Snorlax",
+      "zh": "卡比兽"
+    },
+    "144": {
+      "source": "Articuno",
+      "zh": "急冻鸟"
+    },
+    "145": {
+      "source": "Zapdos",
+      "zh": "闪电鸟"
+    },
+    "146": {
+      "source": "Moltres",
+      "zh": "火焰鸟"
+    },
+    "147": {
+      "source": "Dratini",
+      "zh": "迷你龙"
+    },
+    "148": {
+      "source": "Dragonair",
+      "zh": "哈克龙"
+    },
+    "149": {
+      "source": "Dragonite",
+      "zh": "快龙"
+    },
+    "150": {
+      "source": "Mewtwo",
+      "zh": "超梦"
+    },
+    "151": {
+      "source": "Mew",
+      "zh": "梦幻"
+    },
+    "152": {
+      "source": "Chikorita",
+      "zh": "菊草叶"
+    },
+    "153": {
+      "source": "Bayleef",
+      "zh": "月桂叶"
+    },
+    "154": {
+      "source": "Meganium",
+      "zh": "大竺葵"
+    },
+    "155": {
+      "source": "Cyndaquil",
+      "zh": "火球鼠"
+    },
+    "156": {
+      "source": "Quilava",
+      "zh": "火岩鼠"
+    },
+    "157": {
+      "source": "Typhlosion",
+      "zh": "火暴兽"
+    },
+    "158": {
+      "source": "Totodile",
+      "zh": "小锯鳄"
+    },
+    "159": {
+      "source": "Croconaw",
+      "zh": "蓝鳄"
+    },
+    "160": {
+      "source": "Feraligatr",
+      "zh": "大力鳄"
+    },
+    "161": {
+      "source": "Sentret",
+      "zh": "尾立"
+    },
+    "162": {
+      "source": "Furret",
+      "zh": "大尾立"
+    },
+    "163": {
+      "source": "Hoothoot",
+      "zh": "咕咕"
+    },
+    "164": {
+      "source": "Noctowl",
+      "zh": "猫头夜鹰"
+    },
+    "165": {
+      "source": "Ledyba",
+      "zh": "芭瓢虫"
+    },
+    "166": {
+      "source": "Ledian",
+      "zh": "安瓢虫"
+    },
+    "167": {
+      "source": "Spinarak",
+      "zh": "圆丝蛛"
+    },
+    "168": {
+      "source": "Ariados",
+      "zh": "阿利多斯"
+    },
+    "169": {
+      "source": "Crobat",
+      "zh": "叉字蝠"
+    },
+    "170": {
+      "source": "Chinchou",
+      "zh": "灯笼鱼"
+    },
+    "171": {
+      "source": "Lanturn",
+      "zh": "电灯怪"
+    },
+    "172": {
+      "source": "Pichu",
+      "zh": "皮丘"
+    },
+    "173": {
+      "source": "Cleffa",
+      "zh": "皮宝宝"
+    },
+    "174": {
+      "source": "Igglybuff",
+      "zh": "宝宝丁"
+    },
+    "175": {
+      "source": "Togepi",
+      "zh": "波克比"
+    },
+    "176": {
+      "source": "Togetic",
+      "zh": "波克基古"
+    },
+    "177": {
+      "source": "Natu",
+      "zh": "天然雀"
+    },
+    "178": {
+      "source": "Xatu",
+      "zh": "天然鸟"
+    },
+    "179": {
+      "source": "Mareep",
+      "zh": "咩利羊"
+    },
+    "180": {
+      "source": "Flaaffy",
+      "zh": "茸茸羊"
+    },
+    "181": {
+      "source": "Ampharos",
+      "zh": "电龙"
+    },
+    "182": {
+      "source": "Bellossom",
+      "zh": "美丽花"
+    },
+    "183": {
+      "source": "Marill",
+      "zh": "玛力露"
+    },
+    "184": {
+      "source": "Azumarill",
+      "zh": "玛力露丽"
+    },
+    "185": {
+      "source": "Sudowoodo",
+      "zh": "树才怪"
+    },
+    "186": {
+      "source": "Politoed",
+      "zh": "蚊香蛙皇"
+    },
+    "187": {
+      "source": "Hoppip",
+      "zh": "毽子草"
+    },
+    "188": {
+      "source": "Skiploom",
+      "zh": "毽子花"
+    },
+    "189": {
+      "source": "Jumpluff",
+      "zh": "毽子棉"
+    },
+    "190": {
+      "source": "Aipom",
+      "zh": "长尾怪手"
+    },
+    "191": {
+      "source": "Sunkern",
+      "zh": "向日种子"
+    },
+    "192": {
+      "source": "Sunflora",
+      "zh": "向日花怪"
+    },
+    "193": {
+      "source": "Yanma",
+      "zh": "蜻蜻蜓"
+    },
+    "194": {
+      "source": "Wooper",
+      "zh": "乌波"
+    },
+    "195": {
+      "source": "Quagsire",
+      "zh": "沼王"
+    },
+    "196": {
+      "source": "Espeon",
+      "zh": "太阳伊布"
+    },
+    "197": {
+      "source": "Umbreon",
+      "zh": "月亮伊布"
+    },
+    "198": {
+      "source": "Murkrow",
+      "zh": "黑暗鸦"
+    },
+    "199": {
+      "source": "Slowking",
+      "zh": "呆呆王"
+    },
+    "200": {
+      "source": "Misdreavus",
+      "zh": "梦妖"
+    },
+    "201": {
+      "source": "Unown",
+      "zh": "未知图腾"
+    },
+    "202": {
+      "source": "Wobbuffet",
+      "zh": "果然翁"
+    },
+    "203": {
+      "source": "Girafarig",
+      "zh": "麒麟奇"
+    },
+    "204": {
+      "source": "Pineco",
+      "zh": "榛果球"
+    },
+    "205": {
+      "source": "Forretress",
+      "zh": "佛烈托斯"
+    },
+    "206": {
+      "source": "Dunsparce",
+      "zh": "土龙弟弟"
+    },
+    "207": {
+      "source": "Gligar",
+      "zh": "天蝎"
+    },
+    "208": {
+      "source": "Steelix",
+      "zh": "大钢蛇"
+    },
+    "209": {
+      "source": "Snubbull",
+      "zh": "布鲁"
+    },
+    "210": {
+      "source": "Granbull",
+      "zh": "布鲁皇"
+    },
+    "211": {
+      "source": "Qwilfish",
+      "zh": "千针鱼"
+    },
+    "212": {
+      "source": "Scizor",
+      "zh": "巨钳螳螂"
+    },
+    "213": {
+      "source": "Shuckle",
+      "zh": "壶壶"
+    },
+    "214": {
+      "source": "Heracross",
+      "zh": "赫拉克罗斯"
+    },
+    "215": {
+      "source": "Sneasel",
+      "zh": "狃拉"
+    },
+    "216": {
+      "source": "Teddiursa",
+      "zh": "熊宝宝"
+    },
+    "217": {
+      "source": "Ursaring",
+      "zh": "圈圈熊"
+    },
+    "218": {
+      "source": "Slugma",
+      "zh": "熔岩虫"
+    },
+    "219": {
+      "source": "Magcargo",
+      "zh": "熔岩蜗牛"
+    },
+    "220": {
+      "source": "Swinub",
+      "zh": "小山猪"
+    },
+    "221": {
+      "source": "Piloswine",
+      "zh": "长毛猪"
+    },
+    "222": {
+      "source": "Corsola",
+      "zh": "太阳珊瑚"
+    },
+    "223": {
+      "source": "Remoraid",
+      "zh": "铁炮鱼"
+    },
+    "224": {
+      "source": "Octillery",
+      "zh": "章鱼桶"
+    },
+    "225": {
+      "source": "Delibird",
+      "zh": "信使鸟"
+    },
+    "226": {
+      "source": "Mantine",
+      "zh": "巨翅飞鱼"
+    },
+    "227": {
+      "source": "Skarmory",
+      "zh": "盔甲鸟"
+    },
+    "228": {
+      "source": "Houndour",
+      "zh": "戴鲁比"
+    },
+    "229": {
+      "source": "Houndoom",
+      "zh": "黑鲁加"
+    },
+    "230": {
+      "source": "Kingdra",
+      "zh": "刺龙王"
+    },
+    "231": {
+      "source": "Phanpy",
+      "zh": "小小象"
+    },
+    "232": {
+      "source": "Donphan",
+      "zh": "顿甲"
+    },
+    "233": {
+      "source": "Porygon2",
+      "zh": "多边兽2型"
+    },
+    "234": {
+      "source": "Stantler",
+      "zh": "惊角鹿"
+    },
+    "235": {
+      "source": "Smeargle",
+      "zh": "图图犬"
+    },
+    "236": {
+      "source": "Tyrogue",
+      "zh": "无畏小子"
+    },
+    "237": {
+      "source": "Hitmontop",
+      "zh": "战舞郎"
+    },
+    "238": {
+      "source": "Smoochum",
+      "zh": "迷唇娃"
+    },
+    "239": {
+      "source": "Elekid",
+      "zh": "电击怪"
+    },
+    "240": {
+      "source": "Magby",
+      "zh": "鸭嘴宝宝"
+    },
+    "241": {
+      "source": "Miltank",
+      "zh": "大奶罐"
+    },
+    "242": {
+      "source": "Blissey",
+      "zh": "幸福蛋"
+    },
+    "243": {
+      "source": "Raikou",
+      "zh": "雷公"
+    },
+    "244": {
+      "source": "Entei",
+      "zh": "炎帝"
+    },
+    "245": {
+      "source": "Suicune",
+      "zh": "水君"
+    },
+    "246": {
+      "source": "Larvitar",
+      "zh": "幼基拉斯"
+    },
+    "247": {
+      "source": "Pupitar",
+      "zh": "沙基拉斯"
+    },
+    "248": {
+      "source": "Tyranitar",
+      "zh": "班基拉斯"
+    },
+    "249": {
+      "source": "Lugia",
+      "zh": "洛奇亚"
+    },
+    "250": {
+      "source": "Ho-Oh",
+      "zh": "凤王"
+    },
+    "251": {
+      "source": "Celebi",
+      "zh": "时拉比"
+    },
+    "252": {
+      "source": "Treecko",
+      "zh": "木守宫"
+    },
+    "253": {
+      "source": "Grovyle",
+      "zh": "森林蜥蜴"
+    },
+    "254": {
+      "source": "Sceptile",
+      "zh": "蜥蜴王"
+    },
+    "255": {
+      "source": "Torchic",
+      "zh": "火稚鸡"
+    },
+    "256": {
+      "source": "Combusken",
+      "zh": "力壮鸡"
+    },
+    "257": {
+      "source": "Blaziken",
+      "zh": "火焰鸡"
+    },
+    "258": {
+      "source": "Mudkip",
+      "zh": "水跃鱼"
+    },
+    "259": {
+      "source": "Marshtomp",
+      "zh": "沼跃鱼"
+    },
+    "260": {
+      "source": "Swampert",
+      "zh": "巨沼怪"
+    },
+    "261": {
+      "source": "Poochyena",
+      "zh": "土狼犬"
+    },
+    "262": {
+      "source": "Mightyena",
+      "zh": "大狼犬"
+    },
+    "263": {
+      "source": "Zigzagoon",
+      "zh": "蛇纹熊"
+    },
+    "264": {
+      "source": "Linoone",
+      "zh": "直冲熊"
+    },
+    "265": {
+      "source": "Wurmple",
+      "zh": "刺尾虫"
+    },
+    "266": {
+      "source": "Silcoon",
+      "zh": "甲壳茧"
+    },
+    "267": {
+      "source": "Beautifly",
+      "zh": "狩猎凤蝶"
+    },
+    "268": {
+      "source": "Cascoon",
+      "zh": "盾甲茧"
+    },
+    "269": {
+      "source": "Dustox",
+      "zh": "毒粉蛾"
+    },
+    "270": {
+      "source": "Lotad",
+      "zh": "莲叶童子"
+    },
+    "271": {
+      "source": "Lombre",
+      "zh": "莲帽小童"
+    },
+    "272": {
+      "source": "Ludicolo",
+      "zh": "乐天河童"
+    },
+    "273": {
+      "source": "Seedot",
+      "zh": "橡实果"
+    },
+    "274": {
+      "source": "Nuzleaf",
+      "zh": "长鼻叶"
+    },
+    "275": {
+      "source": "Shiftry",
+      "zh": "狡猾天狗"
+    },
+    "276": {
+      "source": "Taillow",
+      "zh": "傲骨燕"
+    },
+    "277": {
+      "source": "Swellow",
+      "zh": "大王燕"
+    },
+    "278": {
+      "source": "Wingull",
+      "zh": "长翅鸥"
+    },
+    "279": {
+      "source": "Pelipper",
+      "zh": "大嘴鸥"
+    },
+    "280": {
+      "source": "Ralts",
+      "zh": "拉鲁拉丝"
+    },
+    "281": {
+      "source": "Kirlia",
+      "zh": "奇鲁莉安"
+    },
+    "282": {
+      "source": "Gardevoir",
+      "zh": "沙奈朵"
+    },
+    "283": {
+      "source": "Surskit",
+      "zh": "溜溜糖球"
+    },
+    "284": {
+      "source": "Masquerain",
+      "zh": "雨翅蛾"
+    },
+    "285": {
+      "source": "Shroomish",
+      "zh": "蘑蘑菇"
+    },
+    "286": {
+      "source": "Breloom",
+      "zh": "斗笠菇"
+    },
+    "287": {
+      "source": "Slakoth",
+      "zh": "懒人獭"
+    },
+    "288": {
+      "source": "Vigoroth",
+      "zh": "过动猿"
+    },
+    "289": {
+      "source": "Slaking",
+      "zh": "请假王"
+    },
+    "290": {
+      "source": "Nincada",
+      "zh": "土居忍士"
+    },
+    "291": {
+      "source": "Ninjask",
+      "zh": "铁面忍者"
+    },
+    "292": {
+      "source": "Shedinja",
+      "zh": "脱壳忍者"
+    },
+    "293": {
+      "source": "Whismur",
+      "zh": "咕妞妞"
+    },
+    "294": {
+      "source": "Loudred",
+      "zh": "吼爆弹"
+    },
+    "295": {
+      "source": "Exploud",
+      "zh": "爆音怪"
+    },
+    "296": {
+      "source": "Makuhita",
+      "zh": "幕下力士"
+    },
+    "297": {
+      "source": "Hariyama",
+      "zh": "铁掌力士"
+    },
+    "298": {
+      "source": "Azurill",
+      "zh": "露力丽"
+    },
+    "299": {
+      "source": "Nosepass",
+      "zh": "朝北鼻"
+    },
+    "300": {
+      "source": "Skitty",
+      "zh": "向尾喵"
+    },
+    "301": {
+      "source": "Delcatty",
+      "zh": "优雅猫"
+    },
+    "302": {
+      "source": "Sableye",
+      "zh": "勾魂眼"
+    },
+    "303": {
+      "source": "Mawile",
+      "zh": "大嘴娃"
+    },
+    "304": {
+      "source": "Aron",
+      "zh": "可可多拉"
+    },
+    "305": {
+      "source": "Lairon",
+      "zh": "可多拉"
+    },
+    "306": {
+      "source": "Aggron",
+      "zh": "波士可多拉"
+    },
+    "307": {
+      "source": "Meditite",
+      "zh": "玛沙那"
+    },
+    "308": {
+      "source": "Medicham",
+      "zh": "恰雷姆"
+    },
+    "309": {
+      "source": "Electrike",
+      "zh": "落雷兽"
+    },
+    "310": {
+      "source": "Manectric",
+      "zh": "雷电兽"
+    },
+    "311": {
+      "source": "Plusle",
+      "zh": "正电拍拍"
+    },
+    "312": {
+      "source": "Minun",
+      "zh": "负电拍拍"
+    },
+    "313": {
+      "source": "Volbeat",
+      "zh": "电萤虫"
+    },
+    "314": {
+      "source": "Illumise",
+      "zh": "甜甜萤"
+    },
+    "315": {
+      "source": "Roselia",
+      "zh": "毒蔷薇"
+    },
+    "316": {
+      "source": "Gulpin",
+      "zh": "溶食兽"
+    },
+    "317": {
+      "source": "Swalot",
+      "zh": "吞食兽"
+    },
+    "318": {
+      "source": "Carvanha",
+      "zh": "利牙鱼"
+    },
+    "319": {
+      "source": "Sharpedo",
+      "zh": "巨牙鲨"
+    },
+    "320": {
+      "source": "Wailmer",
+      "zh": "吼吼鲸"
+    },
+    "321": {
+      "source": "Wailord",
+      "zh": "吼鲸王"
+    },
+    "322": {
+      "source": "Numel",
+      "zh": "呆火驼"
+    },
+    "323": {
+      "source": "Camerupt",
+      "zh": "喷火驼"
+    },
+    "324": {
+      "source": "Torkoal",
+      "zh": "煤炭龟"
+    },
+    "325": {
+      "source": "Spoink",
+      "zh": "跳跳猪"
+    },
+    "326": {
+      "source": "Grumpig",
+      "zh": "噗噗猪"
+    },
+    "327": {
+      "source": "Spinda",
+      "zh": "晃晃斑"
+    },
+    "328": {
+      "source": "Trapinch",
+      "zh": "大颚蚁"
+    },
+    "329": {
+      "source": "Vibrava",
+      "zh": "超音波幼虫"
+    },
+    "330": {
+      "source": "Flygon",
+      "zh": "沙漠蜻蜓"
+    },
+    "331": {
+      "source": "Cacnea",
+      "zh": "刺球仙人掌"
+    },
+    "332": {
+      "source": "Cacturne",
+      "zh": "梦歌仙人掌"
+    },
+    "333": {
+      "source": "Swablu",
+      "zh": "青绵鸟"
+    },
+    "334": {
+      "source": "Altaria",
+      "zh": "七夕青鸟"
+    },
+    "335": {
+      "source": "Zangoose",
+      "zh": "猫鼬斩"
+    },
+    "336": {
+      "source": "Seviper",
+      "zh": "饭匙蛇"
+    },
+    "337": {
+      "source": "Lunatone",
+      "zh": "月石"
+    },
+    "338": {
+      "source": "Solrock",
+      "zh": "太阳岩"
+    },
+    "339": {
+      "source": "Barboach",
+      "zh": "泥泥鳅"
+    },
+    "340": {
+      "source": "Whiscash",
+      "zh": "鲶鱼王"
+    },
+    "341": {
+      "source": "Corphish",
+      "zh": "龙虾小兵"
+    },
+    "342": {
+      "source": "Crawdaunt",
+      "zh": "铁螯龙虾"
+    },
+    "343": {
+      "source": "Baltoy",
+      "zh": "天秤偶"
+    },
+    "344": {
+      "source": "Claydol",
+      "zh": "念力土偶"
+    },
+    "345": {
+      "source": "Lileep",
+      "zh": "触手百合"
+    },
+    "346": {
+      "source": "Cradily",
+      "zh": "摇篮百合"
+    },
+    "347": {
+      "source": "Anorith",
+      "zh": "太古羽虫"
+    },
+    "348": {
+      "source": "Armaldo",
+      "zh": "太古盔甲"
+    },
+    "349": {
+      "source": "Feebas",
+      "zh": "丑丑鱼"
+    },
+    "350": {
+      "source": "Milotic",
+      "zh": "美纳斯"
+    },
+    "351": {
+      "source": "Castform",
+      "zh": "飘浮泡泡"
+    },
+    "352": {
+      "source": "Kecleon",
+      "zh": "变隐龙"
+    },
+    "353": {
+      "source": "Shuppet",
+      "zh": "怨影娃娃"
+    },
+    "354": {
+      "source": "Banette",
+      "zh": "诅咒娃娃"
+    },
+    "355": {
+      "source": "Duskull",
+      "zh": "夜巡灵"
+    },
+    "356": {
+      "source": "Dusclops",
+      "zh": "彷徨夜灵"
+    },
+    "357": {
+      "source": "Tropius",
+      "zh": "热带龙"
+    },
+    "358": {
+      "source": "Chimecho",
+      "zh": "风铃铃"
+    },
+    "359": {
+      "source": "Absol",
+      "zh": "阿勃梭鲁"
+    },
+    "360": {
+      "source": "Wynaut",
+      "zh": "小果然"
+    },
+    "361": {
+      "source": "Snorunt",
+      "zh": "雪童子"
+    },
+    "362": {
+      "source": "Glalie",
+      "zh": "冰鬼护"
+    },
+    "363": {
+      "source": "Spheal",
+      "zh": "海豹球"
+    },
+    "364": {
+      "source": "Sealeo",
+      "zh": "海魔狮"
+    },
+    "365": {
+      "source": "Walrein",
+      "zh": "帝牙海狮"
+    },
+    "366": {
+      "source": "Clamperl",
+      "zh": "珍珠贝"
+    },
+    "367": {
+      "source": "Huntail",
+      "zh": "猎斑鱼"
+    },
+    "368": {
+      "source": "Gorebyss",
+      "zh": "樱花鱼"
+    },
+    "369": {
+      "source": "Relicanth",
+      "zh": "古空棘鱼"
+    },
+    "370": {
+      "source": "Luvdisc",
+      "zh": "爱心鱼"
+    },
+    "371": {
+      "source": "Bagon",
+      "zh": "宝贝龙"
+    },
+    "372": {
+      "source": "Shelgon",
+      "zh": "甲壳龙"
+    },
+    "373": {
+      "source": "Salamence",
+      "zh": "暴飞龙"
+    },
+    "374": {
+      "source": "Beldum",
+      "zh": "铁哑铃"
+    },
+    "375": {
+      "source": "Metang",
+      "zh": "金属怪"
+    },
+    "376": {
+      "source": "Metagross",
+      "zh": "巨金怪"
+    },
+    "377": {
+      "source": "Regirock",
+      "zh": "雷吉洛克"
+    },
+    "378": {
+      "source": "Regice",
+      "zh": "雷吉艾斯"
+    },
+    "379": {
+      "source": "Registeel",
+      "zh": "雷吉斯奇鲁"
+    },
+    "380": {
+      "source": "Latias",
+      "zh": "拉帝亚斯"
+    },
+    "381": {
+      "source": "Latios",
+      "zh": "拉帝欧斯"
+    },
+    "382": {
+      "source": "Kyogre",
+      "zh": "盖欧卡"
+    },
+    "383": {
+      "source": "Groudon",
+      "zh": "固拉多"
+    },
+    "384": {
+      "source": "Rayquaza",
+      "zh": "烈空坐"
+    },
+    "385": {
+      "source": "Jirachi",
+      "zh": "基拉祈"
+    },
+    "386": {
+      "source": "Deoxys",
+      "zh": "代欧奇希斯"
+    },
+    "387": {
+      "source": "Turtwig",
+      "zh": "草苗龟"
+    },
+    "388": {
+      "source": "Grotle",
+      "zh": "树林龟"
+    },
+    "389": {
+      "source": "Torterra",
+      "zh": "土台龟"
+    },
+    "390": {
+      "source": "Chimchar",
+      "zh": "小火焰猴"
+    },
+    "391": {
+      "source": "Monferno",
+      "zh": "猛火猴"
+    },
+    "392": {
+      "source": "Infernape",
+      "zh": "烈焰猴"
+    },
+    "393": {
+      "source": "Piplup",
+      "zh": "波加曼"
+    },
+    "394": {
+      "source": "Prinplup",
+      "zh": "波皇子"
+    },
+    "395": {
+      "source": "Empoleon",
+      "zh": "帝王拿波"
+    },
+    "396": {
+      "source": "Starly",
+      "zh": "姆克儿"
+    },
+    "397": {
+      "source": "Staravia",
+      "zh": "姆克鸟"
+    },
+    "398": {
+      "source": "Staraptor",
+      "zh": "姆克鹰"
+    },
+    "399": {
+      "source": "Bidoof",
+      "zh": "大牙狸"
+    },
+    "400": {
+      "source": "Bibarel",
+      "zh": "大尾狸"
+    },
+    "401": {
+      "source": "Kricketot",
+      "zh": "圆法师"
+    },
+    "402": {
+      "source": "Kricketune",
+      "zh": "音箱蟀"
+    },
+    "403": {
+      "source": "Shinx",
+      "zh": "小猫怪"
+    },
+    "404": {
+      "source": "Luxio",
+      "zh": "勒克猫"
+    },
+    "405": {
+      "source": "Luxray",
+      "zh": "伦琴猫"
+    },
+    "406": {
+      "source": "Budew",
+      "zh": "含羞苞"
+    },
+    "407": {
+      "source": "Roserade",
+      "zh": "罗丝雷朵"
+    },
+    "408": {
+      "source": "Cranidos",
+      "zh": "头盖龙"
+    },
+    "409": {
+      "source": "Rampardos",
+      "zh": "战槌龙"
+    },
+    "410": {
+      "source": "Shieldon",
+      "zh": "盾甲龙"
+    },
+    "411": {
+      "source": "Bastiodon",
+      "zh": "护城龙"
+    },
+    "412": {
+      "source": "Burmy",
+      "zh": "结草儿"
+    },
+    "413": {
+      "source": "Wormadam",
+      "zh": "结草贵妇"
+    },
+    "414": {
+      "source": "Mothim",
+      "zh": "绅士蛾"
+    },
+    "415": {
+      "source": "Combee",
+      "zh": "三蜜蜂"
+    },
+    "416": {
+      "source": "Vespiquen",
+      "zh": "蜂女王"
+    },
+    "417": {
+      "source": "Pachirisu",
+      "zh": "帕奇利兹"
+    },
+    "418": {
+      "source": "Buizel",
+      "zh": "泳圈鼬"
+    },
+    "419": {
+      "source": "Floatzel",
+      "zh": "浮潜鼬"
+    },
+    "420": {
+      "source": "Cherubi",
+      "zh": "樱花宝"
+    },
+    "421": {
+      "source": "Cherrim",
+      "zh": "樱花儿"
+    },
+    "422": {
+      "source": "Shellos",
+      "zh": "无壳海兔"
+    },
+    "423": {
+      "source": "Gastrodon",
+      "zh": "海兔兽"
+    },
+    "424": {
+      "source": "Ambipom",
+      "zh": "双尾怪手"
+    },
+    "425": {
+      "source": "Drifloon",
+      "zh": "飘飘球"
+    },
+    "426": {
+      "source": "Drifblim",
+      "zh": "随风球"
+    },
+    "427": {
+      "source": "Buneary",
+      "zh": "卷卷耳"
+    },
+    "428": {
+      "source": "Lopunny",
+      "zh": "长耳兔"
+    },
+    "429": {
+      "source": "Mismagius",
+      "zh": "梦妖魔"
+    },
+    "430": {
+      "source": "Honchkrow",
+      "zh": "乌鸦头头"
+    },
+    "431": {
+      "source": "Glameow",
+      "zh": "魅力喵"
+    },
+    "432": {
+      "source": "Purugly",
+      "zh": "东施喵"
+    },
+    "433": {
+      "source": "Chingling",
+      "zh": "铃铛响"
+    },
+    "434": {
+      "source": "Stunky",
+      "zh": "臭鼬噗"
+    },
+    "435": {
+      "source": "Skuntank",
+      "zh": "坦克臭鼬"
+    },
+    "436": {
+      "source": "Bronzor",
+      "zh": "铜镜怪"
+    },
+    "437": {
+      "source": "Bronzong",
+      "zh": "青铜钟"
+    },
+    "438": {
+      "source": "Bonsly",
+      "zh": "盆才怪"
+    },
+    "439": {
+      "source": "Mime Jr.",
+      "zh": "魔尼尼"
+    },
+    "440": {
+      "source": "Happiny",
+      "zh": "小福蛋"
+    },
+    "441": {
+      "source": "Chatot",
+      "zh": "聒噪鸟"
+    },
+    "442": {
+      "source": "Spiritomb",
+      "zh": "花岩怪"
+    },
+    "443": {
+      "source": "Gible",
+      "zh": "圆陆鲨"
+    },
+    "444": {
+      "source": "Gabite",
+      "zh": "尖牙陆鲨"
+    },
+    "445": {
+      "source": "Garchomp",
+      "zh": "烈咬陆鲨"
+    },
+    "446": {
+      "source": "Munchlax",
+      "zh": "小卡比兽"
+    },
+    "447": {
+      "source": "Riolu",
+      "zh": "利欧路"
+    },
+    "448": {
+      "source": "Lucario",
+      "zh": "路卡利欧"
+    },
+    "449": {
+      "source": "Hippopotas",
+      "zh": "沙河马"
+    },
+    "450": {
+      "source": "Hippowdon",
+      "zh": "河马兽"
+    },
+    "451": {
+      "source": "Skorupi",
+      "zh": "钳尾蝎"
+    },
+    "452": {
+      "source": "Drapion",
+      "zh": "龙王蝎"
+    },
+    "453": {
+      "source": "Croagunk",
+      "zh": "不良蛙"
+    },
+    "454": {
+      "source": "Toxicroak",
+      "zh": "毒骷蛙"
+    },
+    "455": {
+      "source": "Carnivine",
+      "zh": "尖牙笼"
+    },
+    "456": {
+      "source": "Finneon",
+      "zh": "荧光鱼"
+    },
+    "457": {
+      "source": "Lumineon",
+      "zh": "霓虹鱼"
+    },
+    "458": {
+      "source": "Mantyke",
+      "zh": "小球飞鱼"
+    },
+    "459": {
+      "source": "Snover",
+      "zh": "雪笠怪"
+    },
+    "460": {
+      "source": "Abomasnow",
+      "zh": "暴雪王"
+    },
+    "461": {
+      "source": "Weavile",
+      "zh": "玛狃拉"
+    },
+    "462": {
+      "source": "Magnezone",
+      "zh": "自爆磁怪"
+    },
+    "463": {
+      "source": "Lickilicky",
+      "zh": "大舌舔"
+    },
+    "464": {
+      "source": "Rhyperior",
+      "zh": "超甲狂犀"
+    },
+    "465": {
+      "source": "Tangrowth",
+      "zh": "巨蔓藤"
+    },
+    "466": {
+      "source": "Electivire",
+      "zh": "电击魔兽"
+    },
+    "467": {
+      "source": "Magmortar",
+      "zh": "鸭嘴炎兽"
+    },
+    "468": {
+      "source": "Togekiss",
+      "zh": "波克基斯"
+    },
+    "469": {
+      "source": "Yanmega",
+      "zh": "远古巨蜓"
+    },
+    "470": {
+      "source": "Leafeon",
+      "zh": "叶伊布"
+    },
+    "471": {
+      "source": "Glaceon",
+      "zh": "冰伊布"
+    },
+    "472": {
+      "source": "Gliscor",
+      "zh": "天蝎王"
+    },
+    "473": {
+      "source": "Mamoswine",
+      "zh": "象牙猪"
+    },
+    "474": {
+      "source": "Porygon-Z",
+      "zh": "多边兽乙型"
+    },
+    "475": {
+      "source": "Gallade",
+      "zh": "艾路雷朵"
+    },
+    "476": {
+      "source": "Probopass",
+      "zh": "大朝北鼻"
+    },
+    "477": {
+      "source": "Dusknoir",
+      "zh": "黑夜魔灵"
+    },
+    "478": {
+      "source": "Froslass",
+      "zh": "雪妖女"
+    },
+    "479": {
+      "source": "Rotom",
+      "zh": "洛托姆"
+    },
+    "480": {
+      "source": "Uxie",
+      "zh": "由克希"
+    },
+    "481": {
+      "source": "Mesprit",
+      "zh": "艾姆利多"
+    },
+    "482": {
+      "source": "Azelf",
+      "zh": "亚克诺姆"
+    },
+    "483": {
+      "source": "Dialga",
+      "zh": "帝牙卢卡"
+    },
+    "484": {
+      "source": "Palkia",
+      "zh": "帕路奇亚"
+    },
+    "485": {
+      "source": "Heatran",
+      "zh": "席多蓝恩"
+    },
+    "486": {
+      "source": "Regigigas",
+      "zh": "雷吉奇卡斯"
+    },
+    "487": {
+      "source": "Giratina",
+      "zh": "骑拉帝纳"
+    },
+    "488": {
+      "source": "Cresselia",
+      "zh": "克雷色利亚"
+    },
+    "489": {
+      "source": "Phione",
+      "zh": "霏欧纳"
+    },
+    "490": {
+      "source": "Manaphy",
+      "zh": "玛纳霏"
+    },
+    "491": {
+      "source": "Darkrai",
+      "zh": "达克莱伊"
+    },
+    "492": {
+      "source": "Shaymin",
+      "zh": "谢米"
+    },
+    "493": {
+      "source": "Arceus",
+      "zh": "阿尔宙斯"
+    },
+    "494": {
+      "source": "Victini",
+      "zh": "比克提尼"
+    },
+    "495": {
+      "source": "Snivy",
+      "zh": "藤藤蛇"
+    },
+    "496": {
+      "source": "Servine",
+      "zh": "青藤蛇"
+    },
+    "497": {
+      "source": "Serperior",
+      "zh": "君主蛇"
+    },
+    "498": {
+      "source": "Tepig",
+      "zh": "暖暖猪"
+    },
+    "499": {
+      "source": "Pignite",
+      "zh": "炒炒猪"
+    },
+    "500": {
+      "source": "Emboar",
+      "zh": "炎武王"
+    },
+    "501": {
+      "source": "Oshawott",
+      "zh": "水水獭"
+    },
+    "502": {
+      "source": "Dewott",
+      "zh": "双刃丸"
+    },
+    "503": {
+      "source": "Samurott",
+      "zh": "大剑鬼"
+    },
+    "504": {
+      "source": "Patrat",
+      "zh": "探探鼠"
+    },
+    "505": {
+      "source": "Watchog",
+      "zh": "步哨鼠"
+    },
+    "506": {
+      "source": "Lillipup",
+      "zh": "小约克"
+    },
+    "507": {
+      "source": "Herdier",
+      "zh": "哈约克"
+    },
+    "508": {
+      "source": "Stoutland",
+      "zh": "长毛狗"
+    },
+    "509": {
+      "source": "Purrloin",
+      "zh": "扒手猫"
+    },
+    "510": {
+      "source": "Liepard",
+      "zh": "酷豹"
+    },
+    "511": {
+      "source": "Pansage",
+      "zh": "花椰猴"
+    },
+    "512": {
+      "source": "Simisage",
+      "zh": "花椰猿"
+    },
+    "513": {
+      "source": "Pansear",
+      "zh": "爆香猴"
+    },
+    "515": {
+      "source": "Panpour",
+      "zh": "冷水猴"
+    },
+    "517": {
+      "source": "Munna",
+      "zh": "食梦梦"
+    },
+    "518": {
+      "source": "Musharna",
+      "zh": "梦梦蚀"
+    },
+    "519": {
+      "source": "Pidove",
+      "zh": "豆豆鸽"
+    },
+    "521": {
+      "source": "Unfezant",
+      "zh": "高傲雉鸡"
+    },
+    "524": {
+      "source": "Roggenrola",
+      "zh": "石丸子"
+    },
+    "525": {
+      "source": "Boldore",
+      "zh": "地幔岩"
+    },
+    "526": {
+      "source": "Gigalith",
+      "zh": "庞岩怪"
+    },
+    "527": {
+      "source": "Woobat",
+      "zh": "滚滚蝙蝠"
+    },
+    "528": {
+      "source": "Swoobat",
+      "zh": "心蝙蝠"
+    },
+    "529": {
+      "source": "Drilbur",
+      "zh": "螺钉地鼠"
+    },
+    "530": {
+      "source": "Excadrill",
+      "zh": "龙头地鼠"
+    },
+    "531": {
+      "source": "Audino",
+      "zh": "差不多娃娃"
+    },
+    "532": {
+      "source": "Timburr",
+      "zh": "搬运小匠"
+    },
+    "533": {
+      "source": "Gurdurr",
+      "zh": "铁骨土人"
+    },
+    "534": {
+      "source": "Conkeldurr",
+      "zh": "修建老匠"
+    },
+    "535": {
+      "source": "Tympole",
+      "zh": "圆蝌蚪"
+    },
+    "536": {
+      "source": "Palpitoad",
+      "zh": "蓝蟾蜍"
+    },
+    "537": {
+      "source": "Seismitoad",
+      "zh": "蟾蜍王"
+    },
+    "539": {
+      "source": "Sawk",
+      "zh": "打击鬼"
+    },
+    "540": {
+      "source": "Sewaddle",
+      "zh": "虫宝包"
+    },
+    "541": {
+      "source": "Swadloon",
+      "zh": "宝包茧"
+    },
+    "542": {
+      "source": "Leavanny",
+      "zh": "保姆虫"
+    },
+    "543": {
+      "source": "Venipede",
+      "zh": "百足蜈蚣"
+    },
+    "544": {
+      "source": "Whirlipede",
+      "zh": "车轮球"
+    },
+    "545": {
+      "source": "Scolipede",
+      "zh": "蜈蚣王"
+    },
+    "546": {
+      "source": "Cottonee",
+      "zh": "木棉球"
+    },
+    "547": {
+      "source": "Whimsicott",
+      "zh": "风妖精"
+    },
+    "548": {
+      "source": "Petilil",
+      "zh": "百合根娃娃"
+    },
+    "549": {
+      "source": "Lilligant",
+      "zh": "裙儿小姐"
+    },
+    "550": {
+      "source": "Basculin",
+      "zh": "野蛮鲈鱼"
+    },
+    "551": {
+      "source": "Sandile",
+      "zh": "黑眼鳄"
+    },
+    "552": {
+      "source": "Krokorok",
+      "zh": "混混鳄"
+    },
+    "553": {
+      "source": "Krookodile",
+      "zh": "流氓鳄"
+    },
+    "554": {
+      "source": "Darumaka",
+      "zh": "火红不倒翁"
+    },
+    "555": {
+      "source": "Darmanitan",
+      "zh": "达摩狒狒"
+    },
+    "556": {
+      "source": "Maractus",
+      "zh": "沙铃仙人掌"
+    },
+    "557": {
+      "source": "Dwebble",
+      "zh": "石居蟹"
+    },
+    "559": {
+      "source": "Scraggy",
+      "zh": "滑滑小子"
+    },
+    "560": {
+      "source": "Scrafty",
+      "zh": "头巾混混"
+    },
+    "561": {
+      "source": "Sigilyph",
+      "zh": "象征鸟"
+    },
+    "562": {
+      "source": "Yamask",
+      "zh": "哭哭面具"
+    },
+    "563": {
+      "source": "Cofagrigus",
+      "zh": "迭失棺"
+    },
+    "566": {
+      "source": "Archen",
+      "zh": "始祖小鸟"
+    },
+    "567": {
+      "source": "Archeops",
+      "zh": "始祖大鸟"
+    },
+    "568": {
+      "source": "Trubbish",
+      "zh": "破破袋"
+    },
+    "569": {
+      "source": "Garbodor",
+      "zh": "灰尘山"
+    },
+    "570": {
+      "source": "Zorua",
+      "zh": "索罗亚"
+    },
+    "571": {
+      "source": "Zoroark",
+      "zh": "索罗亚克"
+    },
+    "572": {
+      "source": "Minccino",
+      "zh": "泡沫栗鼠"
+    },
+    "573": {
+      "source": "Cinccino",
+      "zh": "奇诺栗鼠"
+    },
+    "574": {
+      "source": "Gothita",
+      "zh": "哥德宝宝"
+    },
+    "575": {
+      "source": "Gothorita",
+      "zh": "哥德小童"
+    },
+    "576": {
+      "source": "Gothitelle",
+      "zh": "哥德小姐"
+    },
+    "577": {
+      "source": "Solosis",
+      "zh": "单卵细胞球"
+    },
+    "578": {
+      "source": "Duosion",
+      "zh": "双卵细胞球"
+    },
+    "579": {
+      "source": "Reuniclus",
+      "zh": "人造细胞卵"
+    },
+    "580": {
+      "source": "Ducklett",
+      "zh": "鸭宝宝"
+    },
+    "581": {
+      "source": "Swanna",
+      "zh": "舞天鹅"
+    },
+    "582": {
+      "source": "Vanillite",
+      "zh": "迷你冰"
+    },
+    "583": {
+      "source": "Vanillish",
+      "zh": "多多冰"
+    },
+    "584": {
+      "source": "Vanilluxe",
+      "zh": "双倍多多冰"
+    },
+    "585": {
+      "source": "Deerling",
+      "zh": "四季鹿"
+    },
+    "586": {
+      "source": "Sawsbuck",
+      "zh": "萌芽鹿"
+    },
+    "587": {
+      "source": "Emolga",
+      "zh": "电飞鼠"
+    },
+    "588": {
+      "source": "Karrablast",
+      "zh": "盖盖虫"
+    },
+    "589": {
+      "source": "Escavalier",
+      "zh": "骑士蜗牛"
+    },
+    "590": {
+      "source": "Foongus",
+      "zh": "哎呀球菇"
+    },
+    "594": {
+      "source": "Alomomola",
+      "zh": "保姆曼波"
+    },
+    "595": {
+      "source": "Joltik",
+      "zh": "电电虫"
+    },
+    "596": {
+      "source": "Galvantula",
+      "zh": "电蜘蛛"
+    },
+    "597": {
+      "source": "Ferroseed",
+      "zh": "种子铁球"
+    },
+    "598": {
+      "source": "Ferrothorn",
+      "zh": "坚果哑铃"
+    },
+    "599": {
+      "source": "Klink",
+      "zh": "齿轮儿"
+    },
+    "600": {
+      "source": "Klang",
+      "zh": "齿轮组"
+    },
+    "601": {
+      "source": "Klinklang",
+      "zh": "齿轮怪"
+    },
+    "602": {
+      "source": "Tynamo",
+      "zh": "麻麻小鱼"
+    },
+    "603": {
+      "source": "Eelektrik",
+      "zh": "麻麻鳗"
+    },
+    "604": {
+      "source": "Eelektross",
+      "zh": "麻麻鳗鱼王"
+    },
+    "605": {
+      "source": "Elgyem",
+      "zh": "小灰怪"
+    },
+    "606": {
+      "source": "Beheeyem",
+      "zh": "大宇怪"
+    },
+    "607": {
+      "source": "Litwick",
+      "zh": "烛光灵"
+    },
+    "608": {
+      "source": "Lampent",
+      "zh": "灯火幽灵"
+    },
+    "609": {
+      "source": "Chandelure",
+      "zh": "水晶灯火灵"
+    },
+    "610": {
+      "source": "Axew",
+      "zh": "牙牙"
+    },
+    "611": {
+      "source": "Fraxure",
+      "zh": "斧牙龙"
+    },
+    "612": {
+      "source": "Haxorus",
+      "zh": "双斧战龙"
+    },
+    "613": {
+      "source": "Cubchoo",
+      "zh": "喷嚏熊"
+    },
+    "614": {
+      "source": "Beartic",
+      "zh": "冻原熊"
+    },
+    "615": {
+      "source": "Cryogonal",
+      "zh": "几何雪花"
+    },
+    "617": {
+      "source": "Accelgor",
+      "zh": "敏捷虫"
+    },
+    "619": {
+      "source": "Mienfoo",
+      "zh": "功夫鼬"
+    },
+    "620": {
+      "source": "Mienshao",
+      "zh": "师父鼬"
+    },
+    "621": {
+      "source": "Druddigon",
+      "zh": "赤面龙"
+    },
+    "622": {
+      "source": "Golett",
+      "zh": "泥偶小人"
+    },
+    "623": {
+      "source": "Golurk",
+      "zh": "泥偶巨人"
+    },
+    "624": {
+      "source": "Pawniard",
+      "zh": "驹刀小兵"
+    },
+    "625": {
+      "source": "Bisharp",
+      "zh": "劈斩司令"
+    },
+    "627": {
+      "source": "Rufflet",
+      "zh": "毛头小鹰"
+    },
+    "628": {
+      "source": "Braviary",
+      "zh": "勇士雄鹰"
+    },
+    "629": {
+      "source": "Vullaby",
+      "zh": "秃鹰丫头"
+    },
+    "630": {
+      "source": "Mandibuzz",
+      "zh": "秃鹰娜"
+    },
+    "631": {
+      "source": "Heatmor",
+      "zh": "熔蚁兽"
+    },
+    "632": {
+      "source": "Durant",
+      "zh": "铁蚁"
+    },
+    "633": {
+      "source": "Deino",
+      "zh": "单首龙"
+    },
+    "634": {
+      "source": "Zweilous",
+      "zh": "双首暴龙"
+    },
+    "635": {
+      "source": "Hydreigon",
+      "zh": "三首恶龙"
+    },
+    "636": {
+      "source": "Larvesta",
+      "zh": "燃烧虫"
+    },
+    "637": {
+      "source": "Volcarona",
+      "zh": "火神蛾"
+    },
+    "638": {
+      "source": "Cobalion",
+      "zh": "勾帕路翁"
+    },
+    "639": {
+      "source": "Terrakion",
+      "zh": "代拉基翁"
+    },
+    "640": {
+      "source": "Virizion",
+      "zh": "毕力吉翁"
+    },
+    "641": {
+      "source": "Tornadus",
+      "zh": "龙卷云"
+    },
+    "642": {
+      "source": "Thundurus",
+      "zh": "雷电云"
+    },
+    "643": {
+      "source": "Reshiram",
+      "zh": "莱希拉姆"
+    },
+    "644": {
+      "source": "Zekrom",
+      "zh": "捷克罗姆"
+    },
+    "645": {
+      "source": "Landorus",
+      "zh": "土地云"
+    },
+    "646": {
+      "source": "Kyurem",
+      "zh": "酋雷姆"
+    },
+    "647": {
+      "source": "Keldeo",
+      "zh": "凯路迪欧"
+    },
+    "648": {
+      "source": "Meloetta",
+      "zh": "美洛耶塔"
+    },
+    "649": {
+      "source": "Genesect",
+      "zh": "盖诺赛克特"
+    },
+    "650": {
+      "source": "Chespin",
+      "zh": "哈力栗"
+    },
+    "651": {
+      "source": "Quilladin",
+      "zh": "胖胖哈力"
+    },
+    "652": {
+      "source": "Chesnaught",
+      "zh": "布里卡隆"
+    },
+    "653": {
+      "source": "Fennekin",
+      "zh": "火狐狸"
+    },
+    "654": {
+      "source": "Braixen",
+      "zh": "长尾火狐"
+    },
+    "655": {
+      "source": "Delphox",
+      "zh": "妖火红狐"
+    },
+    "656": {
+      "source": "Froakie",
+      "zh": "呱呱泡蛙"
+    },
+    "657": {
+      "source": "Frogadier",
+      "zh": "呱头蛙"
+    },
+    "658": {
+      "source": "Greninja",
+      "zh": "甲贺忍蛙"
+    },
+    "659": {
+      "source": "Bunnelby",
+      "zh": "掘掘兔"
+    },
+    "660": {
+      "source": "Diggersby",
+      "zh": "掘地兔"
+    },
+    "661": {
+      "source": "Fletchling",
+      "zh": "小箭雀"
+    },
+    "662": {
+      "source": "Fletchinder",
+      "zh": "火箭雀"
+    },
+    "663": {
+      "source": "Talonflame",
+      "zh": "烈箭鹰"
+    },
+    "664": {
+      "source": "Scatterbug",
+      "zh": "粉蝶虫"
+    },
+    "665": {
+      "source": "Spewpa",
+      "zh": "粉蝶蛹"
+    },
+    "666": {
+      "source": "Vivillon",
+      "zh": "彩粉蝶"
+    },
+    "667": {
+      "source": "Litleo",
+      "zh": "小狮狮"
+    },
+    "669": {
+      "source": "Flabébé",
+      "zh": "花蓓蓓"
+    },
+    "670": {
+      "source": "Floette",
+      "zh": "花叶蒂"
+    },
+    "671": {
+      "source": "Florges",
+      "zh": "花洁夫人"
+    },
+    "672": {
+      "source": "Skiddo",
+      "zh": "坐骑小羊"
+    },
+    "673": {
+      "source": "Gogoat",
+      "zh": "坐骑山羊"
+    },
+    "674": {
+      "source": "Pancham",
+      "zh": "顽皮熊猫"
+    },
+    "675": {
+      "source": "Pangoro",
+      "zh": "霸道熊猫"
+    },
+    "676": {
+      "source": "Furfrou",
+      "zh": "多丽米亚"
+    },
+    "677": {
+      "source": "Espurr",
+      "zh": "妙喵"
+    },
+    "678": {
+      "source": "Meowstic",
+      "zh": "超能妙喵"
+    },
+    "679": {
+      "source": "Honedge",
+      "zh": "独剑鞘"
+    },
+    "680": {
+      "source": "Doublade",
+      "zh": "双剑鞘"
+    },
+    "681": {
+      "source": "Aegislash",
+      "zh": "坚盾剑怪"
+    },
+    "682": {
+      "source": "Spritzee",
+      "zh": "粉香香"
+    },
+    "684": {
+      "source": "Swirlix",
+      "zh": "绵绵泡芙"
+    },
+    "685": {
+      "source": "Slurpuff",
+      "zh": "胖甜妮"
+    },
+    "686": {
+      "source": "Inkay",
+      "zh": "好啦鱿"
+    },
+    "687": {
+      "source": "Malamar",
+      "zh": "乌贼王"
+    },
+    "688": {
+      "source": "Binacle",
+      "zh": "龟脚脚"
+    },
+    "689": {
+      "source": "Barbaracle",
+      "zh": "龟足巨铠"
+    },
+    "690": {
+      "source": "Skrelp",
+      "zh": "垃垃藻"
+    },
+    "691": {
+      "source": "Dragalge",
+      "zh": "毒藻龙"
+    },
+    "692": {
+      "source": "Clauncher",
+      "zh": "铁臂枪虾"
+    },
+    "693": {
+      "source": "Clawitzer",
+      "zh": "钢炮臂虾"
+    },
+    "694": {
+      "source": "Helioptile",
+      "zh": "伞电蜥"
+    },
+    "695": {
+      "source": "Heliolisk",
+      "zh": "光电伞蜥"
+    },
+    "696": {
+      "source": "Tyrunt",
+      "zh": "宝宝暴龙"
+    },
+    "697": {
+      "source": "Tyrantrum",
+      "zh": "怪颚龙"
+    },
+    "698": {
+      "source": "Amaura",
+      "zh": "冰雪龙"
+    },
+    "699": {
+      "source": "Aurorus",
+      "zh": "冰雪巨龙"
+    },
+    "700": {
+      "source": "Sylveon",
+      "zh": "仙子伊布"
+    },
+    "701": {
+      "source": "Hawlucha",
+      "zh": "摔角鹰人"
+    },
+    "702": {
+      "source": "Dedenne",
+      "zh": "咚咚鼠"
+    },
+    "703": {
+      "source": "Carbink",
+      "zh": "小碎钻"
+    },
+    "704": {
+      "source": "Goomy",
+      "zh": "黏黏宝"
+    },
+    "705": {
+      "source": "Sliggoo",
+      "zh": "黏美儿"
+    },
+    "706": {
+      "source": "Goodra",
+      "zh": "黏美龙"
+    },
+    "707": {
+      "source": "Klefki",
+      "zh": "钥圈儿"
+    },
+    "708": {
+      "source": "Phantump",
+      "zh": "小木灵"
+    },
+    "709": {
+      "source": "Trevenant",
+      "zh": "朽木妖"
+    },
+    "710": {
+      "source": "Pumpkaboo",
+      "zh": "南瓜精"
+    },
+    "711": {
+      "source": "Gourgeist",
+      "zh": "南瓜怪人"
+    },
+    "712": {
+      "source": "Bergmite",
+      "zh": "冰宝"
+    },
+    "713": {
+      "source": "Avalugg",
+      "zh": "冰岩怪"
+    },
+    "714": {
+      "source": "Noibat",
+      "zh": "嗡蝠"
+    },
+    "715": {
+      "source": "Noivern",
+      "zh": "音波龙"
+    },
+    "716": {
+      "source": "Xerneas",
+      "zh": "哲尔尼亚斯"
+    },
+    "717": {
+      "source": "Yveltal",
+      "zh": "伊裴尔塔尔"
+    },
+    "718": {
+      "source": "Zygarde",
+      "zh": "基格尔德"
+    },
+    "719": {
+      "source": "Diancie",
+      "zh": "蒂安希"
+    },
+    "720": {
+      "source": "Hoopa",
+      "zh": "胡帕"
+    },
+    "721": {
+      "source": "Volcanion",
+      "zh": "波尔凯尼恩"
+    },
+    "722": {
+      "source": "Rowlet",
+      "zh": "木木枭"
+    },
+    "723": {
+      "source": "Dartrix",
+      "zh": "投羽枭"
+    },
+    "724": {
+      "source": "Decidueye",
+      "zh": "狙射树枭"
+    },
+    "725": {
+      "source": "Litten",
+      "zh": "火斑喵"
+    },
+    "726": {
+      "source": "Torracat",
+      "zh": "炎热喵"
+    },
+    "727": {
+      "source": "Incineroar",
+      "zh": "炽焰咆哮虎"
+    },
+    "728": {
+      "source": "Popplio",
+      "zh": "球球海狮"
+    },
+    "729": {
+      "source": "Brionne",
+      "zh": "花漾海狮"
+    },
+    "730": {
+      "source": "Primarina",
+      "zh": "西狮海壬"
+    },
+    "731": {
+      "source": "Pikipek",
+      "zh": "小笃儿"
+    },
+    "734": {
+      "source": "Yungoos",
+      "zh": "猫鼬少"
+    },
+    "736": {
+      "source": "Grubbin",
+      "zh": "强颚鸡母虫"
+    },
+    "737": {
+      "source": "Charjabug",
+      "zh": "虫电宝"
+    },
+    "738": {
+      "source": "Vikavolt",
+      "zh": "锹农炮虫"
+    },
+    "739": {
+      "source": "Crabrawler",
+      "zh": "好胜蟹"
+    },
+    "740": {
+      "source": "Crabominable",
+      "zh": "好胜毛蟹"
+    },
+    "741": {
+      "source": "Oricorio",
+      "zh": "花舞鸟"
+    },
+    "742": {
+      "source": "Cutiefly",
+      "zh": "萌虻"
+    },
+    "743": {
+      "source": "Ribombee",
+      "zh": "蝶结萌虻"
+    },
+    "744": {
+      "source": "Rockruff",
+      "zh": "岩狗狗"
+    },
+    "745": {
+      "source": "Lycanroc",
+      "zh": "鬃岩狼人"
+    },
+    "746": {
+      "source": "Wishiwashi",
+      "zh": "弱丁鱼"
+    },
+    "747": {
+      "source": "Mareanie",
+      "zh": "好坏星"
+    },
+    "748": {
+      "source": "Toxapex",
+      "zh": "超坏星"
+    },
+    "749": {
+      "source": "Mudbray",
+      "zh": "泥驴仔"
+    },
+    "750": {
+      "source": "Mudsdale",
+      "zh": "重泥挽马"
+    },
+    "751": {
+      "source": "Dewpider",
+      "zh": "滴蛛"
+    },
+    "752": {
+      "source": "Araquanid",
+      "zh": "滴蛛霸"
+    },
+    "753": {
+      "source": "Fomantis",
+      "zh": "伪螳草"
+    },
+    "754": {
+      "source": "Lurantis",
+      "zh": "兰螳花"
+    },
+    "755": {
+      "source": "Morelull",
+      "zh": "睡睡菇"
+    },
+    "757": {
+      "source": "Salandit",
+      "zh": "夜盗火蜥"
+    },
+    "758": {
+      "source": "Salazzle",
+      "zh": "焰后蜥"
+    },
+    "759": {
+      "source": "Stufful",
+      "zh": "童偶熊"
+    },
+    "760": {
+      "source": "Bewear",
+      "zh": "穿着熊"
+    },
+    "761": {
+      "source": "Bounsweet",
+      "zh": "甜竹竹"
+    },
+    "762": {
+      "source": "Steenee",
+      "zh": "甜舞妮"
+    },
+    "763": {
+      "source": "Tsareena",
+      "zh": "甜冷美后"
+    },
+    "764": {
+      "source": "Comfey",
+      "zh": "花疗环环"
+    },
+    "766": {
+      "source": "Passimian",
+      "zh": "投掷猴"
+    },
+    "767": {
+      "source": "Wimpod",
+      "zh": "胆小虫"
+    },
+    "768": {
+      "source": "Golisopod",
+      "zh": "具甲武者"
+    },
+    "769": {
+      "source": "Sandygast",
+      "zh": "沙丘娃"
+    },
+    "770": {
+      "source": "Palossand",
+      "zh": "噬沙堡爷"
+    },
+    "771": {
+      "source": "Pyukumuku",
+      "zh": "拳海参"
+    },
+    "772": {
+      "source": "Código Cero",
+      "zh": "属性：空"
+    },
+    "773": {
+      "source": "Silvally",
+      "zh": "银伴战兽"
+    },
+    "774": {
+      "source": "Minior",
+      "zh": "小陨星"
+    },
+    "775": {
+      "source": "Komala",
+      "zh": "树枕尾熊"
+    },
+    "776": {
+      "source": "Turtonator",
+      "zh": "爆焰龟兽"
+    },
+    "777": {
+      "source": "Togedemaru",
+      "zh": "托戈德玛尔"
+    },
+    "778": {
+      "source": "Mimikyu",
+      "zh": "谜拟丘"
+    },
+    "779": {
+      "source": "Bruxish",
+      "zh": "磨牙彩皮鱼"
+    },
+    "780": {
+      "source": "Drampa",
+      "zh": "老翁龙"
+    },
+    "781": {
+      "source": "Dhelmise",
+      "zh": "破破舵轮"
+    },
+    "782": {
+      "source": "Jangmo-o",
+      "zh": "心鳞宝"
+    },
+    "783": {
+      "source": "Hakamo-o",
+      "zh": "鳞甲龙"
+    },
+    "784": {
+      "source": "Kommo-o",
+      "zh": "杖尾鳞甲龙"
+    },
+    "785": {
+      "source": "Tapu Koko",
+      "zh": "卡璞・鸣鸣"
+    },
+    "786": {
+      "source": "Tapu Lele",
+      "zh": "卡璞・蝶蝶"
+    },
+    "787": {
+      "source": "Tapu Bulu",
+      "zh": "卡璞・哞哞"
+    },
+    "788": {
+      "source": "Tapu Fini",
+      "zh": "卡璞・鳍鳍"
+    },
+    "789": {
+      "source": "Cosmog",
+      "zh": "科斯莫古"
+    },
+    "790": {
+      "source": "Cosmoem",
+      "zh": "科斯莫姆"
+    },
+    "791": {
+      "source": "Solgaleo",
+      "zh": "索尔迦雷欧"
+    },
+    "792": {
+      "source": "Lunala",
+      "zh": "露奈雅拉"
+    },
+    "793": {
+      "source": "Nihilego",
+      "zh": "虚吾伊德"
+    },
+    "794": {
+      "source": "Buzzwole",
+      "zh": "爆肌蚊"
+    },
+    "795": {
+      "source": "Pheromosa",
+      "zh": "费洛美螂"
+    },
+    "796": {
+      "source": "Xurkitree",
+      "zh": "电束木"
+    },
+    "797": {
+      "source": "Celesteela",
+      "zh": "铁火辉夜"
+    },
+    "798": {
+      "source": "Kartana",
+      "zh": "纸御剑"
+    },
+    "799": {
+      "source": "Guzzlord",
+      "zh": "恶食大王"
+    },
+    "800": {
+      "source": "Necrozma",
+      "zh": "奈克洛兹玛"
+    },
+    "801": {
+      "source": "Magearna",
+      "zh": "玛机雅娜"
+    },
+    "802": {
+      "source": "Marshadow",
+      "zh": "玛夏多"
+    },
+    "803": {
+      "source": "Poipole",
+      "zh": "毒贝比"
+    },
+    "804": {
+      "source": "Naganadel",
+      "zh": "四颚针龙"
+    },
+    "805": {
+      "source": "Stakataka",
+      "zh": "垒磊石"
+    },
+    "806": {
+      "source": "Blacephalon",
+      "zh": "砰头小丑"
+    },
+    "807": {
+      "source": "Zeraora",
+      "zh": "捷拉奥拉"
+    },
+    "808": {
+      "source": "Meltan",
+      "zh": "美录坦"
+    },
+    "809": {
+      "source": "Melmetal",
+      "zh": "美录梅塔"
+    },
+    "810": {
+      "source": "Grookey",
+      "zh": "敲音猴"
+    },
+    "811": {
+      "source": "Thwackey",
+      "zh": "啪咚猴"
+    },
+    "812": {
+      "source": "Rillaboom",
+      "zh": "轰擂金刚猩"
+    },
+    "813": {
+      "source": "Scorbunny",
+      "zh": "炎兔儿"
+    },
+    "814": {
+      "source": "Raboot",
+      "zh": "腾蹴小将"
+    },
+    "815": {
+      "source": "Cinderace",
+      "zh": "闪焰王牌"
+    },
+    "816": {
+      "source": "Sobble",
+      "zh": "泪眼蜥"
+    },
+    "817": {
+      "source": "Drizzile",
+      "zh": "变涩蜥"
+    },
+    "818": {
+      "source": "Inteleon",
+      "zh": "千面避役"
+    },
+    "819": {
+      "source": "Skwovet",
+      "zh": "贪心栗鼠"
+    },
+    "820": {
+      "source": "Greedent",
+      "zh": "藏饱栗鼠"
+    },
+    "821": {
+      "source": "Rookidee",
+      "zh": "稚山雀"
+    },
+    "822": {
+      "source": "Corvisquire",
+      "zh": "蓝鸦"
+    },
+    "823": {
+      "source": "Corviknight",
+      "zh": "钢铠鸦"
+    },
+    "824": {
+      "source": "Blipbug",
+      "zh": "索侦虫"
+    },
+    "825": {
+      "source": "Dottler",
+      "zh": "天罩虫"
+    },
+    "826": {
+      "source": "Orbeetle",
+      "zh": "以欧路普"
+    },
+    "827": {
+      "source": "Nickit",
+      "zh": "狡小狐"
+    },
+    "828": {
+      "source": "Thievul",
+      "zh": "猾大狐"
+    },
+    "829": {
+      "source": "Gossifleur",
+      "zh": "幼棉棉"
+    },
+    "830": {
+      "source": "Eldegoss",
+      "zh": "白蓬蓬"
+    },
+    "831": {
+      "source": "Wooloo",
+      "zh": "毛辫羊"
+    },
+    "832": {
+      "source": "Dubwool",
+      "zh": "毛毛角羊"
+    },
+    "833": {
+      "source": "Chewtle",
+      "zh": "咬咬龟"
+    },
+    "834": {
+      "source": "Drednaw",
+      "zh": "暴噬龟"
+    },
+    "835": {
+      "source": "Yamper",
+      "zh": "来电汪"
+    },
+    "836": {
+      "source": "Boltund",
+      "zh": "逐电犬"
+    },
+    "840": {
+      "source": "Applin",
+      "zh": "啃果虫"
+    },
+    "841": {
+      "source": "Flapple",
+      "zh": "苹裹龙"
+    },
+    "842": {
+      "source": "Appletun",
+      "zh": "丰蜜龙"
+    },
+    "843": {
+      "source": "Silicobra",
+      "zh": "沙包蛇"
+    },
+    "844": {
+      "source": "Sandaconda",
+      "zh": "沙螺蟒"
+    },
+    "845": {
+      "source": "Cramorant",
+      "zh": "古月鸟"
+    },
+    "846": {
+      "source": "Arrokuda",
+      "zh": "刺梭鱼"
+    },
+    "847": {
+      "source": "Barraskewda",
+      "zh": "戽斗尖梭"
+    },
+    "848": {
+      "source": "Toxel",
+      "zh": "电音婴"
+    },
+    "849": {
+      "source": "Toxtricity",
+      "zh": "颤弦蝾螈"
+    },
+    "850": {
+      "source": "Sizzlipede",
+      "zh": "烧火蚣"
+    },
+    "851": {
+      "source": "Centiskorch",
+      "zh": "焚焰蚣"
+    },
+    "852": {
+      "source": "Clobbopus",
+      "zh": "拳拳蛸"
+    },
+    "853": {
+      "source": "Grapploct",
+      "zh": "八爪武师"
+    },
+    "854": {
+      "source": "Sinistea",
+      "zh": "来悲茶"
+    },
+    "855": {
+      "source": "Polteageist",
+      "zh": "怖思壶"
+    },
+    "856": {
+      "source": "Hatenna",
+      "zh": "迷布莉姆"
+    },
+    "857": {
+      "source": "Hattrem",
+      "zh": "提布莉姆"
+    },
+    "858": {
+      "source": "Hatterene",
+      "zh": "布莉姆温"
+    },
+    "859": {
+      "source": "Impidimp",
+      "zh": "捣蛋小妖"
+    },
+    "860": {
+      "source": "Morgrem",
+      "zh": "诈唬魔"
+    },
+    "861": {
+      "source": "Grimmsnarl",
+      "zh": "长毛巨魔"
+    },
+    "862": {
+      "source": "Obstagoon",
+      "zh": "堵拦熊"
+    },
+    "863": {
+      "source": "Perrserker",
+      "zh": "喵头目"
+    },
+    "864": {
+      "source": "Cursola",
+      "zh": "魔灵珊瑚"
+    },
+    "867": {
+      "source": "Runerigus",
+      "zh": "迭失板"
+    },
+    "868": {
+      "source": "Milcery",
+      "zh": "小仙奶"
+    },
+    "869": {
+      "source": "Alcremie",
+      "zh": "霜奶仙"
+    },
+    "871": {
+      "source": "Pincurchin",
+      "zh": "啪嚓海胆"
+    },
+    "872": {
+      "source": "Snom",
+      "zh": "雪吞虫"
+    },
+    "873": {
+      "source": "Frosmoth",
+      "zh": "雪绒蛾"
+    },
+    "874": {
+      "source": "Stonjourner",
+      "zh": "巨石丁"
+    },
+    "875": {
+      "source": "Eiscue",
+      "zh": "冰砌鹅"
+    },
+    "876": {
+      "source": "Indeedee",
+      "zh": "爱管侍"
+    },
+    "877": {
+      "source": "Morpeko",
+      "zh": "莫鲁贝可"
+    },
+    "880": {
+      "source": "Dracozolt",
+      "zh": "雷鸟龙"
+    },
+    "881": {
+      "source": "Arctozolt",
+      "zh": "雷鸟海兽"
+    },
+    "882": {
+      "source": "Dracovish",
+      "zh": "鳃鱼龙"
+    },
+    "883": {
+      "source": "Arctovish",
+      "zh": "鳃鱼海兽"
+    },
+    "884": {
+      "source": "Duraludon",
+      "zh": "铝钢龙"
+    },
+    "885": {
+      "source": "Dreepy",
+      "zh": "多龙梅西亚"
+    },
+    "886": {
+      "source": "Drakloak",
+      "zh": "多龙奇"
+    },
+    "887": {
+      "source": "Dragapult",
+      "zh": "多龙巴鲁托"
+    },
+    "888": {
+      "source": "Zacian",
+      "zh": "苍响"
+    },
+    "889": {
+      "source": "Zamazenta",
+      "zh": "藏玛然特"
+    },
+    "890": {
+      "source": "Eternatus",
+      "zh": "无极汰那"
+    },
+    "891": {
+      "source": "Kubfu",
+      "zh": "熊徒弟"
+    },
+    "892": {
+      "source": "Urshifu",
+      "zh": "武道熊师"
+    },
+    "894": {
+      "source": "Regieleki",
+      "zh": "雷吉艾勒奇"
+    },
+    "895": {
+      "source": "Regidrago",
+      "zh": "雷吉铎拉戈"
+    },
+    "896": {
+      "source": "Glastrier",
+      "zh": "雪暴马"
+    },
+    "897": {
+      "source": "Spectrier",
+      "zh": "灵幽马"
+    },
+    "898": {
+      "source": "Calyrex",
+      "zh": "蕾冠王"
+    },
+    "899": {
+      "source": "Wyrdeer",
+      "zh": "诡角鹿"
+    },
+    "900": {
+      "source": "Kleavor",
+      "zh": "劈斧螳螂"
+    },
+    "901": {
+      "source": "Ursaluna",
+      "zh": "月月熊"
+    },
+    "902": {
+      "source": "Basculegion",
+      "zh": "幽尾玄鱼"
+    },
+    "903": {
+      "source": "Sneasler",
+      "zh": "大狃拉"
+    },
+    "904": {
+      "source": "Overqwil",
+      "zh": "万针鱼"
+    },
+    "905": {
+      "source": "Enamorus",
+      "zh": "眷恋云"
+    },
+    "906": {
+      "source": "Sprigatito",
+      "zh": "新叶喵"
+    },
+    "907": {
+      "source": "Floragato",
+      "zh": "蒂蕾喵"
+    },
+    "908": {
+      "source": "Meowscarada",
+      "zh": "魔幻假面喵"
+    },
+    "909": {
+      "source": "Fuecoco",
+      "zh": "呆火鳄"
+    },
+    "910": {
+      "source": "Crocalor",
+      "zh": "炙烫鳄"
+    },
+    "911": {
+      "source": "Skeledirge",
+      "zh": "骨纹巨声鳄"
+    },
+    "912": {
+      "source": "Quaxly",
+      "zh": "润水鸭"
+    },
+    "913": {
+      "source": "Quaxwell",
+      "zh": "涌跃鸭"
+    },
+    "914": {
+      "source": "Quaquaval",
+      "zh": "狂欢浪舞鸭"
+    },
+    "915": {
+      "source": "Lechonk",
+      "zh": "爱吃豚"
+    },
+    "916": {
+      "source": "Oinkologne",
+      "zh": "飘香豚"
+    },
+    "917": {
+      "source": "Tarountula",
+      "zh": "团珠蛛"
+    },
+    "918": {
+      "source": "Spidops",
+      "zh": "操陷蛛"
+    },
+    "919": {
+      "source": "Nymble",
+      "zh": "豆蟋蟀"
+    },
+    "920": {
+      "source": "Lokix",
+      "zh": "烈腿蝗"
+    },
+    "921": {
+      "source": "Pawmi",
+      "zh": "布拨"
+    },
+    "922": {
+      "source": "Pawmo",
+      "zh": "布土拨"
+    },
+    "923": {
+      "source": "Pawmot",
+      "zh": "巴布土拨"
+    },
+    "924": {
+      "source": "Tandemaus",
+      "zh": "一对鼠"
+    },
+    "925": {
+      "source": "Maushold",
+      "zh": "一家鼠"
+    },
+    "926": {
+      "source": "Fidough",
+      "zh": "狗仔包"
+    },
+    "927": {
+      "source": "Dachsbun",
+      "zh": "麻花犬"
+    },
+    "928": {
+      "source": "Smoliv",
+      "zh": "迷你芙"
+    },
+    "930": {
+      "source": "Arboliva",
+      "zh": "奥利瓦"
+    },
+    "932": {
+      "source": "Nacli",
+      "zh": "盐石宝"
+    },
+    "933": {
+      "source": "Naclstack",
+      "zh": "盐石垒"
+    },
+    "934": {
+      "source": "Garganacl",
+      "zh": "盐石巨灵"
+    },
+    "935": {
+      "source": "Charcadet",
+      "zh": "炭小侍"
+    },
+    "936": {
+      "source": "Armarouge",
+      "zh": "红莲铠骑"
+    },
+    "937": {
+      "source": "Ceruledge",
+      "zh": "苍炎刃鬼"
+    },
+    "938": {
+      "source": "Tadbulb",
+      "zh": "光蚪仔"
+    },
+    "939": {
+      "source": "Bellibolt",
+      "zh": "电肚蛙"
+    },
+    "940": {
+      "source": "Wattrel",
+      "zh": "电海燕"
+    },
+    "941": {
+      "source": "Kilowattrel",
+      "zh": "大电海燕"
+    },
+    "946": {
+      "source": "Bramblin",
+      "zh": "纳噬草"
+    },
+    "951": {
+      "source": "Capsakid",
+      "zh": "热辣娃"
+    },
+    "952": {
+      "source": "Scovillain",
+      "zh": "狠辣椒"
+    },
+    "953": {
+      "source": "Rellor",
+      "zh": "虫滚泥"
+    },
+    "955": {
+      "source": "Flittle",
+      "zh": "飘飘雏"
+    },
+    "957": {
+      "source": "Tinkatink",
+      "zh": "小锻匠"
+    },
+    "958": {
+      "source": "Tinkatuff",
+      "zh": "巧锻匠"
+    },
+    "959": {
+      "source": "Tinkaton",
+      "zh": "巨锻匠"
+    },
+    "960": {
+      "source": "Wiglett",
+      "zh": "海地鼠"
+    },
+    "961": {
+      "source": "Wugtrio",
+      "zh": "三海地鼠"
+    },
+    "963": {
+      "source": "Finizen",
+      "zh": "波普海豚"
+    },
+    "964": {
+      "source": "Palafin",
+      "zh": "海豚侠"
+    },
+    "965": {
+      "source": "Varoom",
+      "zh": "噗隆隆"
+    },
+    "966": {
+      "source": "Revavroom",
+      "zh": "普隆隆姆"
+    },
+    "967": {
+      "source": "Cyclizar",
+      "zh": "摩托蜥"
+    },
+    "968": {
+      "source": "Orthworm",
+      "zh": "拖拖蚓"
+    },
+    "969": {
+      "source": "Glimmet",
+      "zh": "晶光芽"
+    },
+    "970": {
+      "source": "Glimmora",
+      "zh": "晶光花"
+    },
+    "971": {
+      "source": "Greavard",
+      "zh": "墓仔狗"
+    },
+    "972": {
+      "source": "Houndstone",
+      "zh": "墓扬犬"
+    },
+    "974": {
+      "source": "Cetoddle",
+      "zh": "走鲸"
+    },
+    "975": {
+      "source": "Cetitan",
+      "zh": "浩大鲸"
+    },
+    "976": {
+      "source": "Veluza",
+      "zh": "轻身鳕"
+    },
+    "977": {
+      "source": "Dondozo",
+      "zh": "吃吼霸"
+    },
+    "978": {
+      "source": "Tatsugiri",
+      "zh": "米立龙"
+    },
+    "979": {
+      "source": "Annihilape",
+      "zh": "弃世猴"
+    },
+    "980": {
+      "source": "Clodsire",
+      "zh": "土王"
+    },
+    "981": {
+      "source": "Farigiraf",
+      "zh": "奇麒麟"
+    },
+    "982": {
+      "source": "Dudunsparce",
+      "zh": "土龙节节"
+    },
+    "983": {
+      "source": "Kingambit",
+      "zh": "仆刀将军"
+    },
+    "984": {
+      "source": "Colmilargo",
+      "zh": "雄伟牙"
+    },
+    "985": {
+      "source": "Colagrito",
+      "zh": "吼叫尾"
+    },
+    "987": {
+      "source": "Melenaleteo",
+      "zh": "振翼发"
+    },
+    "988": {
+      "source": "Reptalada",
+      "zh": "爬地翅"
+    },
+    "989": {
+      "source": "Pelarena",
+      "zh": "沙铁皮"
+    },
+    "991": {
+      "source": "Ferrosaco",
+      "zh": "铁包袱"
+    },
+    "992": {
+      "source": "Ferropalmas",
+      "zh": "铁臂膀"
+    },
+    "994": {
+      "source": "Ferropolilla",
+      "zh": "铁毒蛾"
+    },
+    "995": {
+      "source": "Ferropúas",
+      "zh": "铁荆棘"
+    },
+    "996": {
+      "source": "Frigibax",
+      "zh": "凉脊龙"
+    },
+    "997": {
+      "source": "Arctibax",
+      "zh": "冻脊龙"
+    },
+    "998": {
+      "source": "Baxcalibur",
+      "zh": "戟脊龙"
+    },
+    "1000": {
+      "source": "Gholdengo",
+      "zh": "赛富豪"
+    },
+    "1004": {
+      "source": "Chi-Yu",
+      "zh": "古玉鱼"
+    },
+    "1005": {
+      "source": "Bramaluna",
+      "zh": "轰鸣月"
+    },
+    "1006": {
+      "source": "Ferropaladín",
+      "zh": "铁武者"
+    },
+    "1007": {
+      "source": "Koraidon",
+      "zh": "故勒顿"
+    },
+    "1009": {
+      "source": "Ondulagua",
+      "zh": "波荡水"
+    },
+    "1010": {
+      "source": "Ferroverdor",
+      "zh": "铁斑叶"
+    },
+    "1011": {
+      "source": "Dipplin",
+      "zh": "裹蜜虫"
+    },
+    "1012": {
+      "source": "Poltchageist",
+      "zh": "斯魔茶"
+    },
+    "1013": {
+      "source": "Sinistcha",
+      "zh": "来悲粗茶"
+    },
+    "1015": {
+      "source": "Munkidori",
+      "zh": "愿增猿"
+    },
+    "1016": {
+      "source": "Fezandipiti",
+      "zh": "吉雉鸡"
+    },
+    "1017": {
+      "source": "Ogerpon",
+      "zh": "厄诡椪"
+    },
+    "1018": {
+      "source": "Archaludon",
+      "zh": "铝钢桥龙"
+    },
+    "1019": {
+      "source": "Hydrapple",
+      "zh": "蜜集大蛇"
+    },
+    "1024": {
+      "source": "Terapagos",
+      "zh": "太乐巴戈斯"
+    }
+  },
+  "movesById": {
+    "tackle": {
+      "source": "Placaje",
+      "zh": "撞击",
+      "evolution": {
+        "source": "Derribo",
+        "zh": "猛撞"
+      }
+    },
+    "quick-attack": {
+      "source": "Ataque Rápido",
+      "zh": "电光一闪",
+      "evolution": {
+        "source": "Velocidad Extrema",
+        "zh": "神速"
+      }
+    },
+    "swords-dance": {
+      "source": "Danza Espada",
+      "zh": "剑舞",
+      "evolution": null
+    },
+    "agility": {
+      "source": "Agilidad",
+      "zh": "高速移动",
+      "evolution": null
+    },
+    "harden": {
+      "source": "Fortaleza",
+      "zh": "变硬",
+      "evolution": null
+    },
+    "ember": {
+      "source": "Ascuas",
+      "zh": "火花",
+      "evolution": {
+        "source": "Llamarada",
+        "zh": "大字爆炎"
+      }
+    },
+    "flamethrower": {
+      "source": "Lanzallamas",
+      "zh": "喷射火焰",
+      "evolution": {
+        "source": "Sofoco",
+        "zh": "过热"
+      }
+    },
+    "fire-spin": {
+      "source": "Giro Fuego",
+      "zh": "火焰旋涡",
+      "evolution": {
+        "source": "Fuego Sagrado",
+        "zh": "神圣之火"
+      }
+    },
+    "heat-wave": {
+      "source": "Onda Ígnea",
+      "zh": "热风",
+      "evolution": {
+        "source": "Erupción",
+        "zh": "喷火"
+      }
+    },
+    "water-gun": {
+      "source": "Pistola Agua",
+      "zh": "水枪",
+      "evolution": {
+        "source": "Escaldar",
+        "zh": "热水"
+      }
+    },
+    "bubble": {
+      "source": "Burbuja",
+      "zh": "泡沫",
+      "evolution": {
+        "source": "Surf",
+        "zh": "冲浪"
+      }
+    },
+    "hydro-pump": {
+      "source": "Hidrobomba",
+      "zh": "水炮",
+      "evolution": {
+        "source": "Hidrocañón",
+        "zh": "加农水炮"
+      }
+    },
+    "aqua-ring": {
+      "source": "Acua Aro",
+      "zh": "水流环",
+      "evolution": null
+    },
+    "vine-whip": {
+      "source": "Látigo Cepa",
+      "zh": "藤鞭",
+      "evolution": {
+        "source": "Latigazo",
+        "zh": "强力鞭打"
+      }
+    },
+    "razor-leaf": {
+      "source": "Hoja Afilada",
+      "zh": "飞叶快刀",
+      "evolution": {
+        "source": "Lluevehojas",
+        "zh": "飞叶风暴"
+      }
+    },
+    "leaf-storm": {
+      "source": "Tormenta Floral",
+      "zh": "落英缤纷",
+      "evolution": {
+        "source": "Danza Pétalo",
+        "zh": "花瓣舞"
+      }
+    },
+    "giga-drain": {
+      "source": "Hierba Lazo",
+      "zh": "打草结",
+      "evolution": {
+        "source": "Planta Feroz",
+        "zh": "疯狂植物"
+      }
+    },
+    "thunder-shock": {
+      "source": "Impactrueno",
+      "zh": "电击",
+      "evolution": {
+        "source": "Trueno",
+        "zh": "打雷"
+      }
+    },
+    "discharge": {
+      "source": "Chispazo",
+      "zh": "放电",
+      "evolution": {
+        "source": "Campo Eléctrico",
+        "zh": "电气场地"
+      }
+    },
+    "thunderbolt": {
+      "source": "Rayo",
+      "zh": "十万伏特",
+      "evolution": {
+        "source": "Electrocañón",
+        "zh": "电磁炮"
+      }
+    },
+    "confusion": {
+      "source": "Confusión",
+      "zh": "念力",
+      "evolution": {
+        "source": "Psicocarga",
+        "zh": "精神冲击"
+      }
+    },
+    "psybeam": {
+      "source": "Psicorrayo",
+      "zh": "幻象光线",
+      "evolution": {
+        "source": "Premonición",
+        "zh": "预知未来"
+      }
+    },
+    "psychic": {
+      "source": "Psíquico",
+      "zh": "精神强念",
+      "evolution": {
+        "source": "Vasta Fuerza",
+        "zh": "广域战力"
+      }
+    },
+    "sludge": {
+      "source": "Residuos",
+      "zh": "污泥攻击",
+      "evolution": {
+        "source": "Bomba Lodo",
+        "zh": "污泥炸弹"
+      }
+    },
+    "mud-shot": {
+      "source": "Disparo Lodo",
+      "zh": "泥巴射击",
+      "evolution": {
+        "source": "Tierra Viva",
+        "zh": "大地之力"
+      }
+    },
+    "gust": {
+      "source": "Tornado",
+      "zh": "起风",
+      "evolution": {
+        "source": "Vendaval",
+        "zh": "暴风"
+      }
+    },
+    "wing-attack": {
+      "source": "Ataque Ala",
+      "zh": "翅膀攻击",
+      "evolution": {
+        "source": "Pájaro Osado",
+        "zh": "勇鸟猛攻"
+      }
+    },
+    "body-slam": {
+      "source": "Golpe Cuerpo",
+      "zh": "泰山压顶",
+      "evolution": {
+        "source": "Gigaimpacto",
+        "zh": "终极冲击"
+      }
+    },
+    "hyper-voice": {
+      "source": "Vozarrón",
+      "zh": "巨声",
+      "evolution": {
+        "source": "Alboroto",
+        "zh": "吵闹"
+      }
+    },
+    "poison-sting": {
+      "source": "Picotazo Veneno",
+      "zh": "毒针",
+      "evolution": {
+        "source": "Puya Nociva",
+        "zh": "毒击"
+      }
+    },
+    "toxic": {
+      "source": "Tóxico",
+      "zh": "剧毒",
+      "evolution": {
+        "source": "Gas Venenoso",
+        "zh": "毒瓦斯"
+      }
+    },
+    "bulldoze": {
+      "source": "Terratemblor",
+      "zh": "重踏",
+      "evolution": {
+        "source": "Terremoto",
+        "zh": "地震"
+      }
+    },
+    "bug-bite": {
+      "source": "Picadura",
+      "zh": "虫咬",
+      "evolution": {
+        "source": "Tijera X",
+        "zh": "十字剪"
+      }
+    },
+    "string-shot": {
+      "source": "Disparo Demora",
+      "zh": "吐丝",
+      "evolution": {
+        "source": "Red Viscosa",
+        "zh": "黏黏网"
+      }
+    },
+    "bug-buzz": {
+      "source": "Zumbido",
+      "zh": "虫鸣",
+      "evolution": {
+        "source": "Enjambre",
+        "zh": "虫群"
+      }
+    },
+    "rock-throw": {
+      "source": "Lanzarrocas",
+      "zh": "落石",
+      "evolution": {
+        "source": "Roca Afilada",
+        "zh": "尖石攻击"
+      }
+    },
+    "rock-slide": {
+      "source": "Avalancha",
+      "zh": "岩崩",
+      "evolution": {
+        "source": "Trampa Rocas",
+        "zh": "隐形岩"
+      }
+    },
+    "ice-beam": {
+      "source": "Rayo Hielo",
+      "zh": "冰冻光束",
+      "evolution": {
+        "source": "Ventisca",
+        "zh": "暴风雪"
+      }
+    },
+    "powder-snow": {
+      "source": "Nieve Polvo",
+      "zh": "细雪",
+      "evolution": {
+        "source": "Viento Hielo",
+        "zh": "冰冻之风"
+      }
+    },
+    "karate-chop": {
+      "source": "Golpe Kárate",
+      "zh": "空手劈",
+      "evolution": {
+        "source": "A Bocajarro",
+        "zh": "近身战"
+      }
+    },
+    "aura-sphere": {
+      "source": "Esfera Aural",
+      "zh": "波导弹",
+      "evolution": {
+        "source": "Onda Certera",
+        "zh": "真气弹"
+      }
+    },
+    "lick": {
+      "source": "Lengüetazo",
+      "zh": "舌舔",
+      "evolution": {
+        "source": "Puño Sombra",
+        "zh": "暗影拳"
+      }
+    },
+    "shadow-ball": {
+      "source": "Bola Sombra",
+      "zh": "暗影球",
+      "evolution": {
+        "source": "Golpe Fantasma",
+        "zh": "潜灵奇袭"
+      }
+    },
+    "dragon-rage": {
+      "source": "Furia Dragón",
+      "zh": "龙之怒",
+      "evolution": {
+        "source": "Cometa Draco",
+        "zh": "流星群"
+      }
+    },
+    "dragon-dance": {
+      "source": "Danza Dragón",
+      "zh": "龙之舞",
+      "evolution": null
+    },
+    "fairy-wind": {
+      "source": "Viento Feérico",
+      "zh": "妖精之风",
+      "evolution": {
+        "source": "Fuerza Lunar",
+        "zh": "月亮之力"
+      }
+    },
+    "dazzling-gleam": {
+      "source": "Brillo Mágico",
+      "zh": "魔法闪耀",
+      "evolution": {
+        "source": "Campo de Niebla",
+        "zh": "薄雾场地"
+      }
+    },
+    "metal-claw": {
+      "source": "Garra Metal",
+      "zh": "金属爪",
+      "evolution": {
+        "source": "Cabeza de Hierro",
+        "zh": "铁头"
+      }
+    },
+    "flash-cannon": {
+      "source": "Foco Resplandor",
+      "zh": "加农光炮",
+      "evolution": {
+        "source": "Rayo Metálico",
+        "zh": "铁蹄光线"
+      }
+    },
+    "bite": {
+      "source": "Mordisco",
+      "zh": "咬住",
+      "evolution": {
+        "source": "Triturar",
+        "zh": "咬碎"
+      }
+    },
+    "dark-pulse": {
+      "source": "Pulso Umbrío",
+      "zh": "恶之波动",
+      "evolution": {
+        "source": "Alarido",
+        "zh": "大声咆哮"
+      }
+    },
+    "night-shade": {
+      "source": "Tinieblas",
+      "zh": "黑夜魔影",
+      "evolution": {
+        "source": "Pesadilla",
+        "zh": "恶梦"
+      }
+    },
+    "bonemerang": {
+      "source": "Huesomerang",
+      "zh": "骨头回力镖",
+      "evolution": {
+        "source": "Ataque Óseo",
+        "zh": "骨棒乱打"
+      }
+    },
+    "psycho-cut": {
+      "source": "Psicocorte",
+      "zh": "精神利刃",
+      "evolution": {
+        "source": "Psicocolmillo",
+        "zh": "精神之牙"
+      }
+    },
+    "spikes": {
+      "source": "Púas",
+      "zh": "撒菱",
+      "evolution": {
+        "source": "Fisura",
+        "zh": "地裂"
+      }
+    },
+    "toxic-spikes": {
+      "source": "Púas Tóxicas",
+      "zh": "毒菱",
+      "evolution": {
+        "source": "Lanza Mugre",
+        "zh": "垃圾射击"
+      }
+    },
+    "hail": {
+      "source": "Granizo",
+      "zh": "冰雹",
+      "evolution": {
+        "source": "Alud",
+        "zh": "雪崩"
+      }
+    },
+    "meteor-mash": {
+      "source": "Puño Meteoro",
+      "zh": "彗星拳",
+      "evolution": {
+        "source": "Bomba Imán",
+        "zh": "磁铁炸弹"
+      }
+    },
+    "will-o-wisp": {
+      "source": "Fuego Fatuo",
+      "zh": "鬼火",
+      "evolution": {
+        "source": "Infierno",
+        "zh": "炼狱"
+      }
+    },
+    "substitute": {
+      "source": "Sustituto",
+      "zh": "替身",
+      "evolution": {
+        "source": "Doble Equipo",
+        "zh": "影子分身"
+      }
+    },
+    "aerial-ace": {
+      "source": "Golpe Aéreo",
+      "zh": "燕返",
+      "evolution": {
+        "source": "Acróbata",
+        "zh": "杂技"
+      }
+    },
+    "flame-wheel": {
+      "source": "Rueda Fuego",
+      "zh": "火焰轮",
+      "evolution": {
+        "source": "Envite Ígneo",
+        "zh": "闪焰冲锋"
+      }
+    },
+    "bubble-beam": {
+      "source": "Rayo Burbuja",
+      "zh": "泡沫光线",
+      "evolution": {
+        "source": "Acua Cola",
+        "zh": "水流尾"
+      }
+    },
+    "hex": {
+      "source": "Infortunio",
+      "zh": "祸不单行",
+      "evolution": {
+        "source": "Poltergeist",
+        "zh": "灵骚"
+      }
+    }
+  },
+  "itemsById": {
+    "leftovers": {
+      "source": "Restos",
+      "zh": "吃剩的东西"
+    },
+    "choiceband": {
+      "source": "Cinta Elección",
+      "zh": "讲究头带"
+    },
+    "quickclaw": {
+      "source": "Garra Rápida",
+      "zh": "先制之爪"
+    },
+    "focussash": {
+      "source": "Banda Focus",
+      "zh": "气势披带"
+    },
+    "shellbell": {
+      "source": "Cascabel Concha",
+      "zh": "贝壳之铃"
+    },
+    "amuletcoin": {
+      "source": "Moneda Amuleto",
+      "zh": "护符金币"
+    },
+    "luckyegg": {
+      "source": "Huevo Suerte",
+      "zh": "幸运蛋"
+    },
+    "lifeorb": {
+      "source": "Vidasfera",
+      "zh": "生命宝珠"
+    },
+    "choicescarf": {
+      "source": "Pañuelo Elección",
+      "zh": "讲究围巾"
+    },
+    "rockyhelmet": {
+      "source": "Casco Dentado",
+      "zh": "凸凸头盔"
+    },
+    "assaultvest": {
+      "source": "Chaleco Asalto",
+      "zh": "突击背心"
+    }
+  },
+  "contexts": {
+    "move": {
+      "A Bocajarro": "近身战",
+      "Acróbata": "杂技",
+      "Acua Aro": "水流环",
+      "Acua Cola": "水流尾",
+      "Agilidad": "高速移动",
+      "Alarido": "大声咆哮",
+      "Alboroto": "吵闹",
+      "Alud": "雪崩",
+      "Ascuas": "火花",
+      "Ataque Ala": "翅膀攻击",
+      "Ataque Rápido": "电光一闪",
+      "Ataque Óseo": "骨棒乱打",
+      "Avalancha": "岩崩",
+      "Bola Sombra": "暗影球",
+      "Bomba Imán": "磁铁炸弹",
+      "Bomba Lodo": "污泥炸弹",
+      "Brillo Mágico": "魔法闪耀",
+      "Burbuja": "泡沫",
+      "Cabeza de Hierro": "铁头",
+      "Campo Eléctrico": "电气场地",
+      "Campo de Niebla": "薄雾场地",
+      "Chispazo": "放电",
+      "Cometa Draco": "流星群",
+      "Confusión": "念力",
+      "Danza Dragón": "龙之舞",
+      "Danza Espada": "剑舞",
+      "Danza Pétalo": "花瓣舞",
+      "Derribo": "猛撞",
+      "Disparo Demora": "吐丝",
+      "Disparo Lodo": "泥巴射击",
+      "Doble Equipo": "影子分身",
+      "Electrocañón": "电磁炮",
+      "Enjambre": "虫群",
+      "Envite Ígneo": "闪焰冲锋",
+      "Erupción": "喷火",
+      "Escaldar": "热水",
+      "Esfera Aural": "波导弹",
+      "Fisura": "地裂",
+      "Foco Resplandor": "加农光炮",
+      "Fortaleza": "变硬",
+      "Fuego Fatuo": "鬼火",
+      "Fuego Sagrado": "神圣之火",
+      "Fuerza Lunar": "月亮之力",
+      "Furia Dragón": "龙之怒",
+      "Garra Metal": "金属爪",
+      "Gas Venenoso": "毒瓦斯",
+      "Gigaimpacto": "终极冲击",
+      "Giro Fuego": "火焰旋涡",
+      "Golpe Aéreo": "燕返",
+      "Golpe Cuerpo": "泰山压顶",
+      "Golpe Fantasma": "潜灵奇袭",
+      "Golpe Kárate": "空手劈",
+      "Granizo": "冰雹",
+      "Hidrobomba": "水炮",
+      "Hidrocañón": "加农水炮",
+      "Hierba Lazo": "打草结",
+      "Hoja Afilada": "飞叶快刀",
+      "Huesomerang": "骨头回力镖",
+      "Impactrueno": "电击",
+      "Infierno": "炼狱",
+      "Infortunio": "祸不单行",
+      "Lanza Mugre": "垃圾射击",
+      "Lanzallamas": "喷射火焰",
+      "Lanzarrocas": "落石",
+      "Latigazo": "强力鞭打",
+      "Lengüetazo": "舌舔",
+      "Llamarada": "大字爆炎",
+      "Lluevehojas": "飞叶风暴",
+      "Látigo Cepa": "藤鞭",
+      "Mordisco": "咬住",
+      "Nieve Polvo": "细雪",
+      "Onda Certera": "真气弹",
+      "Onda Ígnea": "热风",
+      "Pesadilla": "恶梦",
+      "Picadura": "虫咬",
+      "Picotazo Veneno": "毒针",
+      "Pistola Agua": "水枪",
+      "Placaje": "撞击",
+      "Planta Feroz": "疯狂植物",
+      "Poltergeist": "灵骚",
+      "Premonición": "预知未来",
+      "Psicocarga": "精神冲击",
+      "Psicocolmillo": "精神之牙",
+      "Psicocorte": "精神利刃",
+      "Psicorrayo": "幻象光线",
+      "Psíquico": "精神强念",
+      "Pulso Umbrío": "恶之波动",
+      "Puya Nociva": "毒击",
+      "Puño Meteoro": "彗星拳",
+      "Puño Sombra": "暗影拳",
+      "Pájaro Osado": "勇鸟猛攻",
+      "Púas": "撒菱",
+      "Púas Tóxicas": "毒菱",
+      "Rayo": "十万伏特",
+      "Rayo Burbuja": "泡沫光线",
+      "Rayo Hielo": "冰冻光束",
+      "Rayo Metálico": "铁蹄光线",
+      "Red Viscosa": "黏黏网",
+      "Residuos": "污泥攻击",
+      "Roca Afilada": "尖石攻击",
+      "Rueda Fuego": "火焰轮",
+      "Sofoco": "过热",
+      "Surf": "冲浪",
+      "Sustituto": "替身",
+      "Terratemblor": "重踏",
+      "Terremoto": "地震",
+      "Tierra Viva": "大地之力",
+      "Tijera X": "十字剪",
+      "Tinieblas": "黑夜魔影",
+      "Tormenta Floral": "落英缤纷",
+      "Tornado": "起风",
+      "Trampa Rocas": "隐形岩",
+      "Triturar": "咬碎",
+      "Trueno": "打雷",
+      "Tóxico": "剧毒",
+      "Vasta Fuerza": "广域战力",
+      "Velocidad Extrema": "神速",
+      "Vendaval": "暴风",
+      "Ventisca": "暴风雪",
+      "Viento Feérico": "妖精之风",
+      "Viento Hielo": "冰冻之风",
+      "Vozarrón": "巨声",
+      "Zumbido": "虫鸣"
+    },
+    "item": {
+      "Restos": "吃剩的东西",
+      "Cinta Elección": "讲究头带",
+      "Garra Rápida": "先制之爪",
+      "Banda Focus": "气势披带",
+      "Cascabel Concha": "贝壳之铃",
+      "Moneda Amuleto": "护符金币",
+      "Huevo Suerte": "幸运蛋",
+      "Vidasfera": "生命宝珠",
+      "Pañuelo Elección": "讲究围巾",
+      "Casco Dentado": "凸凸头盔",
+      "Chaleco Asalto": "突击背心"
+    },
+    "type": {
+      "Normal": "一般",
+      "Lucha": "格斗",
+      "Volador": "飞行",
+      "Veneno": "毒",
+      "Tierra": "地面",
+      "Roca": "岩石",
+      "Bicho": "虫",
+      "Fantasma": "幽灵",
+      "Acero": "钢",
+      "Fuego": "火",
+      "Agua": "水",
+      "Planta": "草",
+      "Eléctrico": "电",
+      "Psíquico": "超能力",
+      "Hielo": "冰",
+      "Dragón": "龙",
+      "Siniestro": "恶",
+      "Hada": "妖精",
+      "Astral": "星晶",
+      "???": "???"
+    },
+    "region": {
+      "Kanto": "关都",
+      "Johto": "城都",
+      "Hoenn": "丰缘",
+      "Sinnoh": "神奥",
+      "Teselia": "合众",
+      "Unova": "合众",
+      "Kalos": "卡洛斯",
+      "Alola": "阿罗拉",
+      "Galar": "伽勒尔",
+      "Paldea": "帕底亚",
+      "Hisui": "洗翠"
+    },
+    "form": {
+      "Normal": "普通",
+      "Shiny": "异色",
+      "shiny": "异色"
+    },
+    "pokemon": {
+      "1": "妙蛙种子",
+      "2": "妙蛙草",
+      "3": "妙蛙花",
+      "4": "小火龙",
+      "5": "火恐龙",
+      "6": "喷火龙",
+      "7": "杰尼龟",
+      "8": "卡咪龟",
+      "9": "水箭龟",
+      "10": "绿毛虫",
+      "11": "铁甲蛹",
+      "12": "巴大蝶",
+      "13": "独角虫",
+      "14": "铁壳蛹",
+      "15": "大针蜂",
+      "16": "波波",
+      "17": "比比鸟",
+      "18": "大比鸟",
+      "19": "小拉达",
+      "20": "拉达",
+      "21": "烈雀",
+      "22": "大嘴雀",
+      "23": "阿柏蛇",
+      "24": "阿柏怪",
+      "25": "皮卡丘",
+      "26": "雷丘",
+      "27": "穿山鼠",
+      "28": "穿山王",
+      "29": "尼多兰",
+      "30": "尼多娜",
+      "31": "尼多后",
+      "32": "尼多朗",
+      "33": "尼多力诺",
+      "34": "尼多王",
+      "35": "皮皮",
+      "36": "皮可西",
+      "37": "六尾",
+      "38": "九尾",
+      "39": "胖丁",
+      "40": "胖可丁",
+      "41": "超音蝠",
+      "42": "大嘴蝠",
+      "43": "走路草",
+      "44": "臭臭花",
+      "45": "霸王花",
+      "46": "派拉斯",
+      "47": "派拉斯特",
+      "48": "毛球",
+      "49": "摩鲁蛾",
+      "50": "地鼠",
+      "51": "三地鼠",
+      "52": "喵喵",
+      "53": "猫老大",
+      "54": "可达鸭",
+      "55": "哥达鸭",
+      "56": "猴怪",
+      "57": "火暴猴",
+      "58": "卡蒂狗",
+      "59": "风速狗",
+      "60": "蚊香蝌蚪",
+      "61": "蚊香君",
+      "62": "蚊香泳士",
+      "63": "凯西",
+      "64": "勇基拉",
+      "65": "胡地",
+      "66": "腕力",
+      "67": "豪力",
+      "68": "怪力",
+      "69": "喇叭芽",
+      "70": "口呆花",
+      "71": "大食花",
+      "72": "玛瑙水母",
+      "73": "毒刺水母",
+      "74": "小拳石",
+      "75": "隆隆石",
+      "76": "隆隆岩",
+      "77": "小火马",
+      "78": "烈焰马",
+      "79": "呆呆兽",
+      "80": "呆壳兽",
+      "81": "小磁怪",
+      "82": "三合一磁怪",
+      "83": "大葱鸭",
+      "84": "嘟嘟",
+      "85": "嘟嘟利",
+      "86": "小海狮",
+      "87": "白海狮",
+      "88": "臭泥",
+      "89": "臭臭泥",
+      "90": "大舌贝",
+      "91": "刺甲贝",
+      "92": "鬼斯",
+      "93": "鬼斯通",
+      "94": "耿鬼",
+      "95": "大岩蛇",
+      "96": "催眠貘",
+      "97": "引梦貘人",
+      "98": "大钳蟹",
+      "99": "巨钳蟹",
+      "100": "霹雳电球",
+      "101": "顽皮雷弹",
+      "102": "蛋蛋",
+      "103": "椰蛋树",
+      "104": "卡拉卡拉",
+      "105": "嘎啦嘎啦",
+      "106": "飞腿郎",
+      "107": "快拳郎",
+      "108": "大舌头",
+      "109": "瓦斯弹",
+      "110": "双弹瓦斯",
+      "111": "独角犀牛",
+      "112": "钻角犀兽",
+      "113": "吉利蛋",
+      "114": "蔓藤怪",
+      "115": "袋兽",
+      "116": "墨海马",
+      "117": "海刺龙",
+      "118": "角金鱼",
+      "119": "金鱼王",
+      "120": "海星星",
+      "121": "宝石海星",
+      "122": "魔墙人偶",
+      "123": "飞天螳螂",
+      "124": "迷唇姐",
+      "125": "电击兽",
+      "126": "鸭嘴火兽",
+      "127": "凯罗斯",
+      "128": "肯泰罗",
+      "129": "鲤鱼王",
+      "130": "暴鲤龙",
+      "131": "拉普拉斯",
+      "132": "百变怪",
+      "133": "伊布",
+      "134": "水伊布",
+      "135": "雷伊布",
+      "136": "火伊布",
+      "137": "多边兽",
+      "138": "菊石兽",
+      "139": "多刺菊石兽",
+      "140": "化石盔",
+      "141": "镰刀盔",
+      "142": "化石翼龙",
+      "143": "卡比兽",
+      "144": "急冻鸟",
+      "145": "闪电鸟",
+      "146": "火焰鸟",
+      "147": "迷你龙",
+      "148": "哈克龙",
+      "149": "快龙",
+      "150": "超梦",
+      "151": "梦幻",
+      "152": "菊草叶",
+      "153": "月桂叶",
+      "154": "大竺葵",
+      "155": "火球鼠",
+      "156": "火岩鼠",
+      "157": "火暴兽",
+      "158": "小锯鳄",
+      "159": "蓝鳄",
+      "160": "大力鳄",
+      "161": "尾立",
+      "162": "大尾立",
+      "163": "咕咕",
+      "164": "猫头夜鹰",
+      "165": "芭瓢虫",
+      "166": "安瓢虫",
+      "167": "圆丝蛛",
+      "168": "阿利多斯",
+      "169": "叉字蝠",
+      "170": "灯笼鱼",
+      "171": "电灯怪",
+      "172": "皮丘",
+      "173": "皮宝宝",
+      "174": "宝宝丁",
+      "175": "波克比",
+      "176": "波克基古",
+      "177": "天然雀",
+      "178": "天然鸟",
+      "179": "咩利羊",
+      "180": "茸茸羊",
+      "181": "电龙",
+      "182": "美丽花",
+      "183": "玛力露",
+      "184": "玛力露丽",
+      "185": "树才怪",
+      "186": "蚊香蛙皇",
+      "187": "毽子草",
+      "188": "毽子花",
+      "189": "毽子棉",
+      "190": "长尾怪手",
+      "191": "向日种子",
+      "192": "向日花怪",
+      "193": "蜻蜻蜓",
+      "194": "乌波",
+      "195": "沼王",
+      "196": "太阳伊布",
+      "197": "月亮伊布",
+      "198": "黑暗鸦",
+      "199": "呆呆王",
+      "200": "梦妖",
+      "201": "未知图腾",
+      "202": "果然翁",
+      "203": "麒麟奇",
+      "204": "榛果球",
+      "205": "佛烈托斯",
+      "206": "土龙弟弟",
+      "207": "天蝎",
+      "208": "大钢蛇",
+      "209": "布鲁",
+      "210": "布鲁皇",
+      "211": "千针鱼",
+      "212": "巨钳螳螂",
+      "213": "壶壶",
+      "214": "赫拉克罗斯",
+      "215": "狃拉",
+      "216": "熊宝宝",
+      "217": "圈圈熊",
+      "218": "熔岩虫",
+      "219": "熔岩蜗牛",
+      "220": "小山猪",
+      "221": "长毛猪",
+      "222": "太阳珊瑚",
+      "223": "铁炮鱼",
+      "224": "章鱼桶",
+      "225": "信使鸟",
+      "226": "巨翅飞鱼",
+      "227": "盔甲鸟",
+      "228": "戴鲁比",
+      "229": "黑鲁加",
+      "230": "刺龙王",
+      "231": "小小象",
+      "232": "顿甲",
+      "233": "多边兽2型",
+      "234": "惊角鹿",
+      "235": "图图犬",
+      "236": "无畏小子",
+      "237": "战舞郎",
+      "238": "迷唇娃",
+      "239": "电击怪",
+      "240": "鸭嘴宝宝",
+      "241": "大奶罐",
+      "242": "幸福蛋",
+      "243": "雷公",
+      "244": "炎帝",
+      "245": "水君",
+      "246": "幼基拉斯",
+      "247": "沙基拉斯",
+      "248": "班基拉斯",
+      "249": "洛奇亚",
+      "250": "凤王",
+      "251": "时拉比",
+      "252": "木守宫",
+      "253": "森林蜥蜴",
+      "254": "蜥蜴王",
+      "255": "火稚鸡",
+      "256": "力壮鸡",
+      "257": "火焰鸡",
+      "258": "水跃鱼",
+      "259": "沼跃鱼",
+      "260": "巨沼怪",
+      "261": "土狼犬",
+      "262": "大狼犬",
+      "263": "蛇纹熊",
+      "264": "直冲熊",
+      "265": "刺尾虫",
+      "266": "甲壳茧",
+      "267": "狩猎凤蝶",
+      "268": "盾甲茧",
+      "269": "毒粉蛾",
+      "270": "莲叶童子",
+      "271": "莲帽小童",
+      "272": "乐天河童",
+      "273": "橡实果",
+      "274": "长鼻叶",
+      "275": "狡猾天狗",
+      "276": "傲骨燕",
+      "277": "大王燕",
+      "278": "长翅鸥",
+      "279": "大嘴鸥",
+      "280": "拉鲁拉丝",
+      "281": "奇鲁莉安",
+      "282": "沙奈朵",
+      "283": "溜溜糖球",
+      "284": "雨翅蛾",
+      "285": "蘑蘑菇",
+      "286": "斗笠菇",
+      "287": "懒人獭",
+      "288": "过动猿",
+      "289": "请假王",
+      "290": "土居忍士",
+      "291": "铁面忍者",
+      "292": "脱壳忍者",
+      "293": "咕妞妞",
+      "294": "吼爆弹",
+      "295": "爆音怪",
+      "296": "幕下力士",
+      "297": "铁掌力士",
+      "298": "露力丽",
+      "299": "朝北鼻",
+      "300": "向尾喵",
+      "301": "优雅猫",
+      "302": "勾魂眼",
+      "303": "大嘴娃",
+      "304": "可可多拉",
+      "305": "可多拉",
+      "306": "波士可多拉",
+      "307": "玛沙那",
+      "308": "恰雷姆",
+      "309": "落雷兽",
+      "310": "雷电兽",
+      "311": "正电拍拍",
+      "312": "负电拍拍",
+      "313": "电萤虫",
+      "314": "甜甜萤",
+      "315": "毒蔷薇",
+      "316": "溶食兽",
+      "317": "吞食兽",
+      "318": "利牙鱼",
+      "319": "巨牙鲨",
+      "320": "吼吼鲸",
+      "321": "吼鲸王",
+      "322": "呆火驼",
+      "323": "喷火驼",
+      "324": "煤炭龟",
+      "325": "跳跳猪",
+      "326": "噗噗猪",
+      "327": "晃晃斑",
+      "328": "大颚蚁",
+      "329": "超音波幼虫",
+      "330": "沙漠蜻蜓",
+      "331": "刺球仙人掌",
+      "332": "梦歌仙人掌",
+      "333": "青绵鸟",
+      "334": "七夕青鸟",
+      "335": "猫鼬斩",
+      "336": "饭匙蛇",
+      "337": "月石",
+      "338": "太阳岩",
+      "339": "泥泥鳅",
+      "340": "鲶鱼王",
+      "341": "龙虾小兵",
+      "342": "铁螯龙虾",
+      "343": "天秤偶",
+      "344": "念力土偶",
+      "345": "触手百合",
+      "346": "摇篮百合",
+      "347": "太古羽虫",
+      "348": "太古盔甲",
+      "349": "丑丑鱼",
+      "350": "美纳斯",
+      "351": "飘浮泡泡",
+      "352": "变隐龙",
+      "353": "怨影娃娃",
+      "354": "诅咒娃娃",
+      "355": "夜巡灵",
+      "356": "彷徨夜灵",
+      "357": "热带龙",
+      "358": "风铃铃",
+      "359": "阿勃梭鲁",
+      "360": "小果然",
+      "361": "雪童子",
+      "362": "冰鬼护",
+      "363": "海豹球",
+      "364": "海魔狮",
+      "365": "帝牙海狮",
+      "366": "珍珠贝",
+      "367": "猎斑鱼",
+      "368": "樱花鱼",
+      "369": "古空棘鱼",
+      "370": "爱心鱼",
+      "371": "宝贝龙",
+      "372": "甲壳龙",
+      "373": "暴飞龙",
+      "374": "铁哑铃",
+      "375": "金属怪",
+      "376": "巨金怪",
+      "377": "雷吉洛克",
+      "378": "雷吉艾斯",
+      "379": "雷吉斯奇鲁",
+      "380": "拉帝亚斯",
+      "381": "拉帝欧斯",
+      "382": "盖欧卡",
+      "383": "固拉多",
+      "384": "烈空坐",
+      "385": "基拉祈",
+      "386": "代欧奇希斯",
+      "387": "草苗龟",
+      "388": "树林龟",
+      "389": "土台龟",
+      "390": "小火焰猴",
+      "391": "猛火猴",
+      "392": "烈焰猴",
+      "393": "波加曼",
+      "394": "波皇子",
+      "395": "帝王拿波",
+      "396": "姆克儿",
+      "397": "姆克鸟",
+      "398": "姆克鹰",
+      "399": "大牙狸",
+      "400": "大尾狸",
+      "401": "圆法师",
+      "402": "音箱蟀",
+      "403": "小猫怪",
+      "404": "勒克猫",
+      "405": "伦琴猫",
+      "406": "含羞苞",
+      "407": "罗丝雷朵",
+      "408": "头盖龙",
+      "409": "战槌龙",
+      "410": "盾甲龙",
+      "411": "护城龙",
+      "412": "结草儿",
+      "413": "结草贵妇",
+      "414": "绅士蛾",
+      "415": "三蜜蜂",
+      "416": "蜂女王",
+      "417": "帕奇利兹",
+      "418": "泳圈鼬",
+      "419": "浮潜鼬",
+      "420": "樱花宝",
+      "421": "樱花儿",
+      "422": "无壳海兔",
+      "423": "海兔兽",
+      "424": "双尾怪手",
+      "425": "飘飘球",
+      "426": "随风球",
+      "427": "卷卷耳",
+      "428": "长耳兔",
+      "429": "梦妖魔",
+      "430": "乌鸦头头",
+      "431": "魅力喵",
+      "432": "东施喵",
+      "433": "铃铛响",
+      "434": "臭鼬噗",
+      "435": "坦克臭鼬",
+      "436": "铜镜怪",
+      "437": "青铜钟",
+      "438": "盆才怪",
+      "439": "魔尼尼",
+      "440": "小福蛋",
+      "441": "聒噪鸟",
+      "442": "花岩怪",
+      "443": "圆陆鲨",
+      "444": "尖牙陆鲨",
+      "445": "烈咬陆鲨",
+      "446": "小卡比兽",
+      "447": "利欧路",
+      "448": "路卡利欧",
+      "449": "沙河马",
+      "450": "河马兽",
+      "451": "钳尾蝎",
+      "452": "龙王蝎",
+      "453": "不良蛙",
+      "454": "毒骷蛙",
+      "455": "尖牙笼",
+      "456": "荧光鱼",
+      "457": "霓虹鱼",
+      "458": "小球飞鱼",
+      "459": "雪笠怪",
+      "460": "暴雪王",
+      "461": "玛狃拉",
+      "462": "自爆磁怪",
+      "463": "大舌舔",
+      "464": "超甲狂犀",
+      "465": "巨蔓藤",
+      "466": "电击魔兽",
+      "467": "鸭嘴炎兽",
+      "468": "波克基斯",
+      "469": "远古巨蜓",
+      "470": "叶伊布",
+      "471": "冰伊布",
+      "472": "天蝎王",
+      "473": "象牙猪",
+      "474": "多边兽乙型",
+      "475": "艾路雷朵",
+      "476": "大朝北鼻",
+      "477": "黑夜魔灵",
+      "478": "雪妖女",
+      "479": "洛托姆",
+      "480": "由克希",
+      "481": "艾姆利多",
+      "482": "亚克诺姆",
+      "483": "帝牙卢卡",
+      "484": "帕路奇亚",
+      "485": "席多蓝恩",
+      "486": "雷吉奇卡斯",
+      "487": "骑拉帝纳",
+      "488": "克雷色利亚",
+      "489": "霏欧纳",
+      "490": "玛纳霏",
+      "491": "达克莱伊",
+      "492": "谢米",
+      "493": "阿尔宙斯",
+      "494": "比克提尼",
+      "495": "藤藤蛇",
+      "496": "青藤蛇",
+      "497": "君主蛇",
+      "498": "暖暖猪",
+      "499": "炒炒猪",
+      "500": "炎武王",
+      "501": "水水獭",
+      "502": "双刃丸",
+      "503": "大剑鬼",
+      "504": "探探鼠",
+      "505": "步哨鼠",
+      "506": "小约克",
+      "507": "哈约克",
+      "508": "长毛狗",
+      "509": "扒手猫",
+      "510": "酷豹",
+      "511": "花椰猴",
+      "512": "花椰猿",
+      "513": "爆香猴",
+      "515": "冷水猴",
+      "517": "食梦梦",
+      "518": "梦梦蚀",
+      "519": "豆豆鸽",
+      "521": "高傲雉鸡",
+      "524": "石丸子",
+      "525": "地幔岩",
+      "526": "庞岩怪",
+      "527": "滚滚蝙蝠",
+      "528": "心蝙蝠",
+      "529": "螺钉地鼠",
+      "530": "龙头地鼠",
+      "531": "差不多娃娃",
+      "532": "搬运小匠",
+      "533": "铁骨土人",
+      "534": "修建老匠",
+      "535": "圆蝌蚪",
+      "536": "蓝蟾蜍",
+      "537": "蟾蜍王",
+      "539": "打击鬼",
+      "540": "虫宝包",
+      "541": "宝包茧",
+      "542": "保姆虫",
+      "543": "百足蜈蚣",
+      "544": "车轮球",
+      "545": "蜈蚣王",
+      "546": "木棉球",
+      "547": "风妖精",
+      "548": "百合根娃娃",
+      "549": "裙儿小姐",
+      "550": "野蛮鲈鱼",
+      "551": "黑眼鳄",
+      "552": "混混鳄",
+      "553": "流氓鳄",
+      "554": "火红不倒翁",
+      "555": "达摩狒狒",
+      "556": "沙铃仙人掌",
+      "557": "石居蟹",
+      "559": "滑滑小子",
+      "560": "头巾混混",
+      "561": "象征鸟",
+      "562": "哭哭面具",
+      "563": "迭失棺",
+      "566": "始祖小鸟",
+      "567": "始祖大鸟",
+      "568": "破破袋",
+      "569": "灰尘山",
+      "570": "索罗亚",
+      "571": "索罗亚克",
+      "572": "泡沫栗鼠",
+      "573": "奇诺栗鼠",
+      "574": "哥德宝宝",
+      "575": "哥德小童",
+      "576": "哥德小姐",
+      "577": "单卵细胞球",
+      "578": "双卵细胞球",
+      "579": "人造细胞卵",
+      "580": "鸭宝宝",
+      "581": "舞天鹅",
+      "582": "迷你冰",
+      "583": "多多冰",
+      "584": "双倍多多冰",
+      "585": "四季鹿",
+      "586": "萌芽鹿",
+      "587": "电飞鼠",
+      "588": "盖盖虫",
+      "589": "骑士蜗牛",
+      "590": "哎呀球菇",
+      "594": "保姆曼波",
+      "595": "电电虫",
+      "596": "电蜘蛛",
+      "597": "种子铁球",
+      "598": "坚果哑铃",
+      "599": "齿轮儿",
+      "600": "齿轮组",
+      "601": "齿轮怪",
+      "602": "麻麻小鱼",
+      "603": "麻麻鳗",
+      "604": "麻麻鳗鱼王",
+      "605": "小灰怪",
+      "606": "大宇怪",
+      "607": "烛光灵",
+      "608": "灯火幽灵",
+      "609": "水晶灯火灵",
+      "610": "牙牙",
+      "611": "斧牙龙",
+      "612": "双斧战龙",
+      "613": "喷嚏熊",
+      "614": "冻原熊",
+      "615": "几何雪花",
+      "617": "敏捷虫",
+      "619": "功夫鼬",
+      "620": "师父鼬",
+      "621": "赤面龙",
+      "622": "泥偶小人",
+      "623": "泥偶巨人",
+      "624": "驹刀小兵",
+      "625": "劈斩司令",
+      "627": "毛头小鹰",
+      "628": "勇士雄鹰",
+      "629": "秃鹰丫头",
+      "630": "秃鹰娜",
+      "631": "熔蚁兽",
+      "632": "铁蚁",
+      "633": "单首龙",
+      "634": "双首暴龙",
+      "635": "三首恶龙",
+      "636": "燃烧虫",
+      "637": "火神蛾",
+      "638": "勾帕路翁",
+      "639": "代拉基翁",
+      "640": "毕力吉翁",
+      "641": "龙卷云",
+      "642": "雷电云",
+      "643": "莱希拉姆",
+      "644": "捷克罗姆",
+      "645": "土地云",
+      "646": "酋雷姆",
+      "647": "凯路迪欧",
+      "648": "美洛耶塔",
+      "649": "盖诺赛克特",
+      "650": "哈力栗",
+      "651": "胖胖哈力",
+      "652": "布里卡隆",
+      "653": "火狐狸",
+      "654": "长尾火狐",
+      "655": "妖火红狐",
+      "656": "呱呱泡蛙",
+      "657": "呱头蛙",
+      "658": "甲贺忍蛙",
+      "659": "掘掘兔",
+      "660": "掘地兔",
+      "661": "小箭雀",
+      "662": "火箭雀",
+      "663": "烈箭鹰",
+      "664": "粉蝶虫",
+      "665": "粉蝶蛹",
+      "666": "彩粉蝶",
+      "667": "小狮狮",
+      "669": "花蓓蓓",
+      "670": "花叶蒂",
+      "671": "花洁夫人",
+      "672": "坐骑小羊",
+      "673": "坐骑山羊",
+      "674": "顽皮熊猫",
+      "675": "霸道熊猫",
+      "676": "多丽米亚",
+      "677": "妙喵",
+      "678": "超能妙喵",
+      "679": "独剑鞘",
+      "680": "双剑鞘",
+      "681": "坚盾剑怪",
+      "682": "粉香香",
+      "684": "绵绵泡芙",
+      "685": "胖甜妮",
+      "686": "好啦鱿",
+      "687": "乌贼王",
+      "688": "龟脚脚",
+      "689": "龟足巨铠",
+      "690": "垃垃藻",
+      "691": "毒藻龙",
+      "692": "铁臂枪虾",
+      "693": "钢炮臂虾",
+      "694": "伞电蜥",
+      "695": "光电伞蜥",
+      "696": "宝宝暴龙",
+      "697": "怪颚龙",
+      "698": "冰雪龙",
+      "699": "冰雪巨龙",
+      "700": "仙子伊布",
+      "701": "摔角鹰人",
+      "702": "咚咚鼠",
+      "703": "小碎钻",
+      "704": "黏黏宝",
+      "705": "黏美儿",
+      "706": "黏美龙",
+      "707": "钥圈儿",
+      "708": "小木灵",
+      "709": "朽木妖",
+      "710": "南瓜精",
+      "711": "南瓜怪人",
+      "712": "冰宝",
+      "713": "冰岩怪",
+      "714": "嗡蝠",
+      "715": "音波龙",
+      "716": "哲尔尼亚斯",
+      "717": "伊裴尔塔尔",
+      "718": "基格尔德",
+      "719": "蒂安希",
+      "720": "胡帕",
+      "721": "波尔凯尼恩",
+      "722": "木木枭",
+      "723": "投羽枭",
+      "724": "狙射树枭",
+      "725": "火斑喵",
+      "726": "炎热喵",
+      "727": "炽焰咆哮虎",
+      "728": "球球海狮",
+      "729": "花漾海狮",
+      "730": "西狮海壬",
+      "731": "小笃儿",
+      "734": "猫鼬少",
+      "736": "强颚鸡母虫",
+      "737": "虫电宝",
+      "738": "锹农炮虫",
+      "739": "好胜蟹",
+      "740": "好胜毛蟹",
+      "741": "花舞鸟",
+      "742": "萌虻",
+      "743": "蝶结萌虻",
+      "744": "岩狗狗",
+      "745": "鬃岩狼人",
+      "746": "弱丁鱼",
+      "747": "好坏星",
+      "748": "超坏星",
+      "749": "泥驴仔",
+      "750": "重泥挽马",
+      "751": "滴蛛",
+      "752": "滴蛛霸",
+      "753": "伪螳草",
+      "754": "兰螳花",
+      "755": "睡睡菇",
+      "757": "夜盗火蜥",
+      "758": "焰后蜥",
+      "759": "童偶熊",
+      "760": "穿着熊",
+      "761": "甜竹竹",
+      "762": "甜舞妮",
+      "763": "甜冷美后",
+      "764": "花疗环环",
+      "766": "投掷猴",
+      "767": "胆小虫",
+      "768": "具甲武者",
+      "769": "沙丘娃",
+      "770": "噬沙堡爷",
+      "771": "拳海参",
+      "772": "属性：空",
+      "773": "银伴战兽",
+      "774": "小陨星",
+      "775": "树枕尾熊",
+      "776": "爆焰龟兽",
+      "777": "托戈德玛尔",
+      "778": "谜拟丘",
+      "779": "磨牙彩皮鱼",
+      "780": "老翁龙",
+      "781": "破破舵轮",
+      "782": "心鳞宝",
+      "783": "鳞甲龙",
+      "784": "杖尾鳞甲龙",
+      "785": "卡璞・鸣鸣",
+      "786": "卡璞・蝶蝶",
+      "787": "卡璞・哞哞",
+      "788": "卡璞・鳍鳍",
+      "789": "科斯莫古",
+      "790": "科斯莫姆",
+      "791": "索尔迦雷欧",
+      "792": "露奈雅拉",
+      "793": "虚吾伊德",
+      "794": "爆肌蚊",
+      "795": "费洛美螂",
+      "796": "电束木",
+      "797": "铁火辉夜",
+      "798": "纸御剑",
+      "799": "恶食大王",
+      "800": "奈克洛兹玛",
+      "801": "玛机雅娜",
+      "802": "玛夏多",
+      "803": "毒贝比",
+      "804": "四颚针龙",
+      "805": "垒磊石",
+      "806": "砰头小丑",
+      "807": "捷拉奥拉",
+      "808": "美录坦",
+      "809": "美录梅塔",
+      "810": "敲音猴",
+      "811": "啪咚猴",
+      "812": "轰擂金刚猩",
+      "813": "炎兔儿",
+      "814": "腾蹴小将",
+      "815": "闪焰王牌",
+      "816": "泪眼蜥",
+      "817": "变涩蜥",
+      "818": "千面避役",
+      "819": "贪心栗鼠",
+      "820": "藏饱栗鼠",
+      "821": "稚山雀",
+      "822": "蓝鸦",
+      "823": "钢铠鸦",
+      "824": "索侦虫",
+      "825": "天罩虫",
+      "826": "以欧路普",
+      "827": "狡小狐",
+      "828": "猾大狐",
+      "829": "幼棉棉",
+      "830": "白蓬蓬",
+      "831": "毛辫羊",
+      "832": "毛毛角羊",
+      "833": "咬咬龟",
+      "834": "暴噬龟",
+      "835": "来电汪",
+      "836": "逐电犬",
+      "840": "啃果虫",
+      "841": "苹裹龙",
+      "842": "丰蜜龙",
+      "843": "沙包蛇",
+      "844": "沙螺蟒",
+      "845": "古月鸟",
+      "846": "刺梭鱼",
+      "847": "戽斗尖梭",
+      "848": "电音婴",
+      "849": "颤弦蝾螈",
+      "850": "烧火蚣",
+      "851": "焚焰蚣",
+      "852": "拳拳蛸",
+      "853": "八爪武师",
+      "854": "来悲茶",
+      "855": "怖思壶",
+      "856": "迷布莉姆",
+      "857": "提布莉姆",
+      "858": "布莉姆温",
+      "859": "捣蛋小妖",
+      "860": "诈唬魔",
+      "861": "长毛巨魔",
+      "862": "堵拦熊",
+      "863": "喵头目",
+      "864": "魔灵珊瑚",
+      "867": "迭失板",
+      "868": "小仙奶",
+      "869": "霜奶仙",
+      "871": "啪嚓海胆",
+      "872": "雪吞虫",
+      "873": "雪绒蛾",
+      "874": "巨石丁",
+      "875": "冰砌鹅",
+      "876": "爱管侍",
+      "877": "莫鲁贝可",
+      "880": "雷鸟龙",
+      "881": "雷鸟海兽",
+      "882": "鳃鱼龙",
+      "883": "鳃鱼海兽",
+      "884": "铝钢龙",
+      "885": "多龙梅西亚",
+      "886": "多龙奇",
+      "887": "多龙巴鲁托",
+      "888": "苍响",
+      "889": "藏玛然特",
+      "890": "无极汰那",
+      "891": "熊徒弟",
+      "892": "武道熊师",
+      "894": "雷吉艾勒奇",
+      "895": "雷吉铎拉戈",
+      "896": "雪暴马",
+      "897": "灵幽马",
+      "898": "蕾冠王",
+      "899": "诡角鹿",
+      "900": "劈斧螳螂",
+      "901": "月月熊",
+      "902": "幽尾玄鱼",
+      "903": "大狃拉",
+      "904": "万针鱼",
+      "905": "眷恋云",
+      "906": "新叶喵",
+      "907": "蒂蕾喵",
+      "908": "魔幻假面喵",
+      "909": "呆火鳄",
+      "910": "炙烫鳄",
+      "911": "骨纹巨声鳄",
+      "912": "润水鸭",
+      "913": "涌跃鸭",
+      "914": "狂欢浪舞鸭",
+      "915": "爱吃豚",
+      "916": "飘香豚",
+      "917": "团珠蛛",
+      "918": "操陷蛛",
+      "919": "豆蟋蟀",
+      "920": "烈腿蝗",
+      "921": "布拨",
+      "922": "布土拨",
+      "923": "巴布土拨",
+      "924": "一对鼠",
+      "925": "一家鼠",
+      "926": "狗仔包",
+      "927": "麻花犬",
+      "928": "迷你芙",
+      "930": "奥利瓦",
+      "932": "盐石宝",
+      "933": "盐石垒",
+      "934": "盐石巨灵",
+      "935": "炭小侍",
+      "936": "红莲铠骑",
+      "937": "苍炎刃鬼",
+      "938": "光蚪仔",
+      "939": "电肚蛙",
+      "940": "电海燕",
+      "941": "大电海燕",
+      "946": "纳噬草",
+      "951": "热辣娃",
+      "952": "狠辣椒",
+      "953": "虫滚泥",
+      "955": "飘飘雏",
+      "957": "小锻匠",
+      "958": "巧锻匠",
+      "959": "巨锻匠",
+      "960": "海地鼠",
+      "961": "三海地鼠",
+      "963": "波普海豚",
+      "964": "海豚侠",
+      "965": "噗隆隆",
+      "966": "普隆隆姆",
+      "967": "摩托蜥",
+      "968": "拖拖蚓",
+      "969": "晶光芽",
+      "970": "晶光花",
+      "971": "墓仔狗",
+      "972": "墓扬犬",
+      "974": "走鲸",
+      "975": "浩大鲸",
+      "976": "轻身鳕",
+      "977": "吃吼霸",
+      "978": "米立龙",
+      "979": "弃世猴",
+      "980": "土王",
+      "981": "奇麒麟",
+      "982": "土龙节节",
+      "983": "仆刀将军",
+      "984": "雄伟牙",
+      "985": "吼叫尾",
+      "987": "振翼发",
+      "988": "爬地翅",
+      "989": "沙铁皮",
+      "991": "铁包袱",
+      "992": "铁臂膀",
+      "994": "铁毒蛾",
+      "995": "铁荆棘",
+      "996": "凉脊龙",
+      "997": "冻脊龙",
+      "998": "戟脊龙",
+      "1000": "赛富豪",
+      "1004": "古玉鱼",
+      "1005": "轰鸣月",
+      "1006": "铁武者",
+      "1007": "故勒顿",
+      "1009": "波荡水",
+      "1010": "铁斑叶",
+      "1011": "裹蜜虫",
+      "1012": "斯魔茶",
+      "1013": "来悲粗茶",
+      "1015": "愿增猿",
+      "1016": "吉雉鸡",
+      "1017": "厄诡椪",
+      "1018": "铝钢桥龙",
+      "1019": "蜜集大蛇",
+      "1024": "太乐巴戈斯"
+    }
+  },
+  "inputManifest": {
+    "pokemon_species_names.csv": {
+      "url": "https://raw.githubusercontent.com/PokeAPI/pokeapi/81d20919845b6a445969b9265aab5cec6b04cece/data/v2/csv/pokemon_species_names.csv",
+      "sha256": "820cde17074cdb1c2b0595c997fb8f998e773bd5da3bb525dec85703c86c5fd9"
+    },
+    "move_names.csv": {
+      "url": "https://raw.githubusercontent.com/PokeAPI/pokeapi/81d20919845b6a445969b9265aab5cec6b04cece/data/v2/csv/move_names.csv",
+      "sha256": "99e23ee38ea53d1473474d463b87651deac3cd4928750f8186feae66da45c147"
+    },
+    "item_names.csv": {
+      "url": "https://raw.githubusercontent.com/PokeAPI/pokeapi/81d20919845b6a445969b9265aab5cec6b04cece/data/v2/csv/item_names.csv",
+      "sha256": "c4ad0b446e395c378d8ba75d6900f051cc9ebb99431d4000adeac35f492852f0"
+    },
+    "type_names.csv": {
+      "url": "https://raw.githubusercontent.com/PokeAPI/pokeapi/81d20919845b6a445969b9265aab5cec6b04cece/data/v2/csv/type_names.csv",
+      "sha256": "685230c51074cf2f723debcf827a4df4c36ab0ec7e929c806ad65a3e40958705"
+    },
+    "region_names.csv": {
+      "url": "https://raw.githubusercontent.com/PokeAPI/pokeapi/81d20919845b6a445969b9265aab5cec6b04cece/data/v2/csv/region_names.csv",
+      "sha256": "9380d909d2179a7f3bbad09969a0c89f623be135a100686596b6284c10231b48"
+    },
+    "official-index.html": {
+      "url": "https://pokedex.pokemon.cn/play/pokedex",
+      "sha256": "2c6cf97596c3bf374593ef0574c40c674fa4fb43c43a1e0b8561bbae591495d8"
+    },
+    "official-pokedex.json": {
+      "url": "https://pokedex.pokemon.cn/play/pokedex/api/v1",
+      "sha256": "e81ade79b569af44f3d59fed73ea6e6ea2d84dc244b084a3a138d71bceb6fa95"
+    },
+    "official-list.js": {
+      "url": "https://pokedex.pokemon.cn/play/resources/pokedex/js/pokemon-list.js?20210224",
+      "sha256": "31bf89dfe2e4cc2094332249728296e5f728938e56a30b78e13de58ebb40909e"
+    },
+    "official-app.js": {
+      "url": "https://pokedex.pokemon.cn/play/resources/pokedex/js/app.js?20220707",
+      "sha256": "c8589144793d46b3a381272fbdee7ca587dfffc32697c3a31cef174f9c7b3c92"
+    },
+    "NotoSansSC-Regular.otf": {
+      "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf",
+      "sha256": "faa6c9df652116dde789d351359f3d7e5d2285a2b2a1f04a2d7244df706d5ea9"
+    },
+    "NotoSansSC-Bold.otf": {
+      "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/SubsetOTF/SC/NotoSansSC-Bold.otf",
+      "sha256": "c6cb5a93abaa9edc8ee7463b7ebb7f42d618d40e6ed2f7a5371c97b0b64767c0"
+    },
+    "Noto-OFL.txt": {
+      "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/LICENSE",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    }
+  }
+}

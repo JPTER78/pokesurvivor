@@ -3,6 +3,10 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<link rel="alternate" hreflang="es" href="https://pokesurvivor.com/">
+<link rel="alternate" hreflang="en" href="https://pokesurvivor.com/en/">
+<link rel="alternate" hreflang="zh-CN" href="https://pokesurvivor.com/zh/">
+
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io</title>
 <meta name="description" content="Sobrevive a hordas de Pokémon con tu compañero en este fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo con amigos. Sin descargas ni anuncios.">
@@ -53,7 +57,7 @@
       "@id": "https://pokesurvivor.com/#web",
       "url": "https://pokesurvivor.com/",
       "name": "PokéSurvivor",
-      "inLanguage": "es"
+      "inLanguage": ["es", "en", "zh-CN"]
     },
     {
       "@type": ["VideoGame", "WebApplication"],
@@ -62,7 +66,7 @@
       "url": "https://pokesurvivor.com/",
       "description": "Fan game gratuito de supervivencia (bullet heaven, estilo Survivor.io) con Pokémon: elige compañero, sobrevive a hordas, sube de nivel, evoluciona tus ataques, enfréntate a legendarios en grietas y juega en cooperativo con hasta 4 amigos.",
       "image": "https://pokesurvivor.com/assets/og-image.jpg",
-      "inLanguage": "es",
+      "inLanguage": ["es", "en", "zh-CN"],
       "genre": ["Roguelike", "Bullet heaven", "Acción", "Supervivencia"],
       "gamePlatform": ["Navegador web", "PC", "Android", "iOS"],
       "applicationCategory": "GameApplication",
@@ -288,12 +292,21 @@
   (function () {
     var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
     var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-    var l = s === 'es' || s === 'en' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('es') === 0 ? 'es' : 'en'));
+    var p = /\/en(\/|$)/.test(location.pathname) ? 'en' : /\/zh(\/|$)/.test(location.pathname) ? 'zh-CN' : null;
+    var l = s === 'es' || s === 'en' || s === 'zh-CN' ? s : p || (n.indexOf('es') === 0 ? 'es' : 'en');
     document.documentElement.lang = l;
     if (l === 'en') {
       var p = document.querySelectorAll('#boot p');
       p[0].textContent = 'A Pokémon survival game, free in your browser and on mobile.';
       p[1].textContent = 'Loading…';
+    } else if (l === 'zh-CN') {
+      var p = document.querySelectorAll('#boot p');
+      p[0].textContent = '免费的宝可梦生存游戏，可在浏览器与手机上游玩。';
+      p[1].textContent = '加载中…';
+    } else {
+      var p = document.querySelectorAll('#boot p');
+      p[0].textContent = 'Juego de supervivencia con Pokémon, gratis en el navegador y en el móvil.';
+      p[1].textContent = 'Cargando…';
     }
   })();
 </script>
@@ -538,6 +551,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=6c34b10db3"></script>
+<script defer src="js/app.min.js?v=dae5f0e8a8"></script>
 </body>
 </html>

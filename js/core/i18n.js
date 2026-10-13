@@ -1,6 +1,6 @@
-/* ============ i18n.js — idiomas (español / inglés) ============
- * El juego está escrito en español. Si el idioma es inglés, todo texto que
- * se enseña se traduce con el diccionario de js/data/lang-en.js, sin tener que
+/* ============ i18n.js — idiomas (español / inglés / chino simplificado) ============
+ * El juego está escrito en español. Los demás idiomas traducen el texto
+ * con su diccionario js/data/lang-*.js, sin tener que
  * tocar cada pantalla:
  *   - el DOM (menús, cartas, avisos...) con un MutationObserver,
  *   - el canvas (HUD, avisos, números) envolviendo fillText/strokeText,
@@ -13,32 +13,40 @@
  *   3. trozos dentro de un texto más largo, sólo palabras enteras
  * Lo que escriben los jugadores (apodos) va marcado con translate="no".
  *
- * Idioma: el elegido en Ajustes; si no, /en/ en la dirección o el del navegador
- * (español si el navegador está en español, inglés en cualquier otro caso).
+ * Idioma: el elegido en Ajustes; si no, /en/ o /zh/ en la dirección;
+ * después, español si el navegador está en español e inglés en los demás casos.
+ * add(dict, idioma, contexto) sólo carga el idioma activo; el contexto 'move'
+ * distingue Psíquico (movimiento) de Psíquico (tipo). Los IDs no se traducen.
+ * {name} conserva el apodo del jugador sin traducirlo; {x} traduce su contenido.
  */
 G.I18n = (() => {
   const KEY = 'ps.lang';
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
-  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
+  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : /\/zh(\/|$)/.test(location.pathname) ? 'zh-CN' : null;
+  const supported = ['es', 'en', 'zh-CN'];
   const nav = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-  const lang = saved === 'es' || saved === 'en' ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const lang = supported.includes(saved) ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const locale = { es: 'es-ES', en: 'en-GB', 'zh-CN': 'zh-CN' }[lang];
   document.documentElement.lang = lang;
 
   const exact = new Map(), exactLow = new Map();
   let patterns = [], frag = null, fragLow = null, fragMap = new Map();
-  const cache = new Map();
+  const cache = new Map(), contexts = new Map();
   const L = '\\p{L}\\p{N}';
   const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   /** Añade traducciones { 'texto en español': 'English text' }. */
-  function add(dict) {
+  function add(dict, language = 'en', context = '') {
+    if (language !== lang) return;
+    if (context) { contexts.set(context, { ...contexts.get(context), ...dict }); return; }
     const fr = [];
     for (const [es, en] of Object.entries(dict)) {
       if (!en || es === en) continue;
-      if (es.includes('{x}')) {
-        const parts = es.split('{x}').map(reEsc);
-        patterns.push({ re: new RegExp('^' + parts.join('(.+?)') + '$', 'u'), reI: new RegExp('^' + parts.join('(.+?)') + '$', 'iu'), en });
+      if (/\{(?:x|name)\}/.test(es)) {
+        const slots = es.match(/\{(?:x|name)\}/g);
+        const parts = es.split(/\{(?:x|name)\}/).map(reEsc);
+        patterns.push({ re: new RegExp('^' + parts.join('(.+?)') + '$', 'u'), reI: new RegExp('^' + parts.join('(.+?)') + '$', 'iu'), en, slots });
       } else {
         exact.set(es, en);
         exactLow.set(es.toLowerCase(), en);
@@ -57,7 +65,9 @@ G.I18n = (() => {
   }
 
   /** Traduce un texto (sin espacios de los lados) al idioma actual. */
-  function t(s) {
+  function t(s, context) {
+    const contextual = contexts.get(context);
+    if (contextual && Object.prototype.hasOwnProperty.call(contextual, s)) return contextual[s];
     if (lang === 'es' || !s || typeof s !== 'string') return s;
     if (!/\p{L}/u.test(s)) return s;
     const c = cache.get(s);
@@ -82,7 +92,10 @@ G.I18n = (() => {
         const mm = (upper ? p.reI : p.re).exec(body);
         if (!mm) continue;
         let i = 1;
-        r = p.en.replace(/\{x\}/g, () => { const g = mm[i++]; return g === undefined ? '' : core(g); });
+        r = p.en.replace(/\{(?:x|name)\}/g, () => {
+          const slot = p.slots[i - 1], g = mm[i++];
+          return g === undefined ? '' : slot === '{name}' ? g : core(g);
+        });
         r = keepCase(body, r);
         break;
       }
@@ -94,7 +107,17 @@ G.I18n = (() => {
   }
 
   /** Texto con huecos para el código: T('Nivel {x}', 5). */
-  function f(es, ...vals) { let i = 0; return t(es).replace(/\{x\}/g, () => vals[i++]); }
+  function f(es, ...vals) { let i = 0; return t(es).replace(/\{(?:x|name)\}/g, () => vals[i++]); }
+  function term(category, source) {
+    if (category === 'pokemon' && G.DEX_BY && G.DEX_BY[source]) return t(G.DEX_BY[source].name);
+    return t(String(source), category);
+  }
+  const PAGE_PATHS = {
+    es: { guide: 'guia/', pokedex: 'pokedex/', contact: 'contacto/' },
+    en: { guide: 'en/guide/', pokedex: 'en/pokedex/', contact: 'contacto/' },
+    'zh-CN': { guide: 'zh/guide/', pokedex: 'zh/pokedex/', contact: 'zh/contact/' }
+  };
+  function pageUrl(page) { const path = PAGE_PATHS[lang][page]; return location.protocol === 'file:' ? path + 'index.html' : path; }
 
   // ---------------- DOM ----------------
   const ATTRS = ['placeholder', 'title', 'alt', 'aria-label'];
@@ -126,10 +149,11 @@ G.I18n = (() => {
   }
 
   function startDom() {
+    document.title = { es: 'PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io', en: 'PokéSurvivor – Free online Pokémon survival game (Survivor.io style)', 'zh-CN': 'PokéSurvivor – 免费在线宝可梦生存游戏' }[lang];
     if (lang === 'es') return;
     // Los enlaces a las páginas de la web, a su versión en inglés.
-    const EN_LINKS = { 'guia/': 'en/guide/', 'pokedex/': 'en/pokedex/' };
-    document.querySelectorAll('a[href]').forEach(a => { const h = a.getAttribute('href'); if (EN_LINKS[h]) a.setAttribute('href', EN_LINKS[h]); });
+    const links = { 'guia/': 'guide', 'pokedex/': 'pokedex', 'contacto/': 'contact' };
+    document.querySelectorAll('a[href]').forEach(a => { const page = links[a.getAttribute('href')]; if (page) a.setAttribute('href', pageUrl(page)); });
     walk(document.body);
     new MutationObserver(ms => {
       for (const m of ms) {
@@ -138,15 +162,25 @@ G.I18n = (() => {
         else m.addedNodes.forEach(walk);
       }
     }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
-    document.title = t(document.title);
+    const normal = document.querySelector('#menu-shiny [data-v="0"]');
+    if (normal) normal.textContent = t('Normal', 'form');
   }
 
   // ---------------- canvas y ventanas del navegador ----------------
+  const P = CanvasRenderingContext2D.prototype;
+  const canvasText = Object.fromEntries(['fillText', 'strokeText', 'measureText'].map(k => [k, P[k]]));
+  function canvasCall(ctx, method, text, args) {
+    const font = ctx.font;
+    if (lang === 'zh-CN' && font.includes('Pixelify')) ctx.font = font.replace('Pixelify', 'Pixelify,"PSChinese","Microsoft YaHei","PingFang SC"');
+    try { return canvasText[method].call(ctx, text, ...args); }
+    finally { if (ctx.font !== font) ctx.font = font; }
+  }
+  function rawCanvas(ctx, method, text, ...args) { return canvasCall(ctx, method, text, args); }
   if (lang !== 'es') {
-    const P = CanvasRenderingContext2D.prototype;
     for (const k of ['fillText', 'strokeText', 'measureText']) {
-      const orig = P[k];
-      P[k] = function (s, ...a) { return orig.call(this, typeof s === 'string' ? t(s) : s, ...a); };
+      P[k] = function (s, ...a) {
+        return canvasCall(this, k, typeof s === 'string' ? t(s) : s, a);
+      };
     }
     const oc = window.confirm, oa = window.alert;
     window.confirm = s => oc.call(window, t(s));
@@ -154,10 +188,11 @@ G.I18n = (() => {
   }
 
   function set(l) {
+    if (!supported.includes(l)) return;
     try { localStorage.setItem(KEY, l); } catch (e) { /* nada */ }
     location.reload();
   }
 
-  return { lang, add, t, f, set, startDom, walk };
+  return { lang, locale, add, t, f, term, set, startDom, walk, rawCanvas, pageUrl };
 })();
 G.T = G.I18n.t;

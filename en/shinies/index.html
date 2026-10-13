@@ -8,6 +8,7 @@
 <link rel="canonical" href="https://pokesurvivor.com/en/shinies/">
 <link rel="alternate" hreflang="es" href="https://pokesurvivor.com/shinies/">
 <link rel="alternate" hreflang="en" href="https://pokesurvivor.com/en/shinies/">
+<link rel="alternate" hreflang="zh-CN" href="https://pokesurvivor.com/zh/shinies/">
 <link rel="alternate" hreflang="x-default" href="https://pokesurvivor.com/shinies/">
 <meta name="theme-color" content="#0a1430">
 <meta property="og:type" content="website">
@@ -31,7 +32,7 @@
 <body>
 <header class="top">
   <a class="brand" href="../../en/">PokéSurvivor</a>
-  <nav><a href="../../en/guide/">Guide</a><a href="../../en/pokedex/">Pokédex</a><a href="../../en/legendaries/">Legendaries</a><a href="../../en/moves/">Moves</a><a href="../../en/types/">Types</a><a class="lang" hreflang="es" href="../../shinies/">Español</a><a class="play" href="../../en/">Play free</a></nav>
+  <nav><a href="../../en/guide/">Guide</a><a href="../../en/pokedex/">Pokédex</a><a href="../../en/legendaries/">Legendaries</a><a href="../../en/moves/">Moves</a><a href="../../en/types/">Types</a><a class="lang" data-language="es" hreflang="es" href="../../shinies/">Español</a><a class="lang" data-language="zh-CN" hreflang="zh-CN" href="../../zh/shinies/">简体中文</a><a class="play" href="../../en/">Play free</a></nav>
 </header>
 <main>
 <article class="doc wide"><h1>Shinies in PokéSurvivor: how to get them</h1>
@@ -48,5 +49,6 @@
   <p>PokéSurvivor is a <b>free, non-profit</b> fan game with no ads or purchases (only voluntary donations for the servers). It is not affiliated with Nintendo, Creatures, GAME FREAK or The Pokémon Company; Pokémon and its characters are owned by their respective owners. Sprites from PMD SpriteCollab (CC BY-NC 4.0) · data from PokéAPI · original music and sounds. It has no official cryptocurrency or token: any using its name belongs to third parties and we take no responsibility for purchases or investments.</p>
   <p><a href="https://github.com/JPTER78/pokesurvivor">GitHub</a></p>
 </footer>
+<script>document.querySelectorAll('[data-language]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem('ps.lang', a.dataset.language); } catch (e) {} }));</script>
 </body>
 </html>

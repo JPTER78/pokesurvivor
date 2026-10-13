@@ -71,7 +71,7 @@ G.TestUI = (() => {
         cell.classList.add('on');
         picked = s.dex;
         const mv = G.Moves.BY_ID[s.start];
-        $('starter-info').innerHTML = `${G.UI.typeChips(mon.types)} ${G.Icons.html('move:' + s.start, 16)} ${mv.name} · ${s.traits.join(', ')}`;
+        $('starter-info').innerHTML = `${G.UI.typeChips(mon.types)} ${G.Icons.html('move:' + s.start, 16)} ${G.T(mv.name, 'move')} · ${s.traits.join(', ')}`;
         $('starter-ok').disabled = false;
       };
       if (result && s.dex === result.dex) { picked = s.dex; $('starter-ok').disabled = false; }

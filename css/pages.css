@@ -1,3 +1,4 @@
+@import url('fonts-zh.css');
 /* ============ pages.css — páginas de texto (guía, Pokédex, 404) ============
  * Mismo estilo que el juego (azul de Mundo Misterioso, dorado y fuente pixel),
  * pero pensadas para leer cómodamente en PC y móvil. */
@@ -9,7 +10,9 @@ html { background: var(--navy); }
 body { margin: 0; color: var(--ink); font: 17px/1.6 system-ui, 'Segoe UI', Roboto, sans-serif;
   background: radial-gradient(circle at 50% 0, #1a2f6a, var(--navy) 60%) fixed; }
 a { color: #9fd4ff; }
-h1, h2, h3, .brand, .btn, .top nav a { font-family: 'Pixelify', system-ui, sans-serif; }
+h1, h2, h3, .brand, .btn, .top nav a { font-family: 'Pixelify', 'PSChinese', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif; }
+html:lang(zh-CN) body { font-family: 'Pixelify', 'PSChinese', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif; }
+html:lang(zh-CN) .top nav { flex-wrap: wrap; }
 h1 { color: var(--gold); font-size: clamp(28px, 5vw, 44px); line-height: 1.15; margin: 0 0 14px; text-shadow: 3px 3px 0 #a55f00, 5px 5px 0 #050914; }
 h2 { color: var(--gold); font-size: 26px; margin: 34px 0 10px; text-shadow: 2px 2px 0 #050914; }
 h2 small { color: var(--muted); font-size: 15px; font-weight: 400; }
