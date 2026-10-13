@@ -63,8 +63,10 @@ G.DB = (() => {
       coins: START_COINS,
       owned: {},              // dex -> { at, from: 'starter'|'gacha'|'wild' }
       shiny: {},              // dex -> { at, from } — variantes shiny conseguidas
+      sizes: {},              // dex -> { xs|s|l|xl -> { at, from } } — tallas conseguidas (la M es tenerlo)
       partner: null,          // dex del Pokémon con el que juegas
       partnerShiny: false,    // jugar con su versión shiny (si la tienes)
+      partnerSize: 'm',       // talla con la que juegas (data/sizes.js; si no la tienes, M)
       starter: null,          // dex que te tocó en el test
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
@@ -117,6 +119,15 @@ G.DB = (() => {
     if (G.DEX_BY) for (const coll of ['owned', 'shiny']) {
       for (const d of Object.keys(s[coll] || {})) if (!G.DEX_BY[d]) delete s[coll][d];
     }
+    // Tallas: de Pokémon que existan y puedan tenerlas (no legendarios), sólo XS, S, L y XL.
+    if (!isObj(s.sizes)) s.sizes = {};
+    if (G.Sizes) for (const d of Object.keys(s.sizes)) {
+      const z = s.sizes[d];
+      if (!isObj(z) || !G.Sizes.can(d)) { delete s.sizes[d]; continue; }
+      for (const k of Object.keys(z)) if (!G.Sizes.EXTRA.includes(k) || !isObj(z[k])) delete z[k];
+      if (!Object.keys(z).length) delete s.sizes[d];
+    }
+    if (typeof s.partnerSize !== 'string' || (G.Sizes && !G.Sizes.BY[s.partnerSize])) s.partnerSize = 'm';
     // Atajos: 4 huecos con un movimiento que exista (o null), sin repetir.
     if (s.pbind && typeof s.pbind === 'object') {
       for (const d of Object.keys(s.pbind)) {
@@ -149,7 +160,7 @@ G.DB = (() => {
   /**
    * Fusiona dos versiones de la misma partida (p. ej. una jugada sin
    * conexión y la de la nube). Nunca se pierde nada conseguido:
-   *   - colecciones (owned, shiny): unión
+   *   - colecciones (owned, shiny, tallas): unión
    *   - mejoras y estadísticas: el máximo de cada una
    *   - monedas, compañero, pity...: los de la versión más reciente
    * Es idempotente: fusionar dos veces da lo mismo.
@@ -164,6 +175,15 @@ G.DB = (() => {
       r[coll] = r[coll] || {};
       for (const k in older[coll] || {}) {
         if (!r[coll][k] || (older[coll][k].at || 0) < (r[coll][k].at || 0)) r[coll][k] = older[coll][k];
+      }
+    }
+    // Tallas: unión por Pokémon y por talla (nunca se pierde una).
+    r.sizes = isObj(r.sizes) ? r.sizes : {};
+    for (const d in older.sizes || {}) {
+      const mine = r.sizes[d] = isObj(r.sizes[d]) ? r.sizes[d] : {};
+      for (const k in older.sizes[d] || {}) {
+        const o = older.sizes[d][k];
+        if (o && (!mine[k] || (o.at || 0) < (mine[k].at || 0))) mine[k] = o;
       }
     }
     for (const k in older.upgrades || {}) r.upgrades[k] = Math.max(r.upgrades[k] || 0, older.upgrades[k]);
@@ -193,7 +213,7 @@ G.DB = (() => {
     for (const k in older.stats || {}) r.stats[k] = Math.max(r.stats[k] || 0, older.stats[k] || 0);
     if (r.starter == null) r.starter = older.starter;
     if (r.personality == null) r.personality = older.personality;
-    if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; }
+    if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; r.partnerSize = older.partnerSize || 'm'; }
     r.created = Math.min(a.created || Date.now(), b.created || Date.now());
     r.updated = Math.max(a.updated || 0, b.updated || 0);
     return r;
@@ -710,9 +730,36 @@ G.DB = (() => {
     return true;
   }
 
+  // ---------------- tallas (data/sizes.js) ----------------
+
+  /** ¿Tienes esa talla? La M es tener el Pokémon. */
+  function ownsSize(dex, id) {
+    if (id === 'm') return owns(dex);
+    return !!(save && owns(dex) && save.sizes && save.sizes[dex] && save.sizes[dex][id]);
+  }
+
+  /** Da una talla de un Pokémon que tienes (no legendario). Devuelve true si es nueva. */
+  function grantSize(dex, id, from) {
+    if (!save || !owns(dex) || !G.Sizes.can(dex) || !G.Sizes.EXTRA.includes(id)) return false;
+    save.sizes = save.sizes || {};
+    const z = save.sizes[dex] = save.sizes[dex] || {};
+    if (z[id]) return false;
+    z[id] = { at: Date.now(), from };
+    return true;
+  }
+
+  /** Tallas que tienes de un Pokémon, de la más pequeña a la más grande (con la M). */
+  function sizesOf(dex) { return G.Sizes.LIST.map(z => z.id).filter(id => ownsSize(dex, id)); }
+
+  /** Talla con la que juega tu compañero (si ya no la tienes, M). */
+  function partnerSize() {
+    const id = save && save.partnerSize;
+    return id && G.Sizes.can(save.partner) && ownsSize(save.partner, id) ? id : 'm';
+  }
+
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
-    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
+    owns, grant, ownsShiny, grantShiny, ownsSize, grantSize, sizesOf, partnerSize, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */
