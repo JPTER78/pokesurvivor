@@ -85,7 +85,7 @@ service cloud.firestore {
         && cnt(n, 'ach') <= 150                                           // hay 130
         && mis(n) >= mis(o)
         && mis(n) <= 10 + (request.time.toMillis() - o.get('created', 0)) / 86400000 * 5
-        && budget(o, n, secs > 7200 ? 7200 : (secs > 0 ? secs : 0),        // como mucho 2 h de juego por guardado (se guarda cada 30 min)
+        && budget(o, n, secs > 10800 ? 10800 : (secs > 0 ? secs : 0),      // como mucho 3 h de juego por guardado (se guarda cada 2 h)
                   secs >= 60 ? 1.0 : (secs > 0 ? secs / 60.0 : 0.0),        // guardados muy seguidos: menos margen fijo
                   mis(n) - mis(o));
     }
