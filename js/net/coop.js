@@ -14,6 +14,10 @@
  *   anfitrión -> invitado  { k:'f', t, lv, xp, xn, ki, bo, co, p:{uid:[estado]},
  *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos] }
  *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny}] }
+ *
+ * En el resumen (ya sin partida), "Volver a intentarlo" (ver again*):
+ *   invitado -> anfitrión  { k:'ag', on:1 } listo · { k:'ag', on:0 } se va a la sala
+ *   anfitrión -> invitados { k:'ag', st:{ n, of, miss:[nombres], alone } } · { k:'ag', off:1 } se va a la sala
  */
 G.Coop = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
@@ -40,6 +44,7 @@ G.Coop = (() => {
   let hostAway = false, stalled = false, lastHostAt = 0;
   const STALL_MS = 2500;
   let members = [];
+  let ag = null;                        // resumen: { cb, host, ready:Set, gone:Set } (ver againOpen)
 
   // ---------------- escalado de dificultad ----------------
 
@@ -61,7 +66,7 @@ G.Coop = (() => {
     api = cb;
     members = cfg.members;
     mates.clear();
-    outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
+    outEv = []; flushT = 0; waiting = new Set(); holds = new Set(); ag = null;
     hostAway = false; stalled = false; lastHostAt = performance.now();
     cfg.members.forEach((m, i) => {
       const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
@@ -209,12 +214,18 @@ G.Coop = (() => {
   G.Net.on((from, msg) => {
     if (!msg) return;
     if (msg.k === 'start') { if (G.Flow.startCoop) G.Flow.startCoop(msg); return; }
+    if (msg.k === 'ag') { againMsg(from, msg); return; }
     if (!active || msg.k !== 'f') return;
     if (host) onClientFrame(from, msg); else if (from === hostUid) onHostFrame(msg);
   });
 
   G.Net.onPeer((u, mode) => {
-    if (!active || (mode !== 'closed' && mode !== 'failed')) return;
+    if (mode !== 'closed' && mode !== 'failed') return;
+    if (ag) {
+      if (ag.host) againCheck();
+      else if (u === hostUid) { const cb = ag.cb; ag = null; cb({ off: 1 }); }
+    }
+    if (!active) return;
     if (host) mateGone(u);
     else if (u === hostUid) { const cb = api.lost; end(); if (cb) cb('Se ha perdido la conexión con el anfitrión.'); }
   });
@@ -457,10 +468,69 @@ G.Coop = (() => {
     end();
   }
 
+  // ---------------- otra vez (resumen de una partida en grupo) ----------------
+  // Cada uno pulsa "Volver a intentarlo" y queda listo. El anfitrión lleva la
+  // cuenta y, cuando lo están todos los que siguen (conectados y sin haber
+  // vuelto a la sala), empieza otra con ellos, como desde la sala. Quien se
+  // desconecta deja de contar; si el anfitrión vuelve a la sala, se acaba.
+
+  /** Al salir el resumen tras caer todos. cb(estado): { n, of, miss, alone } u { off }. */
+  function againOpen(cb) {
+    ag = { cb, host: hostUid === me, ready: new Set(), gone: new Set() };
+    if (ag.host) againCheck();
+  }
+
+  /** Tú: listo (on) o te vas a la sala (!on). */
+  function againSet(on) {
+    if (!ag) return;
+    if (ag.host) {
+      if (on) { ag.ready.add(me); againCheck(); return; }
+      G.Net.broadcast({ k: 'ag', off: 1 });
+    } else {
+      G.Net.toHost({ k: 'ag', on: on ? 1 : 0 });
+      if (on) return;
+    }
+    ag = null;
+  }
+
+  function againMsg(from, msg) {
+    if (!ag) return;
+    if (ag.host) {
+      if (msg.on) ag.ready.add(from);
+      else { ag.ready.delete(from); ag.gone.add(from); }
+      againCheck();
+    } else if (from === hostUid) {
+      if (msg.off) { const cb = ag.cb; ag = null; cb({ off: 1 }); } else if (msg.st) ag.cb(msg.st);
+    }
+  }
+
+  /** Anfitrión: quién falta; si no falta nadie, otra partida. */
+  function againCheck() {
+    const room = G.Social.room;
+    const stay = members.filter(m => m.uid === me || (room && room.members.some(x => x.uid === m.uid)
+      && !ag.gone.has(m.uid) && !['closed', 'failed'].includes(G.Net.mode(m.uid))));
+    const miss = stay.filter(m => !ag.ready.has(m.uid));
+    if (stay.length >= 2 && !miss.length) {
+      // Con el Pokémon que tenga cada uno ahora en la sala.
+      const cfg = {
+        k: 'start', seed: Math.floor(Math.random() * 1e6), host: me,
+        members: stay.map(m => room.members.find(x => x.uid === m.uid))
+          .map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny }))
+      };
+      ag = null;
+      G.Net.broadcast(cfg);
+      G.Flow.startCoop(cfg);
+      return;
+    }
+    const st = { n: stay.length - miss.length, of: stay.length, miss: miss.map(m => m.name), alone: stay.length < 2 ? 1 : 0 };
+    G.Net.broadcast({ k: 'ag', st });
+    ag.cb(st);
+  }
+
   return {
     ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
-    propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,
+    propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd, againOpen, againSet,
     /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */
     broadcast(ev) { emit(ev); },
     toHost(ev) { if (active && !host) { outEv.push(ev); flushClient(true); } },

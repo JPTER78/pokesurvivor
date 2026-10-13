@@ -267,6 +267,8 @@ G.Game = (() => {
     G.Audio.sfx('shinyGet');
   };
 
+  let overAt = 0;           // cuándo salió el resumen (performance.now)
+
   function endRun(dead = true) {
     if (state === 'over' || !pl) return;
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
@@ -275,6 +277,7 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.end();
     if (coop) G.Social.setPlaying(false);
     state = 'over';
+    overAt = performance.now();
     G.Audio.music(null);
     G.Audio.sfx(dead ? 'gameover' : 'back');
     const save = G.DB.save;
@@ -306,12 +309,30 @@ G.Game = (() => {
     if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
     else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
+    // Cada botón (o su tecla) vale una sola vez: después ya no estás en el resumen.
+    // En grupo, sólo si habéis caído todos (no si el anfitrión se ha ido o se ha
+    // cortado), y te quedas esperando a los demás (G.Coop.againOpen).
+    const group = coop && dead && !!G.Social.room;
+    const back = () => { if (state !== 'over') return; if (group) G.Coop.againSet(false); pl = null; G.Flow.afterRun(); };
+    // Otra run con el mismo Pokémon. Si hay versión nueva, va al menú (o a la
+    // sala), que es donde se actualiza (updater.js).
+    const retry = coop ? (group ? () => {
+      if (state !== 'over') return;
+      if (G.Updater.pending) { back(); return; }
+      G.RunUI.againReady();
+      G.Coop.againSet(true);
+    } : null) : G.Social.room ? null : () => {
+      if (state !== 'over') return;
+      if (G.Updater.pending) { back(); return; }
+      pl = null; G.Flow.play();
+    };
     G.RunUI.showOver({
-      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
+      toRoom: coop && !!G.Social.room, dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
-    }, () => { pl = null; G.Flow.afterRun(); });
+    }, back, retry);
+    if (group) G.Coop.againOpen(st => { if (state === 'over') G.RunUI.setAgain(st); });
   }
 
   // ---------------- subida de nivel ----------------
@@ -477,6 +498,15 @@ G.Game = (() => {
       // Esc en una subpantalla del menú vuelve al menú.
       if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-dex', 'scr-upgrades', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
+      return;
+    }
+    // Resumen: Esc vuelve al menú e Intro lo intenta otra vez. Un momento sin
+    // teclas, para no saltárselo con lo que se estaba pulsando al caer.
+    if (state === 'over') {
+      if (!G.UI.isOpen('scr-over') || performance.now() - overAt < 600) return;
+      const id = G.Input.tap('escape') ? 'btn-again' : G.Input.tap('enter') || G.Input.tap('numpadenter') ? 'btn-retry' : null;
+      const btn = id && document.getElementById(id);
+      if (btn && !btn.classList.contains('hidden')) btn.click();
       return;
     }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
@@ -853,9 +883,14 @@ G.Flow = {
     } else this.goMenu();
   },
   play() { G.Game.startRun(); },
-  /** Empieza la partida en grupo (el anfitrión la manda a todos). */
+  /**
+   * Empieza la partida en grupo (el anfitrión la manda a todos). También desde
+   * el resumen de la anterior: "Volver a intentarlo", o si el anfitrión empieza
+   * desde la sala mientras sigues mirándolo (antes te quedabas fuera).
+   */
   startCoop(cfg) {
-    if (G.Game.state !== 'ui' || !G.Social.room) return;
+    if ((G.Game.state !== 'ui' && G.Game.state !== 'over') || !G.Social.room) return;
+    if (!cfg.members.some(m => m.uid === G.Net.uid)) return;     // sin ti: has vuelto a la sala
     G.LobbyUI.close();
     G.Game.startRun(cfg);
   }

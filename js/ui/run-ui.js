@@ -2,6 +2,7 @@
 G.RunUI = (() => {
   const $ = G.UI.$;
   let offers = null, offerCb = null, coopMode = false;
+  const list = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1] : a[0];
 
   /** @param coop  en grupo: tras elegir, se queda esperando a los demás */
   function showLevelUp(level, list, cb, coop = false) {
@@ -76,7 +77,6 @@ G.RunUI = (() => {
   function setWaiting(names) {
     const me = G.Social.me ? G.Social.me.name : '';
     const others = names.filter(n => n !== me);
-    const list = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1] : a[0];
     $('lvl-wait').textContent = !names.length ? ''
       : !others.length ? 'Elige tu carta'
       : names.includes(me) ? 'Faltan por elegir: ' + list([...others, 'tú'])
@@ -102,7 +102,11 @@ G.RunUI = (() => {
     return true;
   }
 
-  function showOver(r, onBack) {
+  let overRoom = false;      // el resumen vuelve a la sala (grupo), no al menú
+
+  /** Resumen de la run. onRetry: otra run con el mismo Pokémon (null: sin ese botón). */
+  function showOver(r, onBack, onRetry) {
+    overRoom = !!r.toRoom;
     $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
     $('over-stats').innerHTML = `
       <div><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
@@ -127,6 +131,13 @@ G.RunUI = (() => {
     const ask = $('over-ask');
     if (ask) ask.querySelector('.x').onclick = () => ask.remove();
     $('btn-again').onclick = onBack;
+    $('btn-again').textContent = overRoom ? 'Volver a la sala' : 'Volver al menú';
+    const retry = $('btn-retry');
+    retry.onclick = onRetry;
+    retry.disabled = false;
+    retry.textContent = 'Volver a intentarlo';
+    $('over-wait').textContent = '';
+    showRetry(!!onRetry);
     if (r.caught && r.caught.length) {
       const row = $('over-caught');
       for (const c of r.caught) {
@@ -137,6 +148,35 @@ G.RunUI = (() => {
       }
     }
     G.UI.show('scr-over');
+  }
+
+  /** El dorado es seguir jugando; sin "Volver a intentarlo", volver pasa a ser el principal. */
+  function showRetry(on) {
+    $('btn-retry').classList.toggle('hidden', !on);
+    $('btn-again').classList.toggle('gold', !on);
+    $('btn-again').classList.toggle('gray', on);
+    $('over-keys').innerHTML = '<kbd>Esc</kbd> ' + (overRoom ? 'sala' : 'menú') + (on ? ' · <kbd>Intro</kbd> reintentar' : '');
+  }
+
+  /** Grupo: has pulsado "Volver a intentarlo"; esperas a los demás. */
+  function againReady() {
+    const retry = $('btn-retry');
+    retry.disabled = true;
+    retry.textContent = '¡Listo!';
+  }
+
+  /** Grupo: quién falta para volver a intentarlo (ver G.Coop.againOpen). */
+  function setAgain(st) {
+    if (st.off || st.alone) {
+      showRetry(false);
+      $('over-wait').textContent = st.off ? 'El anfitrión ha vuelto a la sala' : 'No queda nadie más para volver a intentarlo';
+      return;
+    }
+    const me = G.Social.me ? G.Social.me.name : '';
+    const mine = st.miss.includes(me);
+    const others = st.miss.filter(n => n !== me);
+    $('over-wait').textContent = 'Listos: ' + st.n + '/' + st.of + ' · ' + (!others.length ? 'faltas tú'
+      : (others.length > 1 || mine ? 'faltan ' : 'falta ') + list(mine ? [...others, 'tú'] : others));
   }
 
   /** Has encontrado un objeto llevando ya otro: ¿con cuál te quedas? */
@@ -232,5 +272,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, againReady, setAgain, wirePause, showPause };
 })();

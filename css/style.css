@@ -106,6 +106,8 @@ input { font: inherit; }
   border-color: #fff7d6;
 }
 .btn.ghost { background: transparent; box-shadow: none; border-color: rgba(244,248,255,.35); }
+.btn.gray { background: linear-gradient(180deg, #8d96a8, #5c6476); border-color: #e3e8f2; }
+#over-wait:empty { display: none; }
 .btn.small { padding: 6px 12px; font-size: 14px; }
 .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .row.end { justify-content: flex-end; }
