@@ -4,16 +4,18 @@
  *   lbs/{tabla}        RESUMEN: el top 50 de la tabla en UN documento
  *                      { top: { id: { t, uids, names, dex, shiny, lv, kills } }, me, ev }
  *                      Ver una pestaña del ranking = 1 lectura (antes ~52).
- *   lb/{tabla}/e/{id}  la marca de cada jugador o equipo (la que validan las
- *                      reglas contra trampas y la que sirve para calcular tu
- *                      puesto si no estás en el top 50)
+ *   lb/{tabla}/e/{id}  la marca de cada jugador o equipo (la que sirve para
+ *                      calcular tu puesto si no estás en el top 50)
  *
  *   tabla = modo + periodo:
  *     s_d20261008   solitario, hoy            g_...   en grupo
  *     s_w2026-41    semana ISO                s_m202610  mes
- *     s_all         histórico   (la tabla anual se quitó el 2026-10-10)
- *     s_all_p25     histórico sólo con Pikachu (el filtro por Pokémon sólo
+ *     s_all2        histórico   (la tabla anual se quitó el 2026-10-10)
+ *     s_all2_p25    histórico sólo con Pikachu (el filtro por Pokémon sólo
  *                   existe en el histórico: así cada partida escribe la mitad)
+ *                   (all2 desde la Sentencia de Arceus: con el final en el
+ *                    minuto 30, el histórico empezó de cero; las tablas viejas
+ *                    s_all y s_all_pN se quedan en el servidor sin usarse)
  *   id = tu uid (solitario) o los uid del equipo ordenados y unidos con "_".
  *
  * Ahorros:
@@ -61,11 +63,12 @@ G.Ranking = (() => {
     return { year: t.getUTCFullYear(), week: Math.ceil(((t - y0) / 86400000 + 1) / 7) };
   }
 
+  const ALL = 'all2';                     // histórico (ver arriba)
   function periodIds(date = new Date()) {
     const { y, m, d } = madridDate(date);
     const w = isoWeek(y, m, d);
     const p2 = n => String(n).padStart(2, '0');
-    return { d: 'd' + y + p2(m) + p2(d), w: 'w' + w.year + '-' + p2(w.week), m: 'm' + y + p2(m), y: 'y' + y, a: 'all' };
+    return { d: 'd' + y + p2(m) + p2(d), w: 'w' + w.year + '-' + p2(w.week), m: 'm' + y + p2(m), y: 'y' + y, a: ALL };
   }
 
   /** El filtro por Pokémon sólo existe en el histórico. */
@@ -103,7 +106,9 @@ G.Ranking = (() => {
   cachePrune();
 
   // Tus mejores marcas por tabla (para no leer antes de escribir).
-  const bestKey = () => 'ps.rk.best.' + (fbx() ? fbx().uid : '');
+  // (best2 desde 2026-10-12: se quitaron del ranking las marcas rotas; así quien
+  //  tenía una vuelve a mirar su marca real y puede volver a entrar.)
+  const bestKey = () => 'ps.rk.best2.' + (fbx() ? fbx().uid : '');
   function bests() { try { return JSON.parse(localStorage.getItem(bestKey()) || '{}'); } catch (e) { return {}; } }
   function saveBests(b) {
     // Sólo se conservan las tablas de los periodos actuales y las históricas.
@@ -114,22 +119,28 @@ G.Ranking = (() => {
 
   // ---------------- guardar ----------------
 
-  /**
-   * Al empezar la PRIMERA partida de la sesión: el servidor apunta la hora
-   * (anti-trampas: ninguna marca puede durar más que el tiempo real desde
-   * entonces). Una vez por sesión y no en cada partida, para ahorrar escrituras.
-   */
-  let runMarked = '';
-  function runStarted(mode) {
-    const fb = fbx();
-    if (!fb || runMarked === fb.uid) return;
-    runMarked = fb.uid;
-    fb.fs.collection('runs').doc(fb.uid).set({ startedAt: firebase.firestore.FieldValue.serverTimestamp(), mode })
-      .catch(e => { runMarked = ''; console.warn('[Ranking] inicio:', e.code || e.message); });
-  }
-
   const rowOf = (id, v) => ({ id, t: v.t, uids: v.uids || [], names: v.names || [], dex: v.dex || [], shiny: v.shiny || [], lv: v.lv, kills: v.kills });
   const sorted = top => Object.entries(top || {}).map(([id, v]) => rowOf(id, v)).sort((a, b) => b.t - a.t);
+  const now = () => firebase.firestore.FieldValue.serverTimestamp();
+
+  // ---------------- anti-trampas ----------------
+
+  /**
+   * Al empezar cada partida (en grupo, el anfitrión) el servidor apunta la
+   * hora: ninguna marca puede durar más que el tiempo real desde entonces
+   * (firestore.rules, validEntry). Antes se espera a que acabe de subirse la
+   * marca de la partida anterior, para no cambiarle la hora a mitad.
+   */
+  let busy = Promise.resolve();
+  function runStarted(mode) {
+    const fb = fbx();
+    if (!fb) return;
+    const go = n => fb.fs.collection('runs').doc(fb.uid).set({ startedAt: now(), mode })
+      .catch(e => { console.warn('[Ranking] inicio:', e.code || e.message); if (n < 2) setTimeout(() => go(n + 1), 15000); });
+    busy.then(() => go(0));
+  }
+  /** La subida de una marca (para que la partida siguiente espere a que acabe). */
+  function track(p) { busy = p.catch(() => {}); return p; }
 
   /** Guarda la entrada en cada tabla donde mejore. → periodos mejorados */
   async function store(boards, id, entry) {
@@ -205,20 +216,22 @@ G.Ranking = (() => {
     G.UI.toast('¡Nueva mejor marca ' + names[best] + ' en el ranking!', 3400);
   }
 
-  async function submitSolo(r) {
+  function submitSolo(r) { return track(submitSoloNow(r)); }
+  async function submitSoloNow(r) {
     const fb = fbx();
     if (!fb || !G.Social.me || r.t < MIN_T) return [];
     const ids = periodIds();
     const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
-    boards.push(['s_all_p' + r.dex, 'p']);
+    boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
     const better = await store(boards, fb.uid, entry);
     announce(better);
     return better;
   }
 
   /** La sube el anfitrión, con todo el equipo. */
-  async function submitGroup(r) {
+  function submitGroup(r) { return track(submitGroupNow(r)); }
+  async function submitGroupNow(r) {
     const fb = fbx();
     if (!fb || r.t < MIN_T || !r.members || r.members.length < 2) return [];
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
@@ -227,7 +240,7 @@ G.Ranking = (() => {
                     shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills };
     const ids = periodIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
-    for (const d of new Set(entry.dex)) boards.push(['g_all_p' + d, 'p']);
+    for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
     const better = await store(boards, id, entry);
     announce(better);
     return better;
@@ -364,5 +377,76 @@ G.Ranking = (() => {
     try { localStorage.removeItem(bestKey()); } catch (e) { /* nada */ }
   }
 
-  return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, myRank, removeMine };
+  // ---------------- reportes y moderación ----------------
+
+  /** Reporta una marca sospechosa (una vez por marca y jugador). → true si se ha enviado */
+  const repKey = () => 'ps.rk.rep.' + (fbx() ? fbx().uid : '');
+  function reported() { try { return new Set(JSON.parse(localStorage.getItem(repKey()) || '[]')); } catch (e) { return new Set(); } }
+  async function report(b, row) {
+    const fb = fbx();
+    if (!fb) return false;
+    const key = b + '__' + row.id;
+    const done = reported();
+    if (!done.has(key)) {
+      // (Si ya lo habías reportado desde otro ordenador, el servidor no deja repetirlo: da igual.)
+      await fb.fs.collection('reports').doc(key + '__' + fb.uid)
+        .set({ board: b, e: row.id, names: row.names.slice(0, 4), t: row.t | 0, by: fb.uid, at: now() }).catch(() => {});
+      done.add(key);
+      try { localStorage.setItem(repKey(), JSON.stringify([...done].slice(-300))); } catch (e) { /* lleno */ }
+    }
+    return true;
+  }
+
+  // Cuenta de moderación (firestore.rules, admin()): la pantalla oculta de js/ui/mod-ui.js.
+  const ADMINS = ['PENDIENTE_UID_ADMIN'];
+  const isAdmin = () => !!fbx() && ADMINS.includes(fbx().uid);
+
+  /** Admin: los reportes, juntos por marca (los más reportados primero). */
+  async function reports() {
+    const s = await fbx().fs.collection('reports').orderBy('at', 'desc').limit(400).get();
+    const by = new Map();
+    for (const d of s.docs) {
+      const v = d.data(), k = v.board + '__' + v.e;
+      if (!by.has(k)) by.set(k, { board: v.board, e: v.e, names: v.names || [], t: v.t, n: 0, ids: [], at: v.at && v.at.toMillis ? v.at.toMillis() : 0 });
+      const g = by.get(k); g.n++; g.ids.push(d.id);
+    }
+    return [...by.values()].sort((a, b) => b.n - a.n || b.at - a.at);
+  }
+
+  /** Admin: quita una marca de una tabla (la marca y su fila del top 50). */
+  async function removeEntry(b, e) {
+    const fb = fbx();
+    await col(b).doc(e).delete().catch(() => {});
+    await fb.fs.runTransaction(async tx => {
+      const s = await tx.get(sumRef(b));
+      const top = Object.assign({}, s.exists ? s.data().top : {});
+      if (!(e in top)) return;
+      delete top[e];
+      tx.set(sumRef(b), { top, me: '', ev: e });
+    }).catch(err => console.warn('[Ranking] quitar', b, err.code || err.message));
+    cacheSet('s:' + b, undefined);
+  }
+
+  /** Admin: quita la marca de un jugador o equipo de todas las tablas de ahora (y de `also`). */
+  async function removeEverywhere(e, mode, dexes = [], also = null) {
+    const ids = periodIds();
+    const boards = new Set(PERIODS.map(([p]) => mode + '_' + ids[p]));
+    for (const d of dexes) boards.add(mode + '_' + ALL + '_p' + d);
+    if (also) boards.add(also);
+    await Promise.all([...boards].map(b => removeEntry(b, e)));
+  }
+
+  /** Admin: marca o desmarca una cuenta (marcada = no puede subir marcas). */
+  function setMarked(uid, on) { return fbx().fs.collection('saves').doc(uid).update({ sus: !!on }); }
+  /** Admin: borra reportes ya vistos. */
+  function dismiss(ids) { return Promise.all(ids.map(id => fbx().fs.collection('reports').doc(id).delete().catch(() => {}))); }
+  /** Admin: cuentas marcadas. */
+  async function markedAccounts() {
+    const s = await fbx().fs.collection('saves').where('sus', '==', true).limit(100).get();
+    return s.docs.map(d => { const v = d.data().save || {}; return { uid: d.id, name: v.name || '?', coins: v.coins || 0,
+      t1: (v.tickets || {}).t1 || 0, t10: (v.tickets || {}).t10 || 0, owned: Object.keys(v.owned || {}).length }; });
+  }
+
+  return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, myRank, removeMine,
+           report, reported, isAdmin, reports, removeEntry, removeEverywhere, setMarked, dismiss, markedAccounts };
 })();

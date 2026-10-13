@@ -12,7 +12,8 @@
  * Mensajes (por net.js, unas 15 veces por segundo; 5 si va por el relé):
  *   invitado -> anfitrión  { k:'f', p:[estado], ev:[eventos], b? }
  *   anfitrión -> invitado  { k:'f', t, lv, xp, xn, ki, bo, co, p:{uid:[estado]},
- *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos], w? }
+ *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos], w?,
+ *                            ja:[x,y,anim,dir] (Arceus, sólo en la Sentencia) }
  *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny}] }
  *
  * Pausa del equipo (cartas de nivel, objeto o vínculo; ver systems/hold.js):
@@ -196,6 +197,8 @@ G.Coop = (() => {
                 p, e: enemyList(m.pl), ev };
     const w = team.pack(order);
     if (w) f.w = w;
+    const ja = G.Judgment.netState();       // Arceus en la Sentencia
+    if (ja) f.ja = ja;
     return f;
   }
 
@@ -329,6 +332,7 @@ G.Coop = (() => {
     if (msg.w) hostV2 = true;
     for (const ev of msg.ev || []) applyHostEvent(ev);
     if (!active) return;
+    if (msg.ja) G.Judgment.netApply(msg.ja);
     api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
                    t1: (msg.tk || [])[0], t10: (msg.tk || [])[1] });
     for (const u in msg.p || {}) {
@@ -388,6 +392,7 @@ G.Coop = (() => {
       case 'sh': api.shiny(ev[1]); break;
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
+      case 'jd': case 'jk': G.Judgment.onEvent(ev); break;
       case 'wx': G.Weather.onEvent(ev); break;
       case 'ev': G.Events.onNet(ev); break;
       case 'hz': G.Hazards.add(ev[1], true); break;

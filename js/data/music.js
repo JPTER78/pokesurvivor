@@ -124,5 +124,29 @@ G.MUSIC.rift = {
   drums: { kick: 'X.x.X.x.X.x.X.xx', snare: '....X.......X..X', hat: 'xoxoxoxoxoxoxoxo' }
 };
 
+/* ---------------- La Sentencia de Arceus (minuto 30) ----------------
+ * Solemne y sin salida: Re menor con un Mi bemol (frigio) que oscurece,
+ * campanas graves en cada compás y la melodía subiendo hasta el final. */
+G.MUSIC.judgment = {
+  bpm: 140,
+  chords: ['Dm', 'Bb', 'Gm', 'A', 'Dm', 'Eb', 'C', 'A',
+           'Bb', 'C', 'Dm', 'Dm', 'Gm', 'A', 'Dm', 'A'],
+  melody: [{ inst: 'lead', vel: 1, bars: [
+    'D5:4 F5:4 A5:6 G5:2', 'F5:4 D5:4 Bb4:8',
+    'G5:4 Bb5:4 D6:4 C6:2 Bb5:2', 'A5:8 C#6:4 E6:4',
+    'D6:6 C6:2 A5:4 F5:4', 'G5:4 Eb5:4 G5:4 Bb5:4',
+    'C6:4 E5:2 G5:2 C6:4 E6:4', 'C#6:12 -:4',
+    'D6:2 D6:2 F6:4 D6:4 Bb5:4', 'C6:2 C6:2 E6:4 C6:4 G5:4',
+    'A5:4 D6:4 F6:4 E6:2 D6:2', 'D6:12 -:4',
+    'Bb5:4 D6:4 G6:4 F6:2 D6:2', 'E6:4 C#6:4 A5:4 E6:4',
+    'F6:4 E6:2 D6:2 A5:4 F5:4', 'E5:4 A5:4 C#6:4 E6:4'] }],
+  parts: [
+    { inst: 'bass', octave: 2, vel: 1, pattern: 'R.RRR.RRR.RRF.OF' },
+    { inst: 'bell', octave: 4, vel: 0.6, pattern: '0.......2.......' },
+    { inst: 'pad', octave: 3, vel: 0.8, pattern: 'C---------------' }
+  ],
+  drums: { kick: 'X..xX..xX..xX.xx', snare: '....X.......X..X', hat: 'x.x.x.x.x.x.x.x.' }
+};
+
 /** Tema de cada bioma durante la run. */
 G.BIOME_MUSIC = ['forest', 'cave', 'volcano'];

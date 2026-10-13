@@ -221,8 +221,11 @@ G.Player = class Player {
   }
 
   // ---------------- daño y curación ----------------
-  /** @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual */
-  hurt(amount, type = null) {
+  /**
+   * @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual
+   * @param pure  daño que no baja con la defensa ni el cuerpo a cuerpo (Arceus)
+   */
+  hurt(amount, type = null, pure = false) {
     if (this.invuln > 0 || this.dead) return;
     let eff = null;
     if (type) {
@@ -233,7 +236,7 @@ G.Player = class Player {
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
-    const d = Math.max(1, amount * (1 - this.reduction) * close);
+    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
     this.hp -= d;
     this.invuln = 0.45;
     this.flash = 0.14;

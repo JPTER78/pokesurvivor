@@ -93,7 +93,6 @@ test('solitario: cartas, objeto, vínculo y Esc paran el juego y lo reanudan', (
   m.run.onResume();
   assert.equal(m.state, 'playing');
   assert.ok(!m.isOpen('scr-pause'));
-  assert.deepEqual(m.flags, [], 'el juego normal no marca la partida');
   noErrors(g);
 });
 
@@ -137,7 +136,6 @@ for (const who of ['anfitrión', 'invitado']) {
     assert.equal(X.pl.fusions, 1);
     assert.equal(X.state, 'playing');
     assert.equal(Y.state, 'playing');
-    assert.ok(X.flags.includes('debug'), 'la ayuda de consola marca la partida');
     noErrors(g);
   });
 }

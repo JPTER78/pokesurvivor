@@ -428,12 +428,30 @@ G.Audio = (() => {
     legend:  () => { arp('square', [523, 659, 784, 1047, 1319, 1568], 0.08, 0.3, 0.05); SFX.shiny(); },
     gameover: () => arp('triangle', [523, 440, 349, 262], 0.2, 0.35, 0.08),
     biome:   () => [392, 494, 587, 784].forEach(f => INST.pad(ctx.currentTime, f, 1.2, 1.4, sfxBus)),
+    // La Sentencia de Arceus (systems/judgment.js).
+    quake:   () => { hiss(2.4, 0.18, 'lowpass', 320, 50); tone('sine', 52, 30, 2.2, 0.22); },
+    toll() {
+      const t = ctx.currentTime;
+      [110, 165, 220, 330].forEach((f, i) => INST.bell(t, f, 1.4, 1.5 - i * 0.3, sfxBus));
+      INST.pad(t, 55, 2.4, 2.6, sfxBus); INST.pad(t, 82.4, 2.4, 2, sfxBus);
+      tone('sine', 55, 52, 2.4, 0.16);
+    },
+    descend() {
+      hiss(2.4, 0.07, 'bandpass', 300, 3200, 0, 0.7);
+      [262, 330, 392, 523, 659].forEach((f, i) => INST.pad(ctx.currentTime + i * 0.3, f, 2.2, 1.6, sfxBus));
+    },
+    land() {
+      hiss(1.6, 0.32, 'lowpass', 2400, 50); tone('sine', 95, 26, 1.4, 0.36);
+      INST.kick(ctx.currentTime, 1.6, sfxBus); INST.kick(ctx.currentTime + 0.12, 1.1, sfxBus);
+      arp('square', [523, 659, 784, 1047, 1319], 0.07, 0.6, 0.045);
+    },
+    judge:   () => { tone('sine', 1760, 700, 0.45, 0.04); hiss(0.35, 0.07, 'highpass', 1800, 6000); tone('triangle', 120, 50, 0.3, 0.1); },
     pause:   () => arp('square', [784, 523], 0.06, 0.07, 0.04),
     buy:     () => { SFX.coin(); arp('triangle', [659, 784, 1047], 0.05, 0.12, 0.06); }
   };
 
   // Separación mínima entre repeticiones del mismo efecto (ms).
-  const MIN_GAP = { hit: 45, faint: 60, xp: 35, coin: 50, grass: 70, shot: 70, hover: 40, break: 60 };
+  const MIN_GAP = { hit: 45, faint: 60, xp: 35, coin: 50, grass: 70, shot: 70, hover: 40, break: 60, judge: 80 };
 
   function sfx(name, opts) {
     if (!ctx || settings.muted || settings.sfx <= 0 || ctx.state !== 'running') return;

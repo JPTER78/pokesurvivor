@@ -5,8 +5,9 @@ rules_version = '2';
 //   names/{apodo}          reserva de apodos únicos (en minúsculas)
 //   profiles/{uid}         apodo público de cada jugador
 //   friendships/{a_b}      solicitudes y amistades entre dos jugadores
-//   runs/{uid}             cuándo empezó tu última partida (anti-trampas)
-//   lb/{tabla}/e/{id}      ranking de tiempo aguantado (marcas validadas)
+//   runs/{uid}             cuándo empezó tu última partida (anti-trampas del ranking)
+//   lb/{tabla}/e/{id}      ranking de tiempo aguantado
+//   reports/{tabla__id__uid}  reportes de marcas sospechosas (sólo los lee el admin)
 //   lbs/{tabla}            resumen con el top 50 de cada tabla
 //   pres/{uid}             en línea (aproximado) · inv/{para_de} invitaciones
 // Todo lo demás está cerrado.
@@ -15,41 +16,48 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function me() { return request.auth.uid; }
+    // Moderación (pantalla oculta del juego, js/ui/mod-ui.js): sólo esta cuenta.
+    function admin() { return signedIn() && me() in ['PENDIENTE_UID_ADMIN']; }
 
+    // ---------- partida guardada ----------
+    // La partida la escribe el navegador, así que se puede editar. El servidor
+    // NUNCA rechaza un guardado (nadie pierde nada por un falso positivo): si
+    // trae más de lo que se puede ganar jugando ese rato, sólo se acepta con
+    // sus = true, y la cuenta queda marcada para siempre (no puede subir marcas
+    // al ranking). El juego lo intenta primero sin marca y, si el servidor dice
+    // que no, lo repite con ella (db.js). Sólo el admin puede desmarcar.
     match /saves/{uid} {
       allow read, delete: if signedIn() && me() == uid;
+      allow read: if admin();
 
-      allow create: if signedIn()
-        && me() == uid
-        && validSaveDoc()
-        && saneSave(request.resource.data.save)
-        && freshSave(request.resource.data.save);
-      allow update: if signedIn()
-        && me() == uid
-        && validSaveDoc()
-        && saneSave(request.resource.data.save)
-        && possibleSave(resource.data.save, request.resource.data.save,
-                        (request.time - resource.data.updatedAt).seconds());
+      allow create: if signedIn() && me() == uid && validSaveDoc()
+        && (marked() || (saneSave(request.resource.data.save) && freshSave(request.resource.data.save)));
+      allow update: if signedIn() && me() == uid && validSaveDoc()
+        && (resource.data.get('sus', false) == false || marked())       // la marca no se quita
+        && (marked() || (saneSave(request.resource.data.save)
+              && possibleSave(resource.data.save, request.resource.data.save,
+                              (request.time - resource.data.updatedAt).seconds())));
+      // El admin sólo puede poner o quitar la marca.
+      allow update: if admin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sus'])
+        && request.resource.data.sus is bool;
     }
 
-    // ---------- anti-trampas de la partida guardada ----------
-    // La partida la escribe el navegador, así que se puede editar. Aquí se
-    // rechaza lo imposible: entre un guardado y el siguiente no se puede ganar
-    // más de lo que da jugar ese rato (con mucho margen, como alguien muy bueno
-    // jugando sin parar), ni tener más Pokémon nuevos que tiradas del gacha, ni
-    // cobrar logros que no existen o misiones de más. Si se rechaza, el juego
-    // reintenta y al final vuelve a lo que hay en la nube (db.js, adoptRemote).
-    //   tickets x1   1 de cada 400 derrotados: < 1 cada 30 s jugando
-    //   tickets x10  jefes (1 de cada 3) y grietas: < 1 cada 5 min
-    //   monedas      una run da < 15 por segundo con todas las mejoras
-    //   misiones     3 al día + 2 a la semana; hasta 3 x1, 1 x10 y 1.000 monedas
-    //   logros       cada uno con su premio (lista generada abajo)
+    function marked() { return request.resource.data.get('sus', false) == true; }
     function validSaveDoc() {
-      return request.resource.data.keys().hasOnly(['save', 'updatedAt', 'v'])
+      return request.resource.data.keys().hasOnly(['save', 'updatedAt', 'v', 'sus'])
         && request.resource.data.save is map
         && request.resource.data.v is int
+        && request.resource.data.get('sus', false) is bool
         && request.resource.data.updatedAt == request.time;
     }
+
+    // Lo imposible (con mucho margen, como alguien muy bueno jugando sin parar):
+    //   tickets x1   1 de cada ~400 derrotados: < 1 cada 30 s jugando
+    //   tickets x10  jefes (1 de cada 3) y grietas: < 1 cada 5 min
+    //   monedas      una run da < 15 por segundo con todas las mejoras (aquí 40)
+    //   misiones     3 al día + 2 a la semana
+    //   logros       cada uno con su premio (lista generada abajo)
     function tk(s, k) { return s.get('tickets', {}).get(k, 0); }
     function cnt(s, k) { return s.get(k, {}).size(); }
     function mis(s) { return s.get('stats', {}).get('missionsDone', 0); }
@@ -74,10 +82,10 @@ service cloud.firestore {
     function possibleSave(o, n, secs) {
       return n.get('created', 0) == o.get('created', 0)
         && n.get('ach', {}).keys().hasAll(o.get('ach', {}).keys())
-        && cnt(n, 'ach') <= 140                                           // hay 127 (un logro inventado sólo da 1 ticket x1)
+        && cnt(n, 'ach') <= 150                                           // hay 130
         && mis(n) >= mis(o)
         && mis(n) <= 10 + (request.time.toMillis() - o.get('created', 0)) / 86400000 * 5
-        && budget(o, n, secs > 3600 ? 3600 : (secs > 0 ? secs : 0),        // como mucho 1 h de juego por guardado (se guarda cada 30 min)
+        && budget(o, n, secs > 7200 ? 7200 : (secs > 0 ? secs : 0),        // como mucho 2 h de juego por guardado (se guarda cada 30 min)
                   secs >= 60 ? 1.0 : (secs > 0 ? secs / 60.0 : 0.0),        // guardados muy seguidos: menos margen fijo
                   mis(n) - mis(o));
     }
@@ -100,8 +108,8 @@ service cloud.firestore {
         + 2 * achNew().intersection(['shiny1', 'evo1', 'items5', 'rift1', 'mis10'].toSet()).size()
         + 3 * achNew().intersection(['time10'].toSet()).size()
         + 4 * achNew().intersection(['own50'].toSet()).size()
-        + 10 * achNew().intersection(['own100', 'shiny5', 'pulls100', 'time15', 'lvl40', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
-        + 20 * achNew().intersection(['own250', 'shiny20', 'time20', 'boss100', 'arenas', 'leg30'].toSet()).size()
+        + 10 * achNew().intersection(['own100', 'shiny5', 'pulls100', 'time15', 'lvl40', 'judge', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
+        + 20 * achNew().intersection(['own250', 'shiny20', 'time20', 'judge60', 'judgeBoss', 'boss100', 'arenas', 'leg30'].toSet()).size()
         + 30 * achNew().intersection(['own500', 'kills100k', 'evoAll', 'mis200'].toSet()).size()
         + 50 * achNew().intersection(['legAll'].toSet()).size()
         + 100 * achNew().intersection(['ownAll'].toSet()).size()
@@ -166,26 +174,29 @@ service cloud.firestore {
 
     // ---------- ranking ----------
 
+    // Al empezar cada partida (en grupo, el anfitrión) el servidor apunta la hora.
     match /runs/{uid} {
       allow read, delete: if signedIn() && me() == uid;
-      allow create, update: if signedIn()
-        && me() == uid
+      allow create, update: if signedIn() && me() == uid
         && request.resource.data.keys().hasOnly(['startedAt', 'mode'])
         && request.resource.data.startedAt == request.time;
     }
 
-    // Una entrada no puede durar más que el tiempo real desde que empezó tu
-    // partida (runs/{uid}), y sólo se puede mejorar, nunca empeorar.
-    // Anti-trampas: el nivel y los derrotados tienen que cuadrar con el tiempo
-    // (con margen de sobra para un jugador muy bueno o un grupo de 4).
+    // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
+    //   - no puede durar más que el tiempo real desde que empezó tu partida
+    //     (runs/{uid}), con 30 s de margen; ni más de 1 h (la Sentencia de
+    //     Arceus acaba las partidas hacia el minuto 31-32)
+    //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
+    //   - la cuenta no puede estar marcada (saves/{uid}.sus)
     function validEntry(board, id) {
       let d = request.resource.data;
       let run = get(/databases/$(database)/documents/runs/$(me())).data;
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
-        && d.t is int && d.t > 0 && d.t <= 21600
-        && d.t <= (request.time - run.startedAt).seconds() + 15
+        && d.t is int && d.t > 0 && d.t <= 3600
+        && d.t <= (request.time - run.startedAt).seconds() + 30
         && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
+        && get(/databases/$(database)/documents/saves/$(me())).data.get('sus', false) == false
         && d.uids is list && me() in d.uids
         && d.names is list && d.names.size() == d.uids.size()
         && d.dex is list && d.dex.size() == d.uids.size()
@@ -200,7 +211,7 @@ service cloud.firestore {
     match /lb/{board}/e/{id} {
       allow read: if signedIn();
       allow create, update: if signedIn() && validEntry(board, id);
-      allow delete: if signedIn() && me() in resource.data.uids;
+      allow delete: if signedIn() && (me() in resource.data.uids || admin());
     }
 
     // Resumen con el top 50 de cada tabla (lo que se lee al mirar el ranking).
@@ -216,7 +227,11 @@ service cloud.firestore {
       return d.keys().hasOnly(['top', 'me', 'ev'])
         && d.top is map && d.top.size() <= 50
         && d.me is string && d.ev is string
-        && (d.me == '' ? removeMine(d, old, changed) : addMine(board, d, old, changed));
+        && (d.me == '' ? (removeMine(d, old, changed) || adminRemove(d, old)) : addMine(board, d, old, changed));
+    }
+    // Moderación: el admin sólo puede QUITAR filas del top.
+    function adminRemove(d, old) {
+      return admin() && old.keys().hasAll(d.top.keys()) && d.top.diff(old).changedKeys().size() == 0;
     }
     function addMine(board, d, old, changed) {
       let e = getAfter(/databases/$(database)/documents/lb/$(board)/e/$(d.me)).data;
@@ -258,6 +273,22 @@ service cloud.firestore {
         && request.resource.data.at == request.time
         && get(/databases/$(database)/documents/friendships/$(request.resource.data.to < me() ? request.resource.data.to + '_' + me() : me() + '_' + request.resource.data.to)).data.status == 'ok';
       allow delete: if signedIn() && (me() == resource.data.to || me() == resource.data.from);
+    }
+
+    // ---------- reportes ----------
+    // Un reporte por jugador y marca (id "tabla__marca__tuUid"). Los lee y
+    // borra el admin desde la pantalla oculta de moderación.
+    match /reports/{rid} {
+      allow read, delete: if admin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['board', 'e', 'names', 't', 'by', 'at'])
+        && request.resource.data.by == me()
+        && request.resource.data.board is string && request.resource.data.board.size() <= 40
+        && request.resource.data.e is string && request.resource.data.e.size() <= 160
+        && request.resource.data.names is list && request.resource.data.names.size() <= 4
+        && request.resource.data.t is int
+        && request.resource.data.at == request.time
+        && rid == request.resource.data.board + '__' + request.resource.data.e + '__' + me();
     }
 
     // Para borrar todas tus marcas al borrar la cuenta (consulta de grupo).

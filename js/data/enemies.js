@@ -171,6 +171,8 @@ G.Enemies = (() => {
     return { cast, bosses };
   }
 
+  // (El "tiempo extra" del minuto 60 se quitó al llegar la Sentencia de Arceus,
+  //  que acaba todas las partidas en el minuto 30: ver systems/judgment.js.)
   function scale(t) {
     return { hp: 1 + t / 95, dmg: 1 + t / 420, spd: 1 + Math.min(0.35, t / 1400) };
   }

@@ -61,10 +61,14 @@ G.World = (() => {
   /** Terreno "puro" de un tile (sin caché). */
   function arenaDist(tx, ty) { return arena ? Math.hypot(tx - arena.tx, ty - arena.ty) : Infinity; }
 
-  /** Pasillo libre de la arena: donde aparecéis (sur) y el legendario (norte). */
+  /**
+   * Pasillo libre de la arena: donde aparecéis (sur) y el legendario (norte).
+   * Con `clear` en el tema, además un claro donde aterriza Arceus (5 al norte).
+   */
   function arenaSafe(tx, ty) {
     const lx = tx - arena.tx, ly = ty - arena.ty;
-    return (Math.abs(lx) <= 2 && ly >= -6 && ly <= 5) || Math.hypot(lx, ly) < 2.5;
+    return (Math.abs(lx) <= 2 && ly >= -6 && ly <= 5) || Math.hypot(lx, ly) < 2.5 ||
+           (arena.th.clear > 0 && Math.hypot(lx, ly + 5) < arena.th.clear);
   }
 
   function terrainRaw(tx, ty) {

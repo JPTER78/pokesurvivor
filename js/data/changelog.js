@@ -6,7 +6,34 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-12', title: ['Partidas sin límite y grietas con menos azar', 'Endless runs and less random rifts'], new: [
+  { d: '2026-10-13', title: ['La Sentencia de Arceus', 'The Judgment of Arceus'], new: [
+    ['La Sentencia de Arceus: al llegar al minuto 30, Arceus baja del cielo y te lleva a las Ruinas del Juicio. Es invencible, te persigue cada vez más deprisa y lanza pilares de luz, rayos y ondas; si te toca, te quita casi media vida. Cada 5 segundos acude un legendario con el doble de vida y de daño que el anterior. ¿Cuánto aguantarás?',
+     'The Judgment of Arceus: at minute 30, Arceus descends from the sky and takes you to the Ruins of Judgment. It is invincible, chases you faster and faster and casts pillars of light, beams and shockwaves; if it touches you, you lose almost half your HP. Every 5 seconds a legendary joins, each with twice the HP and damage of the previous one. How long can you last?'],
+    ['Tres logros nuevos: La Sentencia (llega al minuto 30), Ante el Creador (aguanta 1 minuto ante Arceus) y Desafío divino (derrota a 3 legendarios ante Arceus en una partida).',
+     'Three new achievements: The Judgment (reach minute 30), Before the Creator (survive 1 minute against Arceus) and Divine challenge (defeat 3 legendaries against Arceus in a single run).'],
+    ['Música nueva para la pelea contra Arceus.', 'New music for the fight against Arceus.'],
+    ['Botón para reportar marcas sospechosas en el ranking (la banderita de cada fila).',
+     'A button to report suspicious records on the leaderboard (the little flag on each row).']
+  ], chg: [
+    ['El ranking histórico empieza de cero: ahora que las partidas acaban ante Arceus, las marcas de antes ya no se podrían alcanzar. Las tablas de hoy, de la semana y del mes siguen igual.',
+     'The all-time leaderboard starts from scratch: now that runs end against Arceus, older records could no longer be reached. The daily, weekly and monthly boards are unchanged.'],
+    ['Se quita el tiempo extra del minuto 60 (ya no se llega hasta ahí).',
+     'Overtime from minute 60 is removed (runs no longer get that far).'],
+    ['Desde el minuto 28 ya no se abren grietas, para que la Sentencia no te pille dentro de una.',
+     'Rifts no longer open from minute 28 on, so the Judgment does not catch you inside one.'],
+    ['Ranking protegido contra trampas: el servidor comprueba que cada marca se ha jugado de verdad. Nunca se pierde nada de lo que ganas jugando.',
+     'Leaderboard protected against cheating: the server checks that every record was really played. You never lose anything you earn by playing.']
+  ], fix: [
+    ['Cooperativo: elegir objeto o fusión ya para la partida para todos de verdad. Si a la vez subíais de nivel (al vencer a un jefe o abrir un cofre grande), el menú desaparecía, la partida seguía y a veces se quedaba parada para siempre. Ahora salen primero las cartas y después tu menú, y nadie juega hasta que elige el último.',
+     'Co-op: choosing a held item or a fusion now really pauses the run for everyone. If you levelled up at the same time (after beating a boss or opening a big chest), the menu vanished, the run kept going and sometimes froze forever. Now the cards come first, then your menu, and nobody plays until the last one has chosen.'],
+    ['Cooperativo: mientras esperas a que otro elija, ya puedes abrir la pausa para salir de la partida.',
+     'Co-op: while waiting for someone else to choose, you can now open the pause menu to leave the run.']
+  ] },
+  { d: '2026-10-12', title: ['Tiempo extra y grietas con menos azar', 'Overtime and less random rifts'], new: [
+    ['Tiempo extra: desde el minuto 60 los Pokémon salvajes se vuelven cada vez más fuertes (más vida y más daño), y cada vez más deprisa. Antes, con las mejoras al máximo, algunas partidas no acababan nunca; ahora las mejores rondarán la hora y media.',
+     'Overtime: from minute 60 on, wild Pokémon keep getting stronger (more HP and more damage), faster and faster. Before, with maxed upgrades, some runs never ended; now the best ones will last about an hour and a half.'],
+    ['El juego se actualiza solo cuando sale una versión nueva: si estás en el menú, a los 5 segundos; si estás jugando, al acabar la partida (sin perder nada).',
+     'The game now updates itself when a new version is out: within 5 seconds if you are in the menu, or after your run if you are playing (without losing anything).'],
     ['Botón de Novedades (esta ventana) con todos los cambios del juego.',
      'A "What\'s new" button (this window) with every change to the game.'],
     ['Números más fáciles de leer: el 2, el 5 y el 8 ya no se confunden.',
@@ -18,6 +45,8 @@ G.CHANGELOG = [
     ['Atajos de movimientos (en Mejoras, para cada Pokémon): elige qué movimiento va siempre en cada hueco, por ejemplo Confusión siempre en el 1, para la memoria muscular.',
      'Move shortcuts (in Upgrades, for each Pokémon): choose which move always goes in each slot, for example Confusion always on 1, for muscle memory.']
   ], chg: [
+    ['Avalancha hace menos daño (21 en vez de 26): derrotaba casi el doble que la media de los movimientos.',
+     'Rock Slide deals less damage (21 instead of 26): it defeated almost twice as many as the average move.'],
     ['Los cambios de cartas de nivel ya no se ganan venciendo jefes: tienes 1 gratis por run y el resto se compra en Mejoras.',
      'Level-up card rerolls are no longer earned by defeating bosses: you get 1 free per run and can buy more in Upgrades.'],
     ['Los legendarios de grieta ya no dan siempre tickets x10: dan uno la mitad de las veces (antes daban 2 siempre y salían demasiados).',
@@ -45,10 +74,8 @@ G.CHANGELOG = [
     ['Las runs de menos de 1 minuto ya no cuentan para el ranking.',
      'Runs shorter than 1 minute no longer count for the leaderboard.']
   ], fix: [
-    ['Cooperativo: elegir objeto o fusión ya para la partida para todos de verdad. Si a la vez subíais de nivel (al vencer a un jefe o abrir un cofre grande), el menú desaparecía, la partida seguía y a veces se quedaba parada para siempre. Ahora salen primero las cartas y después tu menú, y nadie juega hasta que elige el último.',
-     'Co-op: choosing a held item or a fusion now really pauses the run for everyone. If you levelled up at the same time (after beating a boss or opening a big chest), the menu vanished, the run kept going and sometimes froze forever. Now the cards come first, then your menu, and nobody plays until the last one has chosen.'],
-    ['Cooperativo: mientras esperas a que otro elija, ya puedes abrir la pausa para salir de la partida.',
-     'Co-op: while waiting for someone else to choose, you can now open the pause menu to leave the run.'],
+    ['Quitadas del ranking las marcas rotas por el fallo del minuto 84 (el reloj seguía corriendo con el juego parado) y alguna imposible. Si tenías una, tu próxima partida vuelve a contar.',
+     'Removed broken records from the leaderboard caused by the minute 84 bug (the clock kept running while the game was frozen) and a few impossible ones. If you had one, your next run counts again.'],
     ['iPhone (Safari y Chrome): a veces no se podía cambiar de movimiento tocando los iconos, sobre todo con el otro dedo en el joystick. Además los botones quedan por encima de la barra de inicio.',
      'iPhone (Safari and Chrome): sometimes you could not switch moves by tapping the icons, especially with your other finger on the joystick. Buttons also sit above the home bar now.'],
     ['En las partidas de más de 84 minutos la pantalla se quedaba en negro, el juego se paraba o empezabas a subir de nivel sin fin. Ya puedes jugar todo lo que aguantes.',

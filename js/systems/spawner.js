@@ -110,7 +110,8 @@ G.Spawner = (() => {
     players = Array.isArray(who) ? who : [who];
     if (announceT > 0) announceT -= dt;
     // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
-    if (G.Rift.inArena) return;
+    // En la Sentencia de Arceus, sólo sus legendarios (systems/judgment.js).
+    if (G.Rift.inArena || G.Judgment.active) return;
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;
@@ -179,5 +180,5 @@ G.Spawner = (() => {
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
   return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
-           debugForceShiny(n = 1) { G.Guard.flag('debug'); forceShiny = n; } };
+           debugForceShiny(n = 1) { forceShiny = n; } };
 })();

@@ -527,7 +527,7 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .rk-tools .field { width: 220px; padding: 6px 10px; font-size: 15px; }
 .rk-list { display: flex; flex-direction: column; gap: 4px; max-height: 46vh; overflow-y: auto; padding-right: 4px; }
 .rk-row {
-  display: grid; grid-template-columns: 54px auto 1fr auto; gap: 10px; align-items: center;
+  display: grid; grid-template-columns: 54px auto 1fr auto 26px; gap: 10px; align-items: center;
   padding: 4px 12px; border-radius: 8px; background: rgba(0,0,0,.2); border: 2px solid transparent;
 }
 .rk-row .pos { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 4px; color: var(--muted); }
@@ -540,6 +540,11 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .rk-row .who small { color: var(--muted); font-size: 12px; }
 .rk-row .time { font-size: 22px; font-weight: 700; color: #fff; }
 .rk-row.mine { border-color: var(--gold); background: rgba(255,210,63,.1); }
+.rk-rep { background: none; border: 0; padding: 4px; cursor: pointer; opacity: .35; line-height: 0; }
+.rk-rep:hover { opacity: 1; }
+.rk-rep.sent { opacity: .12; cursor: default; }
+.rk-row.mod-row { grid-template-columns: 54px 1fr auto; }
+.mod-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .rk-me { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(0,0,0,.25); font-size: 15px; min-height: 20px; }
 
 .cards.done .card { pointer-events: none; opacity: .45; }
@@ -548,7 +553,7 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 
 @media (max-width: 760px) {
   .lobby-members { grid-template-columns: repeat(2, 1fr); }
-  .rk-row { grid-template-columns: 40px auto 1fr auto; gap: 6px; }
+  .rk-row { grid-template-columns: 40px auto 1fr auto 22px; gap: 6px; }
 }
 
 /* ---------- tickets y mejoras por Pokémon ---------- */

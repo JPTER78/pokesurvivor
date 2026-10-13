@@ -464,7 +464,6 @@ G.I18n.add({
   '¡{x} se ha enfurecido!': '{x} is enraged!',
   'Pulsa para empezar': 'Press to start',
   'Sobrevive a las hordas con tu compañero Pokémon': 'Survive the hordes with your Pokémon partner',
-  'Esta partida no cuenta para el ranking: se ha detectado algo raro': "This run doesn't count for the leaderboard: something odd was detected",
   'Huesomerang': 'Bonemerang', 'Psicocorte': 'Psycho Cut', 'Púas': 'Spikes', 'Púas Tóxicas': 'Toxic Spikes', 'Granizo': 'Hail',
   'Puño Meteoro': 'Meteor Mash', 'Fuego Fatuo': 'Will-O-Wisp', 'Sustituto': 'Substitute', 'Golpe Aéreo': 'Aerial Ace',
   'Rueda Fuego': 'Flame Wheel', 'Rayo Burbuja': 'Bubble Beam', 'Infortunio': 'Hex',
@@ -520,6 +519,7 @@ G.I18n.add({
   'El juego ha fallado: tu partida se ha guardado hasta aquí': 'The game crashed: your run has been saved up to this point',
   'Pausa: esperando a {x} (anfitrión)…': 'Paused: waiting for {x} (host)…',
   'Novedades': "What's new",
+  'Hay una versión nueva del juego: actualizando en {x} s…': 'A new version of the game is out: updating in {x} s…',
   'No se pudo conectar (reintentando…)': 'Could not connect (retrying…)',
   'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.':
     "Can't connect to one of your friends: their network (or yours) doesn't allow group play. Try another Wi-Fi or mobile data; it retries automatically.",
@@ -536,5 +536,24 @@ G.I18n.add({
     'Tap the moves you do not want in your cards ({x}). The starting move cannot be banned.',
   'Ya tienes {x} vetados: quita uno primero': 'You already have {x} banned: remove one first',
   'En iPhone, Safari no deja poner las webs a pantalla completa. Pulsa Compartir y luego "Añadir a pantalla de inicio": abriendo el juego desde ese icono se juega a pantalla completa.':
-    'On iPhone, Safari does not let websites go fullscreen. Tap Share and then "Add to Home Screen": opening the game from that icon plays it fullscreen.'
+    'On iPhone, Safari does not let websites go fullscreen. Tap Share and then "Add to Home Screen": opening the game from that icon plays it fullscreen.',
+
+  // ---------------- La Sentencia de Arceus (minuto 30) ----------------
+  'Ruinas del Juicio': 'Ruins of Judgment', 'LA SENTENCIA': 'THE JUDGMENT', 'DE ARCEUS': 'OF ARCEUS',
+  'El tiempo se ha agotado…': 'Time has run out…', '¡ARCEUS HA DESCENDIDO!': 'ARCEUS HAS DESCENDED!',
+  'Es invencible: huye y aguanta todo lo que puedas': 'It is invincible: run and survive as long as you can',
+  'Toca la pantalla para saltar': 'Tap the screen to skip', 'Pulsa Espacio para saltar': 'Press Space to skip',
+  '¡Huye de Arceus! Es invencible': 'Run from Arceus! It is invincible',
+  '¡{x} acude a la Sentencia!': '{x} answers the Judgment!',
+  'SENTENCIA · {x} · JEFES {x}': 'JUDGMENT · {x} · BOSSES {x}',
+  'Ante Arceus': 'Against Arceus', '{x} · {x} legendarios': '{x} · {x} legendaries', '{x} · {x} legendario': '{x} · {x} legendary',
+  'La Sentencia': 'The Judgment', 'Llega a la Sentencia de Arceus (minuto 30).': 'Reach the Judgment of Arceus (minute 30).',
+  'Ante el Creador': 'Before the Creator', 'Aguanta 1 minuto ante Arceus.': 'Survive 1 minute against Arceus.',
+  'Desafío divino': 'Divine challenge', 'Derrota a 3 legendarios ante Arceus en una partida.': 'Defeat 3 legendaries against Arceus in a single run.',
+  'Juzgado': 'Judged', 'Elegido de Arceus': 'Chosen of Arceus',
+
+  // ---------------- reportar marcas del ranking ----------------
+  'Reportar marca sospechosa': 'Report suspicious record', 'Ya la has reportado': 'You already reported it',
+  'Ya has reportado esta marca': 'You already reported this record',
+  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it'
 });

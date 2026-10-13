@@ -282,7 +282,7 @@
 
     { id: 'rock-slide', name: 'Avalancha', type: 'rock', kind: 'meteor',
       desc: 'Caen rocas del cielo sobre los enemigos cercanos.',
-      cd: 1.3, dmg: 26, count: 3, radius: 46, knock: 50 },
+      cd: 1.3, dmg: 21, count: 3, radius: 46, knock: 50 },     // (12-10-2026: era 26; mataba el doble que la media)
 
     // ---------------- HIELO ----------------
     { id: 'ice-beam', name: 'Rayo Hielo', type: 'ice', kind: 'beam',

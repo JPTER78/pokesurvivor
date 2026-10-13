@@ -69,13 +69,15 @@ G.Pickups = (() => {
   /** Imán: todo vuela hacia el jugador más cercano. */
   function pullAll() { for (const o of list) o.pulled = true; }
 
-  function dropXp(x, y, value, boss = false, legend = false) {
+  /** @param plain  sólo la experiencia (los legendarios de la Sentencia de Arceus) */
+  function dropXp(x, y, value, boss = false, legend = false, plain = false) {
     if (boss) {
       // Los jefes revientan en un montón de orbes grandes + recompensas.
       for (let i = 0; i < 14; i++) {
         const a = Math.random() * 6.2832, d = G.U.rand(10, 70);
         push(orb('xpBig', x + Math.cos(a) * d, y + Math.sin(a) * d, Math.ceil(value / 14)));
       }
+      if (plain) return;
       push(orb('heal', x + 24, y, 0));
       push(orb('magnet', x - 24, y, 0));
       // Ticket ×10: siempre el legendario de la grieta; un jefe normal, 1 de cada 3 veces.

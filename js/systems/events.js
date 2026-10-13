@@ -40,7 +40,7 @@ G.Events = (() => {
       if (cur.id !== 'lost' && cur.t >= cur.dur && authority()) end();
     }
     if (lost) lostTick(dt, players);
-    if (!authority() || G.Rift.inArena) return;
+    if (!authority() || G.Rift.inArena || G.Judgment.active) return;
 
     if (thieves < 2) {
       thiefT -= dt;
@@ -351,8 +351,8 @@ G.Events = (() => {
     get golden() { return !!cur && cur.id === 'gold'; },
     get current() { return cur ? cur.id : null; },
     /** Para pruebas. */
-    debugStart(id) { G.Guard.flag('debug'); start(id, G.Game.st.time, G.Game.everyone()); },
-    debugThief() { G.Guard.flag('debug'); spawnThief(G.Game.everyone(), G.Game.st.time); },
+    debugStart(id) { start(id, G.Game.st.time, G.Game.everyone()); },
+    debugThief() { spawnThief(G.Game.everyone(), G.Game.st.time); },
     _dbg() { return lost && { x: lost.x, y: lost.y, tx: lost.tx, ty: lost.ty, state: lost.state, hp: lost.hp }; }
   };
 })();

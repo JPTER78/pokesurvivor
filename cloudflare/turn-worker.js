@@ -35,9 +35,9 @@
  * función), así nadie más puede tocar el contador.
  */
 // Proyectos de Firebase cuyas cuentas valen. El 12-10-2026 el juego se mudó a
-// pokesurvivor-free (sin Identity Platform: cuentas gratis); el viejo se acepta
-// unos días por las pestañas que sigan abiertas.
-const PROJECTS = ['pokesurvivor-free', 'pokesurvivor-jpter'];
+// pokesurvivor-free (sin Identity Platform: cuentas gratis); el viejo
+// (pokesurvivor-jpter) se borró el 13-10-2026.
+const PROJECTS = ['pokesurvivor-free'];
 // Tope del TURN: 1.000 GB gratis al mes. Pasados TURN_CAP_GB este mes se dejan de
 // dar servidores TURN (sólo STUN): esas partidas usan el relé de Firebase. Así
 // Cloudflare nunca pasa de los 5 $ del plan. Necesita el secreto CF_ANALYTICS_TOKEN

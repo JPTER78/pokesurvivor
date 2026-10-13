@@ -116,6 +116,7 @@
         amount = d - a;
       }
       this.hp -= Math.max(1, Math.round(amount));
+      G.Judgment.noteDmg(amount, this);
       this.showHurt(d, color, dirX, dirY, eff);
       if (knock > 0 && !this.boss) {
         const [nx, ny] = G.U.norm(dirX, dirY);
@@ -167,13 +168,14 @@
         if (this.shiny) { G.FX.burst(this.x, cy, '#ffe9a0', 30, 220); G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5); }
         return;
       }
-      if (this.boss) {
+      // (Los legendarios de la Sentencia de Arceus sólo dan experiencia.)
+      if (this.boss && !this.judge) {
         G.Camera.kick(0.9);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
         // Los jefes siempre sueltan un objeto equipable.
         G.Pickups.drop('item', this.x - 26, this.y - 10, G.Items.roll());
       }
-      G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend);
+      G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend, !!this.judge);
       if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
       // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.
       if (this.behavior === 'thief') {
@@ -264,8 +266,8 @@
 
       // --- terreno ---
       let terrainMul = 1;
-      // (El legendario está en su casa: su arena no le afecta.)
-      if (!this.flying && !this.legend && G.World.isLiquid(this.x, this.y)) {
+      // (El legendario está en su casa: su arena no le afecta. Los de Arceus, tampoco.)
+      if (!this.flying && !this.legend && !this.judge && G.World.isLiquid(this.x, this.y)) {
         const le = G.World.liquidEffect(this.types);
         if (le.dmg) {
           this.lavaTick -= dt;
@@ -454,7 +456,7 @@
     enrage() {
       this.ai.fury = true;
       this.spd *= 1.15;
-      G.Spawner.say('¡' + this.name + ' se ha enfurecido!', 2.4);
+      if (!this.judge) G.Spawner.say('¡' + this.name + ' se ha enfurecido!', 2.4);
       G.FX.ring(this.x, this.y, this.r, this.r * 5, '#ff4a4a', 0.6, 5);
       G.Camera.kick(0.5);
       G.Audio.sfx('boss');
@@ -905,7 +907,7 @@
         if (e.remote) continue;
         if (e.dead) {
           pl.kills++;
-          if (e.boss) pl.bosses++;
+          if (e.boss && !e.judge) pl.bosses++;
           G.Progress.kill(e);
           corpses.push(e);
           list.splice(i, 1);

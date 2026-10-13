@@ -19,8 +19,9 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
 const NEW_FILES = ['js/systems/hold.js', 'js/net/coop.js', 'js/game.js'];
-// Lo último publicado antes del arreglo (para probar mezclas de versiones).
-const OLD_REV = 'a53d4e9';
+// Lo publicado antes del arreglo (para probar mezclas de versiones): el main
+// del repositorio original el 13-10-2026 (antes, a53d4e9).
+const OLD_REV = 'a9b21f0';
 const OLD_FILES = ['js/net/coop.js@' + OLD_REV, 'js/game.js@' + OLD_REV];
 
 /** Cualquier cosa: se puede llamar, construir, leer y escribir; vale 0 al operar. */
@@ -240,11 +241,15 @@ function makeMachine(world, o) {
     },
     UI, RunUI, Spawner, Pickups, Net,
     Rift: { inArena: false, arena: null, update() {}, reset() {}, drawable: () => null, onEvent() {}, enterRequest() {}, timeLeft: 0 },
+    // La Sentencia de Arceus: sin ella (con `any`) el bucle creería que siempre hay animación.
+    Judgment: { AT: 1800, cinematic: false, active: false, music: null, reset() {}, update() {}, cineTick() {}, skip() {},
+                summary: () => null, netState: () => null, netApply() {}, onEvent() {}, drawable: () => null, drawAir() {}, drawOverlay() {} },
     EnemyMgr: {
       all: () => [], update() {}, rebuildGrid() {}, bossAlive: () => false, get: () => null, clear() {},
       drawables: () => [], addRemote() {}, removeRemote() {}, clearRemote() {}
     },
     Settings: { get: () => false, sample() {}, fx: 1 },
+    // Ya no existe en el juego (quitado el 13-10-2026); lo usan las versiones viejas que se prueban.
     Guard: { flags, flag(f) { flags.push(f); }, start() {}, end: () => true, tick() {} },
     Input: { tap: k => keys.has(k), endFrame() { keys.clear(); } },
     SettingsUI: { isOpen: false },

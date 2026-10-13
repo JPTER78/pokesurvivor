@@ -42,7 +42,8 @@ const out = {
   typeName: G.U.TYPE_NAME,
   typeOrder: Object.keys(G.U.TYPE_NAME),
   matrix: Object.fromEntries(Object.keys(G.U.TYPE_NAME).map(a => [a, Object.fromEntries(Object.keys(G.U.TYPE_NAME).map(d => [d, G.Types.mult(a, [d])]))])),
-  arenas: Object.fromEntries(Object.entries(G.ARENA_THEMES || (G.Tiles && G.Tiles.ARENA_THEMES) || {}).map(([k, v]) => [k, v.name])),
+  // (Sin la arena de Arceus: las de las grietas son una por tipo.)
+  arenas: Object.fromEntries(Object.entries(G.ARENA_THEMES || (G.Tiles && G.Tiles.ARENA_THEMES) || {}).filter(([k]) => k !== 'judgment').map(([k, v]) => [k, v.name])),
   funding: { kofi: G.Funding.kofi, sponsors: G.Funding.sponsors, costs: G.Funding.costs },
   en: EN
 };

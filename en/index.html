@@ -359,7 +359,7 @@
 <!-- ====== Ranking ====== -->
 <section id="scr-rank" class="scr dim hidden">
   <div class="box wide">
-    <div class="row between"><h2>Ranking <span class="sub" style="font-size:15px">· tiempo aguantado</span></h2><button class="btn small ghost" data-back>Volver</button></div>
+    <div class="row between"><h2>Ranking <span class="sub" style="font-size:15px">· tiempo aguantado</span></h2><span class="row" style="gap:6px"><button id="rk-mod" class="btn small ghost hidden">Moderación</button><button class="btn small ghost" data-back>Volver</button></span></div>
     <div class="gen-tabs" id="rk-mode"></div>
     <div class="filters" id="rk-period"></div>
     <div class="row rk-tools">
@@ -370,6 +370,18 @@
     </div>
     <div id="rk-list" class="rk-list"></div>
     <div id="rk-me" class="rk-me"></div>
+  </div>
+</section>
+
+<!-- ====== Moderación del ranking (sólo la cuenta de admin, ver js/ui/mod-ui.js) ====== -->
+<section id="scr-mod" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Moderación</h2><button class="btn small ghost" id="mod-back">Volver</button></div>
+    <div class="tabs" id="mod-tabs">
+      <div class="tab on" data-tab="rep">Reportes</div>
+      <div class="tab" data-tab="sus">Cuentas marcadas</div>
+    </div>
+    <div id="mod-list" class="rk-list" style="max-height:60vh"></div>
   </div>
 </section>
 
@@ -521,6 +533,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=dce6fe927a"></script>
+<script defer src="js/app.min.js?v=a55f078d18"></script>
 </body>
 </html>
