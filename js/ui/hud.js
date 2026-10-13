@@ -46,6 +46,16 @@ G.HUD = (() => {
     ctx.fillStyle = '#eaf2ff';
     ctx.textAlign = 'left';
     ctx.fillText(pl.mon.name, px, py + 10);
+    // Talla (si no es la M): etiqueta de su color junto al nombre.
+    if (pl.size && pl.size !== 'm') {
+      const nx = px + ctx.measureText(pl.mon.name).width + 6, lbl = G.Sizes.BY[pl.size].name;
+      ctx.font = F(800, 10);
+      const tw = ctx.measureText(lbl).width + 10;
+      roundRect(ctx, nx, py, tw, 13, 5);
+      ctx.fillStyle = G.Sizes.aura(pl.size); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(lbl, nx + 5, py + 10);
+    }
 
     ctx.font = F(700, 11);
     ctx.fillStyle = '#ffcb3d';
@@ -113,6 +123,7 @@ G.HUD = (() => {
     // ---------- shinies fuera de pantalla: destello en el borde ----------
     const cam = G.Camera, pulse = 0.6 + Math.sin(performance.now() / 160) * 0.4;
     for (const e of G.EnemyMgr.shinies()) {
+      if (e.size) continue;                 // (los que además tienen talla, con la flecha de abajo)
       const sx = (e.x - cam.left()) * cam.scale, sy = (e.y - cam.top()) * cam.scale;
       if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
       const M = 34;
@@ -129,6 +140,41 @@ G.HUD = (() => {
       ctx.fill();
       ctx.globalAlpha = 1;
       G.Icons.draw(ctx, 'shiny', -12, -12, 24);
+      ctx.restore();
+    }
+
+    // ---------- tallas fuera de pantalla: flecha de su color con la talla ----------
+    for (const e of G.EnemyMgr.sized()) {
+      const sx = (e.x - cam.left()) * cam.scale, sy = (e.y - cam.top()) * cam.scale;
+      if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
+      const M = 38, col = G.Sizes.aura(e.size), lbl = G.Sizes.BY[e.size].name;
+      const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 60, h - M - 70);
+      const a = Math.atan2(sy - ey, sx - ex), ca = Math.cos(a);
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 28, Math.sin(a) * 28);
+      ctx.lineTo(Math.cos(a + 2.4) * 14, Math.sin(a + 2.4) * 14);
+      ctx.lineTo(Math.cos(a - 2.4) * 14, Math.sin(a - 2.4) * 14);
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(0,0,0,.65)';
+      ctx.beginPath(); ctx.arc(0, 0, 15, 0, 6.2832); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.stroke();
+      ctx.font = F(800, 11); ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(lbl, 0, 4);
+      // Nombre y distancia, al lado contrario de la flecha.
+      const label = e.name + ' ' + lbl + (e.shiny ? ' shiny' : '') + ' · ' + Math.round(G.U.dist(pl.x, pl.y, e.x, e.y) / 32) + ' m';
+      ctx.font = F(800, 11);
+      ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
+      const lx = -ca * 30, ly = -Math.sin(a) * 26 + 4;
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+      ctx.strokeText(label, lx, ly);
+      ctx.fillStyle = col;
+      ctx.fillText(label, lx, ly);
       ctx.restore();
     }
 
