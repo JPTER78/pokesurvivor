@@ -12,6 +12,9 @@ G.AchDefs = (() => {
   const legends = s => Object.keys(s.legends || {}).length;
   const st = k => s => (s.stats && s.stats[k]) || 0;
   const count = k => s => Object.keys(s[k] || {}).length;
+  // Tallas (data/sizes.js): cuántas, alguna de una talla, las cinco de un Pokémon.
+  const sizes = s => G.Sizes.count(s);
+  const hasSize = id => s => (G.Sizes.hasAny(s, id) ? 1 : 0);
 
   const CATS = [['coleccion', 'Colección'], ['supervivencia', 'Supervivencia'], ['combate', 'Combate'],
                 ['grietas', 'Grietas'], ['legendarios', 'Legendarios'], ['otros', 'Misiones y más']];
@@ -29,6 +32,13 @@ G.AchDefs = (() => {
     { id: 'shiny5', cat: 'coleccion', tier: 2, name: 'Ojo para el brillo', desc: 'Consigue 5 shinies.', value: shinies, goal: 5, reward: { t10: 1 } },
     { id: 'shiny20', cat: 'coleccion', tier: 3, name: 'Cazashinies', desc: 'Consigue 20 shinies.', value: shinies, goal: 20, reward: { t10: 2 }, title: 'Cazashinies' },
     { id: 'pulls100', cat: 'coleccion', tier: 2, name: 'Tragaperras', desc: 'Haz 100 tiradas en el gacha.', value: st('pulls'), goal: 100, reward: { t10: 1 }, title: 'Afortunado' },
+    { id: 'size1', cat: 'coleccion', tier: 1, name: 'Otra talla', desc: 'Consigue 1 talla.', value: sizes, goal: 1, reward: { t1: 2 } },
+    { id: 'size25', cat: 'coleccion', tier: 1, name: 'Probador', desc: 'Consigue 25 tallas.', value: sizes, goal: 25, reward: { t1: 5 } },
+    { id: 'size100', cat: 'coleccion', tier: 2, name: 'Sastre', desc: 'Consigue 100 tallas.', value: sizes, goal: 100, reward: { t10: 1 }, title: 'Sastre' },
+    { id: 'size500', cat: 'coleccion', tier: 3, name: 'Maestro sastre', desc: 'Consigue 500 tallas.', value: sizes, goal: 500, reward: { t10: 3 }, title: 'Maestro sastre' },
+    { id: 'sizeSet', cat: 'coleccion', tier: 2, name: 'De la XS a la XL', desc: 'Consigue las cinco tallas de un Pokémon.', value: s => G.Sizes.fullSets(s), goal: 1, reward: { t10: 1 } },
+    { id: 'sizeXS', cat: 'coleccion', tier: 2, name: 'Mini', desc: 'Consigue una talla XS.', value: hasSize('xs'), goal: 1, reward: { t1: 3 }, title: 'Mini' },
+    { id: 'sizeXL', cat: 'coleccion', tier: 2, name: 'Jumbo', desc: 'Consigue una talla XL.', value: hasSize('xl'), goal: 1, reward: { t1: 3 }, title: 'Jumbo' },
 
     // ---------- supervivencia ----------
     { id: 'time5', cat: 'supervivencia', tier: 1, name: 'Calentando', desc: 'Aguanta 5 minutos.', value: s => Math.floor(st('bestTime')(s) / 60), goal: 5, reward: { coins: 200 } },

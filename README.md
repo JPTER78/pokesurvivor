@@ -70,6 +70,10 @@ la pantalla te dice dónde está, y si lo derrotas te lo quedas. En el gacha sal
 shiny 1 de cada 100 tiradas. En la colección eliges tu compañero en versión
 normal o shiny.
 
+Cada Pokémon (menos los legendarios) tiene cinco **tallas**, de XS a XL: los
+pequeños son más rápidos y tienen menos vida, los grandes al revés. Se consiguen
+derrotando a tus Pokémon cuando salen con talla (aura azul o roja, cada ~5 min).
+
 La música suena tras el primer clic (los navegadores no dejan reproducir sonido
 antes). Volumen y silencio: botón del altavoz arriba a la derecha, o en la pausa.
 
