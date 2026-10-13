@@ -15,6 +15,7 @@ G.Spawner = (() => {
   // se llega al tope, los que siguen saliendo son "élite" (más vida, daño y
   // experiencia), así la dificultad no baja.
   const CAP = 64, ELITE_FROM = 0.85;
+  const currentCap = () => (G.Stages && G.Stages.current && G.Stages.current.cap) || CAP;
   // Menos Pokémon pero más fuertes (la pantalla no se satura): salen ~24% de
   // los de antes, cada uno con más vida, daño y experiencia.
   const DENSITY = 0.24, DMG_K = 2.4, XP_K = 5.6;
@@ -33,7 +34,9 @@ G.Spawner = (() => {
 
   /** Enemigos por segundo según el minuto de la run. */
   function rate(t) {
-    return (1.6 + t * 0.028 + Math.pow(t / 60, 1.6) * 0.5) * DENSITY;
+    const stage = G.Stages && G.Stages.current;
+    const mul = stage && stage.densityMul != null ? stage.densityMul : 1.0;
+    return (1.6 + t * 0.028 + Math.pow(t / 60, 1.6) * 0.5) * DENSITY * mul;
   }
 
   function ringPoint(pl, angle) {
@@ -88,7 +91,8 @@ G.Spawner = (() => {
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpFactor));
     e.dmg *= stage ? 1.0 : DMG_K;
     e.xp = Math.round(e.xp * (stage ? (stage.xpMul || 1.4) * 3 : XP_K));
-    if (G.EnemyMgr.count >= CAP * ELITE_FROM) {
+    const cap = currentCap();
+    if (G.EnemyMgr.count >= cap * ELITE_FROM) {
       const eliteHp = stage ? 1.3 : 1.6;
       const eliteDmg = stage ? 1.15 : 1.25;
       e.maxHp = e.hp = Math.round(e.maxHp * eliteHp);
@@ -135,13 +139,14 @@ G.Spawner = (() => {
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el
     // jefe sea un momento propio y se le pueda apuntar entre la multitud.
     const bossFight = G.EnemyMgr.bossAlive();
+    const cap = currentCap();
 
     // --- goteo normal ---
-    if (G.EnemyMgr.count < CAP) {
+    if (G.EnemyMgr.count < cap) {
       acc += rate(t) * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * dt;
       let n = Math.floor(acc);
       acc -= n;
-      while (n-- > 0 && G.EnemyMgr.count < CAP) spawnOne(anchor(), t);
+      while (n-- > 0 && G.EnemyMgr.count < cap) spawnOne(anchor(), t);
     }
 
     // --- marea ---
@@ -150,7 +155,9 @@ G.Spawner = (() => {
       surgeT = G.U.rand(38, 56);
       const base = Math.random() * 6.2832;
       const target = anchor();
-      const n = Math.min(CAP - G.EnemyMgr.count, Math.round((14 + Math.floor(t / 22)) * G.Coop.scaleRate(players.length) * 0.4));
+      const stage = G.Stages && G.Stages.current;
+      const sMul = stage && stage.surgeMul != null ? stage.surgeMul : 1.0;
+      const n = Math.min(cap - G.EnemyMgr.count, Math.round((14 + Math.floor(t / 22)) * G.Coop.scaleRate(players.length) * 0.4 * sMul));
       for (let i = 0; i < n; i++) spawnOne(target, t, base + G.U.rand(-0.55, 0.55));
       say('¡Marea de Pokémon!', 2.2);
       G.Audio.sfx('surge');
@@ -160,7 +167,8 @@ G.Spawner = (() => {
   /** Unos cuantos de golpe desde un lado (al empezar una horda). */
   function burst(n) {
     const base = Math.random() * 6.2832, target = anchor() || G.Game.player, t = G.Game.st.time;
-    for (let i = 0; i < n && G.EnemyMgr.count < CAP + 10; i++) spawnOne(target, t, base + G.U.rand(-0.6, 0.6));
+    const cap = currentCap();
+    for (let i = 0; i < n && G.EnemyMgr.count < cap + 10; i++) spawnOne(target, t, base + G.U.rand(-0.6, 0.6));
   }
 
   /**
@@ -190,6 +198,7 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE,
+           get CAP() { return currentCap(); },
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();
