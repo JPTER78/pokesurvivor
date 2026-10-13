@@ -310,20 +310,29 @@ G.Game = (() => {
     else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
     // Cada botón (o su tecla) vale una sola vez: después ya no estás en el resumen.
-    const back = () => { if (state !== 'over') return; pl = null; G.Flow.afterRun(); };
-    // Otra run con el mismo Pokémon. En grupo no (se vuelve a la sala) y, si hay
-    // versión nueva, va al menú, que es donde se actualiza (updater.js).
-    const retry = coop || G.Social.room ? null : () => {
+    // En grupo, sólo si habéis caído todos (no si el anfitrión se ha ido o se ha
+    // cortado), y te quedas esperando a los demás (G.Coop.againOpen).
+    const group = coop && dead && !!G.Social.room;
+    const back = () => { if (state !== 'over') return; if (group) G.Coop.againSet(false); pl = null; G.Flow.afterRun(); };
+    // Otra run con el mismo Pokémon. Si hay versión nueva, va al menú (o a la
+    // sala), que es donde se actualiza (updater.js).
+    const retry = coop ? (group ? () => {
+      if (state !== 'over') return;
+      if (G.Updater.pending) { back(); return; }
+      G.RunUI.againReady();
+      G.Coop.againSet(true);
+    } : null) : G.Social.room ? null : () => {
       if (state !== 'over') return;
       if (G.Updater.pending) { back(); return; }
       pl = null; G.Flow.play();
     };
     G.RunUI.showOver({
-      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
+      toRoom: coop && !!G.Social.room, dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, back, retry);
+    if (group) G.Coop.againOpen(st => { if (state === 'over') G.RunUI.setAgain(st); });
   }
 
   // ---------------- subida de nivel ----------------
@@ -874,9 +883,14 @@ G.Flow = {
     } else this.goMenu();
   },
   play() { G.Game.startRun(); },
-  /** Empieza la partida en grupo (el anfitrión la manda a todos). */
+  /**
+   * Empieza la partida en grupo (el anfitrión la manda a todos). También desde
+   * el resumen de la anterior: "Volver a intentarlo", o si el anfitrión empieza
+   * desde la sala mientras sigues mirándolo (antes te quedabas fuera).
+   */
   startCoop(cfg) {
-    if (G.Game.state !== 'ui' || !G.Social.room) return;
+    if ((G.Game.state !== 'ui' && G.Game.state !== 'over') || !G.Social.room) return;
+    if (!cfg.members.some(m => m.uid === G.Net.uid)) return;     // sin ti: has vuelto a la sala
     G.LobbyUI.close();
     G.Game.startRun(cfg);
   }

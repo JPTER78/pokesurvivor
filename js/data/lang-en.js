@@ -194,7 +194,11 @@ G.I18n.add({
   // ---------------- pausa y fin ----------------
   'Pausa': 'Pause', 'Continuar': 'Continue', 'Abandonar run': 'Quit run', 'moverse ·': 'move ·', 'movimiento ·': 'move ·', 'ciclar ·': 'cycle ·', 'pausa': 'pause',
   'Partida en grupo: el juego sigue mientras estás aquí.': 'Group game: the game keeps running while you\'re here.',
-  'Has caído…': 'You fell…', 'Run terminada': 'Run over', 'Volver al menú': 'Back to menu', 'Volver a intentarlo': 'Try again', 'Intro': 'Enter', 'menú': 'menu', 'menú ·': 'menu ·', 'reintentar': 'retry', 'Salir de la partida': 'Leave the game',
+  'Has caído…': 'You fell…', 'Run terminada': 'Run over', 'Volver al menú': 'Back to menu', 'Volver a intentarlo': 'Try again', 'Intro': 'Enter', 'menú': 'menu', 'menú ·': 'menu ·', 'reintentar': 'retry',
+  'Volver a la sala': 'Back to the room', 'sala': 'room', 'sala ·': 'room ·', '¡Listo!': 'Ready!', 'Listos: {x}/{x} · faltan {x}': 'Ready: {x}/{x} · waiting for {x}',
+  'Listos: {x}/{x} · falta {x}': 'Ready: {x}/{x} · waiting for {x}', 'Listos: {x}/{x} · faltas tú': 'Ready: {x}/{x} · waiting for you',
+  '{x} y tú': '{x} and you', 'El anfitrión ha vuelto a la sala': 'The host went back to the room', 'No queda nadie más para volver a intentarlo': 'Nobody else is left to try again',
+  'Salir de la partida': 'Leave the game',
   'Tiempo': 'Time', 'Nivel': 'Level', 'Derrotados': 'Defeated', 'Jefes': 'Bosses', 'Pokémonedas ganadas': 'PokéCoins earned',
   'Movimientos': 'Moves', '¡Nuevo récord de tiempo!': 'New time record!', '· ¡nuevo!': '· new!', '{x} Shinies conseguidos': '{x} shinies caught',
   'Tickets del gacha': 'Gacha tickets', 'Nivel máximo': 'Max level',

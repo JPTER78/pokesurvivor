@@ -8,10 +8,15 @@
 G.CHANGELOG = [
   { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], new: [
     ['Al acabar una partida en solitario, botón "Volver a intentarlo" para empezar otra con el mismo Pokémon sin pasar por el menú. Con teclado: Esc vuelve al menú e Intro lo intenta otra vez.',
-     'When a solo run ends, a "Try again" button starts another one with the same Pokémon without going through the menu. With a keyboard: Esc goes back to the menu and Enter tries again.']
+     'When a solo run ends, a "Try again" button starts another one with the same Pokémon without going through the menu. With a keyboard: Esc goes back to the menu and Enter tries again.'],
+    ['En grupo también: cuando caéis todos, cada uno pulsa "Volver a intentarlo" y, en cuanto estáis listos los que seguís, empieza otra partida sin pasar por la sala.',
+     'In co-op too: when everyone is down, each player presses "Try again" and, as soon as everyone still there is ready, a new game starts without going back to the room.']
   ], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',
      'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.']
+  ], fix: [
+    ['Cooperativo: si el anfitrión empezaba otra partida mientras seguías mirando el resumen de la anterior, te quedabas fuera. Ahora entras con los demás.',
+     'Co-op: if the host started a new game while you were still looking at the previous summary, you were left out. Now you join the others.']
   ] },
   { d: '2026-10-12', title: ['Tiempo extra y grietas con menos azar', 'Overtime and less random rifts'], new: [
     ['Tiempo extra: desde el minuto 60 los Pokémon salvajes se vuelven cada vez más fuertes (más vida y más daño), y cada vez más deprisa. Antes, con las mejoras al máximo, algunas partidas no acababan nunca; ahora las mejores rondarán la hora y media.',
