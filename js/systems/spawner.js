@@ -24,7 +24,8 @@ G.Spawner = (() => {
   const SHINY_RATE = 1 / 4096;
   // Tallas (data/sizes.js): más o menos cada 5 min (el primero hacia el 2:00)
   // sale uno de TUS Pokémon con una talla que te falta, primero tu compañero.
-  // Uno a la vez y nunca dentro de la arena de una grieta.
+  // Uno a la vez, nunca dentro de la arena de una grieta y, como las grietas,
+  // no desde 2 min antes de la Sentencia de Arceus (se lo llevaría por delante).
   const SIZE_FIRST = 120, SIZE_EVERY = 300;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0, sizeAt = SIZE_FIRST;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
@@ -162,7 +163,7 @@ G.Spawner = (() => {
     if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
 
     // --- talla (si ya hay uno suelto, o no hay sitio, se espera) ---
-    if (t >= sizeAt) {
+    if (t >= sizeAt && t < G.Judgment.AT - 120) {
       const ok = !G.EnemyMgr.sized().length && spawnSized(anchor(), t);
       sizeAt = t + (ok ? SIZE_EVERY * G.U.rand(0.85, 1.15) : 30);
     }
