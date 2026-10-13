@@ -55,6 +55,7 @@
       this.lavaTick = 0;
       this.kx = 0; this.ky = 0;
       this.touchCd = 0;
+      this.healCd = 0;
       this.dead = false;
       this.fade = 0;             // tiempo de desvanecimiento tras caer
 
@@ -206,6 +207,7 @@
       if (this.flash > 0) this.flash -= dt;
       if (this.dead) { this.fade -= dt; return; }
       if (this.touchCd > 0) this.touchCd -= dt;
+      if (this.healCd > 0) this.healCd -= dt;
       this.bob += dt * 6;
       if (this.shiny) {
         this.sparkT -= dt;
@@ -246,6 +248,7 @@
         }
       }
       if (this.touchCd > 0) this.touchCd -= dt;
+      if (this.healCd > 0) this.healCd -= dt;
       this.bob += dt * 6;
 
       // --- estados ---
@@ -587,17 +590,38 @@
     }
 
     healAround() {
-      // 7 % de la vida (era 15 %: con varios curanderos curaban más de lo que
-      // pegabas), y más cuanto más fuerte pegas, pero cada vez menos: con el
-      // doble de ataque cura un 27 % más, con 10 veces más un 124 %, y como
-      // mucho ×2,5. (Como los enemigos que tienen más vida si haces más daño.)
+      // Base: 7 % de la vida máxima (con escala suave de ataque del jugador)
       const pow = Math.max(1, ...G.Game.everyone().map(p => (p.atk > 0 && p.baseAtk > 0 ? p.atk / p.baseAtk : 1)));
-      const k = 0.07 * Math.min(2.5, Math.pow(pow, 0.35));
+      const baseK = 0.07 * Math.min(2.5, Math.pow(pow, 0.35));
       let n = 0;
       for (const e of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
         if (e.dead || e.hp >= e.maxHp) continue;
-        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * k);
-        G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#7dffb0', 5, 60);
+
+        // --- Curación escalonada y anti-bucle ---
+        // 1. Si el objetivo ya recibió curación recientemente (ventana de 2.8s), la curación acumulada decae al 20%
+        let factor = (e.healCd && e.healCd > 0) ? 0.2 : 1;
+
+        // 2. Curandero a curandero (Chansey/Blissey curando a otra): eficacia reducida al 50%
+        if (e.behavior === 'healer') {
+          factor *= 0.5;
+        }
+
+        // 3. Heridas Graves por estados alterados: Quemadura o Veneno cortan curación
+        if ((e.burn && e.burn > 0) || (e.burnT && e.burnT > 0)) {
+          factor *= 0.5; // -50% si está quemado
+        }
+        if ((e.poison && e.poison > 0) || (e.poisonT && e.poisonT > 0)) {
+          factor *= 0.5; // -50% si está envenenado
+        }
+
+        const healAmount = e.maxHp * baseK * factor;
+        if (healAmount <= 0) continue;
+
+        e.hp = Math.min(e.maxHp, e.hp + healAmount);
+        e.healCd = 2.8;
+
+        const isWounded = (e.burnT && e.burnT > 0) || (e.poisonT && e.poisonT > 0);
+        G.FX.burst(e.x, e.y - e.bodyH * 0.6, isWounded ? '#ff9a4d' : '#7dffb0', 4, 50);
         n++;
       }
       this.anim.play('Charge');

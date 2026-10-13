@@ -7,27 +7,6 @@
 <title>PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io</title>
 <meta name="description" content="Sobrevive a hordas de Pokémon con tu compañero en este fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo con amigos. Sin descargas ni anuncios.">
 
-<link rel="canonical" href="https://pokesurvivor.com/">
-<meta name="robots" content="index, follow, max-image-preview:large">
-<meta name="theme-color" content="#0a1430">
-<meta name="color-scheme" content="dark">
-<!-- Compartir en redes (WhatsApp, Discord, Twitter/X...) -->
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="PokéSurvivor">
-<meta property="og:locale" content="es_ES">
-<meta property="og:url" content="https://pokesurvivor.com/">
-<meta property="og:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">
-<meta property="og:description" content="Fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo hasta 4 amigos. Sin descargas ni anuncios.">
-<meta property="og:image" content="https://pokesurvivor.com/assets/og-image.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="PokéSurvivor: un Pokémon rodeado de hordas en un mapa pixel art">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">
-<meta name="twitter:description" content="Fan game gratis para navegador y móvil, con cooperativo hasta 4. Sin descargas ni anuncios.">
-<meta name="twitter:image" content="https://pokesurvivor.com/assets/og-image.jpg">
-<script>window.PS_PAGES = true;</script>
-
 <link rel="manifest" href="manifest.webmanifest">
 <!-- Google sólo enseña en los resultados iconos de 48 px o múltiplos -->
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -42,40 +21,6 @@
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-400.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-700.ttf" as="font" type="font/ttf" crossorigin>
-
-<!-- Datos estructurados para Google (tipo de página: videojuego gratuito) -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": "https://pokesurvivor.com/#web",
-      "url": "https://pokesurvivor.com/",
-      "name": "PokéSurvivor",
-      "inLanguage": "es"
-    },
-    {
-      "@type": ["VideoGame", "WebApplication"],
-      "@id": "https://pokesurvivor.com/#juego",
-      "name": "PokéSurvivor",
-      "url": "https://pokesurvivor.com/",
-      "description": "Fan game gratuito de supervivencia (bullet heaven, estilo Survivor.io) con Pokémon: elige compañero, sobrevive a hordas, sube de nivel, evoluciona tus ataques, enfréntate a legendarios en grietas y juega en cooperativo con hasta 4 amigos.",
-      "image": "https://pokesurvivor.com/assets/og-image.jpg",
-      "inLanguage": "es",
-      "genre": ["Roguelike", "Bullet heaven", "Acción", "Supervivencia"],
-      "gamePlatform": ["Navegador web", "PC", "Android", "iOS"],
-      "applicationCategory": "GameApplication",
-      "operatingSystem": "Cualquiera con navegador web moderno",
-      "playMode": ["SinglePlayer", "CoOp", "MultiPlayer"],
-      "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 4 },
-      "isAccessibleForFree": true,
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR", "availability": "https://schema.org/InStock" },
-      "isPartOf": { "@id": "https://pokesurvivor.com/#web" }
-    }
-  ]
-}
-</script>
 
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -115,7 +60,7 @@
       <button id="btn-guest" class="btn ghost grow" type="button">Jugar como invitado</button>
     </div>
     <p class="note center" id="login-mode"></p>
-    <p class="note center"><a href="guia/">Guía</a> · <a href="pokedex/">Pokédex</a> · <a href="#" class="legal-link" data-legal>Aviso legal y privacidad</a></p>
+    <p class="note center"><a href="#" class="legal-link" data-legal>Aviso legal y privacidad</a></p>
   </div>
 </section>
 
@@ -310,7 +255,7 @@
       <h1>PokéSurvivor</h1>
       <p>PokéSurvivor necesita JavaScript para funcionar. Actívalo para jugar.</p>
       <p>Fan game gratuito de supervivencia con 966 Pokémon de las 9 regiones: elige tu compañero, sobrevive a las hordas, evoluciona tus ataques, enfréntate a legendarios y juega en cooperativo con hasta 4 amigos.</p>
-      <p><a href="guia/">Guía del juego</a> · <a href="pokedex/">Pokédex: todos los Pokémon jugables</a></p>
+      
     </div>
   </div>
 </noscript>
@@ -477,9 +422,13 @@
 <section id="scr-levelup" class="scr dim hidden">
   <div class="box center">
     <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
+    <div id="lvl-stat-gains" class="lvl-stats-box hidden"></div>
     <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
     <div id="cards" class="cards"></div>
-    <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
+    <div class="row" style="justify-content:center;gap:12px;margin-top:12px;flex-wrap:wrap">
+      <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
+      <button id="lvl-skip" class="btn small" data-sfx="none">Omitir (+Stats extra) · <kbd>Espacio</kbd></button>
+    </div>
     <p id="lvl-wait" class="note hidden"></p>
   </div>
 </section>
@@ -502,17 +451,131 @@
   </div>
 </section>
 
+<!-- ====== Pausa durante la run con Ficha de Datos al lado ====== -->
 <section id="scr-pause" class="scr dim hidden">
-  <div class="box center" style="width:min(460px,100%)">
-    <h2>Pausa</h2>
-    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
-    <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
-    <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
-    <div id="pause-sound" class="sound-inline"></div>
-    <div class="row" style="justify-content:center">
-      <button id="btn-resume" class="btn gold">Continuar</button>
-      <button id="btn-pause-settings" class="btn">Ajustes</button>
-      <button id="btn-quit" class="btn">Abandonar run</button>
+  <div class="pause-container">
+    <!-- Panel Izquierdo: Ficha Pokémon estilo GBA -->
+    <div class="box poke-status-card">
+      <div class="poke-status-header">
+        <div class="poke-status-title">
+          <span class="poke-status-title-icon">●</span>
+          <span>DATOS POKÉMON</span>
+        </div>
+        <div class="poke-status-dots">
+          <span class="pdot active"></span>
+          <span class="pdot"></span>
+          <span class="pdot"></span>
+        </div>
+      </div>
+
+      <div class="poke-status-body">
+        <!-- Columna izquierda: Pokémon -->
+        <div class="poke-status-col-left">
+          <div class="poke-dex-no-row">
+            <span id="poke-stat-dex">Nº 000</span>
+            <span class="poke-status-symbols">● ■ ▲ ♥</span>
+          </div>
+          <div class="poke-sprite-box">
+            <canvas id="poke-stat-sprite" class="poke-sprite-canvas" width="140" height="110"></canvas>
+          </div>
+          <div class="poke-stat-name-row">
+            <div id="poke-stat-name" class="poke-stat-name">Pokémon</div>
+            <div id="poke-stat-shiny-badge"></div>
+          </div>
+          <div class="poke-stat-meta-row">
+            <div class="poke-stat-level">
+              <span class="poke-ball-ico"></span>
+              <span id="poke-stat-lvl">Nv. 1</span>
+            </div>
+            <div id="poke-stat-types" class="poke-stat-types"></div>
+          </div>
+        </div>
+
+        <!-- Columna derecha: Objeto, Características, Experiencia y Buffs -->
+        <div class="poke-status-col-right">
+          <!-- Sub-panel Objeto -->
+          <div class="poke-section">
+            <div class="poke-section-ribbon">OBJETO</div>
+            <div id="poke-stat-item" class="poke-section-content poke-item-content"></div>
+          </div>
+
+          <!-- Sub-panel Características -->
+          <div class="poke-section">
+            <div class="poke-section-ribbon">CARACTERÍS.</div>
+            <div class="poke-section-content">
+              <div class="poke-stats-grid">
+                <div class="pstat-cell">
+                  <span class="pstat-lbl c-hp">PS</span>
+                  <span id="pstat-val-hp" class="pstat-val">100 / 100</span>
+                </div>
+                <div class="pstat-cell">
+                  <span class="pstat-lbl c-spa">AT. ESP</span>
+                  <span id="pstat-val-spa" class="pstat-val">-0%</span>
+                </div>
+                <div class="pstat-cell">
+                  <span class="pstat-lbl c-atk">ATAQUE</span>
+                  <span id="pstat-val-atk" class="pstat-val">×1.00</span>
+                </div>
+                <div class="pstat-cell">
+                  <span class="pstat-lbl c-spd">DF. ESP</span>
+                  <span id="pstat-val-spd" class="pstat-val">+0.0/s</span>
+                </div>
+                <div class="pstat-cell">
+                  <span class="pstat-lbl c-def">DEFENSA</span>
+                  <span id="pstat-val-def" class="pstat-val">0%</span>
+                </div>
+                <div class="pstat-cell">
+                  <span class="pstat-lbl c-spe">VELOC.</span>
+                  <span id="pstat-val-spe" class="pstat-val">100 px/s</span>
+                </div>
+              </div>
+
+              <!-- Stats extra ganados en la partida actual -->
+              <div class="poke-run-gains-row">
+                <span class="poke-run-gains-title">GANADOS EN ESTA RUN:</span>
+                <div id="poke-stat-gains" class="poke-run-gains-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-panel Experiencia -->
+          <div class="poke-section">
+            <div class="poke-section-ribbon">EXPERIENCIA</div>
+            <div class="poke-section-content">
+              <div class="poke-exp-grid">
+                <div><span class="poke-exp-lbl">PUNTOS EXP.</span> <b id="poke-stat-xp" class="poke-exp-val">0</b></div>
+                <div><span class="poke-exp-lbl">SIG. NIVEL</span> <b id="poke-stat-xpnext" class="poke-exp-val">20</b></div>
+              </div>
+              <div class="poke-exp-bar-wrap">
+                <span class="poke-exp-tag">EXP.</span>
+                <div class="poke-exp-bar-track">
+                  <div id="poke-stat-xpbar" class="poke-exp-bar-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-panel Buffs activos (sólo si hay buffs) -->
+          <div id="poke-stat-buffs-box" class="poke-section hidden">
+            <div class="poke-section-ribbon ribbon-buffs">EFECTOS ACTIVOS</div>
+            <div id="poke-stat-buffs-list" class="poke-section-content poke-buffs-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Derecho: Menú de Pausa -->
+    <div class="box center pause-menu-card">
+      <h2>Pausa</h2>
+      <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>Espacio</kbd>/<kbd>Shift</kbd> dash (hasta 3 cargas) · <kbd>1</kbd>–<kbd>4</kbd> ataque · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>C</kbd> stats · <kbd>Esc</kbd> continuar</p>
+      <p class="sub touch-hint">Arrastra para moverte · botón DASH para esquivar (hasta 3 cargas) · toca un ataque para cambiarlo</p>
+      <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
+      <div id="pause-sound" class="sound-inline"></div>
+      <div class="row" style="justify-content:center;gap:10px;margin-top:14px">
+        <button id="btn-resume" class="btn gold">Continuar</button>
+        <button id="btn-pause-settings" class="btn">Ajustes</button>
+        <button id="btn-quit" class="btn">Abandonar run</button>
+      </div>
     </div>
   </div>
 </section>
@@ -526,6 +589,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=03394ce014"></script>
+<script defer src="js/app.min.js?v=024b8e9197"></script>
 </body>
 </html>

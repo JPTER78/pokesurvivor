@@ -171,15 +171,45 @@ G.Enemies = (() => {
     return { cast, bosses };
   }
 
+  /**
+   * Genera un jefe de alta categoría para partidas que continúan después del minuto 15.
+   * Elige entre los Pokémon no legendarios más poderosos (BST >= 580).
+   */
+  function rollBoss(t) {
+    const ok = p => !p.leg && G.SPRITE_META[p.dex];
+    let pool = G.DEX.filter(p => ok(p) && p.bst >= 580);
+    if (!pool.length) pool = G.DEX.filter(p => ok(p) && p.bst >= 500);
+    const p = G.U.pick(pool);
+    const extraMins = Math.max(0, (t - 900) / 60);
+    const baseHp = Math.round(18000 + extraMins * 1800);
+    const baseDmg = Math.round(72 + extraMins * 2.5);
+    return {
+      at: t, dex: p.dex, name: p.name,
+      hp: baseHp,
+      spd: Math.round(G.U.clamp(44 + baseSpd(p) * 0.5, 44, 105)),
+      dmg: baseDmg,
+      xp: Math.round(2000 + extraMins * 120),
+      behavior: behaviorOf(p) === 'ranged' ? 'ranged' : (baseSpd(p) > 90 ? 'charger' : 'chase'),
+      shotDmg: Math.round(baseDmg * 0.55), shotCd: 1.0, range: 270
+    };
+  }
+
   function scale(t) {
     return { hp: 1 + t / 95, dmg: 1 + t / 420, spd: 1 + Math.min(0.35, t / 1400) };
   }
 
   /**
-   * Los jefes ya traen su vida base creciente (1.400 ... 16.000), así que
-   * escalan mucho más suave: con la curva normal el último llegaba a 168.000 PV.
+   * Los jefes ya traen su vida base creciente (1.400 ... 16.000), pero ahora
+   * escalan de forma acorde a las hordas y a las mejoras de ataque del jugador
+   * para ofrecer combates intensos de 20-35 segundos en vez de derretirse en 8s.
    */
-  function bossScale(t) { return { hp: 1 + t / 600, dmg: 1 + t / 600, spd: 1 }; }
+  function bossScale(t) {
+    return {
+      hp: 1 + t / 380,
+      dmg: 1 + t / 480,
+      spd: 1 + Math.min(0.2, t / 1800)
+    };
+  }
 
   /** Tramo que toca en el segundo `t`. */
   function tierAt(t) { let ti = 0; TIERS.forEach((tr, i) => { if (t >= tr.from) ti = i; }); return ti; }
@@ -222,7 +252,7 @@ G.Enemies = (() => {
   }
 
   return {
-    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    TIERS, BOSS_SLOTS, rollRun, rollBoss, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

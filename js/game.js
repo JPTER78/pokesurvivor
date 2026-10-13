@@ -513,6 +513,7 @@ G.Game = (() => {
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
     if (G.Input.tap('keyc')) { toggleStats(); return; }
+    if (G.Input.tap('space') || G.Input.tap('shiftleft') || G.Input.tap('shiftright')) pl.dash();
     for (let i = 0; i < 4; i++) {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
     }

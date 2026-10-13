@@ -22,11 +22,11 @@ G.Spawner = (() => {
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
   const hpK = t => 3.3 + Math.min(1.7, t / 210);
   const SHINY_RATE = 1 / 4096;
-  let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
+  let acc = 0, bossIdx = 0, nextBossAt = 1080, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
   function reset() {
-    acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
+    acc = 0; bossIdx = 0; nextBossAt = 1080; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
   }
@@ -118,7 +118,25 @@ G.Spawner = (() => {
 
     // --- jefes ---
     const b = G.Enemies.BOSSES[bossIdx];
-    if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
+    if (b && t >= b.at) {
+      spawnBoss(anchor(), t, b);
+      bossIdx++;
+      if (bossIdx >= G.Enemies.BOSSES.length) nextBossAt = Math.max(1080, t + 180);
+    } else if (bossIdx >= G.Enemies.BOSSES.length && t >= nextBossAt) {
+      if (!G.EnemyMgr.bossAlive()) {
+        const bossDef = G.Enemies.rollBoss(t);
+        spawnBoss(anchor(), t, bossDef);
+        const dual = t >= 1800 && Math.random() < 0.65;
+        if (dual) {
+          const bossDef2 = G.Enemies.rollBoss(t);
+          spawnBoss(anchor(), t, bossDef2);
+        }
+        nextBossAt = t + (t >= 1800 ? 210 : 180);
+      } else {
+        // Si aún están luchando con el jefe anterior, posponer un poco
+        nextBossAt = t + 30;
+      }
+    }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el
     // jefe sea un momento propio y se le pueda apuntar entre la multitud.

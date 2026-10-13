@@ -27,6 +27,12 @@ G.HUD = (() => {
     }
   }
 
+  function fmtHp(n) {
+    n = Math.max(0, Math.ceil(n));
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    return n.toLocaleString('es-ES');
+  }
+
   function draw(ctx, w, h, pl, st) {
     ctx.save();
     ctx.textBaseline = 'alphabetic';
@@ -196,12 +202,12 @@ G.HUD = (() => {
 
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
-    ctx.font = F(800, 26);
+    ctx.font = F(800, 24);
     ctx.fillStyle = 'rgba(255,255,255,.95)';
-    ctx.fillText(G.U.mmss(st.time), w / 2, 42);
-    ctx.font = F(600, 10);
+    ctx.fillText(G.U.mmss(st.time), w / 2, 38);
+    ctx.font = F(600, 9.5);
     ctx.fillStyle = '#8fa3c4';
-    ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
+    ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 52);
 
     // ---------- clima (arriba a la derecha) ----------
     const wx = G.Weather.current;
@@ -218,14 +224,35 @@ G.HUD = (() => {
       ctx.fillText(txt, x0 + 32, y0 + 17);
     }
 
-    // ---------- barra del jefe ----------
-    const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
-    if (boss) {
-      const bw = Math.min(420, w - 80);
-      bar(ctx, (w - bw) / 2, 70, bw, 12, boss.hp / boss.maxHp, '#ffcb3d');
-      ctx.font = F(800, 10);
-      ctx.fillStyle = '#20160a';
-      ctx.fillText(boss.name.toUpperCase(), w / 2, 80);
+    // ---------- barra(s) de jefe(s) ----------
+    const bosses = G.EnemyMgr.all().filter(e => e.boss && !e.dead);
+    if (bosses.length > 0) {
+      const bw = Math.min(480, w - 80);
+      const bx = (w - bw) / 2;
+      const count = Math.min(bosses.length, 3);
+      const barH = count > 1 ? 12 : 15;
+      const startY = count > 1 ? 66 : 74;
+      const gap = 16;
+
+      for (let i = 0; i < count; i++) {
+        const b = bosses[i];
+        const by = startY + i * gap;
+        const frac = b.hp / b.maxHp;
+        const col = i === 0 ? '#ffcb3d' : (i === 1 ? '#ff9e3d' : '#ff5f5f');
+        bar(ctx, bx, by, bw, barH, frac, col);
+
+        const cur = fmtHp(b.hp), max = fmtHp(b.maxHp);
+        const pct = Math.max(0, Math.ceil(frac * 100));
+        const txt = (b.shiny ? '★ ' : '') + b.name.toUpperCase() + ' · ' + cur + ' / ' + max + ' (' + pct + '%)';
+
+        ctx.font = F(800, count > 1 ? 8.5 : 10);
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'rgba(10,12,18,0.75)';
+        ctx.strokeText(txt, w / 2, by + barH - 3.5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(txt, w / 2, by + barH - 3.5);
+      }
     }
 
     // ---------- aviso ----------
@@ -305,7 +332,8 @@ G.HUD = (() => {
       ctx.textAlign = 'center';
       ctx.font = F(800, 12);
       ctx.fillStyle = '#d9c2ff';
-      ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
+      const riftY = bosses.length > 1 ? 112 : (bosses.length === 1 ? 104 : 76);
+      ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, riftY);
     }
 
     // Eventos: cuenta atrás, flecha al Pokémon perdido / a la marca y a los duendes.
@@ -457,6 +485,132 @@ G.HUD = (() => {
       }
     }
 
+    // ---------- botón de dash (hasta 3 cargas) ----------
+    {
+      const bondOffset = pl.bonds > 0 ? (pl.bonds > 1 ? 46 : 34) : 0;
+      const dx = sx + totalW + 14 + bondOffset, dy = sy;
+      const charges = pl.dashCharges != null ? pl.dashCharges : 1;
+      const maxC = pl.dashMaxCharges || 3;
+      const ready = charges > 0;
+      const recharging = charges < maxC;
+      const cdFrac = recharging ? G.U.clamp((pl.dashTimer || 0) / (pl.dashCd || 4), 0, 1) : 0;
+
+      // Fondo
+      roundRect(ctx, dx, dy, S, S, 12);
+      ctx.fillStyle = ready ? 'rgba(18,28,48,.92)' : 'rgba(10,16,28,.8)';
+      ctx.fill();
+
+      // Borde
+      ctx.lineWidth = ready ? 2.2 : 1.2;
+      ctx.strokeStyle = ready ? '#4fd1ff' : 'rgba(140,170,210,.25)';
+      ctx.stroke();
+
+      // Icono de Ataque Rápido / Dash
+      G.Icons.draw(ctx, 'move:quick-attack', dx + (S - 32) / 2, dy + (S - 32) / 2 - 2, 32);
+
+      // Sombra si no queda ninguna carga
+      if (charges === 0 && cdFrac > 0) {
+        ctx.save();
+        roundRect(ctx, dx, dy, S, S, 12); ctx.clip();
+        ctx.fillStyle = 'rgba(0,0,0,.68)';
+        ctx.fillRect(dx, dy, S, S * cdFrac);
+        ctx.restore();
+
+        // Texto del tiempo restante para la primera carga
+        ctx.font = F(800, 12);
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(pl.dashTimer.toFixed(1) + 's', dx + S / 2, dy + S / 2 + 5);
+      }
+
+      // 3 Pips / barritas de cargas en la parte inferior
+      const pw = 10, ph = 3, pgap = 3;
+      const ptotal = maxC * pw + (maxC - 1) * pgap;
+      const px0 = dx + (S - ptotal) / 2, py0 = dy + S - 8;
+      for (let c = 0; c < maxC; c++) {
+        if (c < charges) {
+          ctx.fillStyle = '#4fd1ff';
+        } else if (c === charges && recharging) {
+          ctx.fillStyle = 'rgba(79,209,255,.35)';
+        } else {
+          ctx.fillStyle = 'rgba(255,255,255,.14)';
+        }
+        ctx.fillRect(px0 + c * (pw + pgap), py0, pw, ph);
+      }
+
+      // Tecla o rótulo superior izquierdo
+      ctx.font = F(800, 8);
+      ctx.fillStyle = ready ? '#4fd1ff' : 'rgba(180,200,230,.5)';
+      ctx.textAlign = 'left';
+      ctx.fillText(touch ? 'DASH' : 'ESPACIO', dx + 4, dy + 10);
+
+      // Contador de cargas arriba a la derecha (ej. ×2, ×3)
+      ctx.font = F(800, 10);
+      ctx.fillStyle = charges === maxC ? '#5fe08a' : ready ? '#4fd1ff' : '#ff8a96';
+      ctx.textAlign = 'right';
+      ctx.fillText('×' + charges, dx + S - 4, dy + 10);
+
+      // Rótulo superior "DASH"
+      ctx.font = F(700, 9);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = ready ? '#4fd1ff' : 'rgba(180,200,230,.6)';
+      ctx.fillText(charges > 0 ? (recharging ? `DASH (${pl.dashTimer.toFixed(1)}s)` : 'DASH') : 'RECARGA', dx + S / 2, dy - 7);
+
+      // Botón táctil o clic
+      G.Touch.addButton(dx, dy, S, S, () => {
+        if (G.Game.state === 'playing') pl.dash();
+      }, 6);
+    }
+
+    // ---------- botón de dash flotante (móvil/táctil) ----------
+    if (touch) {
+      const sa = G.Touch.safeArea();
+      const r = 26;
+      const fx = w - r - 22 - Math.min(28, sa.right);
+      const fy = h - r - 30 - Math.min(24, sa.bottom);
+      const charges = pl.dashCharges != null ? pl.dashCharges : 1;
+      const maxC = pl.dashMaxCharges || 3;
+      const ready = charges > 0;
+      const recharging = charges < maxC;
+      const cdFrac = recharging ? G.U.clamp((pl.dashTimer || 0) / (pl.dashCd || 4), 0, 1) : 0;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(fx, fy, r, 0, 6.2832);
+      ctx.fillStyle = ready ? 'rgba(20,34,58,.88)' : 'rgba(10,16,28,.75)';
+      ctx.fill();
+      ctx.lineWidth = ready ? 2.5 : 1.5;
+      ctx.strokeStyle = ready ? '#4fd1ff' : 'rgba(140,170,210,.3)';
+      ctx.stroke();
+
+      G.Icons.draw(ctx, 'move:quick-attack', fx - 16, fy - 16, 32);
+
+      if (charges === 0 && cdFrac > 0) {
+        ctx.beginPath();
+        ctx.moveTo(fx, fy);
+        ctx.arc(fx, fy, r, -Math.PI / 2, -Math.PI / 2 + cdFrac * 6.2832);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0,0,0,.6)';
+        ctx.fill();
+
+        ctx.font = F(800, 10);
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(pl.dashTimer.toFixed(1) + 's', fx, fy + 4);
+      } else {
+        // Insignia con el número de cargas
+        ctx.font = F(800, 10);
+        ctx.fillStyle = charges === maxC ? '#5fe08a' : '#4fd1ff';
+        ctx.textAlign = 'center';
+        ctx.fillText('×' + charges, fx, fy + r + 11);
+      }
+      ctx.restore();
+
+      G.Touch.addButton(fx - r, fy - r, r * 2, r * 2, () => {
+        if (G.Game.state === 'playing') pl.dash();
+      }, 8);
+    }
+
     // ---------- botón de pausa (táctil) ----------
     if (touch) {
       const sa = G.Touch.safeArea();
@@ -474,8 +628,8 @@ G.HUD = (() => {
       ctx.font = F(600, 10);
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
-      ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
-                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
+      ctx.fillText(touch ? 'Arrastra para moverte  ·  DASH para esquivar (hasta 3 cargas)  ·  toca un ataque para cambiarlo'
+                         : 'WASD moverse  ·  Espacio/Shift dash (hasta 3 cargas)  ·  1-4 ataque  ·  C stats  ·  Esc pausa', w / 2, h - 4);
     }
 
     ctx.restore();

@@ -76,6 +76,13 @@ G.Player = class Player {
     this.runStats = { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spd: 0 };
     this.latestStatGains = null;
     this.pendingStatGains = null;
+
+    // --- Mecánica de Dash (hasta 3 cargas, empieza con 1 y recarga cada 4s) ---
+    this.dashCharges = 1;
+    this.dashMaxCharges = 3;
+    this.dashCd = 4.0;
+    this.dashTimer = 4.0;
+    this.dashLockout = 0;
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -380,6 +387,71 @@ G.Player = class Player {
     b.dur = dur;
   }
 
+  // ---------------- dash (desplazamiento evasivo, hasta 3 cargas) ----------------
+  dash() {
+    if (this.dead || this.dashCharges <= 0 || this.dashLockout > 0) return false;
+
+    // Consumir 1 carga e iniciar recarga continua
+    this.dashCharges--;
+    this.dashLockout = 0.25;
+    if (this.dashTimer <= 0) {
+      this.dashTimer = this.dashCd;
+    }
+
+    // Dirección del dash: teclas WASD/joystick si se mueven, si no hacia la mirada/apuntado
+    let angle = this.aim;
+    const [ax, ay] = G.Input.axis();
+    if (Math.hypot(ax, ay) > 0.2) {
+      angle = Math.atan2(ay, ax);
+    } else if (this.walking) {
+      angle = this.moveAngle;
+    }
+
+    const ca = Math.cos(angle), sa = Math.sin(angle);
+    const maxDist = 125;
+    const sx = this.x, sy = this.y;
+    let len = 0;
+
+    // Comprobar obstáculos sólidos en la trayectoria (permite líquidos)
+    for (let d = 8; d <= maxDist; d += 8) {
+      if (!G.World.isFree(sx + ca * d, sy + sa * d, this.r * 0.8, true)) break;
+      len = d;
+    }
+
+    if (len < 10) return false;
+
+    // Estela de velocidad a lo largo del recorrido (idéntica a Ataque Rápido)
+    for (let d = 0; d <= len; d += 22) {
+      G.FX.sp('streak', 'normal', sx + ca * d, sy + sa * d - G.LIFT * 0.6, { life: 0.22, angle });
+    }
+
+    // Trasladar al jugador instantáneamente sin tocar el bucle de movimiento
+    this.x = sx + ca * len;
+    this.y = sy + sa * len;
+    G.World.collide(this);
+
+    // Inmunidad temporal frente a daño de contacto (evasión pura)
+    this.invuln = Math.max(this.invuln || 0, 0.35);
+
+    // Animación Charge (con fallback a Attack)
+    const meta = G.SPRITE_META && G.SPRITE_META[this.dex];
+    const anim = (meta && meta.a && meta.a.Charge) ? 'Charge' : 'Attack';
+    this.anim.play(anim, { speed: 2.2 });
+    this.anim.dir = G.Sprites.dirFromAngle(angle);
+    this.attackFace = 0.35;
+    this.aim = angle;
+
+    // Polvo en inicio y llegada
+    G.FX.burst(sx, sy - 4, '#ffffff', 6, 80);
+    G.FX.burst(this.x, this.y - 4, '#ffffff', 5, 60);
+
+    // Sonido y sacudida de pantalla sutil
+    G.Audio.sfx('shot', { kind: 'melee', type: 'normal' });
+    G.Camera.kick(0.12);
+
+    return true;
+  }
+
   // ---------------- ciclo ----------------
   update(dt) {
     this.anim.update(dt);
@@ -387,6 +459,20 @@ G.Player = class Player {
     if (this.invuln > 0) this.invuln -= dt;
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
+    if (this.dashLockout > 0) this.dashLockout -= dt;
+
+    // Recarga continua de cargas de dash hasta un máximo de 3
+    if (this.dashCharges < this.dashMaxCharges) {
+      this.dashTimer -= dt;
+      if (this.dashTimer <= 0) {
+        this.dashCharges++;
+        if (this.dashCharges < this.dashMaxCharges) {
+          this.dashTimer = this.dashCd;
+        } else {
+          this.dashTimer = 0;
+        }
+      }
+    }
 
     for (const k in this.buffs) {
       const b = this.buffs[k];
