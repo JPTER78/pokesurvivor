@@ -225,7 +225,7 @@ G.Rift = (() => {
     if (pl.dead) pl.revive(0.3);
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     G.Game.flash('#c9a6ff', 0.8);
-    if (pl.bonds > 0) G.Game.offerBond();
+    if (pl.bonds > 0) G.Game.offerBond(false, true);
   }
 
   // ---------------- dibujo ----------------

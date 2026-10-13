@@ -23,6 +23,11 @@ G.CHANGELOG = [
      'Rifts no longer open from minute 28 on, so the Judgment does not catch you inside one.'],
     ['Ranking protegido contra trampas: el servidor comprueba que cada marca se ha jugado de verdad. Nunca se pierde nada de lo que ganas jugando.',
      'Leaderboard protected against cheating: the server checks that every record was really played. You never lose anything you earn by playing.']
+  ], fix: [
+    ['Cooperativo: elegir objeto o fusión ya para la partida para todos de verdad. Si a la vez subíais de nivel (al vencer a un jefe o abrir un cofre grande), el menú desaparecía, la partida seguía y a veces se quedaba parada para siempre. Ahora salen primero las cartas y después tu menú, y nadie juega hasta que elige el último.',
+     'Co-op: choosing a held item or a fusion now really pauses the run for everyone. If you levelled up at the same time (after beating a boss or opening a big chest), the menu vanished, the run kept going and sometimes froze forever. Now the cards come first, then your menu, and nobody plays until the last one has chosen.'],
+    ['Cooperativo: mientras esperas a que otro elija, ya puedes abrir la pausa para salir de la partida.',
+     'Co-op: while waiting for someone else to choose, you can now open the pause menu to leave the run.']
   ] },
   { d: '2026-10-12', title: ['Tiempo extra y grietas con menos azar', 'Overtime and less random rifts'], new: [
     ['Tiempo extra: desde el minuto 60 los Pokémon salvajes se vuelven cada vez más fuertes (más vida y más daño), y cada vez más deprisa. Antes, con las mejoras al máximo, algunas partidas no acababan nunca; ahora las mejores rondarán la hora y media.',

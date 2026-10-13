@@ -7,12 +7,14 @@
  *                                          └─ Gacha
  *
  * Estados del bucle: 'ui' (menús, con el mundo de fondo), 'playing',
- * 'levelup', 'paused', 'over'.
+ * 'levelup' (cartas), 'choice' (tu menú de objeto o vínculo), 'held' (grupo:
+ * esperando a que otro elija o a que vuelva el anfitrión), 'paused', 'over'.
+ * Durante la run el estado sale SIEMPRE de refresh() (ver systems/hold.js).
  *
  * Cooperativo (G.Coop.active): el anfitrión lleva enemigos, objetos y
- * experiencia; cada uno su Pokémon. La pausa no para el juego, las cartas de
- * nivel esperan a que elijan todos y un compañero caído se levanta si otro
- * se queda a su lado. Ver net/coop.js.
+ * experiencia; cada uno su Pokémon. La pausa no para el juego; las cartas de
+ * nivel, los objetos y los vínculos paran a todos hasta que elige el último,
+ * y un compañero caído se levanta si otro se queda a su lado. Ver net/coop.js.
  */
 G.Game = (() => {
   let cv, ctx, dpr = 1, w = 0, h = 0;
@@ -34,7 +36,7 @@ G.Game = (() => {
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
-    G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
+    G.RunUI.wirePause(() => { soloPaused = false; G.UI.hide('scr-pause'); refresh(); }, quitRun);
     Backdrop.init();
     last = performance.now();
     requestAnimationFrame(loop);
@@ -64,29 +66,119 @@ G.Game = (() => {
   /** Pausa sola (sólo en solitario: en grupo los demás siguen). */
   function autoPause() {
     G.Touch.reset();
-    if (state === 'playing' && !G.Coop.active) { state = 'paused'; G.RunUI.showPause(); }
+    if (state === 'playing' && !G.Coop.active) { soloPaused = true; G.RunUI.showPause(); refresh(); }
   }
 
   /** Pausa/continúa (tecla Esc o P, o el botón de pausa del móvil). */
-  let holdBy = [];                   // grupo: quién está eligiendo fusión (todo parado)
-
   function togglePause() {
-    // En grupo la pausa no para el juego (los demás siguen jugando).
+    // En grupo la pausa no para el juego (los demás siguen jugando). Se abre
+    // también esperando a otros, para poder salir si alguien no vuelve.
     if (G.Coop.active) {
-      if (state !== 'playing') return;
-      if (G.UI.isOpen('scr-pause')) G.UI.hide('scr-pause');
+      if (state !== 'playing' && state !== 'held') return;
+      if (G.UI.isOpen('scr-pause')) { G.UI.hide('scr-pause'); refresh(); }
       else { G.RunUI.showPause(true); G.Audio.sfx('pause'); }
       return;
     }
-    if (state === 'playing') { state = 'paused'; G.RunUI.showPause(); G.Audio.sfx('pause'); }
-    else if (state === 'paused') { state = 'playing'; G.UI.hideAll(); }
+    if (state === 'playing') { soloPaused = true; G.RunUI.showPause(); G.Audio.sfx('pause'); refresh(); }
+    else if (state === 'paused') { soloPaused = false; G.UI.hideAll(); refresh(); }
   }
 
-  // ---------------- run ----------------
+  // ---------------- pausa y menús ----------------
+  // El estado del bucle sale de una sola función, refresh(), según lo que hay
+  // en pantalla y si el equipo está parado. Antes cada menú lo cambiaba a mano
+  // y en grupo se pisaban: las cartas tapaban (y perdían) el menú del objeto y
+  // la partida seguía, o se quedaba parada para siempre (12-10-2026).
+  let cards = null;          // cartas de nivel en pantalla: { seq, picked }
+  let menu = null;           // tu menú abierto: { kind: 'item' | 'bond', id }
+  let queue = [];            // objetos cogidos que esperan su menú
+  let soloPaused = false;    // pausa de solitario (Esc)
+  let teamBusy = false;      // grupo: alguien está eligiendo algo (todos parados)
+  let holdBy = [];           // grupo: quiénes (para el aviso)
+  let awayBy = null;         // grupo (invitado): el anfitrión no está
+  let bondAt = 0;            // grupo: al volver de la grieta, el vínculo espera hasta aquí
+  let pauseSay = '';         // el aviso de pausa que hay puesto
+  const BOND_WAIT = 1.5;     // s (ver offerBond)
+  const awayText = () => 'Pausa: esperando a ' + awayBy + ' (anfitrión)…';
+
+  function refresh() {
+    if (!pl || state === 'ui' || state === 'over') return;
+    openNext();
+    // Un vínculo tapado por las cartas también cuenta: así, al cerrarlas, la
+    // partida no arranca un instante antes de que salga.
+    if (G.Coop.active) G.Coop.setBusy(!!menu || queue.length > 0 || (!!cards && bondReady()));
+    state = G.Hold.state({ cards: !!cards, menu: !!menu, team: teamBusy, away: !!awayBy, paused: soloPaused });
+    pauseBanner();
+  }
+
+  /** ¿Se puede usar ya un vínculo? (vivo, fuera de la arena y con algo que fusionar) */
+  function bondReady() {
+    return pl.bonds > 0 && !pl.dead && !G.Rift.inArena && performance.now() >= bondAt && !!pl.bondOptions();
+  }
+
+  /** Abre el siguiente menú pendiente (nunca encima de las cartas ni de otro menú). */
+  function openNext() {
+    if (cards || menu) return;
+    while (queue.length) {
+      const id = queue.shift();
+      if (pl.item === id) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); continue; }
+      if (!pl.item) { equip(id); continue; }
+      const m = menu = { kind: 'item', id };
+      G.RunUI.showItemChoice(pl.item, id, got => {
+        if (menu !== m) return;
+        menu = null;
+        equip(got);
+        refresh();
+      });
+      if (G.Coop.active) G.Coop.menuShown();
+      return;
+    }
+    // Con la pausa de grupo abierta (Esc) el vínculo espera a que la cierres.
+    if (!bondReady() || G.UI.isOpen('scr-pause')) return;
+    const opt = pl.bondOptions();
+    const m = menu = { kind: 'bond' };
+    G.Audio.sfx('levelup');
+    G.RunUI.showBond(opt, picked => {
+      if (menu !== m) return;
+      menu = null;
+      const group = pl.fuse(picked, opt.group);
+      G.Audio.sfx('legend');
+      G.FX.ring(pl.x, pl.y, 8, 130, '#ff8ad8', 0.8, 6);
+      G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffb3e6', 40, 240);
+      G.Spawner.say('¡Vínculo! ' + group.length + ' movimientos a la vez', 2.6, true);
+      refresh();
+    });
+    if (G.Coop.active) G.Coop.menuShown();
+  }
+
+  /** Las cartas tapan tu menú: se guarda y vuelve a salir al cerrarlas. */
+  function suspendMenu() {
+    if (!menu) return;
+    if (menu.kind === 'item') queue.unshift(menu.id);
+    G.UI.hide(menu.kind === 'item' ? 'scr-item' : 'scr-bond');
+    menu = null;
+  }
+
+  /** Aviso fijo mientras esperas a otros (o al anfitrión). */
+  function pauseBanner() {
+    let text = '';
+    if (state === 'held') {
+      if (awayBy) text = awayText();
+      else if (holdBy.length) text = 'Pausa: ' + holdBy.join(', ') + ' ' + (holdBy.length > 1 ? 'están eligiendo…' : 'está eligiendo…');
+    }
+    if (text === pauseSay) return;
+    // Sólo se quita si sigue siendo el nuestro (no borrar "¡Vínculo!" y parecidos).
+    const b = G.Spawner.banner();
+    if (text) G.Spawner.say(text, 999, true);
+    else if (b && b.text === pauseSay) G.Spawner.say('', 0, true);
+    pauseSay = text;
+  }
+
+  // ---------------- run ----------------  // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
-    holdBy = []; awayBy = null;
+    cards = null; menu = null; queue = []; soloPaused = false;
+    teamBusy = false; holdBy = []; awayBy = null; bondAt = 0; pauseSay = '';
     const save = G.DB.save;
     const mon = G.DEX_BY[save.partner];
     const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
@@ -196,18 +288,31 @@ G.Game = (() => {
       pl.t1 = t.t1 || 0; pl.t10 = t.t10 || 0;
       bankTickets();
     },
-    levelStart(level) {
-      state = 'levelup';
+    /** Cartas para todos (barrera `seq` del anfitrión; sin número si es una versión vieja). */
+    levelStart(level, seq) {
+      if (cards && seq != null && cards.seq === seq) return;      // repetido (o ya abiertas por `w`)
+      suspendMenu();
+      const c = cards = { seq, picked: false };
       G.UI.hide('scr-pause');
       G.Audio.sfx('levelup');
       G.RunUI.showLevelUp(level, G.LevelUp.offer(pl), card => {
+        if (cards !== c) return;
         G.Audio.sfx('confirm');
         card.apply(pl);
-        G.Coop.localPicked();
+        c.picked = true;
+        G.Coop.localPicked(seq);
+        refresh();
       }, true);
+      refresh();
     },
     waiting(names) { G.RunUI.setWaiting(names); },
-    resume() { G.RunUI.closeLevelUp(); if (state === 'levelup') state = 'playing'; },
+    /** Han elegido todos: fuera cartas (si alguien sigue con su menú, se sigue esperando). */
+    resume() {
+      if (!cards) return;
+      cards = null;
+      G.RunUI.closeLevelUp();
+      refresh();
+    },
     shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
     over(d) {
       if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
@@ -218,34 +323,11 @@ G.Game = (() => {
     lost(msg) { G.UI.toast(msg, 3600); endRun(false); },
     item(id) { offerItem(id); },
     mateLeft() {},
-    /** Grupo: quién está eligiendo fusión. Mientras haya alguien, todo parado. */
-    hold(names) {
-      holdBy = names || [];
-      const mine = G.UI.isOpen('scr-bond');
-      if (holdBy.length) {
-        if (state === 'playing') state = 'held';
-        if (pl && pl.bonds > 0) offerBond(true);      // si tú también tienes vínculo, eliges a la vez
-        const others = holdBy.filter(n => n !== (G.Social.me && G.Social.me.name) && n !== 'Tú');
-        if (!mine && others.length) G.Spawner.say('Pausa: ' + others.join(', ') + ' ' + (others.length > 1 ? 'están eligiendo…' : 'está eligiendo…'), 999, true);
-      } else {
-        if (state === 'held' && !awayBy) state = 'playing';
-        G.Spawner.say(awayBy ? awayText() : '', awayBy ? 999 : 0, true);
-      }
-    },
+    /** Grupo: ¿hay alguien eligiendo algo? (y quiénes, sin contarte a ti) */
+    pause(p) { teamBusy = !!p.busy; holdBy = p.names || []; refresh(); },
     /** Grupo (invitado): el anfitrión se ha ido de la pestaña o no responde: todo parado. */
-    away(name) {
-      awayBy = name || null;
-      if (awayBy) {
-        if (state === 'playing') state = 'held';
-        G.Spawner.say(awayText(), 999, true);
-      } else if (!holdBy.length) {
-        if (state === 'held') state = 'playing';
-        G.Spawner.say('', 0, true);
-      }
-    }
+    away(name) { awayBy = name || null; refresh(); }
   };
-  let awayBy = null;
-  const awayText = () => 'Pausa: esperando a ' + awayBy + ' (anfitrión)…';
 
   /** Has llevado a casa a un Pokémon perdido y se une a ti (events.js). */
   G.onRescue = (dex, name) => {
@@ -334,13 +416,16 @@ G.Game = (() => {
     // Nunca abras cartas con el Pokémon caído (morir y recoger XP en el mismo frame).
     if (pl.dead) return;
     pendingLevels--;
-    state = 'levelup';
+    const c = cards = { seq: 0, picked: false };
     G.Audio.sfx('levelup');
     G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
+      if (cards !== c) return;
       G.Audio.sfx('confirm');
       card.apply(pl);
-      state = 'playing';
+      cards = null;
+      refresh();
     });
+    refresh();
   }
 
   // ---------------- vínculos ----------------
@@ -349,60 +434,40 @@ G.Game = (() => {
    * Vínculo de un legendario: eliges qué movimientos se fusionan.
    * Si ahora no se puede (no hay dos sueltos), se guarda hasta que aprendas
    * otro movimiento. Se mira en cada fotograma: si otra pantalla la tapa (cartas
-   * de nivel en grupo, pausa), vuelve a salir al cerrarla.
-   * @param quiet  no avisar si todavía no se puede
+   * de nivel, pausa), sale al cerrarla (ver openNext).
+   * @param quiet     no avisar si todavía no se puede
+   * @param fromRift  se acaba de volver de la grieta
    */
-  function offerBond(quiet = false) {
-    if (!pl || pl.bonds <= 0 || pl.dead || (state !== 'playing' && state !== 'held') || G.Rift.inArena) return;
-    if (['scr-bond', 'scr-pause', 'scr-item', 'scr-levelup'].some(G.UI.isOpen)) return;
-    const opt = pl.bondOptions();
-    if (!opt) {
-      if (!quiet) G.Spawner.say('Guardas el vínculo: aprende otro movimiento para usarlo', 3, true);
-      return;
-    }
-    // Se para el juego; en grupo, para todos hasta que cada uno elige (G.Coop.holdStart).
-    state = 'choice';
-    if (G.Coop.active) G.Coop.holdStart();
-    G.Audio.sfx('levelup');
-    G.RunUI.showBond(opt, picked => {
-      const group = pl.fuse(picked, opt.group);
-      G.Audio.sfx('legend');
-      G.FX.ring(pl.x, pl.y, 8, 130, '#ff8ad8', 0.8, 6);
-      G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffb3e6', 40, 240);
-      G.Spawner.say('¡Vínculo! ' + group.length + ' movimientos a la vez', 2.6, true);
-      if (state === 'choice') state = holdBy.length ? 'held' : 'playing';
-      if (G.Coop.active) G.Coop.holdEnd();
-    });
+  function offerBond(quiet = false, fromRift = false) {
+    if (!pl || pl.bonds <= 0) return;
+    // En grupo el anfitrión sale de la grieta antes que los demás: si parase ya,
+    // a los demás les pillaría dentro de la arena (allí no se elige) y cada uno
+    // elegiría por su lado, en dos pausas. Esperando un poco, eligen a la vez.
+    if (fromRift && G.Coop.active) bondAt = performance.now() + BOND_WAIT * 1000;
+    if (!quiet && !pl.bondOptions()) G.Spawner.say('Guardas el vínculo: aprende otro movimiento para usarlo', 3, true);
+    refresh();
   }
 
   // ---------------- recogida ----------------
 
   const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend' };
 
-  /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
+  function equip(got) {
+    if (got === pl.item) return;
+    pl.equip(got);
+    G.Spawner.say('¡Llevas ' + G.Items.BY[got].name + '!', 2.6, true);
+    G.Progress.event('item', { id: got });
+  }
+
+  /**
+   * Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges.
+   * Se para el juego mientras eliges; en grupo, para todos. Si ya hay otro menú
+   * o cartas en pantalla, espera su turno (antes las tapaba y se perdían).
+   */
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
-    let mine = false;            // esta elección es la que ha parado el juego
-    const take = got => {
-      if (got !== pl.item) {
-        pl.equip(got);
-        G.Spawner.say('¡Llevas ' + G.Items.BY[got].name + '!', 2.6, true);
-        G.Progress.event('item', { id: got });
-      }
-      if (!mine) return;
-      if (state === 'choice') state = holdBy.length ? 'held' : 'playing';
-      if (G.Coop.active) G.Coop.holdEnd();
-    };
-    if (!pl.item) { take(id); return; }
-    if (pl.item === id) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
-    // Se para el juego mientras eliges; en grupo, para todos (como con las
-    // fusiones). Antes en grupo seguía y te pegaban mientras elegías.
-    if (state === 'playing' || state === 'held') {
-      mine = true;
-      state = 'choice';
-      if (G.Coop.active) G.Coop.holdStart();
-    }
-    G.RunUI.showItemChoice(pl.item, id, take);
+    queue.push(id);
+    refresh();
   }
 
   /** @param who  quien lo ha cogido (en cooperativo puede ser un compañero) */
@@ -540,9 +605,13 @@ G.Game = (() => {
     handleKeys();
 
     if (state === 'playing') update(dt);
-    else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
+    else if (pl && state !== 'ui') {
+      G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25);
+      // Esperando a otros: si tienes vínculo, lo eliges a la vez que ellos.
+      if (state === 'held' && pl.bonds > 0) offerBond(true);
+    }
     // La red se atiende siempre (también con las cartas de nivel abiertas).
-    if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
+    if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt, state !== 'playing');
 
     if (pl && state !== 'ui') render(); else Backdrop.render(ctx, w, h, dpr, dt);
     G.UI.tick(dt);
@@ -815,6 +884,10 @@ G.Game = (() => {
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
     debugLevelUp() { pl.level++; pendingLevels++; },
+    /** Para pruebas: como si cogieras un objeto (sin id, uno al azar distinto del tuyo). */
+    debugItem(id) { if (pl) offerItem(id || G.Items.roll(pl.item)); },
+    /** Para pruebas: `n` vínculos más, como al vencer a un legendario. */
+    debugBond(n = 1) { if (!pl) return; pl.bonds += n; offerBond(); },
     toUI() { state = 'ui'; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };
