@@ -110,6 +110,7 @@ G.Game = (() => {
     biome = 0;
     time = 0; pendingLevels = 0;
 
+    G.Integrity.begin();
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
     banked = { t1: 0, t10: 0 };
     caught = [];
@@ -282,36 +283,47 @@ G.Game = (() => {
     G.Audio.sfx(dead ? 'gameover' : 'back');
     const save = G.DB.save;
     const mul = pl.coinMul;
+    const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
     const parts = {
       tiempo: Math.floor(time / 5),
       derrotados: Math.floor(pl.kills * 0.25),
       jefes: pl.bosses * 80,
       recogidas: pl.coins
     };
-    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
-    const record = time > save.stats.bestTime;
+    // Anti-trampas (core/integrity.js): lo que se anuncia tiene que ser posible en
+    // ese tiempo. Si no, o si se tocó algún stat desde la consola, la partida no
+    // cuenta para ranking, récords ni logros. Las monedas se limitan a lo posible
+    // (el servidor marcaría la cuenta si el guardado trae más). Nada se borra.
+    const raw = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
+    G.Integrity.check({ t: mark.t, lv: mark.lv, kills: mark.kills, coins: raw });
+    const trusted = G.Integrity.trusted();
+    const coins = Math.min(raw, G.Integrity.maxCoins(mark.t));
+    const record = trusted && time > save.stats.bestTime;
 
     save.coins += coins;
     bankTickets(false);
     save.stats.runs++;
-    save.stats.totalKills += pl.kills;
-    save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
-    if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
-    save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
-    save.stats.coinsEarned += coins;
     const judge = G.Judgment.summary();
-    if (judge) G.Progress.event('judgeEnd', judge);
+    if (trusted) {
+      save.stats.totalKills += pl.kills;
+      save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
+      if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
+      save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
+    }
+    save.stats.coinsEarned += coins;
+    if (trusted && judge) G.Progress.event('judgeEnd', judge);
     G.Judgment.reset();
-    G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
+    if (trusted) G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
     G.Progress.checkAch();
     // Un récord se sube a la nube enseguida (lo demás, cada 2 h o al salir).
     G.DB.commit(record);
     if (G.Social.me) G.Social.publishProfile();
 
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.
-    const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
-    if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
-    else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
+    if (G.Integrity.rankable()) {
+      if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
+      else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
+    }
 
     G.RunUI.showOver({
       dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,

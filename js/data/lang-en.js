@@ -107,6 +107,8 @@ G.I18n.add({
   'Vigor': 'Vigor', 'Potencia': 'Power', 'Carrera': 'Sprint', 'Reflejos': 'Reflexes', 'Coraza': 'Armor', 'Síntesis': 'Synthesis',
   'Imán': 'Magnet', 'Aprendizaje': 'Learning',
 
+  'Se han detectado cambios en la partida: no contará para el ranking': 'Changes to the run were detected: it will not count for the leaderboard',
+
   // ---------------- cartas al subir de nivel ----------------
   'EVOLUCIÓN': 'EVOLUTION', 'Evoluciona': 'Evolves', 'Mejora': 'Upgrade', 'Nuevo · {x}': 'New · {x}', 'Nv.': 'Lv.',
   '+20 de vida máxima (y la recupera).': '+20 max HP (and heals it).', '+10% de daño con todos los movimientos.': '+10% damage with every move.',

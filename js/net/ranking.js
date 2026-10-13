@@ -42,6 +42,8 @@ G.Ranking = (() => {
   // Las runs de menos de 1 minuto no se suben (casi nunca entran en una tabla
   // y eran muchas lecturas y escrituras para nada).
   const MIN_T = 60;
+  // Y las que duran más de lo posible tampoco (el servidor las rechazaría igual).
+  const MAX_T = G.Integrity.MAX_T;
   const TTL = 30 * 60 * 1000;            // caché de lo leído (30 min: menos lecturas de Firestore)
 
   const fbx = () => G.DB.online ? G.DB.fb : null;
@@ -240,7 +242,7 @@ G.Ranking = (() => {
   function submitSolo(r) { return track(submitSoloNow(r)); }
   async function submitSoloNow(r) {
     const fb = fbx();
-    if (!fb || !G.Social.me || r.t < MIN_T) return [];
+    if (!fb || !G.Social.me || r.t < MIN_T || r.t > MAX_T || !G.Integrity.rankable()) return [];
     const ids = periodIds();
     const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
@@ -254,7 +256,7 @@ G.Ranking = (() => {
   function submitGroup(r) { return track(submitGroupNow(r)); }
   async function submitGroupNow(r) {
     const fb = fbx();
-    if (!fb || r.t < MIN_T || !r.members || r.members.length < 2) return [];
+    if (!fb || r.t < MIN_T || r.t > MAX_T || !G.Integrity.rankable() || !r.members || r.members.length < 2) return [];
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
     const id = ms.map(m => m.uid).join('_');
     const entry = { t: r.t, uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),

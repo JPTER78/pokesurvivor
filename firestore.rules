@@ -185,7 +185,10 @@ service cloud.firestore {
     // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
     //   - no puede durar más que el tiempo real desde que empezó tu partida
     //     (runs/{uid}), con 30 s de margen; ni más de 35 min (la Sentencia de
-    //     Arceus acaba las partidas hacia el minuto 31-32)
+    //     Arceus acaba las partidas hacia el minuto 31-32). Igual que MAX_T en
+    //     js/core/integrity.js
+    //   - tiene que ser de la misma clase que la partida que empezaste: solitario
+    //     ('s_') o grupo ('g_'), según runs/{uid}.mode
     //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
     //   - la cuenta no puede estar marcada (saves/{uid}.sus)
     function validEntry(board, id) {
@@ -193,6 +196,7 @@ service cloud.firestore {
       let run = get(/databases/$(database)/documents/runs/$(me())).data;
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
         && d.t is int && d.t > 0 && d.t <= 2100
+        && run.get('mode', '') == (board.matches('s_.*') ? 's' : 'g')
         && d.t <= (request.time - run.startedAt).seconds() + 30
         && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12

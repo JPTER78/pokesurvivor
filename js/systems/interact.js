@@ -17,10 +17,10 @@ G.Interact = (() => {
   const CHEST_TIME = 3.5;
   const POWER_TIME = 25;
   const POWERS = [
-    { id: 'dmg', name: 'Furia', desc: 'daño ×2', color: '#ff5f6d', on: p => { p.atkMul *= 2; }, off: p => { p.atkMul /= 2; } },
-    { id: 'spd', name: 'Rayo', desc: '+45% velocidad', color: '#5fd4ff', on: p => { p.spdMul *= 1.45; }, off: p => { p.spdMul /= 1.45; } },
-    { id: 'mag', name: 'Imán', desc: 'atraes todo desde lejos', color: '#ff8ad8', on: p => { p.magnet *= 4; }, off: p => { p.magnet /= 4; } },
-    { id: 'cd', name: 'Prisa', desc: '-40% recarga', color: '#ffd23f', on: p => { p.cdMul *= 0.6; }, off: p => { p.cdMul /= 0.6; } }
+    { id: 'dmg', name: 'Furia', desc: 'daño ×2', color: '#ff5f6d', mods: { atkMul: 2 } },
+    { id: 'spd', name: 'Rayo', desc: '+45% velocidad', color: '#5fd4ff', mods: { spdMul: 1.45 } },
+    { id: 'mag', name: 'Imán', desc: 'atraes todo desde lejos', color: '#ff8ad8', mods: { magnetMul: 4 } },
+    { id: 'cd', name: 'Prisa', desc: '-40% recarga', color: '#ffd23f', mods: { cdMul: 0.6 } }
   ];
   const TRAP_R = 74;
   const authority = () => !G.Coop.active || G.Coop.isHost;
@@ -56,7 +56,7 @@ G.Interact = (() => {
     if (p.charge < 1) p.charge = Math.min(1, p.charge + dt / 45);
     if (pl.dead || d2 > 26 * 26 || p.charge <= 0.02 || pl.hp >= pl.maxHp) return;
     const before = pl.hp;
-    pl.hp = Math.min(pl.maxHp, pl.hp + pl.maxHp * 0.14 * dt);
+    pl.heal(pl.maxHp * 0.14 * dt, true);
     healAcc += pl.hp - before;
     p.charge = Math.max(0, p.charge - dt * 0.09);
     if (Math.random() < dt * 14) G.FX.px(pl.x + G.U.rand(-pl.r, pl.r), pl.y - G.U.rand(0, pl.bodyH), '#7dffb0', { vy: -50, life: 0.5 });
@@ -109,7 +109,7 @@ G.Interact = (() => {
       }
     }
     if (pl && !pl.dead && G.U.dist2(x, y, pl.x, pl.y) < (TRAP_R * 0.7) ** 2) {
-      pl.invuln = 0;
+      pl.clearInvuln();
       if (k === 0) pl.hurt(pl.maxHp * 0.1);
       else if (k === 1) { pl.slowT = 3.5; G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '¡Pegajoso!', '#8bd94a'); }
       else pl.hurt(pl.maxHp * 0.2);

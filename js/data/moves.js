@@ -433,11 +433,17 @@
    * Instancia de movimiento en una run: los números base de `def` con todas
    * las mejoras de la escalera hasta `lvl` ya aplicadas.
    */
+  // Nivel y evolución legítimos de cada instancia (sólo los cambian instance,
+  // levelUp y evolve). Con eso se puede volver a calcular lo que debería valer
+  // y pillar a quien toque dmg, cd, lvl... a mano (ver audit).
+  const LEGIT = new WeakMap();
+
   function instance(id, lvl = 1) {
     const def = BY_ID[id];
     const s = Object.assign({}, def, { id, def, lvl, t: 0 });
     delete s.ups;
     for (let i = 0; i < lvl - 1; i++) applyMods(s, def.ups[i].m);
+    LEGIT.set(s, { lvl, evolved: false });
     return s;
   }
 
@@ -457,6 +463,8 @@
     if (s.lvl >= s.def.maxLvl) return false;
     applyMods(s, s.def.ups[s.lvl - 1].m);
     s.lvl++;
+    const l = LEGIT.get(s);
+    if (l) l.lvl = s.lvl;
     return true;
   }
 
@@ -554,9 +562,30 @@
     m.baseName = m.name;
     m.name = e[0];
     m.evolved = true;
+    const l = LEGIT.get(m);
+    if (l) l.evolved = true;
     return true;
   }
 
+  /**
+   * Comprueba que la instancia vale lo que le toca por su nivel y evolución. Si
+   * alguien la ha tocado (dmg, cd, lvl...), la deja como debía y devuelve false.
+   * `t` (la recarga en curso) y lo que añade el combate no se miran.
+   */
+  function audit(m) {
+    const l = LEGIT.get(m);
+    if (!l) return false;
+    const ref = instance(m.id, l.lvl);
+    if (l.evolved && EVO_MODS[ref.kind]) applyMods(ref, EVO_MODS[ref.kind].m);
+    let ok = m.lvl === l.lvl && !!m.evolved === l.evolved;
+    m.lvl = l.lvl;
+    for (const k of MULT.concat(ADD)) {
+      if (typeof ref[k] !== 'number') continue;
+      if (!(Math.abs(m[k] - ref[k]) <= 1e-9 * Math.max(1, Math.abs(ref[k])))) { m[k] = ref[k]; ok = false; }
+    }
+    return ok;
+  }
+
   G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
-              EVO, NEED_NAME, evoInfo, evolve };
+              EVO, NEED_NAME, evoInfo, evolve, audit };
 })();

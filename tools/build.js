@@ -21,7 +21,14 @@ const block = dev.slice(i, j + END.length);
 const files = [...block.matchAll(/<script[^>]*src="(js\/[^"]+\.js)"/g)].map(m => m[1]);
 
 // Une los archivos en orden; cada uno separado por ';' por si alguno no acaba en punto y coma.
-const joined = files.map(f => `/* ${f} */\n` + fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n');
+const G_GLOBAL = 'window.G = window.G || {};';
+const body = files.map(f => `/* ${f} */\n` + fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n');
+if (!body.includes(G_GLOBAL)) throw new Error('js/core/util.js ya no declara ' + G_GLOBAL + ' (ver js/core/integrity.js)');
+// Anti-trampas: en lo publicado todo va dentro de una función y G deja de ser
+// global, así que desde la consola (F12) no se llega al jugador ni a nada del
+// juego. dev.html sí deja G a la vista (para depurar) y esas partidas no suben
+// al ranking (G.Integrity).
+const joined = '(function () {\nvar G = {};\n' + body.replace(G_GLOBAL, '') + '\n})();\n';
 const tmp = path.join(ROOT, 'tools', 'cache', 'app.js');
 fs.mkdirSync(path.dirname(tmp), { recursive: true });
 fs.writeFileSync(tmp, joined);

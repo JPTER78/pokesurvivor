@@ -6,23 +6,26 @@
  */
 G.LevelUp = (() => {
 
+  // `mods` son los efectos de la carta; los aplica el jugador (Player.takeStat),
+  // que recalcula sus stats desde cero con todas las cartas cogidas. Las que
+  // acaban en "Mul" se multiplican; dmgReduce, regen y hp se suman.
   const STATS = [
     { id: 'hp',   icon: 'heart', title: 'Vigor',        desc: '+20 de vida máxima (y la recupera).',
-      apply: pl => pl.addMaxHp(20) },
+      mods: { hp: 20 }, apply: pl => pl.takeStat('hp') },
     { id: 'atk',  icon: 'fist', title: 'Potencia',     desc: '+10% de daño con todos los movimientos.',
-      apply: pl => pl.atkMul *= 1.10, max: 40 },
+      mods: { atkMul: 1.10 }, apply: pl => pl.takeStat('atk'), max: 40 },
     { id: 'spd',  icon: 'boot', title: 'Carrera',      desc: '+7% de velocidad de movimiento.',
-      apply: pl => pl.spdMul *= 1.07, max: 8 },
+      mods: { spdMul: 1.07 }, apply: pl => pl.takeStat('spd'), max: 8 },
     { id: 'cd',   icon: 'clock', title: 'Reflejos',     desc: '-8% de recarga en todos los movimientos.',
-      apply: pl => pl.cdMul *= 0.92, max: 10 },
+      mods: { cdMul: 0.92 }, apply: pl => pl.takeStat('cd'), max: 10 },
     { id: 'def',  icon: 'shield', title: 'Coraza',       desc: '+6% de reducción de daño recibido.',
-      apply: pl => pl.dmgReduce = Math.min(0.7, pl.dmgReduce + 0.06), max: 12 },
+      mods: { dmgReduce: 0.06 }, apply: pl => pl.takeStat('def'), max: 12 },
     { id: 'rgn',  icon: 'sprout', title: 'Síntesis',     desc: '+0.9 de vida regenerada por segundo.',
-      apply: pl => pl.regenFlat += 0.9 },
+      mods: { regen: 0.9 }, apply: pl => pl.takeStat('rgn') },
     { id: 'mag',  icon: 'magnet', title: 'Imán',         desc: '+30% de radio de recogida de experiencia.',
-      apply: pl => pl.magnet *= 1.30, max: 6 },
+      mods: { magnetMul: 1.30 }, apply: pl => pl.takeStat('mag'), max: 6 },
     { id: 'xp',   icon: 'book', title: 'Aprendizaje',  desc: '+12% de experiencia ganada.',
-      apply: pl => pl.xpMul *= 1.12, max: 8 },
+      mods: { xpMul: 1.12 }, apply: pl => pl.takeStat('xp'), max: 8 },
     { id: 'heal', icon: 'berry', title: 'Baya Zidra',   desc: 'Recupera el 45% de tu vida ahora mismo.',
       apply: pl => pl.heal(pl.maxHp * 0.45) }
   ];

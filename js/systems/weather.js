@@ -110,8 +110,7 @@ G.Weather = (() => {
       chipT = 2;
       if (pl && !pl.dead && hurts(pl.mon.types) && level() > 0.5) {
         const d = Math.max(1, pl.maxHp * 0.012);
-        if (pl.hp > d + 1) {
-          pl.hp -= d;
+        if (pl.chip(d)) {
           G.FX.dmgText(pl.x, pl.y - pl.bodyH - 4, '-' + Math.round(d), def().color);
         }
       }
