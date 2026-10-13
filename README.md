@@ -1,5 +1,8 @@
 # PokéSurvivor · Mundo Misterioso
 
+Incluye chino simplificado con nombres oficiales y páginas de ayuda traducidas, manteniendo la selección predeterminada de español e inglés.
+中文运行说明：[README.zh-CN.md](README.zh-CN.md)；术语及维护记录：[docs/LOCALIZATION.md](docs/LOCALIZATION.md)。
+
 Bullet-heaven con Pokémon al estilo de Survivor.io y Megabonk, con sprites de
 *Pokémon Mundo Misterioso*, capa roguelike, **966 Pokémon de las 9 generaciones**,
 shinies y gacha por región. Música y efectos compuestos para el juego.

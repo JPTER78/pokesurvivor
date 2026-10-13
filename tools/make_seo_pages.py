@@ -36,12 +36,33 @@ def en(s):
     return s
 def L(lang, es, eng=None):
     """Texto en el idioma: 'es' tal cual; 'en' el que se da o el del diccionario."""
+    if lang == 'zh-CN': return zh(es)
     return es if lang == 'es' else (eng if eng is not None else en(es))
 
+ZH = D['zh']; ZH_CONTEXT = D['zhContexts']
+ZPATS = []
+for k, v in ZH.items():
+    if re.search(r'\{(?:x|name)\}', k):
+        parts = [re.escape(p) for p in re.split(r'\{(?:x|name)\}', k)]
+        ZPATS.append((re.compile('^' + '(.+?)'.join(parts) + '$'), v))
+def zh(s, context=''):
+    if not any(c.isalpha() for c in s): return s
+    if context and s in ZH_CONTEXT.get(context, {}): return ZH_CONTEXT[context][s]
+    if s in ZH: return ZH[s]
+    for rx, v in ZPATS:
+        m = rx.match(s)
+        if m:
+            g = iter(m.groups())
+            return re.sub(r'\{(?:x|name)\}', lambda _: zh(next(g)), v)
+    raise ValueError('Missing Simplified Chinese page translation: ' + s)
+
 GEN = {1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: ('Teselia', 'Unova'), 6: 'Kalos', 7: 'Alola', 8: 'Galar', 9: 'Paldea'}
-def gen_name(g, lang): v = GEN[g]; return v if isinstance(v, str) else (v[0] if lang == 'es' else v[1])
+def gen_name(g, lang):
+    v = GEN[g]
+    s = v if isinstance(v, str) else (v[0] if lang == 'es' else v[1])
+    return zh(s, 'region') if lang == 'zh-CN' else s
 TN = D['typeName']; TC = D['typeColor']; TYPES = D['typeOrder']
-def tname(t, lang): return L(lang, TN.get(t, t))
+def tname(t, lang): return zh(TN.get(t, t), 'type') if lang == 'zh-CN' else L(lang, TN.get(t, t))
 def tbadge(t, lang): return f'<i class="ty" style="background:{TC.get(t, "#888")}">{esc(tname(t, lang))}</i>'
 LEG = set(D['legends'])
 
@@ -53,12 +74,17 @@ PATH = {
     'en': {'home': 'en/', 'guide': 'en/guide/', 'pokedex': 'en/pokedex/', 'legends': 'en/legendaries/', 'shinies': 'en/shinies/', 'types': 'en/types/',
            'moves': 'en/moves/', 'items': 'en/items/', 'achievements': 'en/achievements/', 'news': 'en/news/', 'support': 'en/support/'},
 }
+PATH['zh-CN'] = {'home':'zh/', 'guide':'zh/guide/', 'pokedex':'zh/pokedex/', 'legends':'zh/legendaries/', 'shinies':'zh/shinies/', 'types':'zh/types/', 'moves':'zh/moves/', 'items':'zh/items/', 'achievements':'zh/achievements/', 'news':'zh/news/', 'support':'zh/support/', 'contact':'zh/contact/'}
+PATH['es']['contact'] = PATH['en']['contact'] = 'contacto/'
+LANGS = ('es', 'en', 'zh-CN')
 NAV = {'es': [('guide', 'Guía'), ('pokedex', 'Pokédex'), ('legends', 'Legendarios'), ('moves', 'Movimientos'), ('types', 'Tipos')],
        'en': [('guide', 'Guide'), ('pokedex', 'Pokédex'), ('legends', 'Legendaries'), ('moves', 'Moves'), ('types', 'Types')]}
 FOOT = {'es': [('guide', 'Guía'), ('pokedex', 'Pokédex'), ('legends', 'Legendarios y arenas'), ('shinies', 'Shinies'), ('types', 'Tabla de tipos'),
                ('moves', 'Movimientos'), ('items', 'Objetos'), ('achievements', 'Logros'), ('news', 'Novedades'), ('support', 'Apoyar el proyecto')],
         'en': [('guide', 'Guide'), ('pokedex', 'Pokédex'), ('legends', 'Legendaries & arenas'), ('shinies', 'Shinies'), ('types', 'Type chart'),
                ('moves', 'Moves'), ('items', 'Items'), ('achievements', 'Achievements'), ('news', 'News'), ('support', 'Support the project')]}
+NAV['zh-CN'] = [('guide','攻略'),('pokedex','宝可梦图鉴'),('legends','传说宝可梦'),('moves','招式'),('types','属性')]
+FOOT['zh-CN'] = [('guide','攻略'),('pokedex','宝可梦图鉴'),('legends','传说宝可梦与裂缝'),('shinies','异色宝可梦'),('types','属性相克表'),('moves','招式'),('items','道具'),('achievements','成就'),('news','更新日志'),('support','支持项目'),('contact','联系作者')]
 
 def rel(frm, to):
     """Ruta relativa entre dos páginas (las dos son carpetas)."""
@@ -67,14 +93,15 @@ def rel(frm, to):
 
 def page(pid, lang, title, desc, body, ld=None):
     me = PATH[lang][pid]
+    locale = {'es':'es_ES','en':'en_US','zh-CN':'zh_CN'}[lang]
     other = 'en' if lang == 'es' else 'es'
     up = '../' * me.count('/')
-    alts = ''.join(f'<link rel="alternate" hreflang="{l}" href="{SITE}{PATH[l][pid]}">\n' for l in ('es', 'en'))
+    alts = ''.join(f'<link rel="alternate" hreflang="{l}" href="{SITE}{PATH[l][pid]}">\n' for l in LANGS)
     alts += f'<link rel="alternate" hreflang="x-default" href="{SITE}{PATH["es"][pid]}">\n'
     nav = ''.join(f'<a href="{rel(me, PATH[lang][p])}">{esc(t)}</a>' for p, t in NAV[lang])
     foot = ' · '.join(f'<a href="{rel(me, PATH[lang][p])}">{esc(t)}</a>' for p, t in FOOT[lang])
-    play = 'Jugar gratis' if lang == 'es' else 'Play free'
-    switch = f'<a class="lang" hreflang="{other}" href="{rel(me, PATH[other][pid])}">{"English" if lang == "es" else "Español"}</a>'
+    play = {'es':'Jugar gratis','en':'Play free','zh-CN':'免费游玩'}[lang]
+    switch = ''.join(f'<a class="lang" data-language="{l}" hreflang="{l}" href="{rel(me, PATH[l][pid])}">{label}</a>' for l,label in [('es','Español'),('en','English'),('zh-CN','简体中文')] if l != lang)
     legal = ('PokéSurvivor es un juego de fans <b>gratuito y sin ánimo de lucro</b>, sin anuncios ni compras (sólo donaciones voluntarias para los servidores). No está afiliado a Nintendo, Creatures, '
              'GAME FREAK ni The Pokémon Company; Pokémon y sus personajes son propiedad de sus respectivos dueños. Sprites de PMD SpriteCollab '
              '(CC BY-NC 4.0) · datos de PokéAPI · música y sonidos originales. No tiene ninguna criptomoneda ni token oficial: '
@@ -83,6 +110,9 @@ def page(pid, lang, title, desc, body, ld=None):
              'or The Pokémon Company; Pokémon and its characters are owned by their respective owners. Sprites from PMD SpriteCollab (CC BY-NC 4.0) '
              '· data from PokéAPI · original music and sounds. It has no official cryptocurrency or token: any using its name '
              'belongs to third parties and we take no responsibility for purchases or investments.')
+    if lang == 'zh-CN':
+        legal = ('PokéSurvivor 是免费且非营利的同人游戏，无广告、无内购；自愿捐款仅用于服务器和域名。项目与 Nintendo、Creatures、GAME FREAK 和 The Pokémon Company 没有关联。宝可梦及其角色的权利属于各自权利人。'
+                 '角色图像来自 PMD SpriteCollab（CC BY-NC 4.0），数据来自 PokéAPI，音乐和音效为原创。项目没有官方加密货币或代币；借用游戏名称的相关产品由第三方创建，作者不承担相关购买或投资责任。')
     ldj = ('<script type="application/ld+json">\n' + json.dumps(ld, ensure_ascii=False) + '\n</script>') if ld else ''
     return f'''<!doctype html>
 <html lang="{lang}">
@@ -95,7 +125,7 @@ def page(pid, lang, title, desc, body, ld=None):
 {alts}<meta name="theme-color" content="#0a1430">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PokéSurvivor">
-<meta property="og:locale" content="{'es_ES' if lang == 'es' else 'en_US'}">
+<meta property="og:locale" content="{locale}">
 <meta property="og:url" content="{SITE}{me}">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(desc)}">
@@ -122,6 +152,7 @@ def page(pid, lang, title, desc, body, ld=None):
   <p>{legal}</p>
   <p><a href="https://github.com/JPTER78/pokesurvivor">GitHub</a></p>
 </footer>
+<script>document.querySelectorAll('[data-language]').forEach(a => a.addEventListener('click', () => {{ try {{ localStorage.setItem('ps.lang', a.dataset.language); }} catch (e) {{}} }}));</script>
 </body>
 </html>
 '''
@@ -586,7 +617,9 @@ def game_en():
     s = s.replace('href="guia/"', 'href="en/guide/"').replace('href="pokedex/"', 'href="en/pokedex/"')
     s = s.replace('"description": "Fan game gratuito de supervivencia (bullet heaven, estilo Survivor.io) con Pokémon: elige compañero, sobrevive a hordas, sube de nivel, evoluciona tus ataques, enfréntate a legendarios en grietas y juega en cooperativo con hasta 4 amigos."',
                   '"description": "A free Pokémon survival fan game (bullet heaven, Survivor.io style): pick a partner, survive the hordes, level up, evolve your moves, fight legendaries in rifts and play co-op with up to 4 friends."')
-    s = s.replace('"inLanguage": "es"', '"inLanguage": ["es", "en"]')
+    s = s.replace('"inLanguage": "es"', '"inLanguage": ["es", "en", "zh-CN"]')
+    alts = ''.join(f'<link rel="alternate" hreflang="{l}" href="{SITE}{PATH[l]["home"]}">\n' for l in LANGS)
+    s = s.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n'+alts, 1)
     os.makedirs(os.path.join(ROOT, 'en'), exist_ok=True)
     open(os.path.join(ROOT, 'en', 'index.html'), 'w', encoding='utf-8').write(s)
 
@@ -604,14 +637,17 @@ def extra():
     PRI = {'home': '1.0', 'guide': '0.8', 'pokedex': '0.7', 'legends': '0.7', 'moves': '0.6', 'types': '0.6', 'shinies': '0.6', 'achievements': '0.5', 'items': '0.5', 'news': '0.5', 'support': '0.4'}
     urls = []
     for pid in PAGES:
-        for lang in ('es', 'en'):
-            alts = ''.join(f'<xhtml:link rel="alternate" hreflang="{l}" href="{SITE}{PATH[l][pid]}"/>' for l in ('es', 'en'))
+        for lang in LANGS:
+            alts = ''.join(f'<xhtml:link rel="alternate" hreflang="{l}" href="{SITE}{PATH[l][pid]}"/>' for l in LANGS)
             alts += f'<xhtml:link rel="alternate" hreflang="x-default" href="{SITE}{PATH["es"][pid]}"/>'
             urls.append(f'  <url><loc>{SITE}{PATH[lang][pid]}</loc><lastmod>{TODAY}</lastmod><priority>{PRI[pid]}</priority>{alts}</url>\n')
+    urls.append(f'  <url><loc>{SITE}zh/contact/</loc><lastmod>{TODAY}</lastmod><priority>0.3</priority></url>\n')
     open(os.path.join(ROOT, 'sitemap.xml'), 'w', encoding='utf-8').write(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + ''.join(urls) + '</urlset>\n')
 
 for lang in ('es', 'en'):
     guide(lang); pokedex(lang); legends(lang); shinies(lang); types_page(lang); moves_page(lang); items_page(lang); ach_page(lang); news(lang); support(lang)
 game_en(); extra()
+from seo_zh import generate
+generate(globals())
 print('ok:', 2 * (len(PAGES) - 1), 'páginas + en/ (juego en inglés), 404, robots, sitemap')

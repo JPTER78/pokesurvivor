@@ -289,12 +289,21 @@
   (function () {
     var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
     var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-    var l = s === 'es' || s === 'en' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('es') === 0 ? 'es' : 'en'));
+    var p = /\/en(\/|$)/.test(location.pathname) ? 'en' : /\/zh(\/|$)/.test(location.pathname) ? 'zh-CN' : null;
+    var l = s === 'es' || s === 'en' || s === 'zh-CN' ? s : p || (n.indexOf('es') === 0 ? 'es' : 'en');
     document.documentElement.lang = l;
     if (l === 'en') {
       var p = document.querySelectorAll('#boot p');
       p[0].textContent = 'A Pokémon survival game, free in your browser and on mobile.';
       p[1].textContent = 'Loading…';
+    } else if (l === 'zh-CN') {
+      var p = document.querySelectorAll('#boot p');
+      p[0].textContent = '免费的宝可梦生存游戏，可在浏览器与手机上游玩。';
+      p[1].textContent = '加载中…';
+    } else {
+      var p = document.querySelectorAll('#boot p');
+      p[0].textContent = 'Juego de supervivencia con Pokémon, gratis en el navegador y en el móvil.';
+      p[1].textContent = 'Cargando…';
     }
   })();
 </script>
@@ -543,6 +552,8 @@
 <script defer src="js/core/util.js"></script>
 <script defer src="js/core/i18n.js"></script>
 <script defer src="js/data/lang-en.js"></script>
+<script defer src="js/data/lang-zh-cn.js"></script>
+<script defer src="js/data/lang-zh-cn-names.js"></script>
 <script defer src="js/core/settings.js"></script>
 <script defer src="js/data/music.js"></script>
 <script defer src="js/data/pokedex.js"></script>

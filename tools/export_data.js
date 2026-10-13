@@ -16,13 +16,17 @@ const sandbox = {
 sandbox.window = sandbox;
 vm.createContext(sandbox);
 const load = f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), sandbox, { filename: f });
-const EN = {};
+const EN = {}, ZH = {}, ZH_CONTEXT = {};
 for (const f of ['js/core/util.js', 'js/core/i18n.js']) load(f);
 // Captura el diccionario inglés (clave en español).
 const add = G.I18n.add;
-G.I18n.add = d => { Object.assign(EN, d); add(d); };
-for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js',
-                 'js/data/items.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
+G.I18n.add = (d, lang = 'en', context = '') => {
+  if (lang === 'en') Object.assign(EN, d);
+  if (lang === 'zh-CN') Object.assign(context ? (ZH_CONTEXT[context] ||= {}) : ZH, d);
+  add(d, lang, context);
+};
+for (const f of ['js/data/lang-en.js', 'js/data/lang-zh-cn.js', 'js/data/lang-zh-cn-names.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js',
+                 'js/data/items.js', 'js/data/achievements.js', 'js/data/changelog.js', 'js/world/tiles.js', 'js/data/funding.js']) {
   try { load(f); } catch (e) { console.warn('aviso', f, e.message); }
 }
 const moves = Object.values(G.Moves.BY_ID).map(m => {
@@ -45,7 +49,7 @@ const out = {
   // (Sin la arena de Arceus: las de las grietas son una por tipo.)
   arenas: Object.fromEntries(Object.entries(G.ARENA_THEMES || (G.Tiles && G.Tiles.ARENA_THEMES) || {}).filter(([k]) => k !== 'judgment').map(([k, v]) => [k, v.name])),
   funding: { kofi: G.Funding.kofi, sponsors: G.Funding.sponsors, costs: G.Funding.costs },
-  en: EN
+  en: EN, zh: ZH, zhContexts: ZH_CONTEXT, changelog: G.CHANGELOG
 };
 fs.mkdirSync(path.join(__dirname, 'cache'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'cache', 'gamedata.json'), JSON.stringify(out));

@@ -65,7 +65,7 @@ G.MenuUI = (() => {
     const st = s.stats;
     $('menu-stats').innerHTML =
       `Runs <b style="color:#fff">${st.runs}</b> · Mejor tiempo <b style="color:#fff">${G.U.mmss(st.bestTime)}</b><br>` +
-      `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString('es')}</b>` +
+      `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString(G.I18n.lang === 'zh-CN' ? 'zh-CN' : 'es')}</b>` +
       (G.DB.guest ? '<br><span style="color:#ffb0b8">Modo invitado: no se guarda</span>' : '');
 
     socialLine();
@@ -191,7 +191,7 @@ G.MenuUI = (() => {
     box.innerHTML = `
       <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
       ${hasSh ? `<div class="seg">
-          <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
+          <button class="${viewShiny ? '' : 'on'}" data-v="0">${G.T('Normal', 'form')}</button>
           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
       <div class="center">
         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
@@ -203,9 +203,9 @@ G.MenuUI = (() => {
         ${bar('Vida', p.hp, max.hp, p.hp)}
         ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
         ${bar('Velocidad', p.spd, max.spd, p.spd)}
-        <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
+        <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.T(G.Moves.BY_ID[G.startMoveOf(dex)].name, 'move')}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
-          ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
+          ${G.Moves.poolFor(p).map(id => `<span title="${G.T(G.Moves.BY_ID[id].name, 'move')}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
@@ -308,7 +308,7 @@ G.MenuUI = (() => {
       <p class="sub" style="margin:2px 0 8px">Elige qué movimiento va siempre en cada hueco (teclas 1-4 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.</p>
       <div class="bind-slots">${[0, 1, 2, 3].map(i => `<label class="bind-slot"><span>${i + 1}</span>
         <select class="field" data-slot="${i}"><option value="">Libre</option>${ids.map(id =>
-          `<option value="${id}" ${list[i] === id ? 'selected' : ''}>${G.Moves.BY_ID[id].name}</option>`).join('')}</select></label>`).join('')}</div>`;
+          `<option value="${id}" ${list[i] === id ? 'selected' : ''}>${G.T(G.Moves.BY_ID[id].name, 'move')}</option>`).join('')}</select></label>`).join('')}</div>`;
     el.querySelectorAll('select[data-slot]').forEach(sel => {
       sel.onchange = () => {
         const l = (s.pbind[upgDex] || [null, null, null, null]).slice(0, 4);
@@ -344,7 +344,7 @@ G.MenuUI = (() => {
     el.className = 'panel ban-picker';
     el.innerHTML = `<p class="sub" style="margin:0 0 8px">Toca los movimientos que no quieres que te salgan en las cartas (${list.length}/${max}). El movimiento de inicio no se puede vetar.</p>
       <div class="ban-moves">${ids.map(id => { const d = G.Moves.BY_ID[id]; const on = list.includes(id);
-        return `<button class="chip ${on ? 'on ban' : ''}" data-id="${id}">${G.Icons.html('move:' + id, 16)} ${d.name}${on ? ' ' + G.Icons.html('ban', 14) : ''}</button>`; }).join('')}</div>`;
+        return `<button class="chip ${on ? 'on ban' : ''}" data-id="${id}">${G.Icons.html('move:' + id, 16)} ${G.T(d.name, 'move')}${on ? ' ' + G.Icons.html('ban', 14) : ''}</button>`; }).join('')}</div>`;
     el.querySelectorAll('[data-id]').forEach(b => {
       b.onclick = () => {
         const l = banList(), id = b.dataset.id, i = l.indexOf(id);
