@@ -29,7 +29,10 @@ G.Upgrades = (() => {
   function perks(levels = {}) {
     // Nunca por encima del máximo (una partida editada a mano no da más poder).
     const L = id => Math.max(0, Math.min(BY[id].max, Math.floor(+levels[id] || 0)));
+    const lv = {};
+    for (const u of LIST) if (L(u.id)) lv[u.id] = L(u.id);
     return {
+      lv,                                // niveles ya recortados (van en el resumen del ranking)
       hp: L('hp') * 8,
       atkMul: 1 + L('atk') * 0.04,
       spdMul: 1 + L('spd') * 0.03,

@@ -39,6 +39,8 @@ G.Player = class Player {
     const s = this.#s = {
       perks: Object.freeze(Object.assign({}, perks)),
       cards: [],               // cartas de stat cogidas en la run (ver takeStat)
+      cardIds: {},             // cuántas de cada una
+      up: Object.freeze(Object.assign({}, perks.lv)),   // niveles de mejoras permanentes
       itemMods: null, powerMods: null,
       atkMul: 1, spdMul: 1, cdMul: 1, dmgReduce: 0, regenFlat: 0, magnet: 78, xpMul: 1, coinMul: 1,
       critChance: perks.crit || 0,
@@ -111,6 +113,9 @@ G.Player = class Player {
   get reduction() { const b = this.#s.buffs.def; return Math.min(0.8, this.dmgReduce + b.n * b.amount); }
   get regen() { const b = this.#s.buffs.regen; return this.regenFlat + b.n * b.amount; }
 
+  /** Lo que de verdad dieron mejoras y cartas (para el resumen del ranking). */
+  record() { return { up: Object.assign({}, this.#s.up), cs: Object.assign({}, this.#s.cardIds) }; }
+
   // ---------------- fuentes de los stats ----------------
   // Los stats (atkMul, spdMul, cdMul, dmgReduce, regenFlat, magnet, xpMul,
   // coinMul, maxHp) no se tocan nunca a mano: se vuelven a calcular desde cero
@@ -157,6 +162,7 @@ G.Player = class Player {
       return false;
     }
     s.cards.push(def.mods);
+    s.cardIds[id] = (s.cardIds[id] || 0) + 1;
     const hp = s.maxHp;
     this.#derive();
     s.hp += s.maxHp - hp;
@@ -210,6 +216,7 @@ G.Player = class Player {
       return;
     }
     this.active = i;
+    if (!this.remote) G.Replay.slot(G.Game.st.time, i);
     G.Projectiles.clearOrbs(this);
     G.Audio.sfx('select');
     for (const m of this.slots[i]) m.t = Math.min(m.t, m.cd * 0.35);
@@ -306,6 +313,7 @@ G.Player = class Player {
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
     const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
+    if (!this.remote) G.Integrity.taken(Math.min(d, s.hp));
     s.hp -= d;
     s.invuln = 0.45;
     this.flash = 0.14;
@@ -401,6 +409,7 @@ G.Player = class Player {
   update(dt) {
     this.anim.update(dt);
     const st = this.#s;
+    G.Integrity.seenHp(st.maxHp);
     if (st.dead) return;
     if (st.invuln > 0) st.invuln -= dt;
     if (this.flash > 0) this.flash -= dt;

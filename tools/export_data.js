@@ -22,7 +22,7 @@ for (const f of ['js/core/util.js', 'js/core/i18n.js']) load(f);
 const add = G.I18n.add;
 G.I18n.add = d => { Object.assign(EN, d); add(d); };
 for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js',
-                 'js/data/items.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
+                 'js/data/items.js', 'js/data/upgrades.js', 'js/systems/levelup.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
   try { load(f); } catch (e) { console.warn('aviso', f, e.message); }
 }
 const moves = Object.values(G.Moves.BY_ID).map(m => {
@@ -37,6 +37,8 @@ const out = {
   items: (G.Items.LIST || []).map(i => ({ id: i.id, name: i.name, desc: i.desc })),
   achievements: (G.AchDefs.LIST || []).map(a => ({ id: a.id, cat: a.cat, name: a.name, desc: a.desc, tier: a.tier, title: a.title || '', reward: a.reward || {} })),
   achCats: G.AchDefs.CATS || null,
+  upgrades: G.Upgrades.LIST.map(u => ({ id: u.id, max: u.max })),
+  cards: G.LevelUp.STATS.map(c => ({ id: c.id, max: c.max || 0, mods: c.mods || null })),
   types: G.Types.CHART,
   typeColor: G.U.TYPE_COLOR,
   typeName: G.U.TYPE_NAME,

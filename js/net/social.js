@@ -171,6 +171,7 @@ G.Social = (() => {
     await step('invitaciones', () => del(fb.fs.collection('inv').where('to', '==', uid)));
     await step('marcas', () => del(fb.fs.collectionGroup('e').where('uids', 'array-contains', uid)));
     await step('partida en curso', () => fb.fs.collection('runs').doc(uid).delete());
+    await step('grabación', () => fb.fs.collection('replays').doc(uid).delete());
     await step('apodo', async () => {
       const prof = await fb.fs.collection('profiles').doc(uid).get();
       const lower = prof.exists ? prof.data().lower : me && me.name.toLowerCase();

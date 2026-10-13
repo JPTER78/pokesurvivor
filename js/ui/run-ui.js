@@ -29,6 +29,7 @@ G.RunUI = (() => {
     if (!offers || rerollsLeft() <= 0) return;
     const p = G.Game.player;
     p.rerolls = (p.rerolls || 0) + 1;
+    G.Replay.reroll(G.Game.st.time);
     G.Audio.sfx('select');
     renderCards(G.LevelUp.offer(p));
   }

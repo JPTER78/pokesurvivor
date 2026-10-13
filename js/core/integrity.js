@@ -13,6 +13,10 @@
  *   3. Una partida marcada no sube al ranking, no bate récords ni da logros.
  *      Las monedas se limitan a lo posible (el servidor marcaría la cuenta).
  *   4. El servidor (firestore.rules) rechaza marcas imposibles igualmente.
+ *   5. Cada marca del ranking lleva un resumen de la partida (summary) que sale
+ *      de un libro cerrado (daño hecho, pico por segundo, daño recibido, vida
+ *      máxima) y de lo que de verdad dieron las mejoras y cartas; las reglas
+ *      comprueban que cuadra con ese Pokémon y esas mejoras. Ver docs/anticheat.md.
  */
 G.Integrity = (() => {
   // Con G global (dev.html) cualquiera puede tocar la partida: no sube marcas.
@@ -30,9 +34,45 @@ G.Integrity = (() => {
   const why = new Set();
   let told = false;
 
-  /** Nueva partida: limpia las marcas de la anterior. */
+  // Libro de la partida: sólo se escribe desde el juego (a través de estas
+  // funciones), nunca desde fuera, y de él sale el resumen del ranking.
+  //   dd  daño de golpes hecho (nominal: con tipos y críticos, sin recortar al sobrante)
+  //   pk  pico de daño a UN enemigo en una ventana de 1 s
+  //   dt  daño recibido (el que de verdad te quitó vida)
+  //   mh  vida máxima más alta que tuviste
+  const led = { dd: 0, pk: 0, dt: 0, mh: 0, win: new Map(), wt: 0 };
+
+  /** Nueva partida: limpia las marcas y el libro de la anterior. */
   function begin() {
     why.clear(); told = false;
+    led.dd = led.pk = led.dt = led.mh = led.wt = 0; led.win.clear();
+  }
+
+  function dealt(e, d) {
+    led.dd += d;
+    led.win.set(e, (led.win.get(e) || 0) + d);
+  }
+  function taken(d) { led.dt += d; }
+  function seenHp(v) { if (v > led.mh) led.mh = v; }
+  /** Cada fotograma jugando: cierra la ventana de 1 s del pico de daño. */
+  function tick(dt) {
+    led.wt += dt;
+    if (led.wt < 1) return;
+    for (const v of led.win.values()) if (v / led.wt > led.pk) led.pk = v / led.wt;
+    led.win.clear(); led.wt = 0;
+  }
+
+  /**
+   * Lo que sube con la marca (campo `sm`). Todo son enteros pequeños.
+   *   px  Pokémon · up  mejoras compradas (nivel de cada una) · cs  cartas de stat cogidas
+   *   dd, pk, dt, mh  (el libro, ver arriba) · rid  id de la partida grabada (js/core/replay.js)
+   */
+  function summary(pl, rid) {
+    const r = pl.record();
+    const sm = { px: pl.dex, up: r.up, cs: r.cs, dd: Math.round(led.dd), pk: Math.round(led.pk), dt: Math.round(led.dt),
+                 mh: Math.round(Math.max(led.mh, pl.maxHp)) };
+    if (rid) sm.rid = rid;
+    return sm;
   }
 
   /** Alguien ha tocado lo que no debía. Una partida marcada no cuenta. */
@@ -64,5 +104,5 @@ G.Integrity = (() => {
     return !why.size;
   }
 
-  return { begin, flag, check, rankable, trusted, maxCoins, MAX_T, get reasons() { return [...why]; } };
+  return { begin, flag, check, rankable, trusted, maxCoins, MAX_T, dealt, taken, seenHp, tick, summary, get reasons() { return [...why]; } };
 })();

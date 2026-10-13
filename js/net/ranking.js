@@ -166,11 +166,30 @@ G.Ranking = (() => {
   /** La subida de una marca (para que la partida siguiente espere a que acabe). */
   function track(p) { busy = p.catch(() => {}); return p; }
 
+  /**
+   * Sube la grabación de la partida (replays/{uid}). Las reglas piden que la
+   * marca que la cita (sm.rid) ya la tenga detrás. Si falla, la marca sube sin rid.
+   */
+  async function saveReplay(rep) {
+    const fb = fbx();
+    if (!fb || !rep) return false;
+    try {
+      await fb.fs.collection('replays').doc(fb.uid).set({
+        rid: rep.rid, v: String(rep.hdr.v || '').slice(0, 16), t: rep.t, mode: rep.hdr.mode, h: JSON.stringify(rep.hdr),
+        log: rep.log, n: rep.n, trunc: !!rep.trunc, at: now()
+      });
+      return true;
+    } catch (e) { console.warn('[Ranking] grabación:', e.code || e.message); return false; }
+  }
+
   /** Guarda la entrada en cada tabla donde mejore. → periodos mejorados */
-  async function store(boards, id, entry) {
+  async function store(boards, id, entry, rep) {
     const fb = fbx();
     const better = [];
     const known = bests();
+    // La grabación sólo se sube si alguna tabla va a escribirse (una vez por partida).
+    let replayP = null;
+    const withReplay = () => replayP || (replayP = saveReplay(rep));
     await Promise.all(boards.map(async ([b, period]) => {
       const key = b + ':' + id;
       try {
@@ -187,7 +206,10 @@ G.Ranking = (() => {
           known[key] = old.exists ? old.data().t : 0;
         }
         if ((known[key] || 0) >= entry.t) return;
+        let sm = entry.sm;
+        if (sm && !(await withReplay())) { sm = Object.assign({}, sm); delete sm.rid; }
         const data = Object.assign({}, entry, { at: firebase.firestore.FieldValue.serverTimestamp() });
+        if (sm) data.sm = sm; else delete data.sm;
         // Si la tabla ya está llena y no llegas al top 50, no hace falta tocar el resumen
         // (y en diario, semanal y mensual, ni siquiera se guarda la marca).
         const cached = cacheGet('s:' + b);
@@ -244,10 +266,10 @@ G.Ranking = (() => {
     const fb = fbx();
     if (!fb || !G.Social.me || r.t < MIN_T || r.t > MAX_T || !G.Integrity.rankable()) return [];
     const ids = periodIds();
-    const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
+    const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills, sm: r.sm };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
     boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
-    const better = await store(boards, fb.uid, entry);
+    const better = await store(boards, fb.uid, entry, r.rep);
     announce(better);
     return better;
   }
@@ -260,11 +282,11 @@ G.Ranking = (() => {
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
     const id = ms.map(m => m.uid).join('_');
     const entry = { t: r.t, uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),
-                    shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills };
+                    shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills, sm: r.sm };
     const ids = periodIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
     for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
-    const better = await store(boards, id, entry);
+    const better = await store(boards, id, entry, r.rep);
     announce(better);
     return better;
   }

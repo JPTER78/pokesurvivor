@@ -105,7 +105,8 @@ G.Game = (() => {
     G.Weather.reset();
     G.Path.clear();
     G.Hazards.clear();
-    G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
+    const seed = coop ? coop.seed : Math.floor(Math.random() * 1e6);
+    G.World.reset(seed);
     G.World.setBiome(0, true);
     biome = 0;
     time = 0; pendingLevels = 0;
@@ -127,6 +128,8 @@ G.Game = (() => {
       pl.setActive(0);
     }
 
+    G.Replay.begin({ dex: mon.dex, shiny: pl.shiny, seed, up: perks.lv, mode: coop ? 'g' : 's', n: coop ? coop.members.length : 1,
+                     moves: pl.moves.map(m => m.id), bind: pl.bind, ban: [...pl.banned] });
     if (coop) {
       G.Coop.begin(coop, pl, coopApi);
       G.Social.setPlaying(true);
@@ -143,6 +146,7 @@ G.Game = (() => {
   }
 
   function quitRun() {
+    G.Replay.quit(time);
     if (G.Coop.active) G.Coop.leave();
     endRun(false);
   }
@@ -203,6 +207,7 @@ G.Game = (() => {
       G.Audio.sfx('levelup');
       G.RunUI.showLevelUp(level, G.LevelUp.offer(pl), card => {
         G.Audio.sfx('confirm');
+        G.Replay.card(time, card);
         card.apply(pl);
         G.Coop.localPicked();
       }, true);
@@ -321,6 +326,11 @@ G.Game = (() => {
 
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.
     if (G.Integrity.rankable()) {
+      // La marca lleva el resumen de la partida y su grabación (ver Integrity.summary y core/replay.js).
+      const rep = G.Replay.finish(time);
+      if (rep) rep.t = mark.t;
+      mark.sm = G.Integrity.summary(pl, rep && rep.rid);
+      mark.rep = rep;
       if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
       else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
     }
@@ -351,6 +361,7 @@ G.Game = (() => {
     G.Audio.sfx('levelup');
     G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
       G.Audio.sfx('confirm');
+      G.Replay.card(time, card);
       card.apply(pl);
       state = 'playing';
     });
@@ -378,6 +389,7 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.holdStart();
     G.Audio.sfx('levelup');
     G.RunUI.showBond(opt, picked => {
+      G.Replay.bond(time, picked);
       const group = pl.fuse(picked, opt.group);
       G.Audio.sfx('legend');
       G.FX.ring(pl.x, pl.y, 8, 130, '#ff8ad8', 0.8, 6);
@@ -398,6 +410,7 @@ G.Game = (() => {
     let mine = false;            // esta elección es la que ha parado el juego
     const take = got => {
       if (got !== pl.item) {
+        G.Replay.item(time, got);
         pl.equip(got);
         G.Spawner.say('¡Llevas ' + G.Items.BY[got].name + '!', 2.6, true);
         G.Progress.event('item', { id: got });
@@ -599,7 +612,11 @@ G.Game = (() => {
     }
 
     pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item'));
+    const [ix, iy] = G.Input.axis();
+    G.Replay.axis(time, ix, iy);
     pl.update(dt);
+    G.Integrity.tick(dt);
+    G.Replay.tick(time, pl);
     if (coop) {
       for (const p of G.Coop.puppets()) { p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time); }
       if (pl.dead) reviveTick(dt);
@@ -820,14 +837,14 @@ G.Game = (() => {
   return {
     init, startRun, everyone, levelXp, flash, offerBond,
     /** Para pruebas: salta el reloj de la run. */
-    debugTime(t) { time = t; },
+    debugTime(t) { time = t; G.Integrity.flag('reloj'); },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
-    debugSpeed(k) { speedK = k; },
+    debugSpeed(k) { speedK = k; G.Integrity.flag('velocidad'); },
     togglePause,
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
-    debugLevelUp() { pl.level++; pendingLevels++; },
+    debugLevelUp() { pl.level++; pendingLevels++; G.Integrity.flag('nivel'); },
     toUI() { state = 'ui'; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };
