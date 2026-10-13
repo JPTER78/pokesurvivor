@@ -109,7 +109,7 @@ Mac / Linux:
 NODE_PATH=/tmp/ps-test/node_modules /tmp/ps-test/node_modules/.bin/firebase emulators:exec --only firestore --project demo-ps "node tools/test_rules.js"
 ```
 
-La primera vez descarga el emulador (~60 MB). Debe terminar con **`26 bien, 0 mal`**. Si
+La primera vez descarga el emulador (~60 MB). Debe terminar con **`25 bien, 0 mal`** (26 si usas `SAMPLE`, ver abajo). Si
 alguno falla, no despliegues: las reglas no son las que se probaron. (Los mensajes
 `evaluation error ... for 'create'` que saca el emulador son los rechazos esperados, no
 errores.)
