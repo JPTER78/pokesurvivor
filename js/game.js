@@ -109,7 +109,8 @@ G.Game = (() => {
     biome = 0;
     time = 0; pendingLevels = 0;
 
-    pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    const look = G.DB.partnerLook();
+    pl = new G.Player(mon, perks, look.shiny, look.female);
     banked = { t1: 0, t10: 0 };
     caught = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
@@ -131,7 +132,7 @@ G.Game = (() => {
     }
     G.Camera.x = pl.x; G.Camera.y = pl.y; G.Camera.shake = 0;
     // Hojas de sprites locales: el compañero y los primeros enemigos.
-    G.Sprites.preload([mon.dex], 8000, pl.shiny);
+    G.Sprites.preload([mon.dex], 8000, pl.shiny, pl.female);
     G.Audio.music(G.BIOME_MUSIC[0]);
     deathT = 0;
 
@@ -205,7 +206,7 @@ G.Game = (() => {
     },
     waiting(names) { G.RunUI.setWaiting(names); },
     resume() { G.RunUI.closeLevelUp(); if (state === 'levelup') state = 'playing'; },
-    shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
+    shiny(dex, female) { G.onShinyCaught({ dex, female, name: (G.DEX_BY[dex] || {}).name || '' }); },
     over(d) {
       if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
@@ -254,15 +255,20 @@ G.Game = (() => {
     G.Audio.sfx('shinyGet');
   };
 
-  /** Un shiny salvaje cae: te lo quedas (y la versión normal si no la tenías). */
+  /**
+   * Un shiny salvaje cae: te lo quedas (y la versión normal si no la tenías).
+   * Si es hembra shiny: la hembra shiny (y la hembra y el Pokémon, si faltaban).
+   */
   G.onShinyCaught = e => {
     if (!G.DB.save || !pl) return;
     if (G.Coop.isHost) G.Coop.shinyCaught(e);
-    const isNew = G.DB.grantShiny(e.dex, 'wild');
+    const female = !!e.female && G.Sprites.hasFemaleShiny(e.dex);
+    const isNew = female ? G.DB.grantFemaleShiny(e.dex, 'wild') : G.DB.grantShiny(e.dex, 'wild');
     G.DB.save.stats.shinies++;
     G.DB.commit();
-    caught.push({ dex: e.dex, isNew });
-    G.Spawner.say(isNew ? '¡Has conseguido a ' + e.name + ' shiny!' : '¡Otro ' + e.name + ' shiny! (+300 monedas)', 4);
+    caught.push({ dex: e.dex, female, isNew });
+    if (female) G.Spawner.say(isNew ? '¡Has conseguido a ' + e.name + ' shiny ♀!' : '¡Otro ' + e.name + ' shiny ♀! (+300 monedas)', 4);
+    else G.Spawner.say(isNew ? '¡Has conseguido a ' + e.name + ' shiny!' : '¡Otro ' + e.name + ' shiny! (+300 monedas)', 4);
     if (!isNew) pl.coins += 300;
     G.Audio.sfx('shinyGet');
   };

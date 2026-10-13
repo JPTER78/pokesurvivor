@@ -9,6 +9,8 @@
   const $ = G.UI.$;
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = t => (t >= 3600 ? Math.floor(t / 3600) + ':' + G.U.mmss(t % 3600).padStart(5, '0') : G.U.mmss(t));
+  /** Nombre de un favorito con sus marcas de shiny y de hembra. */
+  const favName = f => (f.shiny ? G.Icons.html('shiny', 12) + ' ' : '') + esc(G.DEX_BY[f.dex].name) + (f.female ? ' <span class="fem">♀</span>' : '');
 
   // ======================= PANTALLA =======================
 
@@ -160,8 +162,8 @@
         const slot = document.createElement('div');
         slot.className = 'fav-slot';
         if (f && G.DEX_BY[f.dex]) {
-          slot.appendChild(G.UI.spriteCanvas(f.dex, 120, 100, { scale: 2, lively: true, shiny: !!f.shiny }));
-          slot.insertAdjacentHTML('beforeend', `<b>${f.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${esc(G.DEX_BY[f.dex].name)}</b>`);
+          slot.appendChild(G.UI.spriteCanvas(f.dex, 120, 100, { scale: 2, lively: true, shiny: !!f.shiny, female: !!f.female }));
+          slot.insertAdjacentHTML('beforeend', `<b>${favName(f)}</b>`);
         } else slot.innerHTML = '<span>Elegir</span>';
         slot.onclick = () => pickFav(i);
         favs.appendChild(slot);
@@ -198,14 +200,16 @@
         g.innerHTML = '';
         const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d] && (!q || G.DEX_BY[d].name.toLowerCase().includes(q)));
         for (const d of mons.slice(0, 120)) {
-          for (const shiny of G.DB.ownsShiny(d) ? [false, true] : [false]) {
+          // Cada aspecto que tengas: normal, hembra, shiny y hembra shiny.
+          const looks = [[false, false], [false, true], [true, false], [true, true]].filter(([sh, fe]) => G.DB.ownsLook(d, sh, fe));
+          for (const [shiny, female] of looks) {
             const c = document.createElement('div');
             c.className = 'cell';
-            c.appendChild(G.UI.spriteCanvas(d, 92, 80, { scale: 2, shiny }));
-            c.insertAdjacentHTML('beforeend', `<b>${shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${esc(G.DEX_BY[d].name)}</b>`);
+            c.appendChild(G.UI.spriteCanvas(d, 92, 80, { scale: 2, shiny, female }));
+            c.insertAdjacentHTML('beforeend', `<b>${favName({ dex: d, shiny, female })}</b>`);
             c.onclick = () => {
               s.profile.favs = (s.profile.favs || []).slice();
-              s.profile.favs[i] = { dex: d, shiny };
+              s.profile.favs[i] = female ? { dex: d, shiny, female } : { dex: d, shiny };
               s.profile.favs = s.profile.favs.filter(Boolean).slice(0, 3);
               save(); tab = 'profile'; render();
             };
@@ -267,8 +271,8 @@
         if (!G.DEX_BY[f.dex]) continue;
         const slot = document.createElement('div');
         slot.className = 'fav-slot';
-        slot.appendChild(G.UI.spriteCanvas(f.dex, 120, 100, { scale: 2, lively: true, shiny: !!f.shiny }));
-        slot.insertAdjacentHTML('beforeend', `<b>${f.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${esc(G.DEX_BY[f.dex].name)}</b>`);
+        slot.appendChild(G.UI.spriteCanvas(f.dex, 120, 100, { scale: 2, lively: true, shiny: !!f.shiny, female: !!f.female }));
+        slot.insertAdjacentHTML('beforeend', `<b>${favName(f)}</b>`);
         favs.appendChild(slot);
       }
       if (!favs.children.length) favs.innerHTML = '<p class="sub">Sin favoritos todavía.</p>';

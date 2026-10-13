@@ -1,6 +1,8 @@
 /* ============ sprites.js — sprites estilo Mundo Misterioso (locales) ============
  * Hojas de SpriteCollab en assets/pokemon/{dex}/{Anim}.png, geometría en
  * G.SPRITE_META (js/data/sprites-meta.js, generado por tools/fetch_sprites.py).
+ * Variantes: s/ shiny · f/ hembra · fs/ hembra shiny. La hembra es sólo de
+ * aspecto: el tamaño del cuerpo (colisiones) sale siempre del macho.
  *
  *   columnas = fotogramas · filas = 8 direcciones
  *   0 Down · 1 DownRight · 2 Right · 3 UpRight · 4 Up · 5 UpLeft · 6 Left · 7 DownLeft
@@ -12,7 +14,7 @@
 G.Sprites = (() => {
   /** Unidades de mundo por píxel de arte. Tiles y sprites comparten escala. */
   const PX = 2;
-  const sheets = new Map();          // "dex/Anim[/s]" -> {img, ready, failed}
+  const sheets = new Map();          // "dex/Anim[/s|/f|/fs]" -> {img, ready, failed}
 
   function meta(dex) { return G.SPRITE_META[dex] || null; }
 
@@ -43,25 +45,41 @@ G.Sprites = (() => {
   /** ¿Tiene versión shiny? (assets/pokemon/{dex}/s/) */
   function hasShiny(dex) { const m = meta(dex); return !!(m && m.sh); }
 
+  /** ¿Tiene aspecto de hembra? (assets/pokemon/{dex}/f/) */
+  function hasFemale(dex) { const m = meta(dex); return !!(m && m.f); }
+
+  /** ¿Tiene hembra shiny? (assets/pokemon/{dex}/fs/) */
+  function hasFemaleShiny(dex) { const m = meta(dex); return !!(m && m.fs); }
+
   /** Animaciones disponibles para esa variante. */
   function has(m, anim, shiny) {
     return !!m.a[anim] && !(shiny && m.sm && m.sm.includes(anim));
   }
 
-  function animName(dex, anim, shiny = false) {
+  /** ¿Esa animación está en la hoja de hembra (shiny o no)? Si no, se usa la del macho. */
+  function femaleHas(m, anim, shiny) {
+    if (!m.f || (shiny && !m.fs)) return false;
+    const miss = shiny ? m.fsm : m.fm;
+    return !!m.a[anim] && !(miss && miss.includes(anim));
+  }
+
+  function animName(dex, anim, shiny = false, female = false) {
     const m = meta(dex);
     if (!m) return null;
     shiny = shiny && !!m.sh;
-    if (has(m, anim, shiny)) return anim;
+    if (has(m, anim, shiny) || (female && femaleHas(m, anim, shiny))) return anim;
     return has(m, 'Idle', shiny) ? 'Idle' : 'Walk';
   }
 
   /** Geometría de una animación (la shiny sólo difiere en casos raros). */
-  function animMeta(dex, anim, shiny = false) {
+  function animMeta(dex, anim, shiny = false, female = false) {
     const m = meta(dex);
     if (!m) return null;
-    const name = animName(dex, anim, shiny);
-    if (shiny && m.sh && m.sa && m.sa[name]) return m.sa[name];
+    shiny = shiny && !!m.sh;
+    const name = animName(dex, anim, shiny, female);
+    // Hembra: lo que difiera de la normal (fa) y, la shiny, de la hembra (fsa).
+    if (female && femaleHas(m, name, shiny)) return (shiny && m.fsa && m.fsa[name]) || (m.fa && m.fa[name]) || m.a[name] || null;
+    if (shiny && m.sa && m.sa[name]) return m.sa[name];
     return m.a[name] || null;
   }
 
@@ -79,12 +97,14 @@ G.Sprites = (() => {
     }
   }
 
-  function sheet(dex, anim, shiny = false) {
+  function sheet(dex, anim, shiny = false, female = false) {
     const m = meta(dex);
     shiny = shiny && !!(m && m.sh);
-    const name = animName(dex, anim, shiny);
+    const name = animName(dex, anim, shiny, female);
     if (!name) return null;
-    const k = dex + '/' + name + (shiny ? '/s' : '');
+    // Carpeta de la variante: '' normal · s/ shiny · f/ hembra · fs/ hembra shiny.
+    const sub = female && femaleHas(m, name, shiny) ? (shiny ? 'fs' : 'f') : shiny ? 's' : '';
+    const k = dex + '/' + name + (sub ? '/' + sub : '');
     let s = sheets.get(k);
     const now = Date.now();
     if (s) {
@@ -95,7 +115,7 @@ G.Sprites = (() => {
     }
     if (sheets.size >= MAX_SHEETS) evict(now);
     s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0, at: now,
-          src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png` };
+          src: `assets/pokemon/${dex}/${sub ? sub + '/' : ''}${name}.png` };
     s.img.onload = () => { s.ready = true; };
     s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
     s.img.src = s.src;
@@ -106,9 +126,9 @@ G.Sprites = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
 
   /** Precarga todas las animaciones de esos Pokémon. */
-  function preload(dexes, timeout = 8000, shiny = false) {
+  function preload(dexes, timeout = 8000, shiny = false, female = false) {
     const hs = [];
-    for (const d of dexes) for (const a of ANIMS) { const s = sheet(d, a, shiny); if (s) hs.push(s); }
+    for (const d of dexes) for (const a of ANIMS) { const s = sheet(d, a, shiny, female); if (s) hs.push(s); }
     return new Promise(res => {
       const t0 = performance.now();
       (function check() {
@@ -123,7 +143,7 @@ G.Sprites = (() => {
     return ((Math.round((Math.PI / 2 - a) / (Math.PI / 4)) % 8) + 8) % 8;
   }
 
-  /** Radio de colisión aproximado a partir del tamaño del sprite. */
+  /** Radio de colisión aproximado a partir del tamaño del sprite (del macho: la hembra no cambia nada). */
   function bodyRadius(dex, scale = 1) {
     const m = animMeta(dex, 'Idle');
     const w = m ? m.w : 32;
@@ -156,9 +176,11 @@ G.Sprites = (() => {
    *                     a la de fondo hasta que termina
    */
   class Animator {
-    constructor(dex, scale = 1, shiny = false) {
+    /** @param female  aspecto de hembra (si no hay hojas de hembra para esa variante, el normal) */
+    constructor(dex, scale = 1, shiny = false, female = false) {
       this.dex = dex;
       this.shiny = shiny && hasShiny(dex);
+      this.female = !!female && (this.shiny ? hasFemaleShiny(dex) : hasFemale(dex));
       this.scale = scale;
       this.base = 'Idle';
       this.cur = 'Idle';
@@ -191,7 +213,7 @@ G.Sprites = (() => {
 
     /** Progreso 0..1 de la animación actual. */
     progress() {
-      const m = animMeta(this.dex, this.cur, this.shiny);
+      const m = animMeta(this.dex, this.cur, this.shiny, this.female);
       if (!m) return 1;
       let total = 0, before = 0;
       for (let i = 0; i < m.n; i++) { if (i < this.frame) before += m.d[i]; total += m.d[i]; }
@@ -199,13 +221,13 @@ G.Sprites = (() => {
     }
 
     _start(anim, once) {
-      this.cur = animName(this.dex, anim, this.shiny) || 'Idle';
+      this.cur = animName(this.dex, anim, this.shiny, this.female) || 'Idle';
       this.frame = 0; this.t = 0;
       this.once = once; this.done = false;
     }
 
     update(dt) {
-      const m = animMeta(this.dex, this.cur, this.shiny);
+      const m = animMeta(this.dex, this.cur, this.shiny, this.female);
       if (!m || this.done) return;
       this.t += dt * 60 * this.speed;
       while (this.t >= m.d[this.frame]) {
@@ -226,15 +248,15 @@ G.Sprites = (() => {
 
     /** Dibuja con los pies en (x, y). opts: { flash, alpha } */
     draw(ctx, x, y, opts = {}) {
-      let m = animMeta(this.dex, this.cur, this.shiny);
-      let s = sheet(this.dex, this.cur, this.shiny);
+      let m = animMeta(this.dex, this.cur, this.shiny, this.female);
+      let s = sheet(this.dex, this.cur, this.shiny, this.female);
       const k = PX * this.scale;
       if (s && !s.ready) {
         // Mientras carga esta animación, enseña Idle si ya está.
-        const idle = sheet(this.dex, 'Idle', this.shiny);
-        if (idle && idle.ready) { s = idle; m = animMeta(this.dex, 'Idle', this.shiny); }
+        const idle = sheet(this.dex, 'Idle', this.shiny, this.female);
+        if (idle && idle.ready) { s = idle; m = animMeta(this.dex, 'Idle', this.shiny, this.female); }
       }
-      const frame = s === sheet(this.dex, this.cur, this.shiny) ? this.frame : 0;
+      const frame = s === sheet(this.dex, this.cur, this.shiny, this.female) ? this.frame : 0;
       if (!m || !s || !s.ready) {
         // Respaldo: bolita, por si falta el fichero.
         ctx.fillStyle = opts.color || '#6b7a94';
@@ -258,6 +280,6 @@ G.Sprites = (() => {
     }
   }
 
-  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
+  return { PX, meta, hasShiny, hasFemale, hasFemaleShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
            drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; } };
 })();

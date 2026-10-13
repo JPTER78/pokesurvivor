@@ -454,6 +454,10 @@ img.pix { image-rendering: pixelated; image-rendering: crisp-edges; vertical-ali
   padding: 5px 14px; font-size: 14px; display: flex; gap: 5px; align-items: center;
   text-shadow: 2px 2px 0 var(--shadow); }
 .seg button.on { background: rgba(154,230,255,.22); color: #c9f3ff; }
+/* normal/shiny y macho/hembra, uno al lado del otro */
+.segs { display: flex; justify-content: center; flex-wrap: wrap; gap: 0 8px; }
+.segs .seg { margin: 2px 0 8px; }
+.fem { color: #ff9ed8; }
 .pcard.shiny { animation: pop .3s ease-out both, legend 1.1s ease-in-out infinite alternate; }
 .caught > span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .caught-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }

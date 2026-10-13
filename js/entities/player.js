@@ -7,12 +7,14 @@ G.Player = class Player {
   /**
    * @param mon   entrada de G.DEX
    * @param perks mejoras permanentes ya resueltas (ver data/upgrades.js)
+   * @param female aspecto de hembra: sólo cambia el dibujo
    */
-  constructor(mon, perks = {}, shiny = false) {
+  constructor(mon, perks = {}, shiny = false, female = false) {
     this.mon = mon;
     this.dex = mon.dex;
     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
-    this.anim = new G.Sprites.Animator(mon.dex, 1, this.shiny);
+    this.anim = new G.Sprites.Animator(mon.dex, 1, this.shiny, female);
+    this.female = this.anim.female;
     this.x = 0; this.y = 0;
     this.r = G.Sprites.bodyRadius(mon.dex);
     this.bodyH = G.Sprites.bodyHeight(mon.dex);
@@ -213,7 +215,7 @@ G.Player = class Player {
     if (m.kind === 'trail') return;
     // No reinicies una animación que va por la mitad: se vería a tirones.
     if (this.anim.busy() && this.anim.progress() < 0.65) return;
-    const meta = G.Sprites.animMeta(this.dex, anim);
+    const meta = G.Sprites.animMeta(this.dex, anim, this.shiny, this.female);
     const len = meta ? meta.d.reduce((a, b) => a + b, 0) / 60 : 0.4;
     const cd = Math.max(0.12, m.cd * this.cdMul);
     this.anim.play(anim, { speed: Math.max(1, len / (cd * 0.9)) });

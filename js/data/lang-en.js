@@ -161,8 +161,12 @@ G.I18n.add({
   'Grieta · {x}': 'Rift · {x}', 'Grieta ·': 'Rift ·', 'GRIETA ·': 'RIFT ·',
 
   // ---------------- avisos durante la partida ----------------
+  // (los patrones se prueban en orden: el de la hembra shiny, antes que el general)
+  '¡{x} shiny ♀ salvaje apareció!': 'A wild female shiny {x} appeared!',
   '¡{x} salvaje apareció!': 'A wild {x} appeared!', '¡{x} shiny salvaje apareció!': 'A wild shiny {x} appeared!',
   '¡Un {x} shiny anda cerca!': 'A shiny {x} is nearby!', '¡Marea de Pokémon!': 'Pokémon swarm!',
+  '¡Un {x} shiny ♀ anda cerca!': 'A female shiny {x} is nearby!',
+  '¡Has conseguido a {x} shiny ♀!': 'You got a female shiny {x}!', '¡Otro {x} shiny ♀! (+300 monedas)': 'Another female shiny {x}! (+300 coins)',
   '¡Los Pokémon salvajes se vuelven cada vez más fuertes!': 'Wild Pokémon are getting stronger and stronger!',
   '¡Has conseguido a {x} shiny!': 'You got a shiny {x}!', '¡Otro {x} shiny! (+300 monedas)': 'Another shiny {x}! (+300 coins)',
   '¡{x} te esperaba en la grieta!': '{x} was waiting in the rift!', '¡{x} shiny te esperaba en la grieta!': 'A shiny {x} was waiting in the rift!',
@@ -277,6 +281,7 @@ G.I18n.add({
   'Poco común': 'Uncommon', 'Común': 'Common', 'Ninguno con este filtro.': 'None with this filter.', 'Ataque': 'Attack', 'Vida': 'HP', 'Velocidad': 'Speed',
   'Empieza con': 'Starts with', 'Es tu compañero': 'It\'s your partner', 'Elegir de compañero{x}': 'Choose as partner{x}', '(shiny)': '(shiny)',
   'Aún no lo tienes.': 'You don\'t have it yet.', 'Consíguelo en el banner de': 'Get it from the banner of', 'o derrotándolo cuando salga shiny.': 'or by defeating it when it shows up shiny.',
+  '{x} shiny ♀ es ahora tu compañero': 'Female shiny {x} is now your partner', '{x} ♀ es ahora tu compañero': 'Female {x} is now your partner',
   '{x} es ahora tu compañero': '{x} is now your partner', '{x} shiny es ahora tu compañero': 'Shiny {x} is now your partner',
   '· {x} shiny': '· {x} shiny', '{x} · {x}: nivel {x}': '{x} · {x}: level {x}',
   // gacha
@@ -286,9 +291,12 @@ G.I18n.add({
   '· A las {x} tiradas sin Legendaria en un banner, la siguiente lo es.': '· After {x} pulls without a Legendary on a banner, the next one is.',
   '· La tirada ×10 garantiza al menos una Épica.': '· The ×10 pull guarantees at least one Epic.',
   '· Los repetidos dan Pokémonedas. Los shiny no se repiten.': '· Duplicates give PokéCoins. Shinies never repeat.',
+  '· ♀ Aspecto de hembra: en los Pokémon que lo tienen, con su proporción oficial de hembras (casi siempre 50%; 12,5% en algunos, como los iniciales, Eevee, Relicanth y Combee). Sólo cambia el dibujo.':
+    '· ♀ Female look: on Pokémon that have one, at their official female ratio (usually 50%; 12.5% for a few, such as the starters, Eevee, Relicanth and Combee). It only changes how they look.',
   '· Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y los jefes y los legendarios de las grietas, a veces, tickets ×10.': '· Tickets are earned by playing: some Pokémon drop them when defeated, and bosses and rift legendaries sometimes give ×10 tickets.',
   'Tirar ×1 ·': 'Pull ×1 ·', 'Tirar ×10 ·': 'Pull ×10 ·', 'tickets ×10': '×10 tickets', 'tickets y {x}': 'tickets and {x}',
   'No tienes tickets suficientes: consíguelos jugando': 'Not enough tickets: earn them by playing', '¡NUEVO!': 'NEW!', '¡SHINY NUEVO!': 'NEW SHINY!',
+  '¡HEMBRA NUEVA!': 'NEW FEMALE!',
   'Repetido ·': 'Duplicate ·', '· {x} {x} shiny': '· {x} {x} shiny', '{x} Shiny': '{x} Shiny', 'Clic para acelerar': 'Click to speed up',
   'TIRADA': 'PULL', 'TIRADA ×10': 'PULL ×10', '¡SUERTE!': 'GOOD LUCK!', '¡¿SHINY?!': 'SHINY?!', '¡¿LEGENDARIO?!': 'LEGENDARY?!', '¡¿ÉPICO?!': 'EPIC?!', 'SHINY ·': 'SHINY ·',
   // mejoras
