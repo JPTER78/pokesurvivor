@@ -37,30 +37,55 @@ G.MenuUI = (() => {
 
   // ---------------- menú principal ----------------
 
+  /**
+   * Interruptores Normal/Shiny y ♂/♀ de un Pokémon. Cada uno sale sólo si
+   * tienes algún aspecto de ese lado; si la combinación elegida no la tienes,
+   * cambia el otro (p. ej. con sólo la hembra shiny, Shiny pone también ♀).
+   * @param cur   { shiny, female } que se ve ahora
+   * @param pick  fn({ shiny, female }) al cambiar
+   */
+  function lookSwitch(segS, segF, dex, cur, pick) {
+    const own = (sh, f) => G.DB.ownsLook(dex, sh, f);
+    segS.classList.toggle('hidden', !own(true, false) && !own(true, true));
+    segF.classList.toggle('hidden', !own(false, true) && !own(true, true));
+    segS.lastChild.innerHTML = G.Icons.html('shiny', 12) + ' Shiny';
+    for (const [seg, key, other] of [[segS, 'shiny', 'female'], [segF, 'female', 'shiny']]) {
+      seg.querySelectorAll('button').forEach(b => {
+        const v = b.dataset.v === '1';
+        b.classList.toggle('on', cur[key] === v);
+        b.onclick = () => {
+          if (cur[key] === v) return;
+          const next = Object.assign({}, cur, { [key]: v });
+          if (!own(next.shiny, next.female)) next[other] = !next[other];
+          if (own(next.shiny, next.female)) pick(next);
+        };
+      });
+    }
+  }
+
+  /** Nombre con la marca de hembra y de shiny. */
+  function lookName(name, look, size = 12) {
+    return name + (look.female ? ' <span class="fem">♀</span>' : '') + (look.shiny ? ' ' + G.Icons.html('shiny', size) : '');
+  }
+
   function open() {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
-    const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);
+    const look = G.DB.partnerLook(), shiny = look.shiny;
     G.UI.chrome(true);
     G.UI.show('scr-menu');
-    G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
+    G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny, female: look.female });
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
-    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
+    $('menu-partner-name').innerHTML = lookName(mon.name, look, 24);
     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
-    // Normal / shiny a mano, aquí mismo (en el móvil no se encontraba en la ficha).
-    const seg = $('menu-shiny');
-    seg.classList.toggle('hidden', !G.DB.ownsShiny(mon.dex));
-    seg.lastChild.innerHTML = G.Icons.html('shiny', 12) + ' Shiny';
-    seg.querySelectorAll('button').forEach(b => {
-      b.classList.toggle('on', (b.dataset.v === '1') === shiny);
-      b.onclick = () => {
-        if ((b.dataset.v === '1') === shiny) return;
-        s.partnerShiny = b.dataset.v === '1';
-        G.DB.commit();
-        G.Audio.sfx('confirm');
-        open();
-      };
+    // Normal / shiny y ♂ / ♀ a mano, aquí mismo (en el móvil no se encontraba en la ficha).
+    lookSwitch($('menu-shiny'), $('menu-female'), mon.dex, look, l => {
+      s.partnerShiny = l.shiny;
+      s.partnerFemale = l.female;
+      G.DB.commit();
+      G.Audio.sfx('confirm');
+      open();
     });
 
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
@@ -254,8 +279,8 @@ G.MenuUI = (() => {
     cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}${G.DB.isFav(p.dex) ? ' ' + G.Icons.html('star', 10) : ''}</span>`);
     if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
     else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
-    const useShiny = sh && p.dex === s.partner && s.partnerShiny;
-    cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
+    const look = p.dex === s.partner ? G.DB.partnerLook() : {};
+    cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: look.shiny, female: look.female }));
     cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
     cell.onclick = () => {
       dexSel = p.dex;
@@ -266,33 +291,35 @@ G.MenuUI = (() => {
     return cell;
   }
 
-  // Variante que se está viendo en la ficha (normal o shiny).
-  let viewShiny = false;
+  // Aspecto que se está viendo en la ficha: normal o shiny, macho o hembra.
+  let view = { shiny: false, female: false };
 
   function showDetail(dex) {
     const s = G.DB.save;
     const p = G.DEX_BY[dex];
     const own = !!s.owned[dex];
-    const hasSh = G.DB.ownsShiny(dex);
     const isPartner = dex === s.partner;
-    if (!hasSh) viewShiny = false;
-    else if (isPartner && dex !== showDetail.last) viewShiny = !!s.partnerShiny;
+    const pLook = G.DB.partnerLook();
+    if (isPartner && dex !== showDetail.last) view = pLook;
+    else view = G.DB.nearestLook(dex, view.shiny, view.female);     // sólo lo que tengas
+    const viewShiny = view.shiny, viewFemale = view.female;
+    const many = G.DB.ownsShiny(dex) || G.DB.ownsFemale(dex) || G.DB.ownsFemaleShiny(dex);
     showDetail.last = dex;
 
     const max = { hp: 183, atk: 1.55, spd: 137, def: 160 };
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
-    const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
+    const usingThis = isPartner && pLook.shiny === viewShiny && pLook.female === viewFemale;
+    const lookTag = viewShiny && viewFemale ? ' (shiny ♀)' : viewShiny ? ' (shiny)' : viewFemale ? ' (♀)' : '';
 
     const box = $('dex-detail');
     box.innerHTML = `
       <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
-      ${hasSh ? `<div class="seg">
-          <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
-          <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
+      ${many ? `<div class="segs"><div class="seg" id="dex-shiny"><button data-v="0">Normal</button><button data-v="1"></button></div>
+          <div class="seg" id="dex-female"><button data-v="0">♂</button><button data-v="1">♀</button></div></div>` : ''}
       <div class="center">
         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
-        <h3>${own ? p.name : '???'}</h3>
+        <h3>${own ? p.name + (viewFemale ? ' <span class="fem">♀</span>' : '') : '???'}</h3>
         ${own ? `<button id="dex-fav" class="chip${G.DB.isFav(dex) ? ' on' : ''}" type="button">${G.Icons.html(G.DB.isFav(dex) ? 'star' : 'starDim', 12)} ${G.DB.isFav(dex) ? 'Favorito' : 'Marcar como favorito'}</button>` : ''}
         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
@@ -311,24 +338,23 @@ G.MenuUI = (() => {
           ${G.Moves.poolFor(p).map(id => `<span title="${G.T(G.Moves.BY_ID[id].name, 'move')}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
-          : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
+          : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${lookTag}</button>`}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
     $('dex-big').classList.toggle('shiny', own && viewShiny);
-    G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny });
-    box.querySelectorAll('.seg button').forEach(b => {
-      b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
-    });
+    G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny, female: own && viewFemale });
+    if (many) lookSwitch($('dex-shiny'), $('dex-female'), dex, view, l => { view = l; showDetail(dex); });
     const fav = $('dex-fav');
     if (fav) fav.onclick = () => { G.DB.setFav(dex, !G.DB.isFav(dex)); renderGrid(true); showDetail(dex); };
     const pick = $('dex-pick');
     if (pick) pick.onclick = () => {
       s.partner = dex;
-      s.partnerShiny = hasSh && viewShiny;
+      s.partnerShiny = viewShiny;
+      s.partnerFemale = viewFemale;
       G.DB.commit();
-      G.UI.toast(p.name + (s.partnerShiny ? ' shiny' : '') + ' es ahora tu compañero');
+      G.UI.toast(p.name + (s.partnerShiny ? ' shiny' : '') + (s.partnerFemale ? ' ♀' : '') + ' es ahora tu compañero');
       renderGrid(true); showDetail(dex);
     };
   }
@@ -356,8 +382,8 @@ G.MenuUI = (() => {
     const s = G.DB.save;
     const levels = G.DB.upgradesOf(upgDex);
     const mon = G.DEX_BY[upgDex];
-    const shiny = upgDex === s.partner && !!s.partnerShiny && G.DB.ownsShiny(upgDex);
-    G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny });
+    const look = upgDex === s.partner ? G.DB.partnerLook() : { shiny: false, female: false }, shiny = look.shiny;
+    G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny, female: look.female });
     $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     const box = $('upg-list');
     box.innerHTML = '';

@@ -206,8 +206,8 @@ G.UI = (() => {
 
   /**
    * Anima un Pokémon dentro de un <canvas>.
-   * opts: { anim='Idle', dir=0, shiny, silhouette, lively (ataca de vez en
-   *         cuando), spin (va girando), shadow=true,
+   * opts: { anim='Idle', dir=0, shiny, female (aspecto de hembra), silhouette,
+   *         lively (ataca de vez en cuando), spin (va girando), shadow=true,
    *         scale=2   tamaño de píxel FIJO (×2 como en el juego): todos los
    *                   Pokémon de una vista salen con el mismo píxel, aunque
    *                   los gigantes no quepan enteros
@@ -217,7 +217,7 @@ G.UI = (() => {
   function sprite(cv, dex, opts = {}) {
     const prev = byCanvas.get(cv);
     if (prev) live.delete(prev);
-    const a = new G.Sprites.Animator(dex, 1, !!opts.shiny);
+    const a = new G.Sprites.Animator(dex, 1, !!opts.shiny, !!opts.female);
     a.dir = opts.dir || 0;
     a.loop(opts.anim || 'Idle');
     const s = { cv, ctx: cv.getContext('2d'), a, dex, opts, t: Math.random() * 3, spinT: 0, sparkT: 0 };
@@ -249,7 +249,7 @@ G.UI = (() => {
       ctx.imageSmoothingEnabled = false;
 
       // Escala entera para que los píxeles queden nítidos.
-      const m = G.Sprites.animMeta(s.dex, 'Idle');
+      const m = G.Sprites.animMeta(s.dex, 'Idle', s.a.shiny, s.a.female);
       const ay = m ? m.ay : 24;
       let k = s.opts.scale || 2;
       if (s.opts.hero) k = Math.max(1, Math.min(k, Math.floor(cv.height * 0.8 / ay)));

@@ -73,7 +73,7 @@ G.Slots = (() => {
       st.frenzy = 0;
       // Premio.
       st.win = { col: colOf(r), t: 0 };
-      st.led = (r.shiny ? 'SHINY · ' : '') + G.Gacha.RARITY_NAME[r.rarity].toUpperCase();
+      st.led = (r.shiny ? 'SHINY · ' : r.female ? '♀ ' : '') + G.Gacha.RARITY_NAME[r.rarity].toUpperCase();
       st.ledCol = colOf(r);
       G.Audio.sfx('reveal', { rarity: r.rarity });
       if (r.rarity === 5) G.Audio.sfx('legend');

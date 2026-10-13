@@ -5,6 +5,9 @@
  *
  * Cada enemigo tiene 1/4096 de salir shiny (como en los juegos clásicos).
  * Una run mata 1.500–4.000, así que sale uno cada 1–3 partidas.
+ * Si ese Pokémon tiene hembra shiny, el sexo es otra tirada aparte con su
+ * proporción oficial de hembras (G.Gacha.probHembra), como en los juegos
+ * desde la 3ª generación. Sólo cambia el dibujo y lo que te llevas.
  *
  * Cooperativo (sólo en el anfitrión): aparecen alrededor de un jugador vivo
  * al azar, fuera de la vista de TODOS, y hay más y más fuertes según cuántos
@@ -24,6 +27,7 @@ G.Spawner = (() => {
   const SHINY_RATE = 1 / 4096;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
+  let forceFemale = 0;          // para pruebas: los N próximos salen hembra shiny
 
   function reset() {
     acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
@@ -89,8 +93,24 @@ G.Spawner = (() => {
     return full;
   }
 
+  /** Un shiny que puede ser hembra: tirada aparte, con la proporción oficial de su especie. */
+  function rollFemale(dex) {
+    return G.Sprites.hasFemaleShiny(dex) && Math.random() < G.Gacha.probHembra(dex);
+  }
+
+  /** Pruebas: el mismo enemigo, pero de una especie con hembra shiny si no la tiene. */
+  function femaleShinyDef(def, bag) {
+    if (G.Sprites.hasFemaleShiny(def.dex)) return def;
+    const inBag = bag.filter(d => G.Sprites.hasFemaleShiny(d.dex));
+    if (inBag.length) return G.U.pick(inBag);
+    const p = G.U.pick(G.DEX.filter(p => G.Sprites.hasFemaleShiny(p.dex)));
+    return p ? Object.assign({}, def, { dex: p.dex, name: p.name }) : def;
+  }
+
   function spawnOne(pl, t, angle) {
     const bag = G.Enemies.bagAt(t);
+    // Pruebas (debugForceFemaleShiny): sale una hembra shiny, de otra especie si hace falta.
+    const forced = forceFemale > 0;
     let def = G.U.pick(bag);
     if (SUPPORT.has(def.behavior)) {
       const full = supportFull();
@@ -100,17 +120,20 @@ G.Spawner = (() => {
         def = G.U.pick(rest);
       }
     }
+    if (forced) def = femaleShinyDef(def, bag);
     const pt = freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
-    const shiny = rollShiny(def.dex);
+    if (forced) forceFemale--;
+    const shiny = forced || rollShiny(def.dex);
+    const female = shiny && (forced || rollFemale(def.dex));
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
     if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
-    if (shiny) e.makeShiny();
+    if (shiny) e.makeShiny(female);
     if (G.Events.golden) e.makeGolden();
     G.EnemyMgr.add(e);
     if (shiny) {
-      say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);
+      say(e.female ? '¡Un ' + e.name + ' shiny ♀ anda cerca!' : '¡Un ' + e.name + ' shiny anda cerca!', 3.4);
       G.Audio.sfx('shiny');
     }
     return e;
@@ -119,9 +142,9 @@ G.Spawner = (() => {
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
-    if (rollShiny(b.dex)) e.makeShiny();
+    if (rollShiny(b.dex)) e.makeShiny(rollFemale(b.dex));
     G.EnemyMgr.add(e);
-    say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
+    say('¡' + e.name + (e.shiny ? ' shiny' : '') + (e.female ? ' ♀' : '') + ' salvaje apareció!', 3.2);
     G.Camera.kick(1.1);
     G.Audio.sfx('boss');
     return e;
@@ -202,5 +225,5 @@ G.Spawner = (() => {
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
   return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
-           debugForceShiny(n = 1) { forceShiny = n; } };
+           debugForceShiny(n = 1) { forceShiny = n; }, debugForceFemaleShiny(n = 1) { forceFemale = n; } };
 })();

@@ -13,7 +13,7 @@
  *       - Cuenta de Google.
  *     Además se guarda una copia local para poder jugar sin conexión; al
  *     sincronizar se FUSIONA (ver merge): las colecciones se unen y nunca se
- *     pierde un Pokémon ni un shiny.
+ *     pierde un Pokémon, un shiny ni un aspecto de hembra.
  *
  *   LOCAL (localStorage)
  *     Si no hay configuración o se abre con doble clic (file://). Igual que
@@ -66,6 +66,9 @@ G.DB = (() => {
 
   // ---------------- partida ----------------
 
+  /** Colecciones de lo conseguido (dex -> { at, from }): se unen al fusionar. */
+  const COLLS = ['owned', 'shiny', 'female', 'femaleShiny'];
+
   function newSave(name) {
     return {
       v: VERSION,
@@ -75,8 +78,11 @@ G.DB = (() => {
       coins: START_COINS,
       owned: {},              // dex -> { at, from: 'starter'|'gacha'|'wild' }
       shiny: {},              // dex -> { at, from } — variantes shiny conseguidas
+      female: {},             // dex -> { at, from } — aspectos de hembra (sólo de aspecto)
+      femaleShiny: {},        // dex -> { at, from } — hembras shiny
       partner: null,          // dex del Pokémon con el que juegas
       partnerShiny: false,    // jugar con su versión shiny (si la tienes)
+      partnerFemale: false,   // jugar con su aspecto de hembra (si lo tienes)
       starter: null,          // dex que te tocó en el test
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
@@ -139,7 +145,7 @@ G.DB = (() => {
         }
       }
     } else delete s.led;
-    if (G.DEX_BY) for (const coll of ['owned', 'shiny', 'dfav', 'pused']) {
+    if (G.DEX_BY) for (const coll of [...COLLS, 'dfav', 'pused']) {
       for (const d of Object.keys(s[coll] || {})) if (!G.DEX_BY[d]) delete s[coll][d];
     }
     for (const coll of ['dfav', 'pused']) {
@@ -182,7 +188,7 @@ G.DB = (() => {
   /**
    * Fusiona dos versiones de la misma partida (p. ej. una jugada sin
    * conexión y la de la nube). Nunca se pierde nada conseguido:
-   *   - colecciones (owned, shiny): unión
+   *   - colecciones (owned, shiny, female, femaleShiny): unión
    *   - mejoras y estadísticas: el máximo de cada una
    *   - monedas, compañero, pity...: los de la versión más reciente
    * Es idempotente: fusionar dos veces da lo mismo.
@@ -256,7 +262,7 @@ G.DB = (() => {
     r.led = led;
     r.tickets = r.tickets || { t1: 0, t10: 0 };
     for (const k in CUR) CUR[k][1](r, Math.max(0, ledSum(led, k)));
-    for (const coll of ['owned', 'shiny']) {
+    for (const coll of COLLS) {
       r[coll] = r[coll] || {};
       for (const k in older[coll] || {}) {
         if (!r[coll][k] || (older[coll][k].at || 0) < (r[coll][k].at || 0)) r[coll][k] = older[coll][k];
@@ -298,7 +304,7 @@ G.DB = (() => {
     for (const k in older.stats || {}) r.stats[k] = Math.max(r.stats[k] || 0, older.stats[k] || 0);
     if (r.starter == null) r.starter = older.starter;
     if (r.personality == null) r.personality = older.personality;
-    if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; }
+    if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; r.partnerFemale = !!older.partnerFemale; }
     r.created = Math.min(a.created || Date.now(), b.created || Date.now());
     r.updated = Math.max(a.updated || 0, b.updated || 0);
     return r;
@@ -898,9 +904,49 @@ G.DB = (() => {
     return true;
   }
 
+  // Aspecto de hembra: sólo cambia el dibujo (nunca estadísticas, tipos ni movimientos).
+  function ownsFemale(dex) { return !!(save && save.female && save.female[dex]); }
+  function ownsFemaleShiny(dex) { return !!(save && save.femaleShiny && save.femaleShiny[dex]); }
+
+  /** Da el aspecto de hembra (y el Pokémon, si no lo tenía). Devuelve true si es nuevo. */
+  function grantFemale(dex, from) {
+    grant(dex, from);
+    save.female = save.female || {};
+    if (save.female[dex]) return false;
+    save.female[dex] = { at: Date.now(), from };
+    return true;
+  }
+
+  /** Da la hembra shiny (y la hembra y el Pokémon, si faltaban). Devuelve true si es nueva. */
+  function grantFemaleShiny(dex, from) {
+    grantFemale(dex, from);
+    save.femaleShiny = save.femaleShiny || {};
+    if (save.femaleShiny[dex]) return false;
+    save.femaleShiny[dex] = { at: Date.now(), from };
+    return true;
+  }
+
+  /** ¿Tienes ese aspecto? (normal, shiny, hembra o hembra shiny) */
+  function ownsLook(dex, shiny, female) {
+    return shiny ? (female ? ownsFemaleShiny(dex) : ownsShiny(dex)) : (female ? ownsFemale(dex) : owns(dex));
+  }
+
+  /** El aspecto que tengas más parecido a ése (primero se mantiene el shiny); si no, el normal. */
+  function nearestLook(dex, shiny, female) {
+    if (ownsLook(dex, shiny, female)) return { shiny, female };
+    if (ownsLook(dex, shiny, !female)) return { shiny, female: !female };
+    if (ownsLook(dex, !shiny, female)) return { shiny: !shiny, female };
+    return { shiny: false, female: false };
+  }
+
+  /** Aspecto con el que sale tu compañero: { shiny, female } (sólo lo que tengas). */
+  function partnerLook() {
+    return save ? nearestLook(save.partner, !!save.partnerShiny, !!save.partnerFemale) : { shiny: false, female: false };
+  }
+
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow, saveNow,
-    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, isFav, setFav,
+    owns, grant, ownsShiny, grantShiny, ownsFemale, ownsFemaleShiny, grantFemale, grantFemaleShiny, ownsLook, nearestLook, partnerLook, merge, setName, upgradesOf, isFav, setFav,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */

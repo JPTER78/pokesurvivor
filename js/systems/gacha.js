@@ -7,6 +7,11 @@
  *   - la tirada ×10 trae al menos un 4★ o superior
  *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
  * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
+ * Hembra: si no sale shiny y el Pokémon tiene aspecto de hembra, una segunda
+ *   tirada aparte decide si sale con él, con la proporción oficial de hembras
+ *   de la especie (probHembra: casi siempre 50 %). Sólo cambia el dibujo:
+ *   la especie, la rareza, el shiny y el pity se deciden antes, igual que
+ *   siempre. Los shiny del gacha salen siempre con el aspecto normal.
  * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
  *
  * Se tira con TICKETS (se consiguen jugando):
@@ -26,6 +31,20 @@ G.Gacha = (() => {
   const SHINY_RATE = 1 / 100;
   const REFUND = { 1: 15, 2: 30, 3: 60, 4: 120, 5: 300 };
   let forceShiny = 0;           // para pruebas y vídeos: las N próximas salen shiny
+  let forceFemale = 0;          // para pruebas: las N próximas que no sean shiny salen hembra
+
+  /**
+   * Proporción oficial de hembras de cada especie (gender_rate de PokéAPI,
+   * comprobada en Bulbapedia). De los que tienen aspecto de hembra, casi
+   * todos son mitad y mitad; éstos, 1 de cada 8 (87,5 % machos).
+   */
+  const HEMBRAS = { 3: 0.125, 133: 0.125, 154: 0.125, 256: 0.125, 257: 0.125, 369: 0.125, 415: 0.125 };
+
+  /**
+   * Probabilidad de que salga con aspecto de hembra (si lo tiene), en el gacha
+   * y en los shiny salvajes: la oficial de la especie, o la mitad si no está.
+   */
+  function probHembra(dex) { return HEMBRAS[dex] != null ? HEMBRAS[dex] : 0.5; }
 
   const RARITY_NAME = { 1: 'Común', 2: 'Poco común', 3: 'Rara', 4: 'Épica', 5: 'Legendaria' };
   const RARITY_COLOR = { 1: '#9fb1c9', 2: '#5fe08a', 3: '#4fb4ff', 4: '#c47bff', 5: '#ffcb3d' };
@@ -75,7 +94,7 @@ G.Gacha = (() => {
   /**
    * Hace `n` tiradas en el banner `gen` sobre el guardado `save` (lo modifica).
    * Devuelve null si no hay monedas, o la lista de resultados:
-   *   { dex, rarity, shiny, isNew, refund }
+   *   { dex, rarity, shiny, female, isNew, refund }
    */
   function pull(save, n, gen = 1, use = 't1') {
     const cost = costOf(save, n, use);
@@ -106,11 +125,29 @@ G.Gacha = (() => {
         else shiny = false;
       }
 
+      // Segunda tirada, aparte de todo lo anterior: el aspecto de hembra.
+      let female = false;
+      if (!shiny) {
+        if (forceFemale > 0) {
+          // Pruebas: si este no tiene hembra, otro de la misma rareza que sí.
+          const fem = list.filter(p => G.Sprites.hasFemale(p.dex));
+          if (!G.Sprites.hasFemale(mon.dex) && fem.length) mon = G.U.pick(fem);
+          if (G.Sprites.hasFemale(mon.dex)) { forceFemale--; female = true; }
+        } else female = G.Sprites.hasFemale(mon.dex) && Math.random() < probHembra(mon.dex);
+      }
+
       let isNew = false, refund = 0;
       if (shiny) {
         isNew = !save.shiny[mon.dex];
         if (isNew) save.shiny[mon.dex] = { at: Date.now(), from: 'gacha' };
         else refund = REFUND[rarity] * 3;
+        if (!save.owned[mon.dex]) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
+      } else if (female) {
+        // Hembra que no tenías: es nueva (si tampoco tenías el Pokémon, te llevas los dos).
+        save.female = save.female || {};
+        isNew = !save.female[mon.dex];
+        if (isNew) save.female[mon.dex] = { at: Date.now(), from: 'gacha' };
+        else refund = REFUND[rarity];
         if (!save.owned[mon.dex]) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
       } else {
         isNew = !save.owned[mon.dex];
@@ -118,13 +155,13 @@ G.Gacha = (() => {
         else refund = REFUND[rarity];
       }
       save.coins += refund;
-      out.push({ dex: mon.dex, rarity, shiny, isNew, refund });
+      out.push({ dex: mon.dex, rarity, shiny, female, isNew, refund });
     }
     save.stats.pulls = (save.stats.pulls || 0) + n;
     return out;
   }
 
-  return { debugForceShiny(n = 1) { forceShiny = n; },
+  return { debugForceShiny(n = 1) { forceShiny = n; }, debugForceFemale(n = 1) { forceFemale = n; },
            costOf, RATES, PITY_5, SHINY_RATE, REFUND, RARITY_NAME, RARITY_COLOR, BANNERS,
-           pool, featured, pull };
+           pool, featured, pull, probHembra };
 })();
