@@ -194,7 +194,7 @@ G.I18n.add({
   // ---------------- pausa y fin ----------------
   'Pausa': 'Pause', 'Continuar': 'Continue', 'Abandonar run': 'Quit run', 'moverse ·': 'move ·', 'movimiento ·': 'move ·', 'ciclar ·': 'cycle ·', 'pausa': 'pause',
   'Partida en grupo: el juego sigue mientras estás aquí.': 'Group game: the game keeps running while you\'re here.',
-  'Has caído…': 'You fell…', 'Run terminada': 'Run over', 'Volver al menú': 'Back to menu', 'Salir de la partida': 'Leave the game',
+  'Has caído…': 'You fell…', 'Run terminada': 'Run over', 'Volver al menú': 'Back to menu', 'Volver a intentarlo': 'Try again', 'Intro': 'Enter', 'menú': 'menu', 'menú ·': 'menu ·', 'reintentar': 'retry', 'Salir de la partida': 'Leave the game',
   'Tiempo': 'Time', 'Nivel': 'Level', 'Derrotados': 'Defeated', 'Jefes': 'Bosses', 'Pokémonedas ganadas': 'PokéCoins earned',
   'Movimientos': 'Moves', '¡Nuevo récord de tiempo!': 'New time record!', '· ¡nuevo!': '· new!', '{x} Shinies conseguidos': '{x} shinies caught',
   'Tickets del gacha': 'Gacha tickets', 'Nivel máximo': 'Max level',

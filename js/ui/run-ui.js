@@ -102,7 +102,8 @@ G.RunUI = (() => {
     return true;
   }
 
-  function showOver(r, onBack) {
+  /** Resumen de la run. onRetry: otra run con el mismo Pokémon (null: sin ese botón). */
+  function showOver(r, onBack, onRetry) {
     $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
     $('over-stats').innerHTML = `
       <div><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
@@ -127,6 +128,12 @@ G.RunUI = (() => {
     const ask = $('over-ask');
     if (ask) ask.querySelector('.x').onclick = () => ask.remove();
     $('btn-again').onclick = onBack;
+    $('btn-retry').onclick = onRetry;
+    $('btn-retry').classList.toggle('hidden', !onRetry);
+    // El dorado es seguir jugando; sin él (en grupo), volver al menú pasa a ser el principal.
+    $('btn-again').classList.toggle('gold', !onRetry);
+    $('btn-again').classList.toggle('gray', !!onRetry);
+    $('over-keys').innerHTML = '<kbd>Esc</kbd> menú' + (onRetry ? ' · <kbd>Intro</kbd> reintentar' : '');
     if (r.caught && r.caught.length) {
       const row = $('over-caught');
       for (const c of r.caught) {
