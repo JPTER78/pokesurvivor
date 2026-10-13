@@ -6,7 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], chg: [
+  { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], new: [
+    ['Al acabar una partida en solitario, botón "Volver a intentarlo" para empezar otra con el mismo Pokémon sin pasar por el menú. Con teclado: Esc vuelve al menú e Intro lo intenta otra vez.',
+     'When a solo run ends, a "Try again" button starts another one with the same Pokémon without going through the menu. With a keyboard: Esc goes back to the menu and Enter tries again.']
+  ], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',
      'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.']
   ] },
