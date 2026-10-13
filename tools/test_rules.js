@@ -1,10 +1,11 @@
 /* Pruebas de las reglas del ranking (firestore.rules) con el emulador de Firestore.
  *
- *   npm i firebase-tools @firebase/rules-unit-testing firebase     (sólo para esto)
+ * Guía completa en DEPLOY.md. En corto (hace falta Java 21 para el emulador):
+ *   npm i firebase-tools @firebase/rules-unit-testing firebase     (en una carpeta aparte; NODE_PATH apunta a su node_modules)
  *   node tools/export_data.js                                      (si no existe tools/cache/gamedata.json)
- *   npx firebase emulators:exec --only firestore --project demo-ps "node tools/test_rules.js"
+ *   firebase emulators:exec --only firestore --project demo-ps "node tools/test_rules.js"
  *
- * (con un firebase.json que apunte a firestore.rules; el del repo vale)
+ * (desde la raíz del repo: el firebase.json del repo apunta a firestore.rules)
  * Comprueba que una marca honesta con su resumen y su grabación entra, y que
  * cada trampa (vida máxima que no cuadra, mejora por encima de su tope, daño
  * imposible, sin grabación, de otro modo de juego...) se rechaza.
@@ -13,9 +14,14 @@ const fs = require('fs'), path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const ROOT = path.join(__dirname, '..');
+const EMU = (process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080').split(':');       // lo pone `firebase emulators:exec`
 const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'cache', 'gamedata.json'), 'utf8'));
 const MON = data.dex.find(m => m.dex === 1);                       // Bulbasaur: vida 90, ataque 1,06
-const STRICT = new Date(2026, 9, 20) <= new Date();                 // desde esta fecha el resumen es obligatorio (firestore.rules)
+// Desde esta fecha (UTC) el resumen es obligatorio: se lee de firestore.rules (smObligatorio, que genera
+// tools/make_rules.js). Las reglas comparan con request.time, que es UTC: aquí también.
+const RULES_SRC = fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8');
+const [, Y, M, D] = RULES_SRC.match(/function smObligatorio\(\) \{ return timestamp\.date\((\d+), (\d+), (\d+)\); \}/);
+const STRICT = Date.now() >= Date.UTC(+Y, +M - 1, +D);
 
 let ok = 0, bad = 0;
 const check = async (name, promise, expectOk) => {
@@ -26,11 +32,12 @@ const check = async (name, promise, expectOk) => {
 };
 
 (async () => {
-  const env = await initializeTestEnvironment({ projectId: 'demo-ps', firestore: { rules: fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8'), host: '127.0.0.1', port: 8080 } });
+  const env = await initializeTestEnvironment({ projectId: process.env.GCLOUD_PROJECT || 'demo-ps', firestore: { rules: RULES_SRC, host: EMU[0], port: +EMU[1] } });
   const uid = 'u1';
   const stamp = ms => new Date(Date.now() - ms);
   const firebase = require('firebase/compat/app').default;
   require('firebase/compat/firestore');
+  firebase.setLogLevel('silent');                       // los rechazos esperados no son errores
   const SERVER_TS = () => firebase.firestore.FieldValue.serverTimestamp();
 
   async function fresh(mode = 's', ago = 2000) {
@@ -79,7 +86,8 @@ const check = async (name, promise, expectOk) => {
   await rej('mejora por encima de su tope (Fuerza 11)', entry({}, { up: { atk: 11, hp: 1 } }));
   await rej('mejora que no existe', entry({}, { up: { atk: 2, hp: 1, dios: 1 } }));
   await rej('carta de Potencia por encima de su tope (41)', entry({ lv: 100 }, { cs: { atk: 41, hp: 2 } }));
-  await rej('más cartas que niveles', entry({ lv: 4 }, { cs: { atk: 3, hp: 2 } }));
+  await rej('más cartas que niveles + 2', entry({ lv: 2 }, { cs: { atk: 3, hp: 2 } }));
+  await check('justo el margen (cartas = nivel + 2)', fresh().then(db => put(db, entry({ lv: 3 }, { cs: { atk: 3, hp: 2 } }))), true);
   await rej('pico de daño imposible', entry({}, { pk: 5000000 }));
   await rej('daño total mayor que el pico por todos los segundos', entry({ t: 100 }, { pk: 10, dd: 100 * 10 * 100 + 1 }), replay({ t: 100 }));
   await rej('sin que te quiten vida en 30 min', entry({}, { dt: 0 }));
@@ -95,8 +103,8 @@ const check = async (name, promise, expectOk) => {
   await check('leer la de otro', fresh().then(async db => { await env.withSecurityRulesDisabled(c => c.firestore().doc('replays/otro').set(replay())); return db.doc('replays/otro').get(); }), false);
 
   console.log('Reglas de antes');
-  await check('más de 45 min aunque haya pasado el tiempo (sin resumen, hasta el día obligatorio)', fresh('s', 4000).then(db => put(db, entry({ t: 2701, lv: 600, kills: 30000 }, {}, true), 's_all2', null)), false);
-  await check('justo 45 min (sin resumen, hasta el día obligatorio)', fresh('s', 4000).then(db => put(db, entry({ t: 2700, lv: 600, kills: 30000 }, {}, true), 's_all2', null)), !STRICT);
+  await check('más de 35 min aunque haya pasado el tiempo (sin resumen, hasta el día obligatorio)', fresh('s', 4000).then(db => put(db, entry({ t: 2101, lv: 500, kills: 20000 }, {}, true), 's_all2', null)), false);
+  await check('justo 35 min (sin resumen, hasta el día obligatorio)', fresh('s', 4000).then(db => put(db, entry({ t: 2100, lv: 500, kills: 20000 }, {}, true), 's_all2', null)), !STRICT);
   await check('tabla de grupo con una partida en solitario', fresh('s').then(db => put(db, entry({ uids: [uid, 'u2'], names: ['a', 'b'], dex: [1, 4], shiny: [false, false] }, {}), 'g_all2', replay(), uid + '_u2')), false);
 
   await env.cleanup();

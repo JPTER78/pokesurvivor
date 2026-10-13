@@ -1,5 +1,6 @@
 {
  "about": "generado por tools/calibrate_dps.js",
+ "fingerprint": "cc89f591a335",
  "pkUnit": 1480.73,
  "margin": 2,
  "atkBuff": 2.784,

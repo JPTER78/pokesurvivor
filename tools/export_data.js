@@ -22,7 +22,7 @@ for (const f of ['js/core/util.js', 'js/core/i18n.js']) load(f);
 const add = G.I18n.add;
 G.I18n.add = d => { Object.assign(EN, d); add(d); };
 for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js',
-                 'js/data/items.js', 'js/data/upgrades.js', 'js/systems/levelup.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
+                 'js/data/items.js', 'js/data/upgrades.js', 'js/systems/levelup.js', 'js/systems/interact.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
   try { load(f); } catch (e) { console.warn('aviso', f, e.message); }
 }
 const moves = Object.values(G.Moves.BY_ID).map(m => {
@@ -34,7 +34,10 @@ const out = {
   dex: G.DEX,
   legends: G.DEX.filter(p => p.leg).map(p => p.dex),
   moves,
-  items: (G.Items.LIST || []).map(i => ({ id: i.id, name: i.name, desc: i.desc })),
+  // mods: lo que da cada objeto y cada altar (las reglas del ranking calculan sus cotas de aquí)
+  items: (G.Items.LIST || []).map(i => ({ id: i.id, name: i.name, desc: i.desc, mods: typeof i.mods === 'function' ? i.mods({ maxHp: 200 }) : i.mods || {} })),
+  powers: G.Interact.POWERS.map(p => ({ id: p.id, mods: p.mods || {} })),
+  perLevel: G.Upgrades.perks(Object.fromEntries(G.Upgrades.LIST.map(u => [u.id, 1]))),
   achievements: (G.AchDefs.LIST || []).map(a => ({ id: a.id, cat: a.cat, name: a.name, desc: a.desc, tier: a.tier, title: a.title || '', reward: a.reward || {} })),
   achCats: G.AchDefs.CATS || null,
   upgrades: G.Upgrades.LIST.map(u => ({ id: u.id, max: u.max })),

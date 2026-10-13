@@ -19,6 +19,8 @@ const ROOT = path.join(__dirname, '..');
 const OUT = process.env.OUT || path.join(__dirname, 'anticheat_calib.json');
 const MARGIN = 2;                          // el pico real puede caer mejor repartido en las ventanas que lo medido
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Huella de lo que mueve el daño: tools/make_rules.js avisa si ya no coincide (hay que recalibrar).
+const fingerprint = () => require('./make_rules.js').fingerprint();
 
 function serve() {
   const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.css': 'text/css' };
@@ -36,7 +38,8 @@ function serve() {
   const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/local/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
   const pg = await b.newPage();
   await pg.setViewport({ width: 1280, height: 800 });
-  await pg.goto(`http://127.0.0.1:${srv.address().port}/dev.html`);
+  await pg.evaluateOnNewDocument(() => localStorage.setItem('ps.dev', '1'));      // modo desarrollador (js/core/integrity.js)
+  await pg.goto(`http://127.0.0.1:${srv.address().port}/dev.html?dev=1`);
   await sleep(3500);
   const ev = (f, a) => pg.evaluate(f, a);
   await ev(() => document.getElementById('btn-guest').click()); await sleep(800);
@@ -97,6 +100,6 @@ function serve() {
     console.log(id, best.kind, 'pk', best.pk, 'unidad', best.unit.toFixed(1), best.diag ? JSON.stringify(best.diag) : '');
   }
   await b.close(); srv.close();
-  fs.writeFileSync(OUT, JSON.stringify({ about: 'generado por tools/calibrate_dps.js', pkUnit: +pkUnit.toFixed(2), margin: MARGIN, atkBuff: +atkBuff.toFixed(3), moves }, null, 1));
+  fs.writeFileSync(OUT, JSON.stringify({ about: 'generado por tools/calibrate_dps.js', fingerprint: fingerprint(), pkUnit: +pkUnit.toFixed(2), margin: MARGIN, atkBuff: +atkBuff.toFixed(3), moves }, null, 1));
   console.log('ok: pkUnit', pkUnit.toFixed(1), 'atkBuff', atkBuff, '->', OUT);
 })();
