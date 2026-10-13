@@ -33,11 +33,10 @@ G.Audio = (() => {
     musicBus = ctx.createGain(); sfxBus = ctx.createGain();
     musicBus.connect(master); sfxBus.connect(master);
 
-    // Reverb: respuesta al impulso generada (ruido que se apaga en 1,8 s).
-    // Se rellena un momento después, a trozos: hacerlo de golpe bloqueaba la
-    // carga de la página (~75 ms). Hasta entonces la música suena sin eco.
+    // Reverb: respuesta al impulso generada (ruido que se apaga en 0,6 s).
+    // Con 0,6 s conserva calidez y reduce un 66% la carga de convolución FFT en CPU.
     reverb = ctx.createConvolver();
-    const len = Math.floor(ctx.sampleRate * 1.8);
+    const len = Math.floor(ctx.sampleRate * 0.6);
     const ir = ctx.createBuffer(2, len, ctx.sampleRate);
     let ch = 0;
     const fill = () => {

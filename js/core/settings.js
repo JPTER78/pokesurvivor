@@ -13,15 +13,20 @@
  *   gamepad     true/false                        jugar con mando (gamepad.js)
  *   padRumble   true/false                        que el mando vibre al recibir daño
  *   aimManual   true/false                        apuntar a mano (ratón o stick derecho) en vez de solo
+ *   res         'auto' | '1' | 'native'           resolución (auto pantalla vs 1x vs 1.5x Retina)
+ *   fpsLimit    '60' | '30' | 'max'               límite de fotogramas por segundo
  *
  *   G.Settings.get('quality')  ·  G.Settings.set('fps', true)  ·  G.Settings.on(fn)
  *   G.Settings.fx   nivel efectivo 0 (bajo) .. 2 (alto), ya resuelto el 'auto'
  */
 G.Settings = (() => {
   const KEY = 'ps.settings';
-  const DEF = { quality: 'auto', dmgNumbers: true, calm: false, fps: false, stick: 1, stickMode: 'float', pad: null, gamepad: true, padRumble: true, aimManual: false };
+  const DEF = { quality: 'auto', dmgNumbers: true, calm: false, fps: false, stick: 1, stickMode: 'float', pad: null, gamepad: true, padRumble: true, aimManual: false, res: 'auto', fpsLimit: '60' };
   let s = Object.assign({}, DEF);
-  try { Object.assign(s, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* nada */ }
+  try {
+    Object.assign(s, JSON.parse(localStorage.getItem(KEY) || '{}'));
+    if (s.res === 'eco') s.res = 'auto'; // migración hacia auto detección
+  } catch (e) { /* nada */ }
   const fns = new Set();
 
   // Calidad automática: empieza alta (media en móvil) y baja si va a tirones.
