@@ -6,7 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], chg: [
+  { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], new: [
+    ['Apuntado hacia el cursor (sólo PC): en Ajustes, Controles, puedes cambiar el apuntado automático por disparar hacia donde apunta el ratón.',
+     'Cursor aim (PC only): in Settings, Controls, you can switch from automatic aim to firing toward the mouse pointer.']
+  ], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',
      'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.']
   ] },

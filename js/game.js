@@ -667,6 +667,36 @@ G.Game = (() => {
     }
     G.HUD.draw(ctx, w, h, pl, st);
     G.Touch.draw(ctx);
+    // Apuntado "hacia el cursor": cruz donde apunta el ratón + cursor en cruz.
+    const aimCursor = state === 'playing' && G.Settings.get('aim') === 'cursor' && !(G.Touch && G.Touch.active);
+    if (cv) cv.style.cursor = aimCursor ? 'crosshair' : '';
+    if (aimCursor) {
+      const mm = G.Input.mouse();
+      const rect = cv.getBoundingClientRect();
+      const cx = mm.x - rect.left, cy = mm.y - rect.top;
+      if (cx >= 0 && cy >= 0 && cx <= w && cy <= h) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0,0,0,.7)';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, 8, 0, 6.2832); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - 12, cy); ctx.lineTo(cx - 4, cy);
+        ctx.moveTo(cx + 4, cy); ctx.lineTo(cx + 12, cy);
+        ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy - 4);
+        ctx.moveTo(cx, cy + 4); ctx.lineTo(cx, cy + 12);
+        ctx.stroke();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(cx, cy, 8, 0, 6.2832); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - 12, cy); ctx.lineTo(cx - 4, cy);
+        ctx.moveTo(cx + 4, cy); ctx.lineTo(cx + 12, cy);
+        ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy - 4);
+        ctx.moveTo(cx, cy + 4); ctx.lineTo(cx, cy + 12);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
     if (G.Settings.get('fps')) {
       ctx.save();
       ctx.font = '700 11px Pixelify, monospace';
@@ -789,7 +819,7 @@ G.Game = (() => {
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
     debugLevelUp() { pl.level++; pendingLevels++; },
-    toUI() { state = 'ui'; Backdrop.restore(); },
+    toUI() { state = 'ui'; if (cv) cv.style.cursor = ''; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };
 })();

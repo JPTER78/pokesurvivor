@@ -355,8 +355,12 @@ G.Player = class Player {
       }
     }
 
-    // --- apuntado: enemigo más cercano; si no hay, hacia donde caminas ---
-    // Prioridad de blanco según el ataque activo:
+    // --- apuntado ---
+    // 'auto' (por defecto): enemigo más cercano; si no hay, hacia donde caminas.
+    // 'cursor' (Ajustes → Controles, sólo PC): dispara hacia donde apunta el
+    // cursor. El blanco sólo se usa para los movimientos que necesitan uno
+    // (cadena, etc.): el enemigo más cercano al cursor, si está a tu alcance.
+    // Prioridad del automático según el ataque activo:
     //   a distancia (proyectil, rayo): el jefe si está a tiro > lo que te toca > el más cercano
     //   cuerpo a cuerpo y el resto:   lo que te toca > el jefe > el más cercano
     // Con una horda encima casi siempre te toca algo; si eso ganara siempre,
@@ -364,15 +368,36 @@ G.Player = class Player {
     // Sin enemigos, apunta a la roca o cofre más cercano.
     const all = G.EnemyMgr.all();
     const m = this.activeMove();
-    const ranged = !!m && (m.kind === 'projectile' || m.kind === 'beam');
-    const threat = G.Projectiles.nearest(all, this.x, this.y, this.r + 24);
-    const boss = all.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
-    const tg = (ranged ? boss || threat : threat || boss)
-            || G.Projectiles.nearest(all, this.x, this.y, 520)
-            || G.World.nearestBreakable(this.x, this.y, 200);
-    this.target = tg;
-    if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
-    else if (this.walking) this.aim = this.moveAngle;
+    if (G.Settings && G.Settings.get('aim') === 'cursor') {
+      const a = G.Input.cursorAim(this.x, this.y);
+      if (a != null) {
+        const w = G.Input.worldMouse();
+        const maxD = m && m.kind === 'chain' ? 280 : 520;
+        let tg = null;
+        if (w) {
+          const cand = G.Projectiles.nearest(all, w.x, w.y, 170) || G.World.nearestBreakable(w.x, w.y, 130);
+          if (cand && !cand.dead && G.U.dist(this.x, this.y, cand.x, cand.y) <= maxD) tg = cand;
+        }
+        this.target = tg;
+        this.aim = a;
+      } else {
+        autoAim.call(this);
+      }
+    } else {
+      autoAim.call(this);
+    }
+
+    function autoAim() {
+      const ranged = !!m && (m.kind === 'projectile' || m.kind === 'beam');
+      const threat = G.Projectiles.nearest(all, this.x, this.y, this.r + 24);
+      const boss = all.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
+      const tg = (ranged ? boss || threat : threat || boss)
+              || G.Projectiles.nearest(all, this.x, this.y, 520)
+              || G.World.nearestBreakable(this.x, this.y, 200);
+      this.target = tg;
+      if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
+      else if (this.walking) this.aim = this.moveAngle;
+    }
 
     // --- animación: mira al objetivo al atacar, si no a donde camina ---
     const face = this.attackFace > 0 || !this.walking ? this.aim : this.moveAngle;
