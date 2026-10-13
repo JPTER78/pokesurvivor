@@ -44,10 +44,15 @@ def main():
     dexes = sorted(int(d) for d in os.listdir(ASSETS) if d.isdigit())
 
     def one(dex):
-        # Créditos del sprite normal y del shiny (que puede ser de otro artista).
+        # Créditos del sprite normal y del shiny (que puede ser de otro artista),
+        # y de la hembra y la hembra shiny en los que las tienen.
         txt = fetch(f'{RAW}/sprite/{dex:04d}/credits.txt')
         if os.path.isdir(os.path.join(ASSETS, str(dex), 's')):
             txt += '\n' + fetch(f'{RAW}/sprite/{dex:04d}/0000/0001/credits.txt')
+        if os.path.isdir(os.path.join(ASSETS, str(dex), 'f')):
+            txt += '\n' + fetch(f'{RAW}/sprite/{dex:04d}/0000/0000/0002/credits.txt')
+        if os.path.isdir(os.path.join(ASSETS, str(dex), 'fs')):
+            txt += '\n' + fetch(f'{RAW}/sprite/{dex:04d}/0000/0001/0002/credits.txt')
         authors = []
         for line in txt.splitlines():
             parts = line.split('\t')
