@@ -85,8 +85,13 @@ G.Game = (() => {
   // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
-  function startRun(coop = null) {
+  function startRun(coop = null, stageId = undefined) {
     holdBy = []; awayBy = null;
+    if (coop) {
+      if (G.StageMgr) G.StageMgr.end();
+    } else if (stageId !== undefined && G.StageMgr) {
+      G.StageMgr.begin(stageId);
+    }
     const save = G.DB.save;
     const mon = G.DEX_BY[save.partner];
     const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
@@ -105,8 +110,10 @@ G.Game = (() => {
     G.Path.clear();
     G.Hazards.clear();
     G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
-    G.World.setBiome(0, true);
-    biome = 0;
+    const stage = G.StageMgr && G.StageMgr.active;
+    const initialBiome = stage ? (stage.biome || 0) : 0;
+    G.World.setBiome(initialBiome, true);
+    biome = initialBiome;
     time = 0; pendingLevels = 0;
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
@@ -267,7 +274,7 @@ G.Game = (() => {
     G.Audio.sfx('shinyGet');
   };
 
-  function endRun(dead = true) {
+  function endRun(dead = true, wonStage = null) {
     if (state === 'over' || !pl) return;
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
     const wasHost = !!pl.coopHost;
@@ -276,7 +283,7 @@ G.Game = (() => {
     if (coop) G.Social.setPlaying(false);
     state = 'over';
     G.Audio.music(null);
-    G.Audio.sfx(dead ? 'gameover' : 'back');
+    G.Audio.sfx(wonStage ? 'legend' : (dead ? 'gameover' : 'back'));
     const save = G.DB.save;
     const mul = pl.coinMul;
     const parts = {
@@ -285,33 +292,65 @@ G.Game = (() => {
       jefes: pl.bosses * 80,
       recogidas: pl.coins
     };
-    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
-    const record = time > save.stats.bestTime;
+    let coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
+    if (wonStage) {
+      const alreadyCleared = !!(save.stages && save.stages[wonStage.id] && save.stages[wonStage.id].completed);
+      const rwd = alreadyCleared ? (wonStage.repeatReward || { coins: 75, t1: 1 }) : (wonStage.firstReward || wonStage.reward);
+      if (rwd.coins) {
+        coins += rwd.coins;
+        parts.etapa = rwd.coins;
+      }
+      if (rwd.t10) pl.t10 = (pl.t10 || 0) + rwd.t10;
+      if (rwd.t1) pl.t1 = (pl.t1 || 0) + rwd.t1;
+      if (!alreadyCleared && rwd.badge) {
+        save.badges = save.badges || {};
+        save.badges[rwd.badge] = true;
+      }
+      save.stages = save.stages || {};
+      save.stages[wonStage.id] = {
+        completed: true,
+        clears: ((save.stages[wonStage.id] && save.stages[wonStage.id].clears) || 0) + 1,
+        at: Date.now()
+      };
+      wonStage.isRepeat = alreadyCleared;
+      wonStage.grantedReward = rwd;
+    }
+    const isStage = !!(wonStage || (G.StageMgr && G.StageMgr.active));
+    const record = !isStage && (time > save.stats.bestTime);
 
     save.coins += coins;
     bankTickets(false);
     save.stats.runs++;
     save.stats.totalKills += pl.kills;
-    save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
-    if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
+    if (!isStage) {
+      save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
+      if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
+    }
     save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
-    G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
+    G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop, isStage });
     G.Progress.checkAch();
     G.DB.commit();
     if (G.Social.me) G.Social.publishProfile();
 
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.
-    const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
-    if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
-    else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
+    // Solo las partidas en modo infinito puntúan en el ranking (las etapas no afectan).
+    if (!isStage) {
+      const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
+      if (!coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
+      else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
+    }
 
     G.RunUI.showOver({
-      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
+      dead, wonStage, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
-    }, () => { pl = null; G.Flow.afterRun(); });
+    }, () => {
+      pl = null;
+      if (G.StageMgr) G.StageMgr.end();
+      G.Flow.afterRun();
+    });
   }
 
   // ---------------- subida de nivel ----------------
@@ -555,8 +594,9 @@ G.Game = (() => {
     }
     time += dt;
 
-    const b = Math.floor(time / 240);
-    if (b !== biome && !G.Rift.inArena) {
+    const isStage = !!(G.StageMgr && G.StageMgr.active);
+    const b = isStage ? (G.Stages.current ? G.Stages.current.biome : 0) : Math.floor(time / 240);
+    if (!isStage && b !== biome && !G.Rift.inArena) {
       biome = b;
       G.World.setBiome(b);
       G.Audio.sfx('biome');
@@ -586,11 +626,12 @@ G.Game = (() => {
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
+    if (G.StageMgr) G.StageMgr.tick(dt, time, pl);
     G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
 
-    G.Audio.music(G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
+    G.Audio.music(G.Rift.inArena ? 'rift' : (G.EnemyMgr.bossAlive() || (G.StageMgr && G.StageMgr.isGym)) ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (pl.bonds > 0) offerBond(true);
     if (G.Coop.isHost) checkAllDown(dt);
@@ -780,6 +821,7 @@ G.Game = (() => {
 
   return {
     init, startRun, everyone, levelXp, flash, offerBond,
+    winStage(stage) { endRun(false, stage); },
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
@@ -852,7 +894,7 @@ G.Flow = {
       G.LobbyUI.open();
     } else this.goMenu();
   },
-  play() { G.Game.startRun(); },
+  play(stageId = null) { G.Game.startRun(null, stageId); },
   /** Empieza la partida en grupo (el anfitrión la manda a todos). */
   startCoop(cfg) {
     if (G.Game.state !== 'ui' || !G.Social.room) return;

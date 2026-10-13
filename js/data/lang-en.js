@@ -537,5 +537,27 @@ G.I18n.add({
     'Tap the moves you do not want in your cards ({x}). The starting move cannot be banned.',
   'Ya tienes {x} vetados: quita uno primero': 'You already have {x} banned: remove one first',
   'En iPhone, Safari no deja poner las webs a pantalla completa. Pulsa Compartir y luego "Añadir a pantalla de inicio": abriendo el juego desde ese icono se juega a pantalla completa.':
-    'On iPhone, Safari does not let websites go fullscreen. Tap Share and then "Add to Home Screen": opening the game from that icon plays it fullscreen.'
+    'On iPhone, Safari does not let websites go fullscreen. Tap Share and then "Add to Home Screen": opening the game from that icon plays it fullscreen.',
+  'Seleccionar Modo de Juego': 'Select Game Mode',
+  'Elige el modo infinito tradicional o una etapa temática por gimnasios.': 'Choose traditional endless mode or a themed gym stage.',
+  'Modo Infinito Tradicional': 'Traditional Endless Mode',
+  'MODO PRINCIPAL': 'MAIN MODE',
+  'Sin límite de tiempo · Pokémon salvajes de todas las regiones · Grietas de distorsión y legendarios':
+    'No time limit · Wild Pokémon from all regions · Distortion rifts and legendaries',
+  'Jugar Infinito': 'Play Endless',
+  'Gimnasios de Kanto': 'Kanto Gyms',
+  '{x} / 8 Medallas': '{x} / 8 Badges',
+  'Aventúrate y completa todos los gimnasios de Kanto': 'Venture forth and complete all Kanto gyms',
+  'Aventúrate y completa todos los gimnasios de Kanto · El puntaje obtenido en este modo no será incluido en los rankings':
+    'Venture forth and complete all Kanto gyms · Scores obtained in this mode will not be included in the leaderboards',
+  'El puntaje obtenido en este modo no será incluido en los rankings':
+    'Scores obtained in this mode will not be included in the leaderboards',
+  'Ver Gimnasios': 'View Gyms',
+  'Ocultar': 'Hide',
+  'Jugar Etapa': 'Play Stage',
+  'COMPLETADA': 'CLEARED',
+  'BLOQUEADA': 'LOCKED',
+  'PRÓXIMAMENTE': 'COMING SOON',
+  'Próximamente': 'Coming soon',
+  'No disponible': 'Unavailable'
 });

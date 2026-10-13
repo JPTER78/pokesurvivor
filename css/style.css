@@ -811,3 +811,190 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #dex-detail .btn { position: sticky; bottom: 0; order: 9; margin-top: auto; padding: 8px 6px; font-size: 15px;
     box-shadow: 0 -6px 10px rgba(5,10,25,.6); }
 }
+
+/* ============ Selector de etapas / Gimnasios ============ */
+.stage-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  transition: border-color .15s, background .15s;
+}
+.stage-card.cleared {
+  border-color: #ffd23f;
+  background: linear-gradient(90deg, rgba(255, 210, 63, 0.08) 0%, rgba(0, 0, 0, 0.28) 35%);
+}
+.stage-card.locked {
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  opacity: 0.75;
+}
+
+/* Columna izquierda: Medalla */
+.stage-badge-wrap {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  position: relative;
+}
+.stage-card.cleared .stage-badge-wrap {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.stage-badge-img {
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+}
+.stage-card.cleared .stage-badge-img {
+  filter: drop-shadow(0 0 6px rgba(255, 210, 63, 0.75));
+}
+.stage-card.locked .stage-badge-img {
+  filter: grayscale(0.85) opacity(0.45);
+}
+
+/* Centro: Información de la etapa */
+.stage-info {
+  flex: 1;
+  min-width: 0;
+}
+.stage-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: none !important;
+  line-height: 1.2;
+}
+.stage-pill.cleared {
+  background: #ffd23f;
+  color: #10131a;
+}
+.stage-pill.locked {
+  background: rgba(255, 255, 255, 0.08);
+  color: #aaa;
+  font-size: 10px;
+}
+.stage-pill.main {
+  background: rgba(255, 210, 63, 0.2);
+  color: #ffd23f;
+  border: 1px solid #ffd23f;
+}
+.stage-pill.count {
+  background: rgba(255, 210, 63, 0.15);
+  color: #ffd23f;
+}
+.stage-title {
+  font-size: 15px;
+  color: #fff;
+  font-weight: 700;
+}
+.stage-card.locked .stage-title {
+  color: #ccc;
+  font-size: 14px;
+}
+.stage-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.stage-rwd {
+  font-size: 12px;
+  margin-top: 3px;
+}
+.stage-card.cleared .stage-rwd { color: #b0c4de; }
+.stage-card.avail .stage-rwd { color: #a8e6cf; }
+.stage-card.locked .stage-rwd { color: #e0b0ff; font-size: 11px; }
+
+/* Columna derecha: Líder y botón */
+.stage-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.stage-leader-wrap {
+  width: 72px;
+  height: 48px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.stage-card.cleared .stage-leader-wrap {
+  background: transparent;
+  border: none;
+}
+.stage-card.locked .stage-leader-wrap {
+  opacity: 0.55;
+}
+.stage-leader-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+.stage-card.locked .stage-leader-img {
+  filter: grayscale(0.8) opacity(0.5);
+}
+
+@media (max-width: 600px) {
+  .stage-card {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .stage-badge-wrap {
+    width: 42px;
+    height: 42px;
+  }
+  .stage-badge-img {
+    max-width: 36px;
+    max-height: 36px;
+  }
+  .stage-leader-wrap {
+    width: 54px;
+    height: 36px;
+  }
+  .stage-title {
+    font-size: 13px;
+  }
+  .stage-sub {
+    font-size: 11px;
+  }
+  .stage-rwd {
+    font-size: 11px;
+  }
+  .stage-right {
+    gap: 6px;
+  }
+  .stage-right .btn {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+}
+

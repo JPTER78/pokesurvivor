@@ -194,7 +194,7 @@ G.Ranking = (() => {
 
   async function submitSolo(r) {
     const fb = fbx();
-    if (!fb || !G.Social.me || r.t < MIN_T) return [];
+    if (!fb || !G.Social.me || r.t < MIN_T || r.isStage || (G.StageMgr && G.StageMgr.active)) return [];
     const ids = periodIds();
     const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
@@ -207,7 +207,7 @@ G.Ranking = (() => {
   /** La sube el anfitrión, con todo el equipo. */
   async function submitGroup(r) {
     const fb = fbx();
-    if (!fb || r.t < MIN_T || !r.members || r.members.length < 2) return [];
+    if (!fb || r.t < MIN_T || !r.members || r.members.length < 2 || r.isStage || (G.StageMgr && G.StageMgr.active)) return [];
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
     const id = ms.map(m => m.uid).join('_');
     const entry = { t: r.t, uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),

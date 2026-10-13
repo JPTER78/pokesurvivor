@@ -11,7 +11,7 @@ G.MenuUI = (() => {
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
       b.onclick = () => {
         const go = b.dataset.go;
-        if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
+        if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else openStageSelect(); }
         else if (go === 'dex') openDex();
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
@@ -28,6 +28,131 @@ G.MenuUI = (() => {
       G.Audio.music(null);
       G.DB.logout().then(() => G.Flow.toLogin());
     };
+  }
+
+  // ---------------- selector de etapa / modo ----------------
+
+  let kantoOpen = false;
+
+  function openStageSelect() {
+    const list = $('stages-list');
+    if (!list) { G.Flow.play(); return; }
+    const s = G.DB.save || {};
+    const stagesDone = s.stages || {};
+    const kantoBadges = G.Stages.LIST.filter(st => stagesDone[st.id] && stagesDone[st.id].completed).length;
+
+    function renderList() {
+      list.innerHTML = `
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:rgba(255,255,255,0.06);border:1px solid #ffd23f;border-radius:10px;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px">
+              <b class="gold" style="font-size:16px">Modo Infinito Tradicional</b>
+              <span class="stage-pill main">MODO PRINCIPAL</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px">Sin límite de tiempo · Pokémon salvajes de todas las regiones · Grietas de distorsión y legendarios</div>
+          </div>
+          <button class="btn gold" id="btn-play-endless" style="white-space:nowrap;flex-shrink:0">Jugar Infinito</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="card" id="btn-toggle-kanto" style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.2);border-radius:10px;cursor:pointer;gap:12px">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px">
+                <b style="font-size:16px;color:#fff">Gimnasios de Kanto</b>
+                <span class="stage-pill count">${kantoBadges} / 8 Medallas ${G.Icons.html('medal3', 12)}</span>
+              </div>
+              <div style="font-size:13px;color:var(--muted);margin-top:4px">Aventúrate y completa todos los gimnasios de Kanto · El puntaje obtenido en este modo no será incluido en los rankings</div>
+            </div>
+            <button class="btn gold" style="pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0">
+              <span>${kantoOpen ? 'Ocultar' : 'Ver Gimnasios'}</span>
+              <span style="font-size:11px">${kantoOpen ? '▲' : '▼'}</span>
+            </button>
+          </div>
+
+          ${kantoOpen ? `
+            <div id="kanto-dropdown" style="display:flex;flex-direction:column;gap:8px;padding-left:12px;border-left:3px solid rgba(255,210,63,0.35);margin:4px 0 10px">
+              ${G.Stages.LIST.map(st => {
+                const isDone = !!(stagesDone[st.id] && stagesDone[st.id].completed);
+                const firstTickets = st.firstReward.t1 || ((st.firstReward.t10 || 0) * 10) || 0;
+                const ticketText = firstTickets === 1 ? '1 ticket' : `${firstTickets} tickets`;
+                if (st.available) {
+                  return `
+                    <div class="stage-card avail ${isDone ? 'cleared' : ''}">
+                      <div class="stage-badge-wrap" title="${st.badge}">
+                        <img src="${st.badgeImg}" alt="${st.badge}" class="stage-badge-img">
+                      </div>
+                      <div class="stage-info">
+                        <div class="stage-head">
+                          <b class="stage-title">${st.name}</b>
+                          ${isDone ? `<span class="stage-pill cleared">COMPLETADA ${G.Icons.html('medal3', 12)}</span>` : ''}
+                        </div>
+                        <div class="stage-sub">${st.subtitle}</div>
+                        <div class="stage-rwd">
+                          ${isDone ? `Recompensa repetible: +${st.repeatReward.coins} monedas y +${st.repeatReward.t1} ticket` : `Primera victoria: ${st.badge} + ${st.firstReward.coins} monedas + ${ticketText}`}
+                        </div>
+                      </div>
+                      <div class="stage-right">
+                        <button class="btn" id="btn-play-${st.id}" style="background:#3d6cb9;color:#fff;border:none">Jugar Etapa</button>
+                        <div class="stage-leader-wrap" title="Líder ${st.leader}">
+                          <img src="${st.leaderImg}" alt="Líder ${st.leader}" class="stage-leader-img">
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                } else {
+                  return `
+                    <div class="stage-card locked">
+                      <div class="stage-badge-wrap" title="${st.badge}">
+                        <img src="${st.badgeImg}" alt="${st.badge}" class="stage-badge-img">
+                      </div>
+                      <div class="stage-info">
+                        <div class="stage-head">
+                          <b class="stage-title">${st.name}</b>
+                          <span class="stage-pill locked">PRÓXIMAMENTE</span>
+                        </div>
+                        <div class="stage-sub">${st.subtitle}</div>
+                        <div class="stage-rwd">Recompensa estimada: ${st.badge} + ${st.firstReward.coins} monedas + ${ticketText}</div>
+                      </div>
+                      <div class="stage-right">
+                        <button class="btn ghost small" disabled style="opacity:0.4;cursor:not-allowed">No disponible</button>
+                        <div class="stage-leader-wrap" title="Líder ${st.leader}">
+                          <img src="${st.leaderImg}" alt="Líder ${st.leader}" class="stage-leader-img">
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }
+              }).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      $('btn-play-endless').onclick = () => {
+        G.UI.hide('scr-stages');
+        G.Flow.play(null);
+      };
+      G.Stages.LIST.filter(st => st.available).forEach(st => {
+        const btn = $(`btn-play-${st.id}`);
+        if (btn) {
+          btn.onclick = () => {
+            G.UI.hide('scr-stages');
+            G.Flow.play(st.id);
+          };
+        }
+      });
+      $('btn-toggle-kanto').onclick = () => {
+        kantoOpen = !kantoOpen;
+        renderList();
+      };
+    }
+
+    renderList();
+    $('stages-back').onclick = () => {
+      G.UI.hide('scr-stages');
+      open();
+    };
+    G.UI.show('scr-stages', true);
   }
 
   // ---------------- menú principal ----------------
@@ -359,5 +484,5 @@ G.MenuUI = (() => {
     return el;
   }
 
-  return { init, open, GEN_NAMES };
+  return { init, open, openStageSelect, GEN_NAMES };
 })();

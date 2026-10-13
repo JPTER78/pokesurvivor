@@ -6,9 +6,20 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], chg: [
+  { d: '2026-10-13', title: ['Etapa 1: Bosque Verde y Gimnasio de Brock', 'Stage 1: Viridian Forest & Brock Gym'], new: [
+    ['Nuevo modo Etapas: juega la Etapa 1 en Kanto (10 minutos) a través de la Ruta 1 y el Bosque Verde, derrota a los mini-jefes y vence al Líder Brock (Geodude y Onix) en la arena de roca para ganar la Medalla Roca.',
+     'New Stage Mode: play Stage 1 in Kanto (10 minutes) across Route 1 and Viridian Forest, defeat mini-bosses and beat Leader Brock (Geodude and Onix) in the rock arena to earn the Boulder Badge.'],
+    ['Ilustraciones de medallas y líderes en el selector de etapas: cada etapa de gimnasio de Kanto muestra ahora la imagen de su medalla a la izquierda y el retrato de su líder a la derecha.',
+     'Badges and gym leaders in stage selector: each Kanto gym stage now displays its badge on the left and its leader portrait on the right.']
+  ], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',
-     'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.']
+     'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.'],
+    ['Ajustadas las recompensas de monedas de las etapas de gimnasio: la Etapa 1 otorga 250 monedas en primera victoria (antes 500) y 75 en repetidas (antes 150), escalando progresivamente a lo largo de las 8 etapas.',
+     'Adjusted gym stage coin rewards: Stage 1 now awards 250 coins on first victory (was 500) and 75 on repeat (was 150), scaling progressively through all 8 stages.'],
+    ['El nuevo modo de etapas y gimnasios no afecta a las marcas ni puestos del ranking.',
+     'The new stage and gym mode does not affect leaderboard records or rankings.'],
+    ['En el selector de etapas de gimnasio, las que aún no están disponibles indican ahora "PRÓXIMAMENTE" en vez de "BLOQUEADA".',
+     'In the gym stage selector, stages not yet available now display "COMING SOON" instead of "LOCKED".']
   ] },
   { d: '2026-10-12', title: ['Tiempo extra y grietas con menos azar', 'Overtime and less random rifts'], new: [
     ['Tiempo extra: desde el minuto 60 los Pokémon salvajes se vuelven cada vez más fuertes (más vida y más daño), y cada vez más deprisa. Antes, con las mejoras al máximo, algunas partidas no acababan nunca; ahora las mejores rondarán la hora y media.',

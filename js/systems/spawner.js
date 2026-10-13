@@ -77,13 +77,24 @@ G.Spawner = (() => {
   }
 
   function spawnOne(pl, t, angle) {
+    if (G.StageMgr && G.StageMgr.isGym) return null;
+    const stage = G.Stages && G.Stages.current;
+    if (stage && t >= stage.duration) return null;
     const def = G.U.pick(G.Enemies.bagAt(t));
     const pt = freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
-    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
-    e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
-    if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
+    const hpFactor = stage ? (1.2 + Math.min(0.6, t / 400)) : hpK(t);
+    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpFactor));
+    e.dmg *= stage ? 1.0 : DMG_K;
+    e.xp = Math.round(e.xp * (stage ? (stage.xpMul || 1.4) * 3 : XP_K));
+    if (G.EnemyMgr.count >= CAP * ELITE_FROM) {
+      const eliteHp = stage ? 1.3 : 1.6;
+      const eliteDmg = stage ? 1.15 : 1.25;
+      e.maxHp = e.hp = Math.round(e.maxHp * eliteHp);
+      e.dmg *= eliteDmg;
+      e.xp = Math.round(e.xp * (stage ? 1.4 : 1.6));
+    }
     if (shiny) e.makeShiny();
     if (G.Events.golden) e.makeGolden();
     G.EnemyMgr.add(e);
@@ -109,8 +120,8 @@ G.Spawner = (() => {
   function update(dt, who, t) {
     players = Array.isArray(who) ? who : [who];
     if (announceT > 0) announceT -= dt;
-    // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
-    if (G.Rift.inArena) return;
+    // En la arena de la grieta o en el combate de gimnasio no sale nada más (y el reloj de jefes espera).
+    if (G.Rift.inArena || (G.StageMgr && G.StageMgr.isGym)) return;
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;
@@ -138,7 +149,7 @@ G.Spawner = (() => {
     }
 
     // --- marea ---
-    if (!bossFight) surgeT -= dt;
+    if (!bossFight && !(G.StageMgr && G.StageMgr.isGym)) surgeT -= dt;
     if (surgeT <= 0) {
       surgeT = G.U.rand(38, 56);
       const base = Math.random() * 6.2832;

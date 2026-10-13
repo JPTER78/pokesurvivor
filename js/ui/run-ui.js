@@ -103,8 +103,22 @@ G.RunUI = (() => {
   }
 
   function showOver(r, onBack) {
-    $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
+    if (r.wonStage) {
+      const isRepeat = !!r.wonStage.isRepeat;
+      const rwd = r.wonStage.grantedReward || r.wonStage.firstReward || r.wonStage.reward || {};
+      $('over-title').innerHTML = `<span class="gold" style="font-size:26px">¡ETAPA COMPLETADA!</span><br><small style="font-size:15px;color:#fff">${isRepeat ? 'Victoria Repetible' : (r.wonStage.badge + ' Obtenida 🪨')}</small>`;
+    } else {
+      $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
+    }
+    const rwd = r.wonStage ? (r.wonStage.grantedReward || r.wonStage.firstReward || r.wonStage.reward || {}) : {};
+    const isRepeat = r.wonStage && !!r.wonStage.isRepeat;
+    const rwdTickets = rwd.t1 || ((rwd.t10 || 0) * 10) || 0;
+    const rwdTicketText = rwdTickets === 1 ? '1 ticket' : `${rwdTickets} tickets`;
     $('over-stats').innerHTML = `
+      ${r.wonStage ? `<div style="grid-column:1/-1;background:rgba(255,210,63,0.15);padding:10px;border-radius:8px;border:1px solid #ffd23f;text-align:center">
+        <b class="gold" style="font-size:15px">¡Has derrotado al ${r.wonStage.leader} en el ${r.wonStage.gym ? r.wonStage.gym.arenaName : 'Gimnasio'}!</b>
+        <div style="font-size:13px;color:#d0e0ff;margin-top:4px">${isRepeat ? `Recompensa: +${rwd.coins || 0} monedas y +${rwd.t1 || 0} ticket` : `¡Primera victoria! +${rwd.coins || 0} monedas y +${rwdTicketText}`}</div>
+      </div>` : ''}
       <div><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
       <div><span>Nivel</span><b>${r.level}</b></div>
       <div><span>Derrotados</span><b>${r.kills}</b></div>

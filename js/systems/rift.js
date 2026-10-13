@@ -34,6 +34,7 @@ G.Rift = (() => {
   // ---------------- grieta en el mapa ----------------
 
   function update(dt, pl, time) {
+    if (G.StageMgr && G.StageMgr.active) return;
     if (rift) {
       rift.t += dt;
       rift.ttl -= dt;
