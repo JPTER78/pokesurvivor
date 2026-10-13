@@ -102,7 +102,12 @@ G.Tiles = (() => {
                 pools: 0, pillars: 0.08, props: { tree: 0.01 }, weather: null },
     fairy:    { name: 'Bosque Encantado', floor: '#4f7f5a', wall: '#7a5a8a', liquid: 'water', liq: '#8fd8ff', foam: '#ffe0f4', prop: 'tree',
                 leaf: '#e08ad0', trunk: '#6b4a5a', flowers: ['#ff8ad8', '#ffffff', '#c9a6ff'], grass: '#c48ad8', rock: '#9a8aa8',
-                pools: 0.16, pillars: 0, props: { tree: 0.05, grass: 0.1 }, weather: null }
+                pools: 0.16, pillars: 0, props: { tree: 0.05, grass: 0.1 }, weather: null },
+    // La arena de Arceus al minuto 30 (systems/judgment.js): ceniza, ruinas y
+    // árboles muertos, con un claro donde aterriza (clear). No es de ninguna grieta.
+    judgment: { name: 'Ruinas del Juicio', floor: '#4a4240', wall: '#2e2829', liquid: 'lava', liq: '#e8a82a', foam: '#fff1b8', prop: 'dead',
+                leaf: '#3e3633', trunk: '#2a2321', flowers: ['#8a7f76', '#e8a82a', '#5a514c'], grass: '#5e544c', rock: '#6a625c',
+                pools: 0, pillars: 0.03, props: { tree: 0.012, rock: 0.02 }, weather: null, clear: 4.5 }
   };
   const ARENA_TYPES = Object.keys(ARENA_THEMES);
 
@@ -129,6 +134,7 @@ G.Tiles = (() => {
     };
   }
   for (const t of ARENA_TYPES) BIOMES.push(arenaBiome(ARENA_THEMES[t]));
+  BIOMES[ARENA + ARENA_TYPES.indexOf('judgment')].name = ARENA_THEMES.judgment.name;
 
   // ---------------- utilidades de color / píxel ----------------
 

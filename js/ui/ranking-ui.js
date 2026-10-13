@@ -20,6 +20,7 @@ G.RankingUI = (() => {
       setDex(p.dex);
     };
     $('rk-clear').onclick = () => { $('rk-poke').value = ''; setDex(null); };
+    $('rk-mod').onclick = () => G.ModUI.open();
   }
 
   /** El filtro por Pokémon sólo existe en el histórico: al elegir uno se pasa a esa pestaña. */
@@ -34,6 +35,7 @@ G.RankingUI = (() => {
     if (!G.SocialUI.needOnline()) return;
     G.UI.show('scr-rank', true);
     if (!G.Social.started) G.Social.start();
+    $('rk-mod').classList.toggle('hidden', !G.Ranking.isAdmin());
     tabs();
     load();
   }
@@ -82,7 +84,8 @@ G.RankingUI = (() => {
       list.innerHTML = '<p class="sub">Todavía no hay marcas aquí. ¡Sé el primero!</p>';
     }
     const uid = G.Social.uid;
-    rows.forEach((r, i) => list.appendChild(rowEl(r, i + 1, r.uids.includes(uid))));
+    const b = G.Ranking.board(mode, period, dex), done = G.Ranking.reported();
+    rows.forEach((r, i) => list.appendChild(rowEl(r, i + 1, r.uids.includes(uid), b, done)));
 
     // La frase se monta en cada idioma (traducirla por trozos sale rara).
     const en = G.I18n.lang === 'en';
@@ -99,7 +102,7 @@ G.RankingUI = (() => {
       : (en ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>` : `Aún no tienes marca ${pn} ${where}.`);
   }
 
-  function rowEl(r, pos, mine) {
+  function rowEl(r, pos, mine, b, done) {
     const el = document.createElement('div');
     el.className = 'rk-row' + (mine ? ' mine' : '') + (pos <= 3 ? ' top' + pos : '');
     el.insertAdjacentHTML('beforeend', `<span class="pos">${pos <= 3 ? G.Icons.html('trophy', 20) : ''}${pos}</span>`);
@@ -111,6 +114,22 @@ G.RankingUI = (() => {
       `<span class="who"><b translate="no">${r.names.map((n, i) => `<a href="#" class="plink" data-u="${esc(r.uids[i] || '')}">${esc(n)}</a>`).join(' · ')}</b><small>Nv. ${r.lv || 1} · ${(r.kills || 0).toLocaleString('es')} derrotados</small></span>
        <span class="time">${fmt(r.t)}</span>`);
     el.querySelectorAll('.plink').forEach(a => { a.onclick = e => { e.preventDefault(); G.ProfileUI.show(a.dataset.u); }; });
+    // Reportar una marca sospechosa (no la tuya). Lo revisa el admin (mod-ui.js).
+    if (!mine && G.Social.me) {
+      const rep = document.createElement('button');
+      const sent = done.has(b + '__' + r.id);
+      rep.className = 'rk-rep' + (sent ? ' sent' : '');
+      rep.title = sent ? 'Ya la has reportado' : 'Reportar marca sospechosa';
+      rep.innerHTML = G.Icons.html('flag', 16);
+      rep.onclick = async () => {
+        if (rep.classList.contains('sent')) { G.UI.toast('Ya has reportado esta marca'); return; }
+        if (!confirm('¿Reportar la marca de ' + r.names.join(', ') + ' como trampa?')) return;
+        rep.classList.add('sent'); rep.title = 'Ya la has reportado';
+        await G.Ranking.report(b, r);
+        G.UI.toast('Gracias: la revisaremos');
+      };
+      el.appendChild(rep);
+    } else el.appendChild(document.createElement('span'));
     return el;
   }
 

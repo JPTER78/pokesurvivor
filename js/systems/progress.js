@@ -7,10 +7,13 @@
  *   evolve    { move }      movimiento evolucionado
  *   rift      { type }      pelea de grieta ganada
  *   runEnd    { time, level, coins, types, group }
+ *   judge     llegas a la Sentencia de Arceus (minuto 30)
+ *   judgeEnd  { time, bosses }  aguantado ante Arceus (al acabar la partida)
  *   missionDone { daily }   (lo lanza claim)
  *
  * y esto actualiza en la partida guardada:
  *   stats.bossesTotal · riftWins · evolutions · missionsDone · groupRuns
+ *   stats.judged · judgeTime (mejor tiempo ante Arceus) · judgeBosses (mejor nº de jefes)
  *   legends{dex} · arenas{tipo} · itemsFound{id} · evoMoves{id} · ach{id}
  *   missions { day, daily[], rerolled, week, weekly[] }
  *
@@ -150,6 +153,13 @@ G.Progress = (() => {
       case 'runEnd':
         if (d.group) S.groupRuns = (S.groupRuns || 0) + 1;
         break;
+      case 'judge':
+        S.judged = (S.judged || 0) + 1;
+        break;
+      case 'judgeEnd':
+        S.judgeTime = Math.max(S.judgeTime || 0, Math.floor(d.time));
+        S.judgeBosses = Math.max(S.judgeBosses || 0, d.bosses);
+        break;
     }
     advance(s.missions.daily, kind, d);
     advance(s.missions.weekly, kind, d);
@@ -160,6 +170,9 @@ G.Progress = (() => {
 
   /** Un enemigo ha caído (anfitrión, solitario o copia en el invitado). */
   function kill(e) {
+    // Los legendarios de la Sentencia de Arceus no cuentan como jefes (ni para
+    // misiones ni para logros de jefes): tienen su propio contador.
+    if (G.Judgment.active && e.boss) { G.Judgment.bossDown(); event('kill', { types: e.types || [], boss: false, legend: 0 }); return; }
     const legend = e.legend || (G.Rift.inArena && e.boss) ? e.dex : 0;
     event('kill', { types: e.types || [], boss: !!e.boss, legend });
   }

@@ -409,6 +409,24 @@ G.DB = (() => {
    */
   function stopListening() { if (unlisten) { unlisten(); unlisten = null; } }
 
+  /*
+   * Anti-trampas (firestore.rules): el servidor nunca rechaza tu partida para
+   * siempre. Si trae más monedas, tickets o Pokémon de los que se pueden ganar
+   * en ese rato, la rechaza; el margen crece con el tiempo, así que se
+   * reintenta igual a los 2 y a los 6 min (un caso justo, como las monedas de
+   * una partida que acaba justo después de otro guardado, pasa solo). Si sigue
+   * sin cuadrar, se sube igual pero con la marca sus = true (la cuenta queda
+   * marcada y no puede subir marcas al ranking; nadie pierde nada). La marca
+   * la pone o la quita sólo la nube: si el admin la quita, el siguiente
+   * guardado ya va sin ella.
+   *
+   * Además, nunca se sube dos veces en menos de 65 s (el servidor da menos
+   * margen a los guardados muy seguidos); mientras, todo está en el navegador.
+   */
+  let markNext = false, denials = 0;
+  const K_OK = 'ps.cloudok.', MIN_GAP = 65000, DENY_WAIT = [120000, 360000];
+  const sinceOk = () => Date.now() - (+read(K_OK + uid) || 0);
+
   /** Sube la partida fusionándola con lo que haya en la nube (transacción). */
   function pushNow() {
     if (mode !== 'cloud' || guest || !save || !uid) return Promise.resolve();
@@ -417,6 +435,11 @@ G.DB = (() => {
     clearTimeout(pushT); pushT = 0; pushDue = 0;
     if (navigator.onLine === false) {
       pending = true; setSync('offline'); scheduleRetry();
+      return Promise.resolve();
+    }
+    if (sinceOk() < MIN_GAP) {
+      pending = true; setSync('pending');
+      schedulePush(MIN_GAP - sinceOk() + 500);
       return Promise.resolve();
     }
     pending = false;
@@ -428,13 +451,16 @@ G.DB = (() => {
       const snap = await tx.get(ref);
       const remote = snap.exists ? migrate(snap.data().save) : null;
       merged = remote ? merge(plain(save), remote) : plain(save);
-      tx.set(ref, { save: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION });
+      const doc = { save: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION };
+      if (markNext || (snap.exists && snap.data().sus === true)) doc.sus = true;
+      tx.set(ref, doc);
     });
     // Si la red se cae a medias, Firestore puede quedarse esperando: tope de 12 s.
     const timeout = new Promise((_, rej) => setTimeout(() => rej({ code: 'unavailable' }), 12000));
-    let failed = false;
+    let failed = false, again = false;
     pushing = Promise.race([tr, timeout]).then(() => {
-      fails = 0; rejects = 0;
+      fails = 0; markNext = false; denials = 0;
+      write(K_OK + uid, Date.now());
       // Se FUSIONA con lo de ahora (no se sobrescribe): si has cambiado algo
       // mientras se subía (elegir compañero, una compra...), no se pierde.
       if (merged && save) { applyInPlace(merge(plain(save), merged)); write(K_CLOUD + uid, save); }
@@ -442,38 +468,22 @@ G.DB = (() => {
       if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
     }).catch(e => {
       console.warn('[DB] no se pudo sincronizar:', e.code || e.message);
-      // El servidor la rechaza por imposible (partida editada). Se reintenta 10 veces
-      // (casi 1 h: el margen del servidor crece con el tiempo, por si era un caso
-      // justo) y si sigue, se ignora el cambio y se vuelve a lo que hay en la nube.
-      if (e.code === 'permission-denied' && ++rejects >= 10) { rejects = 0; return adoptRemote(); }
+      // El servidor la ve imposible: se espera (el margen crece) y, si sigue, se sube con la marca.
+      if (e.code === 'permission-denied' && !markNext) {
+        pending = true;
+        if (denials < DENY_WAIT.length) { setSync('pending'); schedulePush(DENY_WAIT[denials++]); failed = true; return; }
+        markNext = true; again = true; return;
+      }
       pending = true; failed = true;
       setSync(navigator.onLine === false || e.code === 'unavailable' ? 'offline' : 'pending');
       scheduleRetry();
     }).finally(() => {
       pushing = null;
+      if (again) return pushNow();
       // (Si ha fallado, el reintento ya está programado con su espera creciente.)
       if (!failed && pending && syncState === 'pending') schedulePush(Math.max(1500, PUSH_GAP - (Date.now() - lastPush)));
     });
     return pushing;
-  }
-
-  /** Deja la partida como está en la nube (tras un rechazo del servidor). */
-  let rejects = 0;
-  async function adoptRemote() {
-    try {
-      const snap = await docRef().get();
-      if (snap.exists && save) {
-        applyInPlace(migrate(snap.data().save));
-        write(K_CLOUD + uid, save);
-      }
-      pending = false;
-      setSync('ok');
-      if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
-    } catch (e) {
-      pending = true;
-      setSync('pending');
-      scheduleRetry();
-    }
   }
 
   // Si ya había una subida programada antes, se respeta (una compra no espera a la siguiente partida).

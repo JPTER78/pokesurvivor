@@ -196,6 +196,8 @@ G.Enemies = (() => {
     return { cast, bosses };
   }
 
+  // (El "tiempo extra" del minuto 60 se quitó al llegar la Sentencia de Arceus,
+  //  que acaba todas las partidas en el minuto 30: ver systems/judgment.js.)
   function scale(t) {
     const stage = G.Stages && G.Stages.current;
     if (stage) {
@@ -205,20 +207,8 @@ G.Enemies = (() => {
         spd: 1 + Math.min(0.15, t / 2500)
       };
     }
-    const k = late(t);
-    return { hp: (1 + t / 95) * k, dmg: (1 + t / 420) * Math.pow(k, 0.7), spd: 1 + Math.min(0.35, t / 1400) };
+    return { hp: 1 + t / 95, dmg: 1 + t / 420, spd: 1 + Math.min(0.35, t / 1400) };
   }
-
-  /**
-   * Tiempo extra (desde 2026-10-12). Hasta el minuto 60 todo sigue igual; desde
-   * ahí la vida (y algo menos el daño) crece cada vez más deprisa, como en otros
-   * "survivors". Antes crecía en línea recta y, con las mejoras ya al máximo,
-   * las mejores builds aguantaban sin fin (runs de 2 a 4 horas).
-   *   minuto   60    75    90    105   120   150
-   *   vida    ×1   ×1,09 ×1,4  ×2,1  ×3,8  ×21    (además de la subida normal)
-   */
-  const LATE_FROM = 60, LATE_K = 0.000374;
-  function late(t) { const m = Math.max(0, t / 60 - LATE_FROM); return Math.exp(Math.min(30, LATE_K * m * m)); }
 
   /**
    * Los jefes ya traen su vida base creciente (1.400 ... 16.000), así que
@@ -226,8 +216,7 @@ G.Enemies = (() => {
    */
   function bossScale(t) {
     if (G.Stages && G.Stages.current) return { hp: 1, dmg: 1, spd: 1 };
-    const k = late(t);
-    return { hp: (1 + t / 600) * k, dmg: (1 + t / 600) * Math.pow(k, 0.7), spd: 1 };
+    return { hp: 1 + t / 600, dmg: 1 + t / 600, spd: 1 };
   }
 
   /** Tramo que toca en el segundo `t`. */
@@ -271,7 +260,7 @@ G.Enemies = (() => {
   }
 
   return {
-    TIERS, BOSS_SLOTS, LATE_FROM, rollRun, scale, bossScale, late, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

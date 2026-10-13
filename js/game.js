@@ -105,6 +105,7 @@ G.Game = (() => {
     G.Pickups.clear();
     G.Spawner.reset();
     G.Rift.reset();
+    G.Judgment.reset();
     G.Events.reset();
     G.Weather.reset();
     G.Path.clear();
@@ -140,6 +141,8 @@ G.Game = (() => {
     // Hojas de sprites locales: el compañero y los primeros enemigos.
     G.Sprites.preload([mon.dex], 8000, pl.shiny);
     G.Audio.music(G.BIOME_MUSIC[0]);
+    // Para el ranking: el servidor apunta cuándo empieza la partida (anti-trampas).
+    if (!stage && (!coop || G.Coop.isHost)) G.Ranking.runStarted(coop ? 'g' : 's');
     deathT = 0;
 
     state = 'playing';
@@ -328,6 +331,9 @@ G.Game = (() => {
     }
     save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
+    const judge = G.Judgment ? G.Judgment.summary() : null;
+    if (judge) G.Progress.event('judgeEnd', judge);
+    if (G.Judgment) G.Judgment.reset();
     G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop, isStage });
     G.Progress.checkAch();
     G.DB.commit();
@@ -342,7 +348,7 @@ G.Game = (() => {
     }
 
     G.RunUI.showOver({
-      dead, wonStage, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
+      dead, wonStage, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
@@ -493,6 +499,11 @@ G.Game = (() => {
 
   function handleKeys() {
     if (G.SettingsUI.isOpen) { if (G.Input.tap('escape')) G.SettingsUI.close(); return; }
+    // La Sentencia de Arceus: Espacio, Intro o Esc saltan la animación (si se puede).
+    if (G.Judgment.cinematic && state === 'playing') {
+      if (['space', 'enter', 'escape'].some(k => G.Input.tap(k))) G.Judgment.skip();
+      return;
+    }
     if (state === 'levelup') {
       for (let i = 0; i < 3; i++) {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
@@ -581,6 +592,16 @@ G.Game = (() => {
   function update(dt) {
     const coop = G.Coop.active;
     if (flashT > 0) flashT -= dt;
+    // La Sentencia de Arceus: mientras dura la animación, todo lo demás se para.
+    if (G.Judgment.cinematic) {
+      G.Judgment.cineTick(dt);
+      pl.anim.update(dt);
+      if (coop) for (const p of G.Coop.puppets()) p.netUpdate(dt);
+      G.World.update(dt, G.Camera);
+      G.FX.update(dt);
+      G.Audio.music(G.Judgment.music);
+      return;
+    }
     // Tras caer, deja que se vea la animación de Faint antes del resumen.
     // (En la arena de la grieta no: allí caer sólo te echa de vuelta.)
     if (pl.dead && !coop && !G.Rift.inArena) {
@@ -596,7 +617,7 @@ G.Game = (() => {
 
     const isStage = !!(G.StageMgr && G.StageMgr.active);
     const b = isStage ? (G.Stages.current ? G.Stages.current.biome : 0) : Math.floor(time / 240);
-    if (!isStage && b !== biome && !G.Rift.inArena) {
+    if (!isStage && b !== biome && !G.Rift.inArena && !(G.Judgment && G.Judgment.active)) {
       biome = b;
       G.World.setBiome(b);
       G.Audio.sfx('biome');
@@ -627,11 +648,12 @@ G.Game = (() => {
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
     if (G.StageMgr) G.StageMgr.tick(dt, time, pl);
+    if (G.Judgment && !isStage) G.Judgment.update(dt, pl, time);
     G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
 
-    G.Audio.music(G.Rift.inArena ? 'rift' : (G.EnemyMgr.bossAlive() || (G.StageMgr && G.StageMgr.isGym)) ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
+    G.Audio.music((G.Judgment && G.Judgment.active) ? G.Judgment.music : G.Rift.inArena ? 'rift' : (G.EnemyMgr.bossAlive() || (G.StageMgr && G.StageMgr.isGym)) ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (pl.bonds > 0) offerBond(true);
     if (G.Coop.isHost) checkAllDown(dt);
@@ -673,6 +695,8 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
+    const arceus = pl && state !== 'ui' ? G.Judgment.drawable() : null;
+    if (arceus) items.push({ y: arceus.y, ent: arceus });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
@@ -693,6 +717,7 @@ G.Game = (() => {
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
     G.FX.draw(ctx);
+    G.Judgment.drawAir(ctx);
     ctx.restore();
 
     G.Weather.draw(ctx, w, h, frameDt);
@@ -706,7 +731,8 @@ G.Game = (() => {
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
     }
-    G.HUD.draw(ctx, w, h, pl, st);
+    if (!G.Judgment.cinematic) G.HUD.draw(ctx, w, h, pl, st);
+    G.Judgment.drawOverlay(ctx, w, h);
     G.Touch.draw(ctx);
     if (G.Settings.get('fps')) {
       ctx.save();
@@ -841,7 +867,7 @@ G.Flow = {
   boot() {
     G.UI.initChrome();
     G.LoginUI.init(); G.TestUI.init(); G.MenuUI.init(); G.GachaUI.init();
-    G.SocialUI.init(); G.RankingUI.init(); G.GoalsUI.init(); G.ProfileUI.init(); G.SettingsUI.init(); G.SupportUI.init(); G.NewsUI.init(); G.Updater.init();
+    G.SocialUI.init(); G.RankingUI.init(); G.ModUI.init(); G.GoalsUI.init(); G.ProfileUI.init(); G.SettingsUI.init(); G.SupportUI.init(); G.NewsUI.init(); G.Updater.init();
     // Tu nombre arriba a la derecha abre tu perfil.
     document.getElementById('user-pill').onclick = () => G.GoalsUI.open('profile');
     G.Audio.music('village');     // suena tras el primer clic (lo exige el navegador)

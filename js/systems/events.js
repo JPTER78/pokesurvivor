@@ -41,7 +41,7 @@ G.Events = (() => {
       if (cur.id !== 'lost' && cur.t >= cur.dur && authority()) end();
     }
     if (lost) lostTick(dt, players);
-    if (!authority() || G.Rift.inArena) return;
+    if (!authority() || G.Rift.inArena || G.Judgment.active) return;
 
     if (thieves < 2) {
       thiefT -= dt;

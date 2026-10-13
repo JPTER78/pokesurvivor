@@ -163,7 +163,6 @@ G.I18n.add({
   // ---------------- avisos durante la partida ----------------
   '¡{x} salvaje apareció!': 'A wild {x} appeared!', '¡{x} shiny salvaje apareció!': 'A wild shiny {x} appeared!',
   '¡Un {x} shiny anda cerca!': 'A shiny {x} is nearby!', '¡Marea de Pokémon!': 'Pokémon swarm!',
-  '¡Los Pokémon salvajes se vuelven cada vez más fuertes!': 'Wild Pokémon are getting stronger and stronger!',
   '¡Has conseguido a {x} shiny!': 'You got a shiny {x}!', '¡Otro {x} shiny! (+300 monedas)': 'Another shiny {x}! (+300 coins)',
   '¡{x} te esperaba en la grieta!': '{x} was waiting in the rift!', '¡{x} shiny te esperaba en la grieta!': 'A shiny {x} was waiting in the rift!',
   '¡Has vencido a {x}! Recoge el premio…': 'You defeated {x}! Grab your reward…',
@@ -559,5 +558,26 @@ G.I18n.add({
   'BLOQUEADA': 'LOCKED',
   'PRÓXIMAMENTE': 'COMING SOON',
   'Próximamente': 'Coming soon',
-  'No disponible': 'Unavailable'
+  'No disponible': 'Unavailable',
+  '¡ETAPA COMPLETADA!': 'STAGE COMPLETED!',
+  'Victoria Repetible': 'Repeat Victory',
+
+  // ---------------- La Sentencia de Arceus (minuto 30) ----------------
+  'Ruinas del Juicio': 'Ruins of Judgment', 'LA SENTENCIA': 'THE JUDGMENT', 'DE ARCEUS': 'OF ARCEUS',
+  'El tiempo se ha agotado…': 'Time has run out…', '¡ARCEUS HA DESCENDIDO!': 'ARCEUS HAS DESCENDED!',
+  'Es invencible: huye y aguanta todo lo que puedas': 'It is invincible: run and survive as long as you can',
+  'Toca la pantalla para saltar': 'Tap the screen to skip', 'Pulsa Espacio para saltar': 'Press Space to skip',
+  '¡Huye de Arceus! Es invencible': 'Run from Arceus! It is invincible',
+  '¡{x} acude a la Sentencia!': '{x} answers the Judgment!',
+  'SENTENCIA · {x} · JEFES {x}': 'JUDGMENT · {x} · BOSSES {x}',
+  'Ante Arceus': 'Against Arceus', '{x} · {x} legendarios': '{x} · {x} legendaries', '{x} · {x} legendario': '{x} · {x} legendary',
+  'La Sentencia': 'The Judgment', 'Llega a la Sentencia de Arceus (minuto 30).': 'Reach the Judgment of Arceus (minute 30).',
+  'Ante el Creador': 'Before the Creator', 'Aguanta 1 minuto ante Arceus.': 'Survive 1 minute against Arceus.',
+  'Desafío divino': 'Divine challenge', 'Derrota a 3 legendarios ante Arceus en una partida.': 'Defeat 3 legendaries against Arceus in a single run.',
+  'Juzgado': 'Judged', 'Elegido de Arceus': 'Chosen of Arceus',
+
+  // ---------------- reportar marcas del ranking ----------------
+  'Reportar marca sospechosa': 'Report suspicious record', 'Ya la has reportado': 'You already reported it',
+  'Ya has reportado esta marca': 'You already reported this record',
+  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it'
 });
