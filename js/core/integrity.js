@@ -19,14 +19,19 @@
  *      comprueban que cuadra con ese Pokémon y esas mejoras. Ver docs/anticheat.md.
  */
 G.Integrity = (() => {
-  // Con G global (dev.html) cualquiera puede tocar la partida: no sube marcas.
-  // En local (pruebas del dueño) sí, para poder probar el ranking.
+  // Con G global (dev.html) cualquiera puede tocar la partida: esas partidas no
+  // suben al ranking. dev.html ni siquiera arranca (vuelve a index.html) salvo en
+  // modo desarrollador: en local Y con ?dev=1 en la dirección Y con
+  // localStorage ps.dev = '1' (se pone a mano en la consola: localStorage.ps.dev = 1).
+  // Sólo en ese modo cuentan para el ranking, para poder probarlo.
   const LOCAL = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-  const EXPOSED = window.G === G && !LOCAL;
+  const flagOn = () => { try { return localStorage.getItem('ps.dev') === '1'; } catch (e) { return false; } };
+  const DEV = LOCAL && /[?&]dev=1(&|$)/.test(location.search) && flagOn();
+  const EXPOSED = window.G === G && !DEV;
 
   // Lo posible en una partida (mismos números que validEntry en firestore.rules;
   // si cambias uno, cambia el otro).
-  const MAX_T = 2700;                       // minuto 45: la Sentencia de Arceus (minuto 30) dobla su fuerza cada 5 s
+  const MAX_T = 2100;                       // minuto 35: la Sentencia de Arceus (minuto 30) dobla su fuerza cada 5 s
   const maxLv = t => 10 + t / 4;
   const maxKills = t => 100 + t * 12;
   const maxCoins = t => 4000 + t * 40;      // pago de la partida (monedas); ver possibleSave

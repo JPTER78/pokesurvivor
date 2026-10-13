@@ -161,6 +161,7 @@ G.Ranking = (() => {
     if (!fb) return;
     const go = n => fb.fs.collection('runs').doc(fb.uid).set({ startedAt: now(), mode })
       .catch(e => { console.warn('[Ranking] inicio:', e.code || e.message); if (n < 2) setTimeout(() => go(n + 1), 15000); });
+    busy = busy.then(() => flushNow()).catch(() => {});      // las marcas pendientes de antes se suben ANTES de cambiar la hora de inicio
     busy.then(() => go(0));
   }
   /** La subida de una marca (para que la partida siguiente espere a que acabe). */
@@ -168,24 +169,91 @@ G.Ranking = (() => {
 
   /**
    * Sube la grabación de la partida (replays/{uid}). Las reglas piden que la
-   * marca que la cita (sm.rid) ya la tenga detrás. Si falla, la marca sube sin rid.
+   * marca que la cita (sm.rid) ya la tenga detrás, así que va SIEMPRE antes de
+   * la marca. Si falla se reintenta con espera creciente (BACKOFF); si sigue
+   * fallando la marca no se pierde: pasa a la cola (ver más abajo).
    */
+  const BACKOFF = [0, 1500, 4000];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
   async function saveReplay(rep) {
     const fb = fbx();
     if (!fb || !rep) return false;
-    try {
-      await fb.fs.collection('replays').doc(fb.uid).set({
-        rid: rep.rid, v: String(rep.hdr.v || '').slice(0, 16), t: rep.t, mode: rep.hdr.mode, h: JSON.stringify(rep.hdr),
-        log: rep.log, n: rep.n, trunc: !!rep.trunc, at: now()
-      });
-      return true;
-    } catch (e) { console.warn('[Ranking] grabación:', e.code || e.message); return false; }
+    for (const ms of BACKOFF) {
+      if (ms) await wait(ms);
+      try {
+        await fb.fs.collection('replays').doc(fb.uid).set({
+          rid: rep.rid, v: String(rep.hdr.v || '').slice(0, 16), t: rep.t, mode: rep.hdr.mode, h: JSON.stringify(rep.hdr),
+          log: rep.log, n: rep.n, trunc: !!rep.trunc, at: now()
+        });
+        return true;
+      } catch (e) {
+        console.warn('[Ranking] grabación:', e.code || e.message);
+        if (e.code === 'permission-denied') return false;          // las reglas no la aceptan: reintentar no sirve
+      }
+    }
+    return false;
   }
 
-  /** Guarda la entrada en cada tabla donde mejore. → periodos mejorados */
-  async function store(boards, id, entry, rep) {
+  // ---------------- cola de marcas pendientes ----------------
+  /*
+   * Si no se pudo subir la grabación (sin red, servidor caído...) la marca NO se
+   * sube sin ella (las reglas la rechazarían) ni se pierde: se guarda aquí con su
+   * grabación y se reintenta en la próxima sesión (al entrar y antes de empezar
+   * otra partida, para que runs/{uid} aún tenga la hora de ésa). Hasta 3 veces;
+   * la última, en formato antiguo (sin resumen), que las reglas aceptan mientras
+   * no pase la fecha de SM_OBLIGATORIO (tools/make_rules.js). Como mucho 2
+   * marcas en cola y 3 días.
+   */
+  const QKEY = () => 'ps.rk.q.' + (fbx() ? fbx().uid : '');
+  const QMAX = 2, QDAYS = 3, QTRIES = 3;
+  function queueGet() { try { return JSON.parse(localStorage.getItem(QKEY()) || '[]'); } catch (e) { return []; } }
+  function queueSet(q) {
+    try { if (q.length) localStorage.setItem(QKEY(), JSON.stringify(q)); else localStorage.removeItem(QKEY()); }
+    catch (e) { /* lleno: se pierde la cola, no la partida */ }
+  }
+  function enqueue(item) {
+    const q = queueGet().filter(x => x.id !== item.id || x.entry.t !== item.entry.t);
+    q.push(Object.assign({ at: Date.now(), n: 0 }, item));
+    queueSet(q.slice(-QMAX));
+  }
+  let flushing = null;
+  /** Reintenta las marcas pendientes (de a una). */
+  function flushNow() {
+    const fb = fbx();
+    if (!fb || flushing) return flushing || Promise.resolve([]);
+    flushing = (async () => {
+      const done = [];
+      for (const item of queueGet()) {
+        const cur = Object.values(periodIds());
+        const boards = item.boards.filter(([b]) => cur.some(p => b.split('_')[1] === p));
+        const old = Date.now() - item.at > QDAYS * 86400000;
+        let failed = false;
+        if (boards.length && !old) {
+          item.n++;
+          const r = await store(boards, item.id, item.entry, item.rep, item.n >= QTRIES);
+          failed = r.failed && item.n < QTRIES;
+          if (r.better.length) done.push(...r.better);
+        }
+        const q = queueGet().filter(x => !(x.id === item.id && x.entry.t === item.entry.t));
+        if (failed) q.push(item);
+        queueSet(q);
+      }
+      if (done.length) announce([...new Set(done)]);
+      return done;
+    })().finally(() => { flushing = null; });
+    return flushing;
+  }
+  const flushQueue = () => track(flushNow());
+
+  /**
+   * Guarda la entrada en cada tabla donde mejore. → { better: periodos mejorados,
+   * failed: no se pudo subir la grabación y quedó sin guardar }
+   * @param legacy  sin resumen ni grabación (último intento de la cola)
+   */
+  async function store(boards, id, entry, rep, legacy = false) {
     const fb = fbx();
     const better = [];
+    let failed = false;
     const known = bests();
     // La grabación sólo se sube si alguna tabla va a escribirse (una vez por partida).
     let replayP = null;
@@ -206,8 +274,8 @@ G.Ranking = (() => {
           known[key] = old.exists ? old.data().t : 0;
         }
         if ((known[key] || 0) >= entry.t) return;
-        let sm = entry.sm;
-        if (sm && !(await withReplay())) { sm = Object.assign({}, sm); delete sm.rid; }
+        let sm = legacy ? null : entry.sm;
+        if (sm && !(await withReplay())) { failed = true; return; }
         const data = Object.assign({}, entry, { at: firebase.firestore.FieldValue.serverTimestamp() });
         if (sm) data.sm = sm; else delete data.sm;
         // Si la tabla ya está llena y no llegas al top 50, no hace falta tocar el resumen
@@ -251,7 +319,7 @@ G.Ranking = (() => {
       } catch (e) { console.warn('[Ranking] no se pudo guardar en', b, e.code || e.message); }
     }));
     saveBests(known);
-    return better;
+    return { better, failed };
   }
 
   function announce(better) {
@@ -269,9 +337,10 @@ G.Ranking = (() => {
     const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills, sm: r.sm };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
     boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
-    const better = await store(boards, fb.uid, entry, r.rep);
-    announce(better);
-    return better;
+    const res = await store(boards, fb.uid, entry, r.rep);
+    if (res.failed) enqueue({ boards, id: fb.uid, entry, rep: r.rep });
+    announce(res.better);
+    return res.better;
   }
 
   /** La sube el anfitrión, con todo el equipo. */
@@ -286,9 +355,10 @@ G.Ranking = (() => {
     const ids = periodIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
     for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
-    const better = await store(boards, id, entry, r.rep);
-    announce(better);
-    return better;
+    const res = await store(boards, id, entry, r.rep);
+    if (res.failed) enqueue({ boards, id, entry, rep: r.rep });
+    announce(res.better);
+    return res.better;
   }
 
   // ---------------- leer ----------------
@@ -535,6 +605,6 @@ G.Ranking = (() => {
       t1: (v.tickets || {}).t1 || 0, t10: (v.tickets || {}).t10 || 0, owned: Object.keys(v.owned || {}).length }; });
   }
 
-  return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, myRank, removeMine,
+  return { PERIODS, periodIds, board, runStarted, flushQueue, submitSolo, submitGroup, top, myRank, removeMine,
            report, reported, isAdmin, reports, entryInfo, removeEntry, purgeAbove, removeEverywhere, setMarked, dismiss, markedAccounts };
 })();

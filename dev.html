@@ -541,6 +541,15 @@
 
 <!-- datos generados -->
 <!-- scripts:begin -->
+<script>
+  // dev.html deja G a la vista de la consola: sólo para desarrollar, en local, con ?dev=1 en la
+  // dirección y localStorage ps.dev = '1' (ver js/core/integrity.js). Si no, vuelve al juego.
+  (function () {
+    var ok = false;
+    try { ok = /^(localhost|127\.0\.0\.1|)$/.test(location.hostname) && /[?&]dev=1(&|$)/.test(location.search) && localStorage.getItem('ps.dev') === '1'; } catch (e) {}
+    if (!ok) location.replace('index.html');
+  })();
+</script>
 <script defer src="js/core/util.js"></script>
 <script defer src="js/core/integrity.js"></script>
 <script defer src="js/core/replay.js"></script>

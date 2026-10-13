@@ -891,6 +891,7 @@ G.Flow = {
   toLogin() { G.Audio.music('village'); G.LoginUI.open(); },
   afterLogin() {
     G.Audio.music('village');
+    G.Ranking.flushQueue();                 // marcas que no se pudieron subir en la sesión anterior
     if (!G.DB.save.partner) G.TestUI.start();
     else this.goMenu();
   },
