@@ -143,6 +143,31 @@ G.Enemies = (() => {
 
   /** Sortea el elenco de una run nueva. */
   function rollRun() {
+    const stage = G.Stages && G.Stages.current;
+    if (stage) {
+      cast = stage.tiers.map((tier, ti) => {
+        const mons = tier.mons.map(dex => G.DEX_BY[dex]).filter(Boolean);
+        const baseTier = TIERS[ti] || TIERS[0];
+        return {
+          from: tier.from,
+          list: mons.map(p => defFor(p, baseTier, ti))
+        };
+      });
+      bosses = (stage.miniBosses || []).map(b => {
+        const p = G.DEX_BY[b.dex] || { spd: 80 };
+        return {
+          at: b.at, dex: b.dex, name: b.name,
+          hp: b.hp,
+          spd: Math.round(G.U.clamp(40 + baseSpd(p) * 0.5, 40, 100)),
+          dmg: b.dmg,
+          xp: b.xp,
+          behavior: b.behavior || 'charger',
+          shotDmg: Math.round(b.dmg * 0.55), shotCd: 1.1, range: 260
+        };
+      });
+      return { cast, bosses };
+    }
+
     cast = TIERS.map((tier, ti) => ({
       from: tier.from,
       list: castFor(tier).map(p => defFor(p, tier, ti))
@@ -174,6 +199,14 @@ G.Enemies = (() => {
   // (El "tiempo extra" del minuto 60 se quitó al llegar la Sentencia de Arceus,
   //  que acaba todas las partidas en el minuto 30: ver systems/judgment.js.)
   function scale(t) {
+    const stage = G.Stages && G.Stages.current;
+    if (stage) {
+      return {
+        hp: (1 + t / 320) * (stage.hpMul || 0.85),
+        dmg: (1 + t / 650) * (stage.dmgMul || 1.1),
+        spd: 1 + Math.min(0.15, t / 2500)
+      };
+    }
     return { hp: 1 + t / 95, dmg: 1 + t / 420, spd: 1 + Math.min(0.35, t / 1400) };
   }
 
@@ -181,7 +214,10 @@ G.Enemies = (() => {
    * Los jefes ya traen su vida base creciente (1.400 ... 16.000), así que
    * escalan mucho más suave: con la curva normal el último llegaba a 168.000 PV.
    */
-  function bossScale(t) { return { hp: 1 + t / 600, dmg: 1 + t / 600, spd: 1 }; }
+  function bossScale(t) {
+    if (G.Stages && G.Stages.current) return { hp: 1, dmg: 1, spd: 1 };
+    return { hp: 1 + t / 600, dmg: 1 + t / 600, spd: 1 };
+  }
 
   /** Tramo que toca en el segundo `t`. */
   function tierAt(t) { let ti = 0; TIERS.forEach((tr, i) => { if (t >= tr.from) ti = i; }); return ti; }

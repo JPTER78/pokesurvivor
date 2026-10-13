@@ -6,6 +6,19 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-13', title: ['Etapa 1: Bosque Verde y Gimnasio de Brock', 'Stage 1: Viridian Forest & Brock Gym'], new: [
+    ['Nuevo modo Etapas: juega la Etapa 1 en Kanto (10 minutos) a través de la Ruta 1 y el Bosque Verde, derrota a los mini-jefes y vence al Líder Brock (Geodude y Onix) en la arena de roca para ganar la Medalla Roca.',
+     'New Stage Mode: play Stage 1 in Kanto (10 minutes) across Route 1 and Viridian Forest, defeat mini-bosses and beat Leader Brock (Geodude and Onix) in the rock arena to earn the Boulder Badge.'],
+    ['Ilustraciones de medallas y líderes en el selector de etapas: cada etapa de gimnasio de Kanto muestra ahora la imagen de su medalla a la izquierda y el retrato de su líder a la derecha.',
+     'Badges and gym leaders in stage selector: each Kanto gym stage now displays its badge on the left and its leader portrait on the right.']
+  ], chg: [
+    ['Ajustadas las recompensas de monedas de las etapas de gimnasio: la Etapa 1 otorga 250 monedas en primera victoria y 75 en repetidas, escalando progresivamente a lo largo de las 8 etapas.',
+     'Adjusted gym stage coin rewards: Stage 1 now awards 250 coins on first victory and 75 on repeat, scaling progressively through all 8 stages.'],
+    ['El nuevo modo de etapas y gimnasios no afecta a las marcas ni puestos del ranking.',
+     'The new stage and gym mode does not affect leaderboard records or rankings.'],
+    ['En el selector de etapas de gimnasio, las que aún no están disponibles indican ahora "PRÓXIMAMENTE" en vez de "BLOQUEADA".',
+     'In the gym stage selector, stages not yet available now display "COMING SOON" instead of "LOCKED".']
+  ] },
   { d: '2026-10-13', title: ['La Sentencia de Arceus', 'The Judgment of Arceus'], new: [
     ['La Sentencia de Arceus: al llegar al minuto 30, Arceus baja del cielo y te lleva a las Ruinas del Juicio. Es invencible, te persigue cada vez más deprisa y lanza pilares de luz, rayos y ondas; si te toca, te quita casi media vida. Cada 5 segundos acude un legendario con el doble de vida y de daño que el anterior. ¿Cuánto aguantarás?',
      'The Judgment of Arceus: at minute 30, Arceus descends from the sky and takes you to the Ruins of Judgment. It is invincible, chases you faster and faster and casts pillars of light, beams and shockwaves; if it touches you, you lose almost half your HP. Every 5 seconds a legendary joins, each with twice the HP and damage of the previous one. How long can you last?'],

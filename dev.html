@@ -538,6 +538,18 @@
   </div>
 </section>
 
+<!-- ====== Selector de etapas ====== -->
+<section id="scr-stages" class="scr dim hidden">
+  <div class="box wide" style="max-height:88vh;display:flex;flex-direction:column">
+    <h2>Seleccionar Modo de Juego</h2>
+    <p class="sub">Elige el modo infinito tradicional o una etapa temática por gimnasios.</p>
+    <div id="stages-list" style="display:flex;flex-direction:column;gap:12px;margin:14px 0;overflow-y:auto;max-height:60vh;padding-right:6px"></div>
+    <div class="row between" style="margin-top:14px">
+      <button id="stages-back" class="btn ghost" data-back>Volver</button>
+    </div>
+  </div>
+</section>
+
 <!-- datos generados -->
 <!-- scripts:begin -->
 <script defer src="js/core/util.js"></script>
@@ -556,6 +568,7 @@
 <script defer src="js/core/sprites.js"></script>
 <script defer src="js/core/camera.js"></script>
 <!-- datos de juego -->
+<script defer src="js/data/stages.js"></script>
 <script defer src="js/data/moves.js"></script>
 <script defer src="js/data/types.js"></script>
 <script defer src="js/data/starters.js"></script>
@@ -577,6 +590,7 @@
 <script defer src="js/entities/pickup.js"></script>
 <script defer src="js/entities/player.js"></script>
 <!-- sistemas -->
+<script defer src="js/systems/stages.js"></script>
 <script defer src="js/systems/combat.js"></script>
 <script defer src="js/systems/spawner.js"></script>
 <script defer src="js/systems/levelup.js"></script>
