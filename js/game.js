@@ -380,21 +380,22 @@ G.Game = (() => {
 
   const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend' };
 
-  /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
+  /** Has cogido un objeto: te pregunta si quieres equiparlo (o cambiar si ya llevas uno) o seguir sin objeto. */
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
     let mine = false;            // esta elección es la que ha parado el juego
     const take = got => {
-      if (got !== pl.item) {
+      if (got && got !== pl.item) {
         pl.equip(got);
         G.Spawner.say('¡Llevas ' + G.Items.BY[got].name + '!', 2.6, true);
         G.Progress.event('item', { id: got });
+      } else if (!got && !pl.item) {
+        G.Spawner.say('Sigues sin objeto', 2, true);
       }
       if (!mine) return;
       if (state === 'choice') state = holdBy.length ? 'held' : 'playing';
       if (G.Coop.active) G.Coop.holdEnd();
     };
-    if (!pl.item) { take(id); return; }
     if (pl.item === id) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
     // Se para el juego mientras eliges; en grupo, para todos (como con las
     // fusiones). Antes en grupo seguía y te pegaban mientras elegías.

@@ -6,7 +6,9 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-13', title: ['La Sentencia de Arceus', 'The Judgment of Arceus'], new: [
+  { d: '2026-10-13', title: ['La Sentencia de Arceus y confirmación de objetos', 'The Judgment of Arceus and item confirmation'], new: [
+    ['Confirmar primer objeto: al coger un objeto sin llevar ninguno, ahora puedes elegir si equiparlo o seguir sin objeto (útil para no equipar sin querer objetos de riesgo como la Cinta Elección o la Vidasfera).',
+     'First held item confirmation: picking up an item when holding none now lets you choose whether to equip it or stay without an item (useful to avoid accidentally equipping risky items like Choice Band or Life Orb).'],
     ['La Sentencia de Arceus: al llegar al minuto 30, Arceus baja del cielo y te lleva a las Ruinas del Juicio. Es invencible, te persigue cada vez más deprisa y lanza pilares de luz, rayos y ondas; si te toca, te quita casi media vida. Cada 5 segundos acude un legendario con el doble de vida y de daño que el anterior. ¿Cuánto aguantarás?',
      'The Judgment of Arceus: at minute 30, Arceus descends from the sky and takes you to the Ruins of Judgment. It is invincible, chases you faster and faster and casts pillars of light, beams and shockwaves; if it touches you, you lose almost half your HP. Every 5 seconds a legendary joins, each with twice the HP and damage of the previous one. How long can you last?'],
     ['Tres logros nuevos: La Sentencia (llega al minuto 30), Ante el Creador (aguanta 1 minuto ante Arceus) y Desafío divino (derrota a 3 legendarios ante Arceus en una partida).',

@@ -140,18 +140,29 @@ G.RunUI = (() => {
     G.UI.show('scr-over');
   }
 
-  /** Has encontrado un objeto llevando ya otro: ¿con cuál te quedas? */
+  /**
+   * Has encontrado un objeto:
+   * - Si ya llevas uno: elegir entre quedarte con el actual o cambiar al nuevo.
+   * - Si no llevas ninguno: elegir si equiparlo o seguir sin objeto.
+   */
   function showItemChoice(cur, next, cb) {
     const box = $('item-cards');
     box.innerHTML = '';
-    [[cur, 'Quedarme con'], [next, 'Cambiar a']].forEach(([id, verb], i) => {
-      const it = G.Items.BY[id];
+    const choices = cur ? [
+      { id: cur, title: 'Quedarme con ' + G.Items.BY[cur].name, desc: G.Items.BY[cur].desc, ico: cur, evo: false },
+      { id: next, title: 'Cambiar a ' + G.Items.BY[next].name, desc: G.Items.BY[next].desc, ico: next, evo: true }
+    ] : [
+      { id: next, title: 'Equipar ' + G.Items.BY[next].name, desc: G.Items.BY[next].desc, ico: next, evo: true },
+      { id: null, title: 'Seguir sin objeto', desc: 'Continuar la partida sin equipar ningún objeto.', ico: 'ban', evo: false }
+    ];
+
+    choices.forEach((c, i) => {
       const el = document.createElement('div');
-      el.className = 'card' + (i === 1 ? ' evo' : '');
-      el.innerHTML = `<div class="ico">${G.Icons.html(id, 36)}</div>
-        <div class="txt"><div class="nm">${verb} ${it.name}</div><div class="ds">${it.desc}</div></div>
+      el.className = 'card' + (c.evo ? ' evo' : '');
+      el.innerHTML = `<div class="ico">${G.Icons.html(c.ico, 36)}</div>
+        <div class="txt"><div class="nm">${c.title}</div><div class="ds">${c.desc}</div></div>
         <div class="key">${i + 1}</div>`;
-      el.onclick = () => { G.UI.hide('scr-item'); cb(id); };
+      el.onclick = () => { G.UI.hide('scr-item'); cb(c.id); };
       box.appendChild(el);
     });
     G.UI.show('scr-item');
