@@ -21,7 +21,7 @@ servidor sigue sin rechazar guardados de partida (sólo marca con `sus`).
 
 | Capa | Dónde | Qué hace |
 |---|---|---|
-| `G` fuera de la consola | `tools/build.js` | `js/app.min.js` va dentro de una función y `G` ya no es global: `G.Game.player` desde F12 da `ReferenceError`. `dev.html` sí deja `G` a la vista y sus partidas **no suben al ranking** (salvo en `localhost`, para las pruebas del dueño). |
+| `G` fuera de la consola | `tools/build.js` | `js/app.min.js` va dentro de una función y `G` ya no es global: `G.Game.player` desde F12 da `ReferenceError`. `dev.html` deja `G` a la vista, así que **vuelve a `index.html` salvo en modo desarrollador**: en local, con `?dev=1` en la dirección **y** `localStorage.ps.dev = 1` (se pone a mano en la consola). Una partida con `G` expuesto fuera de ese modo **no sube al ranking**; en modo desarrollador sí, para poder probarlo. |
 | Stats de sólo lectura | `js/entities/player.js` | `atkMul`, `spdMul`, `cdMul`, `dmgReduce`, `regenFlat`, `magnet`, `xpMul`, `coinMul`, `critChance`, `baseAtk`, `baseSpd`, `maxHp`, `hp`, `invuln`, `dead`, `item`, `buffs` y `power` son propiedades no configurables, sin escritura posible desde fuera. Escribir no cambia nada y marca la partida. |
 | Stats calculados | `player.js`, `levelup.js`, `items.js`, `interact.js` | Los stats se recalculan **desde cero** a partir de sus fuentes (mejoras compradas, cartas de stat, objeto, altar). `addMaxHp` ya no existe; `takeStat(id)` sólo acepta cartas de `LevelUp.STATS`, respeta su tope y una carta por nivel como mucho. |
 | Auditoría de movimientos | `js/data/moves.js` (`audit`) | Cada segundo se comprueba que cada movimiento vale lo que le toca por su nivel y evolución (se recalcula con `instance`). Si alguien tocó `dmg`, `cd`, `lvl`... se restaura y se marca la partida. |
@@ -32,8 +32,8 @@ servidor sigue sin rechazar guardados de partida (sólo marca con `sus`).
 
 ### Servidor (`firestore.rules`)
 
-* `t` ≤ tiempo real desde que empezó la partida (`runs/{uid}`) + 30 s; ≤ 45 min; nivel y
-  derrotados con margen (ya estaba, `t` pasa de 60 a 45 min).
+* `t` ≤ tiempo real desde que empezó la partida (`runs/{uid}`) + 30 s; ≤ 35 min (`MAX_T` en
+  `js/core/integrity.js`, a juego con las reglas); nivel y derrotados con margen.
 * La marca tiene que ser del mismo modo que la partida empezada: `s_…` con `mode = 's'`,
   `g_…` con `mode = 'g'`.
 * Resumen de partida `sm` (§2) y grabación `replays/{uid}` (§3) enlazados por `sm.rid`.
@@ -77,8 +77,8 @@ Las reglas (`smValid` en `firestore.rules`) exigen:
 
 1. **Forma:** sólo esos campos, enteros no negativos, `px` es un Pokémon que existe y está en
    el equipo de la marca, `up` y `cs` sólo con ids conocidos y dentro de su tope
-   (Fuerza ≤ 10, Potencia ≤ 40, Carrera ≤ 8...) y, además, **no más cartas de stat que niveles**.
-2. **Vida máxima exacta:** `mh = vida base del Pokémon + 8·up.hp + 20·cs.hp` (±1).
+   (Fuerza ≤ 10, Potencia ≤ 40, Carrera ≤ 8...) y, además, **no más cartas de stat que niveles + 2** (el juego deja nivel + 1; el margen cubre que en grupo el nivel del anfitrión llegue tarde).
+2. **Vida máxima exacta:** `mh = vida base del Pokémon + 8·up.hp + 20·cs.hp` (±1). Los 8 y los 20 salen de los datos del juego al generar las reglas (`Upgrades.perks` y la carta Vigor). **Para añadir un objeto que dé vida** basta una línea, `mods: { hp: N }` en `js/data/items.js`, y volver a generar las reglas (`node tools/export_data.js`): la cota sube sola en N. Lo mismo para objetos y altares de ataque y recarga.
 3. **Pico de daño acotado:** `pk ≤ PK · A · 3,6 · crit · 4 / R`, con
    * `PK` = daño máximo a un enemigo por segundo y punto de ataque, **medido** con todos los
      movimientos al máximo y evolucionados (`tools/calibrate_dps.js`, ×2 de margen),
@@ -108,9 +108,10 @@ que sí es exacto es la vida máxima y que las mejoras y cartas estén dentro de
 
 ### Transición
 
-Hasta el **20-10-2026** (`timestamp.date(2026, 10, 20)` en `firestore.rules`) las marcas sin
-`sm` ni grabación se siguen aceptando, para las pestañas sin actualizar. Después son
-obligatorios. Orden de publicación: **primero las reglas** (`firebase deploy --only
+Hasta la fecha `SM_OBLIGATORIO` (UTC; constante al principio de `tools/make_rules.js`, por defecto
+**7 días después de `DEPLOY_PREVISTO`**, hoy 27-10-2026; se cambia ahí o con
+`SM_OBLIGATORIO=AAAA-MM-DD node tools/export_data.js`) las marcas sin `sm` ni grabación se siguen
+aceptando, para las pestañas sin actualizar. Después son obligatorios. Orden de publicación: **primero las reglas** (`firebase deploy --only
 firestore`), luego el juego (`git push`). Con el juego nuevo y las reglas viejas, las marcas
 se rechazan (campo `sm` desconocido) hasta que se despliegan.
 
@@ -142,8 +143,11 @@ base64url. Tope de ~90 KB sin codificar (se marca `trunc`); lo normal, 10-40 KB 
 partida de 30 min.
 
 **Cuándo se sube:** una vez por partida, **sólo si alguna tabla del ranking va a escribirse**
-(`Ranking.store`), antes de la primera escritura, y la marca la cita con `sm.rid`. Si la
-subida falla, la marca sube sin `rid` (valdría hasta el 20-10). Se guarda **una por jugador**
+(`Ranking.store`), antes de la primera escritura, y la marca la cita con `sm.rid`. La
+subida se reintenta con espera creciente (0, 1,5 y 4 s). Si sigue fallando, la marca **no se pierde**:
+se guarda con su grabación en una cola de `localStorage` (`ps.rk.q.<uid>`, como mucho 2 marcas y 3 días) y se
+reintenta al entrar y antes de empezar otra partida (para que `runs/{uid}` aún tenga la hora de ésa).
+A la 3.ª vez va en formato antiguo (sin resumen), válido hasta `SM_OBLIGATORIO`. Se guarda **una por jugador**
 (la última que subió una marca) y se borra al borrar la cuenta. Sólo la leen su dueño, el
 admin y el verificador (credenciales de servicio).
 
