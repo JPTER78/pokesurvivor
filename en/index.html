@@ -284,12 +284,16 @@
   (function () {
     var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
     var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-    var l = s === 'es' || s === 'en' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('es') === 0 ? 'es' : 'en'));
+    var l = s === 'es' || s === 'en' || s === 'it' ? s : (/\/it(\/|$)/.test(location.pathname) ? 'it' : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('it') === 0 ? 'it' : (n.indexOf('es') === 0 ? 'es' : 'en'))));
     document.documentElement.lang = l;
     if (l === 'en') {
       var p = document.querySelectorAll('#boot p');
       p[0].textContent = 'A Pokémon survival game, free in your browser and on mobile.';
       p[1].textContent = 'Loading…';
+    } else if (l === 'it') {
+      var p = document.querySelectorAll('#boot p');
+      p[0].textContent = 'Un gioco di sopravvivenza Pokémon, gratuito nel browser e su smartphone.';
+      p[1].textContent = 'Caricamento…';
     }
   })();
 </script>
@@ -521,6 +525,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=dc3ae9bbfb"></script>
+<script defer src="js/app.min.js?v=e8a7c218c7"></script>
 </body>
 </html>

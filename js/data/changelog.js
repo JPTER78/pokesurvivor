@@ -6,9 +6,14 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], chg: [
+  { d: '2026-10-13', title: ['Traducción al italiano y partidas', 'Italian localization and runs', 'Localizzazione in italiano e partite'], new: [
+    ['Localización al italiano: el juego está ahora completamente traducido al italiano (idioma seleccionable en Ajustes → Gráficos → Idioma).',
+     'Italian localization: the game is now fully translated into Italian (selectable in Settings → Graphics → Language).',
+     'Localizzazione in italiano: il gioco è ora completamente tradotto in italiano (selezionabile in Impostazioni → Grafica → Lingua).']
+  ], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',
-     'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.']
+     'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.',
+     'Nessun controllo anti-cheat: tutte le partite contano per la classifica e per i record, e nessun progresso ottenuto andrà perso.']
   ] },
   { d: '2026-10-12', title: ['Tiempo extra y grietas con menos azar', 'Overtime and less random rifts'], new: [
     ['Tiempo extra: desde el minuto 60 los Pokémon salvajes se vuelven cada vez más fuertes (más vida y más daño), y cada vez más deprisa. Antes, con las mejoras al máximo, algunas partidas no acababan nunca; ahora las mejores rondarán la hora y media.',

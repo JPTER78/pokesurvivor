@@ -16,55 +16,64 @@
   .contact .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .btn.small { font-size: 15px; padding: 6px 14px; }
   #copied { color: #5fe08a; margin-left: 6px; }
-  [data-l="en"] { display: none; }
-  html[lang="en"] [data-l="es"] { display: none; }
+  [data-l="en"], [data-l="it"] { display: none; }
+  html[lang="en"] [data-l="es"], html[lang="en"] [data-l="it"] { display: none; }
   html[lang="en"] [data-l="en"] { display: initial; }
   html[lang="en"] li[data-l="en"], html[lang="en"] p[data-l="en"], html[lang="en"] h1[data-l="en"] { display: block; }
+  html[lang="it"] [data-l="es"], html[lang="it"] [data-l="en"] { display: none; }
+  html[lang="it"] [data-l="it"] { display: initial; }
+  html[lang="it"] li[data-l="it"], html[lang="it"] p[data-l="it"], html[lang="it"] h1[data-l="it"] { display: block; }
 </style>
 <script>
   // Mismo idioma que el juego (o el del navegador).
   (function () {
     var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
     var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-    var l = s === 'es' || s === 'en' ? s : (n.indexOf('es') === 0 ? 'es' : 'en');
+    var l = s === 'es' || s === 'en' || s === 'it' ? s : (n.indexOf('it') === 0 ? 'it' : (n.indexOf('es') === 0 ? 'es' : 'en'));
     document.documentElement.lang = l;
     if (l === 'en') document.title = 'Contact · PokéSurvivor';
+    else if (l === 'it') document.title = 'Contatti · PokéSurvivor';
   })();
 </script>
 </head>
 <body>
 <header class="top">
   <a class="brand" href="../">PokéSurvivor</a>
-  <nav><a class="play" href="../"><span data-l="es">Volver al juego</span><span data-l="en">Back to the game</span></a></nav>
+  <nav><a class="play" href="../"><span data-l="es">Volver al juego</span><span data-l="en">Back to the game</span><span data-l="it">Torna al gioco</span></a></nav>
 </header>
 <main>
 <article class="doc">
   <h1 data-l="es">Contacto</h1>
   <h1 data-l="en">Contact</h1>
+  <h1 data-l="it">Contatti</h1>
   <p class="lead" data-l="es">¿Has encontrado un fallo, tienes una idea o quieres decirnos algo? Escríbenos.</p>
   <p class="lead" data-l="en">Found a bug, have an idea or want to tell us something? Get in touch.</p>
+  <p class="lead" data-l="it">Hai trovato un errore, hai un'idea o vuoi dirci qualcosa? Scrivici.</p>
   <ul class="contact">
     <li>
-      <b><span data-l="es">Correo</span><span data-l="en">Email</span></b>
+      <b><span data-l="es">Correo</span><span data-l="en">Email</span><span data-l="it">Email</span></b>
       <span class="mail" id="mail">jpieratorregrosa@gmail.com</span>
       <div class="row">
-        <a class="btn small" href="mailto:jpieratorregrosa@gmail.com?subject=Pok%C3%A9Survivor"><span data-l="es">Escribir un correo</span><span data-l="en">Send an email</span></a>
-        <button class="btn small ghost" id="copy" type="button"><span data-l="es">Copiar</span><span data-l="en">Copy</span></button>
+        <a class="btn small" href="mailto:jpieratorregrosa@gmail.com?subject=Pok%C3%A9Survivor"><span data-l="es">Escribir un correo</span><span data-l="en">Send an email</span><span data-l="it">Invia un'email</span></a>
+        <button class="btn small ghost" id="copy" type="button"><span data-l="es">Copiar</span><span data-l="en">Copy</span><span data-l="it">Copia</span></button>
         <span id="copied"></span>
       </div>
       <p data-l="es">Para cualquier cosa: dudas, problemas con tu cuenta, sugerencias o si eres titular de derechos y quieres que retiremos algo.</p>
       <p data-l="en">For anything: questions, account problems, suggestions, or if you are a rights holder and want something removed.</p>
+      <p data-l="it">Per qualsiasi cosa: domande, problemi con il tuo account, suggerimenti o se sei titolare dei diritti e desideri rimuovere dei contenuti.</p>
     </li>
     <li>
-      <b><span data-l="es">Fallos y sugerencias</span><span data-l="en">Bugs and suggestions</span></b>
+      <b><span data-l="es">Fallos y sugerencias</span><span data-l="en">Bugs and suggestions</span><span data-l="it">Bug e suggerimenti</span></b>
       <p data-l="es">Si tienes cuenta de GitHub, puedes abrir un aviso en el repositorio del juego.</p>
       <p data-l="en">If you have a GitHub account, you can open an issue in the game's repository.</p>
+      <p data-l="it">Se hai un account GitHub, puoi aprire una segnalazione nel repository del gioco.</p>
       <div class="row"><a class="btn small ghost" href="https://github.com/JPTER78/pokesurvivor/issues" target="_blank" rel="noopener">GitHub</a></div>
     </li>
     <li>
-      <b><span data-l="es">Criptomonedas</span><span data-l="en">Cryptocurrencies</span></b>
+      <b><span data-l="es">Criptomonedas</span><span data-l="en">Cryptocurrencies</span><span data-l="it">Criptovalute</span></b>
       <p data-l="es">PokéSurvivor no tiene ninguna criptomoneda, token ni NFT oficial, y su autor no ha creado ninguno. Cualquier token que use el nombre del juego lo han creado terceros: no nos hacemos cargo de ninguna compra, venta o inversión que hagas con ellos, y nada de lo que hay aquí es una recomendación de inversión.</p>
       <p data-l="en">PokéSurvivor has no official cryptocurrency, token or NFT, and its author has not created any. Any token using the game's name was created by third parties: we take no responsibility for any purchase, sale or investment you make with them, and nothing here is investment advice.</p>
+      <p data-l="it">PokéSurvivor non ha alcuna criptovaluta, token o NFT ufficiale, e il suo autore non ne ha creati. Qualsiasi token che utilizzi il nome del gioco è stato creato da terzi: decliniamo ogni responsabilità per acquisti, vendite o investimenti effettuati con essi, e nulla di quanto riportato qui costituisce un consiglio finanziario.</p>
     </li>
   </ul>
 </article>
@@ -72,7 +81,7 @@
 <script>
   document.getElementById('copy').onclick = function () {
     var t = document.getElementById('mail').textContent;
-    var ok = function () { document.getElementById('copied').textContent = document.documentElement.lang === 'en' ? 'Copied!' : '¡Copiado!'; };
+    var ok = function () { document.getElementById('copied').textContent = document.documentElement.lang === 'it' ? 'Copiato!' : (document.documentElement.lang === 'en' ? 'Copied!' : '¡Copiado!'); };
     if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, function () {});
     else { var r = document.createRange(); r.selectNodeContents(document.getElementById('mail')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); ok(); }
   };

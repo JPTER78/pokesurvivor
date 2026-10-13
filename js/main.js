@@ -21,15 +21,18 @@
   const MAINTENANCE = false;
   function maintenance() {
     if (!MAINTENANCE || /[?&]dev\b/.test(location.search)) return false;
-    const en = window.G && G.I18n ? G.I18n.lang === 'en' : !/^es/i.test(navigator.language || '');
+    const l = window.G && G.I18n ? G.I18n.lang : (/^it/i.test(navigator.language || '') ? 'it' : (!/^es/i.test(navigator.language || '') ? 'en' : 'es'));
     const el = document.getElementById('boot');
     el.setAttribute('translate', 'no');
-    el.innerHTML = '<div class="boot-in"><h1>PokéSurvivor</h1>' + (en
+    el.innerHTML = '<div class="boot-in"><h1>PokéSurvivor</h1>' + (l === 'it'
+      ? '<p><b>Siamo in manutenzione.</b></p><p>Stiamo trasferendo il gioco su nuovi server affinché rimanga gratuito per tutti. ' +
+        'Il tuo account, la tua partita e i tuoi Pokémon sono al sicuro. Torna tra qualche ora!</p>'
+      : l === 'en'
       ? '<p><b>We are under maintenance.</b></p><p>We are moving the game to new servers so it can stay free for everyone. ' +
         'Your account, your save and your Pokémon are safe. Please come back in a few hours!</p>'
       : '<p><b>Estamos en mantenimiento.</b></p><p>Estamos mudando el juego a servidores nuevos para que siga siendo gratis para todos. ' +
         'Tu cuenta, tu partida y tus Pokémon están a salvo. ¡Vuelve en unas horas!</p>') +
-      '<button class="btn gold" style="margin-top:12px" onclick="location.reload()">' + (en ? 'Try again' : 'Volver a intentarlo') + '</button></div>';
+      '<button class="btn gold" style="margin-top:12px" onclick="location.reload()">' + (l === 'it' ? 'Riprova' : (l === 'en' ? 'Try again' : 'Volver a intentarlo')) + '</button></div>';
     return true;
   }
 

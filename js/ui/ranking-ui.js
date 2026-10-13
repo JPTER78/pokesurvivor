@@ -85,18 +85,24 @@ G.RankingUI = (() => {
     rows.forEach((r, i) => list.appendChild(rowEl(r, i + 1, r.uids.includes(uid))));
 
     // La frase se monta en cada idioma (traducirla por trozos sale rara).
-    const en = G.I18n.lang === 'en';
-    const pn = en ? { d: 'today', w: 'this week', m: 'this month', y: 'this year', a: 'of all time' }[period]
-                  : { d: 'de hoy', w: 'de esta semana', m: 'de este mes', y: 'de este año', a: 'de siempre' }[period];
+    const l = G.I18n ? G.I18n.lang : 'es';
+    const pn = l === 'it' ? { d: 'di oggi', w: 'di questa settimana', m: 'di questo mese', y: 'di quest\'anno', a: 'di sempre' }[period]
+             : l === 'en' ? { d: 'today', w: 'this week', m: 'this month', y: 'this year', a: 'of all time' }[period]
+             : { d: 'de hoy', w: 'de esta semana', m: 'de este mes', y: 'de este año', a: 'de siempre' }[period];
     const mon = dex ? G.DEX_BY[dex].name : '';
-    const where = en ? (mode === 's' ? 'solo' : 'group') + (dex ? ' with ' + mon : '')
-                     : (mode === 's' ? 'en solitario' : 'en grupo') + (dex ? ' con ' + mon : '');
-    $('rk-me').innerHTML = !G.Social.me ? 'Elige un apodo (en Amigos) para salir en el ranking.'
-      : me && me.out ? (en ? `<span translate="no">You're not in the top 50 ${where} ${pn} yet. Your exact rank is in All-time.</span>`
-                           : `Aún no estás en el top 50 ${pn} ${where}. Tu puesto exacto está en Histórico.`)
-      : me ? (en ? `<span translate="no">Your best ${where} rank ${pn}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
-                 : `Tu mejor puesto ${pn} ${where}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}`)
-      : (en ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>` : `Aún no tienes marca ${pn} ${where}.`);
+    const where = l === 'it' ? (mode === 's' ? 'in singolo' : 'in gruppo') + (dex ? ' con ' + mon : '')
+                : l === 'en' ? (mode === 's' ? 'solo' : 'group') + (dex ? ' with ' + mon : '')
+                : (mode === 's' ? 'en solitario' : 'en grupo') + (dex ? ' con ' + mon : '');
+    $('rk-me').innerHTML = !G.Social.me ? (l === 'it' ? 'Scegli un soprannome (in Amici) per apparire in classifica.' : 'Elige un apodo (en Amigos) para salir en el ranking.')
+      : me && me.out ? (l === 'it' ? `<span translate="no">Non sei ancora nella top 50 ${where} ${pn}. Il tuo piazzamento esatto è in Globale.</span>`
+                       : l === 'en' ? `<span translate="no">You're not in the top 50 ${where} ${pn} yet. Your exact rank is in All-time.</span>`
+                       : `Aún no estás en el top 50 ${pn} ${where}. Tu puesto exacto está en Histórico.`)
+      : me ? (l === 'it' ? `<span translate="no">Il tuo miglior piazzamento ${where} ${pn}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
+             : l === 'en' ? `<span translate="no">Your best ${where} rank ${pn}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
+             : `Tu mejor puesto ${pn} ${where}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}`)
+      : (l === 'it' ? `<span translate="no">Non hai ancora un record ${where} ${pn}.</span>`
+         : l === 'en' ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>`
+         : `Aún no tienes marca ${pn} ${where}.`);
   }
 
   function rowEl(r, pos, mine) {

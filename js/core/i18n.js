@@ -20,9 +20,9 @@ G.I18n = (() => {
   const KEY = 'ps.lang';
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
-  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
+  const byPath = /\/it(\/|$)/.test(location.pathname) ? 'it' : (/\/en(\/|$)/.test(location.pathname) ? 'en' : null);
   const nav = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-  const lang = saved === 'es' || saved === 'en' ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const lang = saved === 'es' || saved === 'en' || saved === 'it' ? saved : byPath || (nav.startsWith('it') ? 'it' : (nav.startsWith('es') ? 'es' : 'en'));
   document.documentElement.lang = lang;
 
   const exact = new Map(), exactLow = new Map();
@@ -31,18 +31,20 @@ G.I18n = (() => {
   const L = '\\p{L}\\p{N}';
   const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  /** Añade traducciones { 'texto en español': 'English text' }. */
-  function add(dict) {
+  /** Añade traducciones { 'texto en español': 'Translated text' }. */
+  function add(dict, dictLang = 'en') {
+    if (typeof dict === 'string') { const tmp = dict; dict = dictLang; dictLang = tmp; }
+    if (dictLang !== lang) return;
     const fr = [];
-    for (const [es, en] of Object.entries(dict)) {
-      if (!en || es === en) continue;
+    for (const [es, tr] of Object.entries(dict)) {
+      if (!tr || es === tr) continue;
       if (es.includes('{x}')) {
         const parts = es.split('{x}').map(reEsc);
-        patterns.push({ re: new RegExp('^' + parts.join('(.+?)') + '$', 'u'), reI: new RegExp('^' + parts.join('(.+?)') + '$', 'iu'), en });
+        patterns.push({ re: new RegExp('^' + parts.join('(.+?)') + '$', 'u'), reI: new RegExp('^' + parts.join('(.+?)') + '$', 'iu'), en: tr });
       } else {
-        exact.set(es, en);
-        exactLow.set(es.toLowerCase(), en);
-        if (es.length >= 4 || /\s/.test(es)) { fr.push(es); fragMap.set(es.toLowerCase(), en); }
+        exact.set(es, tr);
+        exactLow.set(es.toLowerCase(), tr);
+        if (es.length >= 4 || /\s/.test(es)) { fr.push(es); fragMap.set(es.toLowerCase(), tr); }
       }
     }
     // Una sola expresión con todos los trozos (los más largos primero), sólo palabras enteras.
