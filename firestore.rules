@@ -17,7 +17,7 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function me() { return request.auth.uid; }
     // Moderación (pantalla oculta del juego, js/ui/mod-ui.js): sólo esta cuenta.
-    function admin() { return signedIn() && me() in ['PENDIENTE_UID_ADMIN']; }
+    function admin() { return signedIn() && me() in ['rshaa5gKD3fXw6lE4PPXITbowaG2']; }
 
     // ---------- partida guardada ----------
     // La partida la escribe el navegador, así que se puede editar. El servidor
