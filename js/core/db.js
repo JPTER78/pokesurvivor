@@ -306,7 +306,10 @@ G.DB = (() => {
   // Tras tiradas y compras se sube a los 3 min (era 30 s: quien hacía muchas tiradas
   // guardaba 2 veces por minuto y eran millones de escrituras al día). Lo hecho sigue
   // en la copia del navegador al momento, y se sube al salir de la pestaña.
-  const PUSH_GAP = 30 * 60 * 1000, PUSH_GAP_URGENT = 3 * 60 * 1000, HIDE_GAP = 10 * 60 * 1000;
+  // Desde el 13-10-2026, lo normal cada 2 h (era 30 min: 216.000 jugadores al día
+  // guardaban unas 12 millones de veces); al cerrar la pestaña, siempre; al
+  // cambiar de pestaña, si hace más de 30 min; y tras un récord, a los 3 min.
+  const PUSH_GAP = 2 * 3600 * 1000, PUSH_GAP_URGENT = 3 * 60 * 1000, HIDE_GAP = 30 * 60 * 1000;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
 
@@ -350,7 +353,8 @@ G.DB = (() => {
     // sube al volver a entrar.
     const hideFlush = () => { if (pending && Date.now() - lastPush > HIDE_GAP) pushNow(); };
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') hideFlush(); });
-    addEventListener('pagehide', hideFlush);
+    // Al cerrar o recargar la página, lo pendiente se sube siempre.
+    addEventListener('pagehide', () => { if (pending) pushNow(); });
     return true;
   }
 

@@ -304,7 +304,8 @@ G.Game = (() => {
     G.Judgment.reset();
     G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
     G.Progress.checkAch();
-    G.DB.commit();
+    // Un récord se sube a la nube enseguida (lo demás, cada 2 h o al salir).
+    G.DB.commit(record);
     if (G.Social.me) G.Social.publishProfile();
 
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.

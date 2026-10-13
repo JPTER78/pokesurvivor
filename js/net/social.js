@@ -25,8 +25,10 @@ G.Social = (() => {
   const VALID = /^[A-Za-z0-9_ñÑáéíóúÁÉÍÓÚ]{3,16}$/;
   const MAX_PLAYERS = 4;
   const INVITE_TTL = 3 * 60 * 1000;
-  const BEAT = 15 * 60 * 1000;          // latido de presencia (era 10 min: menos escrituras)
-  const ONLINE = 22 * 60 * 1000;        // "en línea" si el último latido es más reciente
+  // Latido de presencia: cada 30 min (era 15; antes 10). 57.000 jugadores con
+  // amigos lo escribían 4 veces por hora (13-10-2026, menos gasto de Firestore).
+  const BEAT = 30 * 60 * 1000;
+  const ONLINE = 40 * 60 * 1000;        // "en línea" si el último latido es más reciente
   const PRES_TTL = 60 * 1000;           // lo leído de los amigos vale 1 min
 
   let fb = null, uid = null;
@@ -455,20 +457,21 @@ G.Social = (() => {
   let pubT = 0, pubAt = 0, pubLast = '';
   /**
    * Sube tu perfil (con un poco de espera, por si cambias varias cosas
-   * seguidas). Tras cada partida, como mucho una vez cada 10 min; si cambias
-   * favoritos o título (force), al momento. Si no ha cambiado nada, no se sube.
+   * seguidas), pero SÓLO si ha cambiado algo de lo que se ve a primera vista:
+   * récords de tiempo y nivel, legendarios, medallas, título o favoritos.
+   * Los jefes y derrotados (que cambian en cada partida) se suben con lo demás
+   * cuando toca, no por sí solos: el perfil se escribía 200.000 veces al día
+   * (13-10-2026). Si cambias favoritos o título (force), al momento.
    */
   function publishProfile(force = false) {
     if (!me || !fb) return;
-    if (!force && Date.now() - pubAt < 30 * 60 * 1000) return;     // como mucho cada 30 min (era 10)
+    if (!force && Date.now() - pubAt < 30 * 60 * 1000) return;     // como mucho cada 30 min
     clearTimeout(pubT);
     pubT = setTimeout(() => {
       if (!me || !fb) return;
       const d = profileData();
-      // Para decidir si se sube: los derrotados cuentan por miles (cambian en
-      // cada partida y reescribir el perfil cada vez gastaba miles de
-      // escrituras por hora). Se recuerda entre sesiones.
-      const key = JSON.stringify(Object.assign({}, d, { best: Object.assign({}, d.best, { kills: Math.floor(d.best.kills / 1000) }) }));
+      // Para decidir si se sube (se recuerda entre sesiones): sin jefes ni derrotados.
+      const key = JSON.stringify(Object.assign({}, d, { best: Object.assign({}, d.best, { kills: 0, bosses: 0 }) }));
       const lsKey = 'ps.pub.' + uid;
       if (!pubLast) { try { pubLast = localStorage.getItem(lsKey) || ''; } catch (e) { /* nada */ } }
       if (key === pubLast) return;

@@ -17,7 +17,7 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function me() { return request.auth.uid; }
     // Moderación (pantalla oculta del juego, js/ui/mod-ui.js): sólo esta cuenta.
-    function admin() { return signedIn() && me() in ['PENDIENTE_UID_ADMIN']; }
+    function admin() { return signedIn() && me() in ['rshaa5gKD3fXw6lE4PPXITbowaG2']; }
 
     // ---------- partida guardada ----------
     // La partida la escribe el navegador, así que se puede editar. El servidor
@@ -85,7 +85,7 @@ service cloud.firestore {
         && cnt(n, 'ach') <= 150                                           // hay 130
         && mis(n) >= mis(o)
         && mis(n) <= 10 + (request.time.toMillis() - o.get('created', 0)) / 86400000 * 5
-        && budget(o, n, secs > 7200 ? 7200 : (secs > 0 ? secs : 0),        // como mucho 2 h de juego por guardado (se guarda cada 30 min)
+        && budget(o, n, secs > 10800 ? 10800 : (secs > 0 ? secs : 0),      // como mucho 3 h de juego por guardado (se guarda cada 2 h)
                   secs >= 60 ? 1.0 : (secs > 0 ? secs / 60.0 : 0.0),        // guardados muy seguidos: menos margen fijo
                   mis(n) - mis(o));
     }

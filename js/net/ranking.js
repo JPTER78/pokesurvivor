@@ -117,6 +117,28 @@ G.Ranking = (() => {
     try { localStorage.setItem(bestKey(), JSON.stringify(b)); } catch (e) { /* lleno */ }
   }
 
+  // ---------------- umbral de cada tabla ----------------
+  /*
+   * La marca más baja del top 50 de cada tabla, cuando está llena. Sólo puede
+   * subir con el tiempo, así que un valor viejo sigue sirviendo: si tu marca
+   * no lo supera, seguro que no entra y no hace falta leer nada (cada resumen
+   * pesa ~30 KB y al acabar una partida se miraban hasta 5; 13-10-2026).
+   */
+  const THR = 'ps.rk.thr';
+  function thresholds() { try { return JSON.parse(localStorage.getItem(THR) || '{}'); } catch (e) { return {}; } }
+  function noteTop(b, top) {
+    const vals = Object.values(top || {});
+    if (vals.length < TOP) return;
+    const low = Math.min(...vals.map(v => v.t));
+    const t = thresholds();
+    if ((t[b] || 0) >= low) return;
+    t[b] = low;
+    // Sólo las tablas de los periodos de ahora (y las históricas).
+    const cur = Object.values(periodIds());
+    for (const k of Object.keys(t)) if (!cur.some(p => k.split('_')[1] === p)) delete t[k];
+    try { localStorage.setItem(THR, JSON.stringify(t)); } catch (e) { /* lleno */ }
+  }
+
   // ---------------- guardar ----------------
 
   const rowOf = (id, v) => ({ id, t: v.t, uids: v.uids || [], names: v.names || [], dex: v.dex || [], shiny: v.shiny || [], lv: v.lv, kills: v.kills });
@@ -150,27 +172,24 @@ G.Ranking = (() => {
     await Promise.all(boards.map(async ([b, period]) => {
       const key = b + ':' + id;
       try {
-        // ¿Ya tenías una marca mejor? Si este navegador no lo sabe, se mira una vez.
-        if (known[key] === undefined) {
-          if (TOP_ONLY.has(period)) {
-            // En estas tablas sólo hay marcas en el top 50: basta con el resumen
-            // (que además se guarda 30 min y es el mismo que se lee al mirar el ranking).
-            const top = await summary(b);
-            known[key] = top[id] ? top[id].t : 0;
-          } else {
-            const old = await col(b).doc(id).get();
-            known[key] = old.exists ? old.data().t : 0;
-          }
+        const topOnly = TOP_ONLY.has(period);
+        // Si no llegas a la 50.ª marca que conoce este navegador, no entras: en
+        // diario, semanal, mensual y por Pokémon no hay nada que hacer (ni leer).
+        const thr = thresholds()[b] || 0;
+        if (topOnly && thr && entry.t <= thr) return;
+        // ¿Ya tenías una marca mejor? En el histórico, si este navegador no lo
+        // sabe, se mira una vez tu marca (pequeña). En las demás lo dice el
+        // resumen, que se lee igualmente dentro de la transacción de abajo.
+        if (known[key] === undefined && !topOnly) {
+          const old = await col(b).doc(id).get();
+          known[key] = old.exists ? old.data().t : 0;
         }
-        if (known[key] >= entry.t) return;
+        if ((known[key] || 0) >= entry.t) return;
         const data = Object.assign({}, entry, { at: firebase.firestore.FieldValue.serverTimestamp() });
         // Si la tabla ya está llena y no llegas al top 50, no hace falta tocar el resumen
         // (y en diario, semanal y mensual, ni siquiera se guarda la marca).
-        const topOnly = TOP_ONLY.has(period);
         const cached = cacheGet('s:' + b);
-        const full = cached && Object.keys(cached).length >= TOP;
-        const minT = full ? Math.min(...Object.values(cached).map(v => v.t)) : 0;
-        if (full && entry.t <= minT && !(id in cached)) {
+        if (thr && entry.t <= thr && !(cached && id in cached)) {
           if (!topOnly) await col(b).doc(id).set(data);
           else { known[key] = entry.t; return; }
         } else {
@@ -179,7 +198,9 @@ G.Ranking = (() => {
           await fb.fs.runTransaction(async tx => {
             const s = await tx.get(sumRef(b));
             const top = Object.assign({}, s.exists ? s.data().top : {});
-            const mine = { t: entry.t, uids: entry.uids, names: entry.names, dex: entry.dex, shiny: entry.shiny, lv: entry.lv, kills: entry.kills };
+            // (Sin "shiny" si no hay ninguno: el resumen pesa menos.)
+            const mine = { t: entry.t, uids: entry.uids, names: entry.names, dex: entry.dex, lv: entry.lv, kills: entry.kills };
+            if (entry.shiny.some(Boolean)) mine.shiny = entry.shiny;
             let ev = '';
             // Ya estabas con una marca mejor (otro ordenador): nada que escribir.
             if (id in top && top[id].t >= entry.t) { entered = false; newTop = top; return; }
@@ -196,7 +217,7 @@ G.Ranking = (() => {
             tx.set(sumRef(b), { top, me: id, ev });
             newTop = top;
           });
-          if (newTop) cacheSet('s:' + b, newTop);
+          if (newTop) { cacheSet('s:' + b, newTop); noteTop(b, newTop); }
           if (topOnly && !entered) { known[key] = entry.t; return; }
         }
         known[key] = entry.t;
@@ -257,6 +278,7 @@ G.Ranking = (() => {
       inflight.set(b, sumRef(b).get().then(s => {
         const top = s.exists ? (s.data().top || {}) : {};
         cacheSet('s:' + b, top);
+        noteTop(b, top);
         return top;
       }).finally(() => inflight.delete(b)));
     }
@@ -398,7 +420,7 @@ G.Ranking = (() => {
   }
 
   // Cuenta de moderación (firestore.rules, admin()): la pantalla oculta de js/ui/mod-ui.js.
-  const ADMINS = ['PENDIENTE_UID_ADMIN'];
+  const ADMINS = ['rshaa5gKD3fXw6lE4PPXITbowaG2'];
   const isAdmin = () => !!fbx() && ADMINS.includes(fbx().uid);
 
   /** Admin: los reportes, juntos por marca (los más reportados primero). */
