@@ -21,7 +21,7 @@
   const MAINTENANCE = false;
   function maintenance() {
     if (!MAINTENANCE || /[?&]dev\b/.test(location.search)) return false;
-    const en = window.G && G.I18n ? G.I18n.lang === 'en' : !/^es/i.test(navigator.language || '');
+    const en = window.G && G.I18n ? G.I18n.lang !== 'es' : !/^es/i.test(navigator.language || '');
     const el = document.getElementById('boot');
     el.setAttribute('translate', 'no');
     el.innerHTML = '<div class="boot-in"><h1>PokéSurvivor</h1>' + (en

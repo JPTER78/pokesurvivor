@@ -13,7 +13,9 @@ G.CHANGELOG = [
      'Three new achievements: The Judgment (reach minute 30), Before the Creator (survive 1 minute against Arceus) and Divine challenge (defeat 3 legendaries against Arceus in a single run).'],
     ['Música nueva para la pelea contra Arceus.', 'New music for the fight against Arceus.'],
     ['Botón para reportar marcas sospechosas en el ranking (la banderita de cada fila).',
-     'A button to report suspicious records on the leaderboard (the little flag on each row).']
+     'A button to report suspicious records on the leaderboard (the little flag on each row).'],
+    ['El juego, también en francés (en Ajustes > Gráficos > Idioma).',
+     'The game is now also available in French (Settings > Graphics > Language).']
   ], chg: [
     ['El ranking histórico empieza de cero: ahora que las partidas acaban ante Arceus, las marcas de antes ya no se podrían alcanzar. Las tablas de hoy, de la semana y del mes siguen igual.',
      'The all-time leaderboard starts from scratch: now that runs end against Arceus, older records could no longer be reached. The daily, weekly and monthly boards are unchanged.'],
