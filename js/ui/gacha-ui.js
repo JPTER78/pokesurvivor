@@ -62,6 +62,7 @@ G.GachaUI = (() => {
        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria en un banner, la siguiente lo es.<br>
        · Los repetidos dan Pokémonedas. Los shiny no se repiten.<br>
+       · ♀ Aspecto de hembra: en los Pokémon que lo tienen, con su proporción oficial de hembras (casi siempre 50%; 12,5% en algunos, como los iniciales, Eevee, Relicanth y Combee). Sólo cambia el dibujo.<br>
        · Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y
          los jefes y los legendarios de las grietas, a veces, tickets ×10.</p>`;
 
@@ -104,11 +105,11 @@ G.GachaUI = (() => {
       c.className = 'pcard r' + r.rarity + (r.shiny ? ' shiny' : '');
       c.style.setProperty('--rc', r.shiny ? '#9ae6ff' : G.Gacha.RARITY_COLOR[r.rarity]);
       c.innerHTML = `<div class="stars">${G.UI.stars(r.rarity, 24)}</div>`;
-      c.appendChild(G.UI.spriteCanvas(r.dex, 132, 120, { lively: r.rarity >= 4 || r.shiny, scale: 2, shiny: r.shiny }));
+      c.appendChild(G.UI.spriteCanvas(r.dex, 132, 120, { lively: r.rarity >= 4 || r.shiny, scale: 2, shiny: r.shiny, female: r.female }));
       const tag = r.isNew
-        ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : '¡NUEVO!'}</span>`
+        ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : r.female ? '¡HEMBRA NUEVA!' : '¡NUEVO!'}</span>`
         : `Repetido · <span class="coin"></span> +${r.refund}`;
-      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
+      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}${r.female ? ' <span class="fem">♀</span>' : ''}</b><div class="tag">${tag}</div>`);
       out.appendChild(c);
       G.Audio.sfx('reveal', { rarity: r.rarity });
       await wait(n === 10 ? 150 : 0);

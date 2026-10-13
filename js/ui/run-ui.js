@@ -131,8 +131,8 @@ G.RunUI = (() => {
       const row = $('over-caught');
       for (const c of r.caught) {
         const w = document.createElement('div');
-        w.appendChild(G.UI.spriteCanvas(c.dex, 90, 72, { shiny: true, lively: true, scale: 2 }));
-        w.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[c.dex].name}${c.isNew ? ' · ¡nuevo!' : ''}</small>`);
+        w.appendChild(G.UI.spriteCanvas(c.dex, 90, 72, { shiny: true, female: !!c.female, lively: true, scale: 2 }));
+        w.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[c.dex].name}${c.female ? ' <span class="fem">♀</span>' : ''}${c.isNew ? ' · ¡nuevo!' : ''}</small>`);
         row.appendChild(w);
       }
     }

@@ -13,7 +13,9 @@
  *   invitado -> anfitrión  { k:'f', p:[estado], ev:[eventos] }
  *   anfitrión -> invitado  { k:'f', t, lv, xp, xn, ki, bo, co, p:{uid:[estado]},
  *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos] }
- *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny}] }
+ *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny,female}] }
+ * (female y los campos que se añaden al final de los eventos los ignoran las
+ *  versiones viejas; si faltan, es el aspecto normal)
  */
 G.Coop = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
@@ -51,7 +53,7 @@ G.Coop = (() => {
   /**
    * @param cfg   { seed, host, members }
    * @param pl    tu Player (ya creado)
-   * @param cb    { levelStart(lv), resume(), waiting(names), over(data), lost(msg), team(t), shiny(dex) }
+   * @param cb    { levelStart(lv), resume(), waiting(names), over(data), lost(msg), team(t), shiny(dex, female) }
    */
   function begin(cfg, pl, cb) {
     active = true;
@@ -67,11 +69,11 @@ G.Coop = (() => {
       const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
       if (m.uid === me) { pl.x = x; pl.y = y; pl.uid = me; pl.coopHost = host; pl.tagColor = COLORS[i]; return; }
       const mon = G.DEX_BY[m.dex] || G.DEX_BY[25];
-      const p = new G.Player(mon, {}, !!m.shiny);
+      const p = new G.Player(mon, {}, !!m.shiny, !!m.female);
       p.remote = true; p.uid = m.uid; p.tag = m.name; p.tagColor = COLORS[i]; p.revLabel = 'Quédate a su lado';
       p.x = x; p.y = y;
       p.net = { x, y, ang: Math.PI / 2, walk: 0, hp: p.maxHp, maxHp: p.maxHp, dead: 0, mv: G.startMoveOf(mon.dex), ml: 1, mag: 78, aim: Math.PI / 2, rev: 0 };
-      G.Sprites.preload([mon.dex], 8000, p.shiny);
+      G.Sprites.preload([mon.dex], 8000, p.shiny, p.female);
       mates.set(m.uid, { uid: m.uid, name: m.name, color: COLORS[i], pl: p, connected: true, q: [], flushT: 0, xpMul: 1 });
     });
   }
@@ -313,7 +315,7 @@ G.Coop = (() => {
   function applyHostEvent(ev) {
     switch (ev[0]) {
       case 'ne':
-        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9] });
+        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9], female: !!ev[10] });
         break;
       case 'ed': G.EnemyMgr.removeRemote(ev[1], true); break;
       case 'eg': G.EnemyMgr.removeRemote(ev[1], false); break;
@@ -340,7 +342,7 @@ G.Coop = (() => {
       case 'lr': api.resume(); break;
       case 'hp': api.hold && api.hold(ev[1]); break;
       case 'ha': hostAway = !!ev[1]; updateAway(); break;
-      case 'sh': api.shiny(ev[1]); break;
+      case 'sh': api.shiny(ev[1], !!ev[2]); break;
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
       case 'wx': G.Weather.onEvent(ev); break;
@@ -366,7 +368,8 @@ G.Coop = (() => {
   // anfitrión
   function hurtShown(e, d, color) { emitNear(['hn', e.id, d, color], e.x, e.y, hitFrom); }
   function enemyAdded(e) {
-    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? 1 : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior]);
+    // El aspecto de hembra va al final: las versiones viejas no lo leen.
+    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? 1 : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior, e.female ? 1 : 0]);
   }
   function enemyGone(e, died) { emit([died ? 'ed' : 'eg', e.id]); }
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type]); }
@@ -390,7 +393,7 @@ G.Coop = (() => {
     }
   }
 
-  function shinyCaught(e) { emit(['sh', e.dex]); }
+  function shinyCaught(e) { emit(['sh', e.dex, e.female ? 1 : 0]); }
 
   // ---------------- subida de nivel compartida ----------------
 

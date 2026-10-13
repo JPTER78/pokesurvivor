@@ -6,7 +6,16 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], chg: [
+  { d: '2026-10-13', title: ['Aspecto de hembra y todas las partidas cuentan', 'Female looks and every run counts'], new: [
+    ['Aspecto de macho y hembra: 59 Pokémon tienen su propio dibujo de hembra (Pikachu, Eevee, Hippopotas, Meowstic...). Sólo cambia el dibujo: ni estadísticas, ni tipos, ni movimientos.',
+     'Male and female looks: 59 Pokémon have their own female sprite (Pikachu, Eevee, Hippopotas, Meowstic...). It only changes how they look: no stats, types or moves.'],
+    ['Gacha: si la tirada no sale shiny y el Pokémon tiene aspecto de hembra, puede salir con él, con la proporción oficial de hembras de su especie (casi siempre la mitad de las veces; 1 de cada 8 en algunos, como los iniciales o Eevee). Una hembra que no tenías cuenta como nueva. La especie, la rareza, el shiny y el pity no cambian.',
+     'Gacha: if a pull is not shiny and the Pokémon has a female look, it can come out with it, at its species\' official female ratio (usually half of the time; 1 in 8 for a few, such as the starters or Eevee). A female look you did not have counts as new. Species, rarity, shiny odds and pity are unchanged.'],
+    ['Hembras shiny salvajes: si un shiny salvaje tiene versión hembra, puede salir hembra (con la proporción oficial de su especie). Derrótala y te la quedas, con el aspecto de hembra y el Pokémon si te faltaban.',
+     'Wild female shinies: if a wild shiny has a female version, it can be female (at its species\' official ratio). Defeat it to keep it, plus the female look and the Pokémon if you were missing them.'],
+    ['Elige ♂ o ♀ para tu compañero junto a Normal/Shiny, en la colección y en el menú principal (sólo los aspectos que tengas). Se ve en la partida, en el cooperativo y en los favoritos de tu perfil.',
+     'Choose ♂ or ♀ for your partner next to Normal/Shiny, in the collection and on the main menu (only the looks you own). It shows in runs, in co-op and in your profile favorites.']
+  ], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',
      'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.']
   ] },

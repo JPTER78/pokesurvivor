@@ -10,7 +10,7 @@
  *     inv/{para_de}                { to, from, room, name, at } invitaciones
  *
  *   Realtime Database: SÓLO mientras estás en una sala o partida en grupo
- *     rooms/{id}          { host, open, at, m: { uid: { name, dex, shiny } }, q: ... }
+ *     rooms/{id}          { host, open, at, m: { uid: { name, dex, shiny, female } }, q: ... }
  *                         la sala; q/ son los mensajes de net.js
  *
  * Por qué así: el plan gratuito de Firebase sólo admite 100 conexiones a la
@@ -36,7 +36,7 @@ G.Social = (() => {
   let beatT = 0, presAt = 0, unInv = null;
   const pres = new Map();           // otherUid -> { online, play, room, seen } (lo último leído)
   const sentInv = new Set();        // a quién invitaste (para retirarlo al salir)
-  let room = null;                  // { id, host, isHost, members: [{ uid, name, dex, shiny }] }
+  let room = null;                  // { id, host, isHost, members: [{ uid, name, dex, shiny, female }] }
   let roomRefs = [];
   const invites = new Map();        // fromUid -> { from, name, room, at }
   const listeners = new Set();
@@ -274,8 +274,8 @@ G.Social = (() => {
   // ---------------- salas ----------------
 
   function memberInfo() {
-    const s = G.DB.save;
-    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts() };
+    const s = G.DB.save, look = G.DB.partnerLook();
+    return { name: me.name, dex: s.partner, shiny: look.shiny, female: look.female, at: ts() };
   }
 
   /**
@@ -383,8 +383,9 @@ G.Social = (() => {
 
   /** Actualiza tu Pokémon en la sala (si cambias de compañero). */
   function refreshMember() {
+    const look = G.DB.partnerLook();
     if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update(
-      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner) }).catch(() => {});
+      { dex: G.DB.save.partner, shiny: look.shiny, female: look.female }).catch(() => {});
   }
 
   // ---------------- invitaciones ----------------
@@ -444,7 +445,8 @@ G.Social = (() => {
     const medals = unlocked.slice().sort((a, b) => (b.tier - a.tier) || (s.ach[b.id] - s.ach[a.id])).slice(0, 8).map(a => a.id);
     return {
       name: me ? me.name : G.DB.user,
-      favs: (prof.favs || []).slice(0, 3).map(f => ({ dex: f.dex | 0, shiny: !!f.shiny })),
+      // female sólo si lo es: así los perfiles de siempre no cambian (y no se vuelven a subir).
+      favs: (prof.favs || []).slice(0, 3).map(f => Object.assign({ dex: f.dex | 0, shiny: !!f.shiny }, f.female ? { female: true } : {})),
       title: prof.title || '',
       best: { solo: st.bestTime | 0, group: st.bestGroupTime | 0, level: st.bestLevel | 0, bosses: st.bossesTotal | 0,
               legends: Object.keys(s.legends || {}).length, kills: st.totalKills | 0, medals: unlocked.length },

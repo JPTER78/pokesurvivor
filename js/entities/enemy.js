@@ -66,6 +66,7 @@
       this.stuckT = 0; this.sideT = 0; this.side = 1;
       this.bob = Math.random() * 6.28;
       this.shiny = false;
+      this.female = false;                // hembra shiny (ver makeShiny)
       this.sparkT = 0;
       // personalidades
       this.sc = sc;                       // escala de la run (para sus invocaciones)
@@ -80,13 +81,17 @@
 
     cy() { return this.y; }
 
-    /** Lo convierte en shiny: otro sprite, más aguante y mucha más XP. */
-    makeShiny() {
+    /**
+     * Lo convierte en shiny: otro sprite, más aguante y mucha más XP.
+     * @param female  hembra shiny (sólo cambia el dibujo y lo que te llevas)
+     */
+    makeShiny(female = false) {
       this.shiny = true;
-      this.anim = new G.Sprites.Animator(this.dex, this.scale, true);
+      this.anim = new G.Sprites.Animator(this.dex, this.scale, true, female);
+      this.female = this.anim.female;
       this.maxHp *= 2; this.hp = this.maxHp;
       this.xp *= 5;
-      G.Sprites.preload([this.dex], 4000, true);
+      G.Sprites.preload([this.dex], 4000, true, this.female);
     }
 
     /** Hora dorada (events.js): doble de experiencia y a veces monedas. */
@@ -758,7 +763,7 @@
       const e = new Enemy(def, o.x, o.y, { hp: 1, spd: 1, dmg: 1 }, o.boss);
       e.id = o.id;
       e.remote = true;
-      if (o.shiny) e.makeShiny();
+      if (o.shiny) e.makeShiny(o.female);
       e.maxHp = o.hp; e.hp = o.hp;
       e.net = { x: o.x, y: o.y, vx: 0, vy: 0, age: 0, dir: 0, anim: 0, st: 0 };
       list.push(e);
