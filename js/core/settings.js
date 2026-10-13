@@ -7,15 +7,20 @@
  *   calm        true/false                        menos sacudidas y destellos
  *   fps         true/false                        contador de FPS
  *   stick       0.8 | 1 | 1.25                    tamaño del joystick táctil
+ *   res         'auto' | '1' | 'native'           resolución (auto pantalla vs 1x vs 1.5x Retina)
+ *   fpsLimit    '60' | '30' | 'max'               límite de fotogramas por segundo
  *
  *   G.Settings.get('quality')  ·  G.Settings.set('fps', true)  ·  G.Settings.on(fn)
  *   G.Settings.fx   nivel efectivo 0 (bajo) .. 2 (alto), ya resuelto el 'auto'
  */
 G.Settings = (() => {
   const KEY = 'ps.settings';
-  const DEF = { quality: 'auto', dmgNumbers: true, calm: false, fps: false, stick: 1 };
+  const DEF = { quality: 'auto', dmgNumbers: true, calm: false, fps: false, stick: 1, res: 'auto', fpsLimit: '60' };
   let s = Object.assign({}, DEF);
-  try { Object.assign(s, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* nada */ }
+  try {
+    Object.assign(s, JSON.parse(localStorage.getItem(KEY) || '{}'));
+    if (s.res === 'eco') s.res = 'auto'; // migración hacia auto detección
+  } catch (e) { /* nada */ }
   const fns = new Set();
 
   // Calidad automática: empieza alta (media en móvil) y baja si va a tirones.

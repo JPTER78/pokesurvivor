@@ -576,12 +576,16 @@ G.World = (() => {
 
   function biomeName() { return G.Tiles.BIOMES[biome].name; }
 
-  /** Viñeta en coordenadas de pantalla. */
+  /** Viñeta en coordenadas de pantalla (cacheada para evitar crear gradientes en cada fotograma). */
+  let vGrad = null, lastVw = 0, lastVh = 0;
   function drawVignette(ctx, w, h) {
-    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.34, w / 2, h / 2, Math.max(w, h) * 0.78);
-    g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(1, 'rgba(0,0,0,.5)');
-    ctx.fillStyle = g;
+    if (!vGrad || lastVw !== w || lastVh !== h) {
+      lastVw = w; lastVh = h;
+      vGrad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.34, w / 2, h / 2, Math.max(w, h) * 0.78);
+      vGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      vGrad.addColorStop(1, 'rgba(0,0,0,.5)');
+    }
+    ctx.fillStyle = vGrad;
     ctx.fillRect(0, 0, w, h);
   }
 
