@@ -138,6 +138,8 @@ G.RunUI = (() => {
         ${r.moves.map(m => `${G.Icons.html('move:' + m.id, 16)} ${G.T(m.name, 'move')} Nv.${m.lvl}`).join(' · ') || '—'}</b></div>
       ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
         <div class="caught-row" id="over-caught"></div></div>` : ''}
+      ${r.sizes && r.sizes.length ? `<div style="grid-column:1/-1" class="caught"><span>Tallas conseguidas</span>
+        <div class="caught-row" id="over-sizes"></div></div>` : ''}
       ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">¡Nuevo récord de tiempo!</div>' : ''}
       ${askSupport(r) ? `<div class="support-ask" id="over-ask" style="grid-column:1/-1">
         <button class="x" type="button" aria-label="Cerrar">×</button>
@@ -153,6 +155,16 @@ G.RunUI = (() => {
         const w = document.createElement('div');
         w.appendChild(G.UI.spriteCanvas(c.dex, 90, 72, { shiny: true, lively: true, scale: 2 }));
         w.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[c.dex].name}${c.isNew ? ' · ¡nuevo!' : ''}</small>`);
+        row.appendChild(w);
+      }
+    }
+    // Tallas: cada una a su tamaño, con su nombre.
+    if (r.sizes && r.sizes.length) {
+      const row = $('over-sizes');
+      for (const c of r.sizes) {
+        const w = document.createElement('div');
+        w.appendChild(G.UI.spriteCanvas(c.dex, 90, 72, { lively: true, scale: 2, size: c.size }));
+        w.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[c.dex].name} <span class="size-badge ${G.Sizes.isSmall(c.size) ? 'small' : ''}">${G.Sizes.BY[c.size].name}</span>${c.isNew ? ' · ¡nueva!' : ''}</small>`);
         row.appendChild(w);
       }
     }
