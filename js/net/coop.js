@@ -14,7 +14,10 @@
  *   anfitrión -> invitado  { k:'f', t, lv, xp, xn, ki, bo, co, p:{uid:[estado]},
  *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos],
  *                            ja:[x,y,anim,dir] (Arceus, sólo en la Sentencia) }
- *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny}] }
+ *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny,size}] }
+ *
+ * Lo nuevo va siempre al FINAL de cada evento (p. ej. la talla en 'ne'): las
+ * versiones viejas ignoran lo que sobra, y si falta se entiende lo de siempre.
  */
 G.Coop = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
@@ -52,7 +55,7 @@ G.Coop = (() => {
   /**
    * @param cfg   { seed, host, members }
    * @param pl    tu Player (ya creado)
-   * @param cb    { levelStart(lv), resume(), waiting(names), over(data), lost(msg), team(t), shiny(dex) }
+   * @param cb    { levelStart(lv), resume(), waiting(names), over(data), lost(msg), team(t), shiny(dex), size(dex, talla) }
    */
   function begin(cfg, pl, cb) {
     active = true;
@@ -68,7 +71,7 @@ G.Coop = (() => {
       const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
       if (m.uid === me) { pl.x = x; pl.y = y; pl.uid = me; pl.coopHost = host; pl.tagColor = COLORS[i]; return; }
       const mon = G.DEX_BY[m.dex] || G.DEX_BY[25];
-      const p = new G.Player(mon, {}, !!m.shiny);
+      const p = new G.Player(mon, {}, !!m.shiny, m.size || 'm');
       p.remote = true; p.uid = m.uid; p.tag = m.name; p.tagColor = COLORS[i]; p.revLabel = 'Quédate a su lado';
       p.x = x; p.y = y;
       p.net = { x, y, ang: Math.PI / 2, walk: 0, hp: p.maxHp, maxHp: p.maxHp, dead: 0, mv: G.startMoveOf(mon.dex), ml: 1, mag: 78, aim: Math.PI / 2, rev: 0 };
@@ -318,7 +321,7 @@ G.Coop = (() => {
   function applyHostEvent(ev) {
     switch (ev[0]) {
       case 'ne':
-        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9] });
+        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9], size: ev[10] || null });
         break;
       case 'ed': G.EnemyMgr.removeRemote(ev[1], true); break;
       case 'eg': G.EnemyMgr.removeRemote(ev[1], false); break;
@@ -346,6 +349,7 @@ G.Coop = (() => {
       case 'hp': api.hold && api.hold(ev[1]); break;
       case 'ha': hostAway = !!ev[1]; updateAway(); break;
       case 'sh': api.shiny(ev[1]); break;
+      case 'sz': if (api.size) api.size(ev[1], ev[2]); break;
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
       case 'jd': case 'jk': G.Judgment.onEvent(ev); break;
@@ -372,7 +376,7 @@ G.Coop = (() => {
   // anfitrión
   function hurtShown(e, d, color) { emitNear(['hn', e.id, d, color], e.x, e.y, hitFrom); }
   function enemyAdded(e) {
-    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? 1 : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior]);
+    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? 1 : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior, e.size || 0]);
   }
   function enemyGone(e, died) { emit([died ? 'ed' : 'eg', e.id]); }
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type]); }
@@ -397,6 +401,8 @@ G.Coop = (() => {
   }
 
   function shinyCaught(e) { emit(['sh', e.dex]); }
+  /** Ha caído uno con talla: cada uno que tenga ese Pokémon se la queda. */
+  function sizeCaught(e) { emit(['sz', e.dex, e.size]); }
 
   // ---------------- subida de nivel compartida ----------------
 
@@ -466,7 +472,7 @@ G.Coop = (() => {
   return {
     ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
-    propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,
+    propBroken, collected, shinyCaught, sizeCaught, levelStart, localPicked, over, holdStart, holdEnd,
     /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */
     broadcast(ev) { emit(ev); },
     toHost(ev) { if (active && !host) { outEv.push(ev); flushClient(true); } },

@@ -32,16 +32,20 @@ G.MenuUI = (() => {
 
   // ---------------- menú principal ----------------
 
+  /** Etiqueta de una talla (nada para la M). */
+  const sizeBadge = id => (id && id !== 'm' ? ` <span class="size-badge${G.Sizes.isSmall(id) ? ' small' : ''}">${G.Sizes.BY[id].name}</span>` : '');
+
   function open() {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);
+    const size = G.DB.partnerSize();
     G.UI.chrome(true);
     G.UI.show('scr-menu');
-    G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
+    G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny, size });
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
-    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
+    $('menu-partner-name').innerHTML = mon.name + sizeBadge(size) + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
     // Normal / shiny a mano, aquí mismo (en el móvil no se encontraba en la ficha).
     const seg = $('menu-shiny');
@@ -52,6 +56,19 @@ G.MenuUI = (() => {
       b.onclick = () => {
         if ((b.dataset.v === '1') === shiny) return;
         s.partnerShiny = b.dataset.v === '1';
+        G.DB.commit();
+        G.Audio.sfx('confirm');
+        open();
+      };
+    });
+    // Talla, igual: sólo las que tienes (con sólo la M no sale).
+    const have = G.DB.sizesOf(mon.dex), sz = $('menu-size');
+    sz.classList.toggle('hidden', have.length < 2);
+    sz.innerHTML = have.map(id => `<button data-z="${id}" class="${id === size ? 'on' : ''}">${G.Sizes.BY[id].name}</button>`).join('');
+    sz.querySelectorAll('button').forEach(b => {
+      b.onclick = () => {
+        if (b.dataset.z === size) return;
+        s.partnerSize = b.dataset.z;
         G.DB.commit();
         G.Audio.sfx('confirm');
         open();
@@ -106,7 +123,7 @@ G.MenuUI = (() => {
     const s = G.DB.save;
     if (dexSel == null) { dexSel = s.partner; dexGen = G.DEX_BY[s.partner].gen; }
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
-    $('dex-total').textContent = `${owned} / ${G.DEX.length}`;
+    $('dex-total').innerHTML = `${owned} / ${G.DEX.length} <span>· Tallas: ${G.Sizes.count(s)} / ${G.Sizes.total()}</span>`;
 
     // Pestañas de generación, con cuántos tienes de cada una.
     const tabs = $('dex-gens');
@@ -169,8 +186,8 @@ G.MenuUI = (() => {
     if (!grid.children.length) grid.innerHTML = '<p class="sub" style="grid-column:1/-1">Ninguno con este filtro.</p>';
   }
 
-  // Variante que se está viendo en la ficha (normal o shiny).
-  let viewShiny = false;
+  // Variante que se está viendo en la ficha (normal o shiny) y su talla.
+  let viewShiny = false, viewSize = 'm';
 
   function showDetail(dex) {
     const s = G.DB.save;
@@ -180,12 +197,18 @@ G.MenuUI = (() => {
     const isPartner = dex === s.partner;
     if (!hasSh) viewShiny = false;
     else if (isPartner && dex !== showDetail.last) viewShiny = !!s.partnerShiny;
+    // Tallas: las cinco (las que no tienes, apagadas); los legendarios, sólo M.
+    const sizes = G.DB.sizesOf(dex), canSize = own && G.Sizes.can(dex);
+    if (dex !== showDetail.last) viewSize = isPartner ? G.DB.partnerSize() : 'm';
+    if (!sizes.includes(viewSize)) viewSize = 'm';
+    const z = G.Sizes.BY[viewSize];
     showDetail.last = dex;
 
     const max = { hp: 183, atk: 1.55, spd: 137 };
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
-    const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
+    const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny) && G.DB.partnerSize() === viewSize;
+    const pickTag = [viewShiny ? 'shiny' : '', viewSize !== 'm' ? z.name : ''].filter(Boolean).join(' · ');
 
     const box = $('dex-detail');
     box.innerHTML = `
@@ -193,6 +216,8 @@ G.MenuUI = (() => {
       ${hasSh ? `<div class="seg">
           <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
+      ${canSize ? `<div class="seg seg-size">${G.Sizes.LIST.map(o => { const have = sizes.includes(o.id);
+          return `<button data-z="${o.id}" class="${o.id === viewSize ? 'on' : ''}${have ? '' : ' miss'}" ${have ? '' : 'disabled'}>${o.name}</button>`; }).join('')}</div>` : ''}
       <div class="center">
         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
@@ -200,30 +225,36 @@ G.MenuUI = (() => {
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div>
       ${own ? `
-        ${bar('Vida', p.hp, max.hp, p.hp)}
-        ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
-        ${bar('Velocidad', p.spd, max.spd, p.spd)}
+        ${bar('Vida', p.hp * z.hp, max.hp, Math.round(p.hp * z.hp))}
+        ${bar('Ataque', p.atk * z.atk, max.atk, '×' + (p.atk * z.atk).toFixed(2))}
+        ${bar('Velocidad', p.spd * z.spd, max.spd, Math.round(p.spd * z.spd))}
+        ${!canSize ? '' : viewSize === 'm' ? (sizes.length < G.Sizes.LIST.length ? '<p class="note" style="margin:6px 0 0">Consigue más tallas derrotando a sus versiones con aura azul o roja en las partidas.</p>' : '')
+          : `<p class="note" style="margin:6px 0 0">${G.Sizes.isSmall(viewSize) ? 'Más pequeño: más rápido y más difícil de golpear, pero con menos vida.' : 'Más grande: más vida y pega más fuerte, pero más lento y más fácil de golpear.'}</p>`}
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
-          : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
+          : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${pickTag ? ' (' + pickTag + ')' : ''}</button>`}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
     $('dex-big').classList.toggle('shiny', own && viewShiny);
-    G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny });
-    box.querySelectorAll('.seg button').forEach(b => {
+    G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny, size: own ? viewSize : null });
+    box.querySelectorAll('.seg button[data-v]').forEach(b => {
       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
+    });
+    box.querySelectorAll('.seg button[data-z]').forEach(b => {
+      b.onclick = () => { if (b.disabled) return; viewSize = b.dataset.z; G.Audio.sfx('select'); showDetail(dex); };
     });
     const pick = $('dex-pick');
     if (pick) pick.onclick = () => {
       s.partner = dex;
       s.partnerShiny = hasSh && viewShiny;
+      s.partnerSize = viewSize;
       G.DB.commit();
-      G.UI.toast(p.name + (s.partnerShiny ? ' shiny' : '') + ' es ahora tu compañero');
+      G.UI.toast(p.name + (viewSize !== 'm' ? ' ' + z.name : '') + (s.partnerShiny ? ' shiny' : '') + ' es ahora tu compañero');
       renderGrid(); showDetail(dex);
     };
   }
@@ -252,7 +283,7 @@ G.MenuUI = (() => {
     const levels = G.DB.upgradesOf(upgDex);
     const mon = G.DEX_BY[upgDex];
     const shiny = upgDex === s.partner && !!s.partnerShiny && G.DB.ownsShiny(upgDex);
-    G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny });
+    G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny, size: upgDex === s.partner ? G.DB.partnerSize() : null });
     $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     const box = $('upg-list');
     box.innerHTML = '';
