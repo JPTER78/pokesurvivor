@@ -1,4 +1,4 @@
-/* ============ spawner.js — oleadas, jefes y shinies ============
+/* ============ spawner.js — oleadas, jefes, shinies y tallas ============
  * Los enemigos aparecen en un anillo justo fuera de la vista, así que nunca
  * se materializan en pantalla. Cada ~45 s hay una "marea": una avalancha
  * concentrada desde un lado concreto, para romper el ritmo.
@@ -22,11 +22,15 @@ G.Spawner = (() => {
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
   const hpK = t => 3.3 + Math.min(1.7, t / 210);
   const SHINY_RATE = 1 / 4096;
-  let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
+  // Tallas (data/sizes.js): más o menos cada 5 min (el primero hacia el 2:00)
+  // sale uno de TUS Pokémon con una talla que te falta, primero tu compañero.
+  // Uno a la vez y nunca dentro de la arena de una grieta.
+  const SIZE_FIRST = 120, SIZE_EVERY = 300;
+  let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0, sizeAt = SIZE_FIRST;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
   function reset() {
-    acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
+    acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0; sizeAt = SIZE_FIRST;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
   }
@@ -127,6 +131,42 @@ G.Spawner = (() => {
     return e;
   }
 
+  /** Tu Pokémon al que le toca talla: el compañero si le falta alguna; si no, otro tuyo al azar. */
+  function sizeTarget() {
+    const s = G.DB.save;
+    if (!s) return null;
+    const ok = d => G.DB.owns(d) && G.Sizes.can(d) && G.Sizes.missing(s, d).length > 0;
+    if (ok(s.partner)) return +s.partner;
+    const pool = Object.keys(s.owned).map(Number).filter(ok);
+    return pool.length ? G.U.pick(pool) : null;
+  }
+
+  /**
+   * Aparición de talla: tu Pokémon con una talla que te falta (sorteada según
+   * su parte), con la plantilla del tramo de ahora para que sea igual de duro
+   * que lo que sale. Puede ser shiny además (la tirada de siempre).
+   */
+  function spawnSized(pl, t, size = null, dex = null) {
+    dex = dex || sizeTarget();
+    const mon = dex && G.DEX_BY[dex];
+    if (!mon || !G.Sizes.can(dex)) return null;
+    size = size || G.Sizes.roll(G.Sizes.missing(G.DB.save, dex));
+    if (!size || size === 'm' || !G.Sizes.BY[size]) return null;
+    const def = G.Enemies.defAt(mon, t);
+    const pt = freePoint(pl, Math.random() * 6.2832, isFlyer(def));
+    if (!pt) return null;
+    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
+    e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
+    e.makeSized(size);
+    if (rollShiny(dex)) e.makeShiny();
+    if (G.Events.golden) e.makeGolden();
+    G.Sprites.preload([dex], 4000, e.shiny);
+    G.EnemyMgr.add(e);
+    say('¡Un ' + e.name + ' ' + G.Sizes.BY[size].name + (e.shiny ? ' shiny' : '') + ' anda cerca!', 3.4);
+    G.Audio.sfx('shiny');
+    return e;
+  }
+
   /** @param who  el jugador o la lista de jugadores (cooperativo) */
   function update(dt, who, t) {
     players = Array.isArray(who) ? who : [who];
@@ -142,6 +182,12 @@ G.Spawner = (() => {
     // --- jefes ---
     const b = G.Enemies.BOSSES[bossIdx];
     if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
+
+    // --- talla (si ya hay uno suelto, o no hay sitio, se espera) ---
+    if (t >= sizeAt) {
+      const ok = !G.EnemyMgr.sized().length && spawnSized(anchor(), t);
+      sizeAt = t + (ok ? SIZE_EVERY * G.U.rand(0.85, 1.15) : 30);
+    }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el
     // jefe sea un momento propio y se le pueda apuntar entre la multitud.
@@ -202,5 +248,14 @@ G.Spawner = (() => {
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
   return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
-           debugForceShiny(n = 1) { forceShiny = n; } };
+           debugForceShiny(n = 1) { forceShiny = n; },
+           /** Para pruebas y vídeos: N Pokémon con talla ya, cerca de ti (talla y Pokémon, opcionales). */
+           debugForceSize(n = 1, size = null, dex = null) {
+             const pl = G.Game.player;
+             if (!pl) return 0;
+             if (!players.length) players = [pl];
+             let k = 0;
+             for (let i = 0; i < n; i++) if (spawnSized(pl, G.Game.st.time, size, dex || sizeTarget() || (G.DB.save && G.DB.save.partner))) k++;
+             return k;
+           } };
 })();

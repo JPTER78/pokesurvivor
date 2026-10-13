@@ -79,7 +79,7 @@ G.Path = (() => {
     // Con vista despejada hasta el jugador, en línea recta (más natural).
     // Se comprueba cada 0,2 s por enemigo (es lo más caro).
     const now = performance.now();
-    if (!e.losAt || now - e.losAt > 200) { e.losAt = now; e.los = clearLine(f, e.x, e.y, pl.x, pl.y, e.r); }
+    if (!e.losAt || now - e.losAt > 200) { e.losAt = now; e.los = clearLine(f, e.x, e.y, pl.x, pl.y, e.wallR || e.r); }
     if (e.los) return null;
     // Siguiente casilla del camino (la vecina con menos pasos, sin cortar esquinas).
     let bx = tx, by = ty, best = here;
@@ -95,7 +95,7 @@ G.Path = (() => {
     let gx = (f.ox + bx + 0.5) * TS, gy = (f.oy + by + 0.5) * TS;
     // Si va descentrado y el atajo hasta esa casilla roza un obstáculo,
     // primero al centro de la suya (así no se engancha en las esquinas).
-    if (!clearLine(f, e.x, e.y, gx, gy, e.r)) { gx = (f.ox + tx + 0.5) * TS; gy = (f.oy + ty + 0.5) * TS; }
+    if (!clearLine(f, e.x, e.y, gx, gy, e.wallR || e.r)) { gx = (f.ox + tx + 0.5) * TS; gy = (f.oy + ty + 0.5) * TS; }
     return G.U.norm(gx - e.x, gy - e.y);
   }
 

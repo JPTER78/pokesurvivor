@@ -10,7 +10,7 @@
  *     inv/{para_de}                { to, from, room, name, at } invitaciones
  *
  *   Realtime Database: SÓLO mientras estás en una sala o partida en grupo
- *     rooms/{id}          { host, open, at, m: { uid: { name, dex, shiny } }, q: ... }
+ *     rooms/{id}          { host, open, at, m: { uid: { name, dex, shiny, size } }, q: ... }
  *                         la sala; q/ son los mensajes de net.js
  *
  * Por qué así: el plan gratuito de Firebase sólo admite 100 conexiones a la
@@ -56,7 +56,7 @@ G.Social = (() => {
   let beatT = 0, presAt = 0, unInv = null;
   const pres = new Map();           // otherUid -> { online, play, room, seen } (lo último leído)
   const sentInv = new Set();        // a quién invitaste (para retirarlo al salir)
-  let room = null;                  // { id, host, isHost, members: [{ uid, name, dex, shiny }] }
+  let room = null;                  // { id, host, isHost, members: [{ uid, name, dex, shiny, size }] }
   let roomRefs = [];
   const invites = new Map();        // fromUid -> { from, name, room, at }
   const listeners = new Set();
@@ -296,7 +296,7 @@ G.Social = (() => {
 
   function memberInfo() {
     const s = G.DB.save;
-    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts() };
+    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), size: G.DB.partnerSize(), at: ts() };
   }
 
   /**
@@ -405,7 +405,7 @@ G.Social = (() => {
   /** Actualiza tu Pokémon en la sala (si cambias de compañero). */
   function refreshMember() {
     if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update(
-      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner) }).catch(() => {});
+      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner), size: G.DB.partnerSize() }).catch(() => {});
   }
 
   // ---------------- invitaciones ----------------

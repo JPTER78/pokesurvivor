@@ -20,6 +20,7 @@ G.Game = (() => {
   let time = 0, last = 0, pendingLevels = 0;
   let pl = null;
   let caught = [];          // shinies conseguidos en esta run
+  let sizesGot = [];        // tallas conseguidas en esta run: { dex, size, isNew }
   let biome = -1;
 
   const st = { get time() { return time; } };
@@ -128,9 +129,9 @@ G.Game = (() => {
     time = 0; pendingLevels = 0;
     runReal = performance.now(); tampered = false;
 
-    pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex), G.DB.partnerSize());
     banked = { t1: 0, t10: 0 };
-    caught = [];
+    caught = []; sizesGot = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
     // antes de aprender nada: addMove ya los coloca.
     (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
@@ -235,6 +236,7 @@ G.Game = (() => {
     choosing() { return state === 'choice'; },
     inLevelUp() { return state === 'levelup'; },
     shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
+    size(dex, size) { G.onSizeCaught({ dex, size, name: (G.DEX_BY[dex] || {}).name || '' }); },
     over(d) {
       if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
@@ -297,6 +299,22 @@ G.Game = (() => {
     G.Audio.sfx('shinyGet');
   };
 
+  /**
+   * Un Pokémon con talla cae: esa talla pasa a tu colección, si tienes el
+   * Pokémon. En grupo, a cada uno que lo tenga (el anfitrión avisa con 'sz').
+   */
+  G.onSizeCaught = e => {
+    if (!G.DB.save || !pl) return;
+    if (G.Coop.isHost) G.Coop.sizeCaught(e);
+    const z = G.Sizes.BY[e.size];
+    if (!z || !G.DB.owns(e.dex)) return;
+    const isNew = G.DB.grantSize(e.dex, e.size, 'wild');
+    sizesGot.push({ dex: e.dex, size: e.size, isNew });
+    if (isNew) { G.DB.commit(); G.Progress.checkAch(); }
+    G.Spawner.say(isNew ? '¡' + e.name + ' ' + z.name + ' se une a tu colección!' : 'Ya tenías a ' + e.name + ' ' + z.name, 4, true);
+    G.Audio.sfx('shinyGet');
+  };
+
   function endRun(dead = true) {
     if (state === 'over' || !pl) return;
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
@@ -348,7 +366,7 @@ G.Game = (() => {
 
     G.RunUI.showOver({
       dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,
-      moves: pl.moves, caught,
+      moves: pl.moves, caught, sizes: sizesGot,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
@@ -769,6 +787,24 @@ G.Game = (() => {
     ctx.restore();
   }
 
+  /**
+   * Para pruebas (G.Game.debugHitbox = true en la consola): círculo de golpe
+   * (rojo, r) y de choque con el terreno (azul, wallR) del jugador y los enemigos.
+   */
+  function drawHitboxes() {
+    const circle = (x, y, r, col, dash) => {
+      ctx.save();
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash(dash);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.stroke();
+      ctx.restore();
+    };
+    for (const e of [...everyone(), ...G.EnemyMgr.all()]) {
+      if (e.dead || !G.Camera.sees(e.x, e.y, 60)) continue;
+      circle(e.x, e.y, e.r, '#ff4d5e', []);
+      circle(e.x, e.y, e.wallR || e.r, '#4fd8ff', [3, 2]);
+    }
+  }
+
   function render() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
@@ -782,6 +818,7 @@ G.Game = (() => {
     G.Combat.drawAirFields(ctx);
     G.FX.draw(ctx);
     G.Judgment.drawAir(ctx);
+    if (G.Game.debugHitbox) drawHitboxes();
     ctx.restore();
 
     G.Weather.draw(ctx, w, h, frameDt);
@@ -916,6 +953,8 @@ G.Game = (() => {
     debugTime(t) { tampered = true; time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
     debugSpeed(k) { if (k > 1) tampered = true; speedK = k; },
+    /** Para pruebas: true dibuja las zonas de golpe y de choque con el terreno (drawHitboxes). */
+    debugHitbox: false,
     togglePause,
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },

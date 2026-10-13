@@ -90,6 +90,8 @@
       this.bob = Math.random() * 6.28;
       this.shiny = false;
       this.sparkT = 0;
+      this.size = null;                   // talla (data/sizes.js); null = la de siempre
+      this.dmgTaken = 1;                  // daño que recibe (las tallas lo cambian)
       // personalidades
       this.sc = sc;                       // escala de la run (para sus invocaciones)
       this.shield = 0; this.shieldT = 0;  // escudo que absorbe daño
@@ -104,6 +106,13 @@
 
     cy() { return this.y; }
 
+    /** Chispas del aura de su talla, subiendo alrededor del cuerpo. */
+    auraFx(dt) {
+      if ((this.auraT = (this.auraT || 0) - dt) > 0) return;
+      this.auraT = 0.08;
+      G.FX.px(this.x + G.U.rand(-this.r, this.r) * 1.1, this.y - G.U.rand(0, this.bodyH), G.Sizes.aura(this.size), { vy: -45, life: 0.55 });
+    }
+
     /** Lo convierte en shiny: otro sprite, más aguante y mucha más XP. */
     makeShiny() {
       this.shiny = true;
@@ -111,6 +120,29 @@
       this.maxHp *= 2; this.hp = this.maxHp;
       this.xp *= 5;
       G.Sprites.preload([this.dex], 4000, true);
+    }
+
+    /**
+     * Le pone una talla (data/sizes.js): otro tamaño, aura azul (pequeños) o
+     * roja (grandes) y el doble de XP. Derrotarlo te da esa talla (game.js).
+     * Con el terreno sigue chocando con el tamaño de la M (wallR).
+     * @param stats  false en la copia del invitado: la vida y el daño los lleva el anfitrión
+     */
+    makeSized(id, stats = true) {
+      const z = G.Sizes.BY[id];
+      if (!z || id === 'm' || this.boss) return;
+      this.size = id;
+      this.wallR = this.r;
+      this.scale *= z.scale;
+      this.anim = new G.Sprites.Animator(this.dex, this.scale, this.shiny);
+      this.r = G.Sprites.bodyRadius(this.dex, this.scale);
+      this.bodyH = G.Sprites.bodyHeight(this.dex, this.scale);
+      this.dmgTaken = z.taken;
+      if (!stats) return;
+      this.maxHp = Math.round(this.maxHp * z.hp); this.hp = this.maxHp;
+      this.dmg *= z.atk;
+      this.spd *= z.spd;
+      this.xp *= 2;
     }
 
     /** Hora dorada (events.js): doble de experiencia y a veces monedas. */
@@ -123,16 +155,19 @@
     /** @param eff  'super' | 'weak' | null (tabla de tipos, sólo para enseñarlo) */
     hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0, eff = null) {
       if (this.dead) return;
-      const d = Math.max(1, Math.round(amount));
+      // Talla: los pequeños reciben un poco más de daño y los grandes un poco menos.
+      const d = Math.max(1, Math.round(amount * this.dmgTaken));
       // Copia de un enemigo del anfitrión: el golpe se le manda a él, que es
       // quien decide si cae. Aquí sólo se ve (número, destello y animación).
+      // (Se le manda sin la talla: la aplica él.)
       if (this.remote) {
-        G.Coop.hit(this, d, color, dirX, dirY, knock);
+        G.Coop.hit(this, Math.max(1, Math.round(amount)), color, dirX, dirY, knock);
         this.hp = Math.max(1, this.hp - d);
         this.showHurt(d, color, dirX, dirY, eff);
         return;
       }
       if (this.boss) this.rd += d;
+      amount *= this.dmgTaken;
       // Escudo: absorbe primero.
       if (this.shield > 0) {
         const a = Math.min(this.shield, d);
@@ -197,6 +232,7 @@
         if (this.boss) G.Camera.kick(0.9);
         G.Audio.sfx(this.boss ? 'bossDown' : 'faint');
         if (this.shiny) { G.FX.burst(this.x, cy, '#ffe9a0', 30, 220); G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5); }
+        if (this.size) G.FX.ring(this.x, this.y, this.r, this.r * 6, G.Sizes.aura(this.size), 0.7, 5);
         return;
       }
       // (Los legendarios de la Sentencia de Arceus sólo dan experiencia.)
@@ -227,6 +263,11 @@
         G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5);
         if (G.onShinyCaught) G.onShinyCaught(this);
       }
+      if (this.size) {
+        G.FX.burst(this.x, cy, G.Sizes.aura(this.size), 26, 200);
+        G.FX.ring(this.x, this.y, this.r, this.r * 6, G.Sizes.aura(this.size), 0.7, 5);
+        if (G.onSizeCaught) G.onSizeCaught(this);
+      }
     }
 
     /**
@@ -244,6 +285,7 @@
         this.sparkT -= dt;
         if (this.sparkT <= 0) { this.sparkT = 0.22; G.FX.twinkle(this.x + G.U.rand(-this.r, this.r) * 1.2, this.y - G.U.rand(4, this.bodyH * 1.1)); }
       }
+      if (this.size && G.Camera.sees(this.x, this.y, 40)) this.auraFx(dt);
       const n = this.net;
       if (!n) return;
       // Se adelanta hasta 0,3 s (por si llegan pocas posiciones por segundo).
@@ -278,6 +320,7 @@
           G.FX.twinkle(this.x + G.U.rand(-this.r, this.r) * 1.2, this.y - G.U.rand(4, this.bodyH * 1.1));
         }
       }
+      if (this.size && seen) this.auraFx(dt);
       if (this.touchCd > 0) this.touchCd -= dt;
       if (this.rd > 0) this.rd *= Math.exp(-dt / RD_TAU);
       this.bob += dt * 6;
@@ -731,6 +774,21 @@
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.6, this.r * 0.6, 0, 0, 6.2832); ctx.fill();
         ctx.restore();
       }
+      // Talla: aura que late alrededor del cuerpo (azul los pequeños, roja los grandes).
+      if (this.size && !this.dead) {
+        const col = G.Sizes.aura(this.size), cy = this.y - this.bodyH * 0.45;
+        const ry = this.bodyH * 0.75 + 6, rx = Math.max(this.r * 1.7, ry * 0.75);
+        ctx.save();
+        ctx.globalAlpha = 0.45; ctx.fillStyle = col;
+        ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.7, this.r * 0.65, 0, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 0.75 + Math.sin(this.bob * 0.7) * 0.2;
+        ctx.translate(this.x, cy); ctx.scale(rx / ry, 1);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+        g.addColorStop(0, col + '22'); g.addColorStop(0.5, col + '99'); g.addColorStop(0.8, col + '44'); g.addColorStop(1, col + '00');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(0, 0, ry, 0, 6.2832); ctx.fill();
+        ctx.restore();
+      }
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -782,6 +840,18 @@
         ctx.fillStyle = this.boss ? '#ffcb3d' : '#ff5f6d';
         ctx.fillRect(this.x - w / 2, y, w * Math.max(0, this.hp / this.maxHp), 3.4);
       }
+      // Talla: su letra al lado de la cabeza.
+      if (this.size) {
+        ctx.save();
+        ctx.font = '700 8px Pixelify,"Segoe UI",sans-serif';
+        ctx.textAlign = 'left';
+        const tx = this.x + Math.max(11, this.r) + 2, ty = this.y - this.bodyH - 4;
+        ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+        ctx.strokeText(G.Sizes.BY[this.size].name, tx, ty);
+        ctx.fillStyle = G.Sizes.aura(this.size);
+        ctx.fillText(G.Sizes.BY[this.size].name, tx, ty);
+        ctx.restore();
+      }
     }
   }
 
@@ -813,6 +883,7 @@
       const e = new Enemy(def, o.x, o.y, { hp: 1, spd: 1, dmg: 1 }, o.boss);
       e.id = o.id;
       e.remote = true;
+      if (o.size) e.makeSized(o.size, false);
       if (o.shiny) e.makeShiny();
       e.maxHp = o.hp; e.hp = o.hp;
       e.net = { x: o.x, y: o.y, vx: 0, vy: 0, age: 0, dir: 0, anim: 0, st: 0 };
@@ -985,7 +1056,7 @@
           e.lagT = G.U.dist2(e.x, e.y, near.x, near.y) > BOSS_FAR * BOSS_FAR ? e.lagT + dt : 0;
           if (e.lagT > 4) { e.lagT = 0; G.Spawner.ahead(e, near); }
         }
-        if (e.boss || e.shiny || G.Rift.inArena) continue;
+        if (e.boss || e.shiny || e.size || G.Rift.inArena) continue;
         // Rezagados: los que se quedan atrás mientras corres y llevan un rato
         // FUERA DE LA VISTA (de todos) vuelven a salir por delante de ti. Así
         // no se puede huir sin más, y nunca desaparece uno que estés viendo.
@@ -1018,8 +1089,9 @@
 
     function bossAlive() { return list.some(e => e.boss && !e.dead); }
     function shinies() { return list.filter(e => e.shiny && !e.dead); }
+    function sized() { return list.filter(e => e.size && !e.dead); }
 
-    return { clear, all, add, get, addRemote, removeRemote, stash, restore, clearRemote, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies, nearestPlayer,
+    return { clear, all, add, get, addRemote, removeRemote, stash, restore, clearRemote, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies, sized, nearestPlayer,
              get count() { return list.length; } };
   })();
 })();
