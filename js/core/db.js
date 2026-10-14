@@ -196,8 +196,8 @@ G.DB = (() => {
     r.challenges = G.Challenges.mergeProgress(a.challenges, b.challenges);
     // Los regalos ya canjeados nunca se pierden por cambios de navegador.
     r.gifts = {};
-    if ((a.gifts || {}).maomao === G.GiftCodes.MAOMAO_CODE ||
-        (b.gifts || {}).maomao === G.GiftCodes.MAOMAO_CODE) r.gifts.maomao = G.GiftCodes.MAOMAO_CODE;
+    if ((a.gifts || {}).maomao === 'MAO25' ||
+        (b.gifts || {}).maomao === 'MAO25') r.gifts.maomao = 'MAO25';
     // Una importación autorizada no puede perder su sello en futuras fusiones.
     r.migrationImported = !!(a.migrationImported || b.migrationImported);
     // Misiones del mismo día/semana: el mayor progreso y lo ya recogido.
