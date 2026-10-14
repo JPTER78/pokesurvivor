@@ -34,13 +34,29 @@ service cloud.firestore {
         && (marked() || (saneSave(request.resource.data.save) && freshSave(request.resource.data.save)));
       allow update: if signedIn() && me() == uid && validSaveDoc()
         && (resource.data.get('sus', false) == false || marked())       // la marca no se quita
-        && (marked() || (saneSave(request.resource.data.save)
+        && (authorizedMigration(uid) || marked() || (saneSave(request.resource.data.save)
               && possibleSave(resource.data.save, request.resource.data.save,
                               (request.time - resource.data.updatedAt).seconds())));
       // El admin sólo puede poner o quitar la marca.
       allow update: if admin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sus'])
         && request.resource.data.sus is bool;
+    }
+
+    // Importación única y específica para el titular autorizado desde Firebase
+    // Console (Admin SDK también puede crear grants, pero NUNCA el cliente).
+    // El respaldo original es un JSON local sin firma: la concesión debe ser
+    // deliberada. La marca de importación impide reutilizar el permiso.
+    function authorizedMigration(uid) {
+      let path = /databases/$(database)/documents/migrationGrants/$(uid);
+      return exists(path)
+        && get(path).data.get('approved', false) == true
+        && get(path).data.get('expiresAt', request.time) > request.time
+        && resource.data.save.get('migrationImported', false) == false
+        && request.resource.data.save.get('migrationImported', false) == true
+        && request.resource.data.save.get('name', '') == resource.data.save.get('name', '')
+        && request.resource.data.save.get('created', 0) == resource.data.save.get('created', 0)
+        && saneSave(request.resource.data.save);
     }
 
     function marked() { return request.resource.data.get('sus', false) == true; }
@@ -116,6 +132,13 @@ service cloud.firestore {
         + 0.333 * achNew().intersection(['own1'].toSet()).size()
         + 0.667 * achNew().intersection(['time5'].toSet()).size(); }
     // </logros>
+
+    // Se consulta sólo el permiso propio. Ningún usuario puede concederse
+    // permisos de migración: los documentos se crean por Firebase Console/SDK.
+    match /migrationGrants/{uid} {
+      allow get: if signedIn() && me() == uid;
+      allow list, create, update, delete: if false;
+    }
 
     // ---------- apodos ----------
 
