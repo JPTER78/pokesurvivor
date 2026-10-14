@@ -75,8 +75,22 @@ G.Touch = (() => {
     if (d > r) { stick.ox = stick.x - dx / d * r; stick.oy = stick.y - dy / d * r; }
   }
 
-  function up(e) { if (stick && e.pointerId === stick.id) stick = null; }
-  function reset() { stick = null; }
+  function up(e) { if (stick && e.pointerId === stick.id) stick = null; release(); }
+  function reset() { stick = null; release(); }
+
+  // Activa el menu dejando presionado
+  let holdT = 0, fired = false, onRel = null;
+  function hold(ms, fn) {
+    cancelHold();
+    holdT = setTimeout(() => { holdT = 0; fired = true; fn(); }, ms);
+  }
+  function cancelHold() { clearTimeout(holdT); holdT = 0; }
+  function onRelease(fn) { onRel = fn; }
+  function release() {
+    if (!holdT && !fired) return;
+    cancelHold(); fired = false;
+    if (onRel) onRel();
+  }
 
   /** Dirección del joystick (con fuerza 0..1), o null si no se usa. */
   function vector() {
@@ -128,6 +142,6 @@ G.Touch = (() => {
     ctx.restore();
   }
 
-  return { init, vector, draw, clearButtons, addButton, reset, safeArea,
+  return { init, vector, draw, clearButtons, addButton, reset, safeArea, hold, onRelease,
            get active() { return active; }, get stick() { return stick; } };
 })();

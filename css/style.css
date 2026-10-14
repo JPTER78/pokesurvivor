@@ -405,6 +405,25 @@ kbd {
   border-radius: 5px; font: inherit; font-size: 13px; text-shadow: none;
 }
 
+@keyframes tip-pop {
+  from { transform: translateX(-50%) scale(.94); opacity: 0; }
+  to   { transform: translateX(-50%); opacity: 1; }
+}
+.move-tip {
+  position: fixed; z-index: 40; width: min(320px, 84vw); padding: 10px;
+  transform: translateX(-50%); pointer-events: none;
+  animation: tip-pop .22s ease-out;
+}
+.move-tip.multi { width: min(680px, 94vw); }
+.move-tip .cards { display: grid; gap: 8px; width: auto; }
+.move-tip.multi .cards { grid-template-columns: 1fr 1fr; }
+.move-tip .card { padding: 8px 10px; gap: 10px; background: rgba(255,255,255,.04); align-items: flex-start; }
+.move-tip.multi .card { border-color: #ff8ad8; }
+.move-tip .mt-st { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: 4px 0; }
+.move-tip .mt-st b { color: var(--muted); font-weight: 400; }
+.move-tip .txt { position: relative; padding-right: 26px; }
+.move-tip .key { position: absolute; top: 0; right: 0; }
+
 .toast {
   position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 60;
   padding: 10px 18px; border-radius: 10px;

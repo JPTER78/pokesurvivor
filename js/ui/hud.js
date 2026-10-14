@@ -1,8 +1,91 @@
-/* ============ hud.js — interfaz dentro del canvas ============
- * Se dibuja en coordenadas de PANTALLA (sin la transformación de cámara).
- */
+G.MoveTip = (() => {
+  const GAP = 8;
+  let el = null, key = '', hw = 0, hh = 0, rect = null, held = false;
+
+  function box() {
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'move-tip';
+      el.className = 'box move-tip hidden';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  const stat = (k, v) => `<span><b>${k}</b> ${v}</span>`;
+
+  // Carta de 1 habilidad
+  function card(m, pl, i, first) {
+    const col = G.U.TYPE_COLOR[m.type];
+    const evo = G.Moves.evoInfo(m, pl.statsTaken);
+    const next = G.Moves.nextUpText(m);
+    const st = [
+      m.dmg ? stat('Daño', Math.round(m.dmg * pl.atk)) : '',
+      stat('Recarga', (m.cd * pl.cdMul).toFixed(2) + ' s'),
+      m.dur ? stat('Duración', Math.round(m.dur) + ' s') : ''
+    ].filter(Boolean).join('');
+
+    return `<div class="card">
+      <div class="ico" style="background:${col}33">${G.Icons.html('move:' + m.id, 32)}</div>
+      <div class="txt">
+        <div class="nm">${m.name} <span class="tag-chip" style="background:${col}">${G.U.TYPE_NAME[m.type]}</span>
+          <span class="tag-chip" style="background:#8fa3c4">Nv.${m.lvl}</span>
+          ${first ? `<span class="key">${i + 1}</span>` : ''}</div>
+        <div class="ds">${m.desc}</div>
+        <div class="mt-st">${st}</div>
+        ${next ? `<div class="ds"><b>Siguiente:</b> ${next}</div>` : ''}
+        ${evo ? `<div class="ds"><b>Evolución:</b> ${evo.name} · ${evo.ready ? '¡lista!' : 'necesita ' + evo.needName}<br>${evo.text}</div>` : ''}
+      </div></div>`;
+  }
+
+  function place() {
+    if (!rect) return;
+    el.style.left = G.U.clamp(rect.x + rect.w / 2, hw / 2 + GAP, innerWidth - hw / 2 - GAP) + 'px';
+    // Encima del hueco; si no cabe, debajo. Y si tampoco cabe (una fusión de 4
+    // es más alta que la pantalla), pegada al borde para que nunca se salga.
+    const top = rect.y >= hh + GAP + 4 ? rect.y - hh - GAP : rect.y + rect.h + GAP;
+    el.style.top = G.U.clamp(top, GAP, Math.max(GAP, innerHeight - hh - GAP)) + 'px';
+  }
+
+  // Al redimensionar cambia el ancho de la ficha (min(320px, 84vw)): se
+  // invalida la medida para que la siguiente se vuelva a medir.
+  addEventListener('resize', () => { key = ''; });
+
+  // El ratón se congela en su última posición al salir de la ventana: sin esto
+  // la ficha se quedaría pegada encima del hueco, sin poder quitarse.
+  document.addEventListener('mouseout', e => { if (!e.relatedTarget) G.MoveTip.hide(); });
+
+  return {
+    /** group: el grupo de movimientos del hueco. sticky: lo mantiene abierto. */
+    show(group, pl, r, k, sticky = false) {
+      if (!group || !group.length) return this.hide();
+      const b = box();
+      held = !!sticky;
+      rect = r;                        // el hueco sube 6 px al activarlo
+      if (k !== key) {
+        key = k;
+        b.classList.toggle('multi', group.length > 1);
+        b.innerHTML = '<div class="cards">' + group.map((m, j) => card(m, pl, r.i, !j)).join('') + '</div>';
+        b.classList.remove('hidden');        // hay que quitarlo antes de medir
+        hw = b.offsetWidth; hh = b.offsetHeight;
+      } else b.classList.remove('hidden');
+      place();
+    },
+    hide() { held = false; key = ''; rect = null; if (el) el.classList.add('hidden'); },
+    get held() { return held; }
+  };
+})();
+
+if (G.Touch) G.Touch.onRelease(() => G.MoveTip.hide());
+
 G.HUD = (() => {
   const F = (w, s) => `${w} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`;
+  const HOLD_MS = 350;
+
+  function tipKey(group, pl, i) {
+    return i + '|' + group.map(m => m.id + ':' + m.lvl).join(',') + '|' +
+           Math.round(pl.atk * 100) + ':' + Math.round(pl.cdMul * 100);
+  }
 
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
@@ -247,6 +330,7 @@ G.HUD = (() => {
     const BOND = '#ff8ad8';
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
 
+    const rects = [];
     for (let i = 0; i < n; i++) {
       const g = pl.slots[i] || [];
       const m = g[0];
@@ -254,8 +338,14 @@ G.HUD = (() => {
       const on = i === pl.active;
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
-      // Tocar (o hacer clic en) un icono activa ese movimiento.
-      if (m) G.Touch.addButton(x, y, S, S, () => { if (G.Game.state === 'playing' && pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); } }, GAP / 2 + 3);
+      rects.push({ x, y, w: S, h: S, i });
+      if (m) G.Touch.addButton(x, y, S, S, () => {
+        if (G.Game.state !== 'playing') return;
+        if (pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); }
+        G.Touch.hold(HOLD_MS, () => {
+          if (G.Game.state === 'playing') G.MoveTip.show(pl.slots[i], pl, rects[i], tipKey(pl.slots[i], pl, i), true);
+        });
+      }, GAP / 2 + 3);
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
 
       // fondo
@@ -320,6 +410,15 @@ G.HUD = (() => {
         ctx.fillText(fused ? m.name + ' +' + (g.length - 1) : m.name, x + S / 2, y - 7);
       }
     }
+
+    // ---------- ficha del movimiento (ratón encima / pulsación larga) ----------
+    if (G.Game.state !== 'playing') G.MoveTip.hide();
+    else if (!touch) {
+      const p = G.Input.mouse();
+      const hi = rects.findIndex(r => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
+      if (hi >= 0 && pl.slots[hi] && pl.slots[hi][0]) G.MoveTip.show(pl.slots[hi], pl, rects[hi], tipKey(pl.slots[hi], pl, hi));
+      else if (!G.MoveTip.held) G.MoveTip.hide();
+    } else if (!G.MoveTip.held) G.MoveTip.hide();
 
     // ---------- vínculo guardado (aún no hay dos movimientos sueltos) ----------
     if (pl.bonds > 0) {

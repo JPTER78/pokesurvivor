@@ -13,6 +13,7 @@ G.UI = (() => {
 
   function show(id, keepMenu = false) {
     for (const s of SCREENS) if (s !== id && !(keepMenu && s === 'scr-menu')) $(s).classList.add('hidden');
+    if (G.MoveTip) G.MoveTip.hide();
     $(id).classList.remove('hidden');
   }
   function hide(id) { $(id).classList.add('hidden'); }
