@@ -30,16 +30,26 @@ service cloud.firestore {
       allow read, delete: if signedIn() && me() == uid;
       allow read: if admin();
 
-      // Pokémon de regalo 10001: jamás aparece al crear una cuenta.
+      // Prohibido recrear una cuenta con sello de migración, grant vigente
+      // o Pokémon de regalo ya adjudicado.
       allow create: if signedIn() && me() == uid && validSaveDoc()
+        && request.resource.data.save.get('migrationImported', false) == false
+        && !exists(/databases/$(database)/documents/migrationGrants/$(uid))
         && !('10001' in request.resource.data.save.get('owned', {}))
         && !('10001' in request.resource.data.save.get('shiny', {}))
         && !('maomao' in request.resource.data.save.get('gifts', {}))
         && (marked() || (saneSave(request.resource.data.save) && freshSave(request.resource.data.save)));
       allow update: if signedIn() && me() == uid && validSaveDoc()
         && (resource.data.get('sus', false) == false || marked())
-        && (authorizedGift() || (giftUnchanged() && (authorizedMigration(uid) || marked() ||
-              (saneSave(request.resource.data.save)
+        // Preservar la marca de importación única (seguridad V0.3).
+        && (resource.data.save.get('migrationImported', false) == false
+            || request.resource.data.save.get('migrationImported', false) == true)
+        && (request.resource.data.save.get('migrationImported', false)
+              == resource.data.save.get('migrationImported', false)
+            || authorizedMigration(uid))
+        // El premio custom sólo puede añadirse por el canje exacto MAO25.
+        && (authorizedGift() || (giftUnchanged() && (authorizedMigration(uid) || marked()
+              || (saneSave(request.resource.data.save)
               && possibleSave(resource.data.save, request.resource.data.save,
                               (request.time - resource.data.updatedAt).seconds())))));
       // El admin sólo puede poner o quitar la marca.
