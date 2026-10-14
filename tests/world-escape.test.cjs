@@ -66,9 +66,12 @@ test('Las grietas mantienen paredes de cierre y corredor de aparición', () => {
 test('No elimina por completo peligros y obstáculos de los terrenos exteriores', () => {
   const world=create(9921);
   let walls=0, liquids=0, floors=0;
-  for(let y=35;y<70;y++)for(let x=35;x<70;x++){
-    const t=world.kindAt(x*32+16,y*32+16);
-    walls+=+(t==='wall'); liquids+=+(t==='liquid'); floors+=+(t==='floor');
+  // Muestra varias regiones lejanas; una sola región puede ser naturalmente seca.
+  for (const [cx,cy] of [[-96,-96],[-48,40],[45,-60],[60,65],[100,10]]) {
+    for(let y=cy;y<cy+38;y++)for(let x=cx;x<cx+38;x++){
+      const t=world.kindAt(x*32+16,y*32+16);
+      walls+=+(t==='wall'); liquids+=+(t==='liquid'); floors+=+(t==='floor');
+    }
   }
   assert.ok(walls>0,'deben continuar existiendo paredes');
   assert.ok(liquids>0,'deben continuar existiendo líquidos');
