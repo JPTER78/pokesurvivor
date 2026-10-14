@@ -29,8 +29,7 @@ G.Game = (() => {
   function init() {
     cv = document.getElementById('game');
     ctx = cv.getContext('2d');
-    resize();
-    addEventListener('resize', resize);
+    G.Viewport.init(cv, resize);
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
@@ -40,20 +39,18 @@ G.Game = (() => {
     requestAnimationFrame(loop);
   }
 
-  function resize() {
-    // Resolución interna como mucho ×1,5: en pantallas ×2 dibujar el doble de
-    // píxeles era de lo que más costaba, y con el pixel art no se nota.
-    dpr = Math.min(1.5, window.devicePixelRatio || 1);
-    w = cv.clientWidth; h = cv.clientHeight;
-    cv.width = Math.round(w * dpr);
-    cv.height = Math.round(h * dpr);
+  function resize(size) {
+    dpr = size.dpr;
+    w = size.width; h = size.height;
     G.Camera.resize(w, h, dpr);
+    G.Touch.reset();
+    G.Touch.clearButtons();
     checkOrientation();
   }
 
   /** Móvil en vertical: aviso de girarlo (y pausa). */
   function checkOrientation() {
-    const portrait = G.Touch.active && innerHeight > innerWidth;
+    const portrait = G.Touch.active && h > w;
     const el = document.getElementById('rotate');
     if (!el) return;
     if (portrait && !document.getElementById('rotate-ico').innerHTML) document.getElementById('rotate-ico').innerHTML = G.Icons.html('phone', 48);
@@ -723,7 +720,7 @@ G.Game = (() => {
   }
 
   function render() {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(cv.width / w, 0, 0, cv.height / h, 0, 0);
     ctx.clearRect(0, 0, w, h);
     ctx.imageSmoothingEnabled = false;
 
@@ -841,7 +838,7 @@ G.Game = (() => {
     function render(ctx, w, h, dpr, dt) {
       if (!ready) return;
       step(dt);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.setTransform(cv.width / w, 0, 0, cv.height / h, 0, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.save();
       ctx.scale(G.Camera.scale, G.Camera.scale);
@@ -863,7 +860,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond,
+    init, startRun, everyone, levelXp, flash, offerBond, checkOrientation,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { tampered = true; time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

@@ -44,7 +44,7 @@ G.UI = (() => {
 
   let toastEl = null, toastT = 0;
   function toast(msg, ms = 2200) {
-    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast'; document.body.appendChild(toastEl); }
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast'; document.getElementById('app').appendChild(toastEl); }
     toastEl.textContent = msg;
     toastEl.style.display = 'block';
     clearTimeout(toastT);
@@ -137,7 +137,7 @@ G.UI = (() => {
           <button class="btn ghost" data-a="no">Cancelar</button>
           <button class="btn danger" data-a="yes">Borrar para siempre</button>
         </div></div>`;
-      document.body.appendChild(el);
+      document.getElementById('app').appendChild(el);
       const inp = el.querySelector('input');
       const end = v => { el.remove(); done(v); };
       el.querySelector('[data-a=no]').onclick = () => end(null);
