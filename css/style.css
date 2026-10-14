@@ -695,6 +695,19 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 .set-chips { margin: 6px 0 10px; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; font-size: 14px; }
 .keys span { color: var(--muted); }
+/* Estadísticas en la pausa y en las cartas de nivel (stats-ui.js). */
+.stats-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; text-align: left; margin: 6px 0 14px; font-size: 13px; }
+.st-h { grid-column: 1 / -1; color: var(--gold); font-size: 15px; margin: 0 0 4px; }
+.st-row { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+.st-row .st-l { flex: 1; color: var(--muted); }
+.st-row .st-n { min-width: 34px; text-align: right; color: var(--muted); font-size: 11px; }
+.st-buff { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 0 6px; font-size: 11px; color: var(--muted); }
+.st-buff span { padding: 1px 6px; border-radius: 6px; background: rgba(0,0,0,.25); }
+.st-buff .st-m { background: none; padding-left: 0; }
+.st-buff i { font-style: normal; opacity: .7; margin-right: 4px; }
+.st-buff span.on { background: var(--gold); color: #1a1a1a; }
+.card .st-pv { color: var(--gold); margin-top: 2px; }
+@media (max-width: 520px) { .stats-list { grid-template-columns: 1fr; } }
 .credits { margin: 4px 0 12px; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; }
 .credits b { color: var(--ink); }
 .about-logo { text-align: center; font-size: 34px; font-weight: 700; color: var(--gold); text-shadow: 2px 2px 0 #a55f00, 4px 4px 0 var(--shadow); margin-top: 6px; }

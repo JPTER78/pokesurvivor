@@ -51,7 +51,8 @@ G.RunUI = (() => {
       if (c.type === 'evo') el.classList.add('evo');
       el.innerHTML =
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
-         <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
+         <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div>${c.type === 'stat'
+           ? `<div class="ds st-pv">${G.StatsUI.preview(G.Game.player, c.key.slice(5))}</div>` : ''}</div>
          <div class="key">${i + 1}</div>`;
       el.dataset.sfx = 'none';             // el juego pone su propio sonido al elegir
       el.onclick = () => pick(i);
@@ -224,6 +225,7 @@ G.RunUI = (() => {
   function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
+    $('pause-stats').innerHTML = G.Game.player ? G.StatsUI.html(G.Game.player) : '';
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
     G.UI.show('scr-pause');
   }

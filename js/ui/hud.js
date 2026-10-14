@@ -32,13 +32,21 @@ G.HUD = (() => {
     const touch = G.Touch.active;
 
     // ---------- barra de experiencia (borde superior) ----------
-    const xpF = pl.xp / pl.xpNext;
+    const xpF = pl.xp / pl.xpNext, XH = 11;
     ctx.fillStyle = 'rgba(0,0,0,.5)';
-    ctx.fillRect(0, 0, w, 7);
+    ctx.fillRect(0, 0, w, XH);
     const g = ctx.createLinearGradient(0, 0, w, 0);
     g.addColorStop(0, '#4fd1ff'); g.addColorStop(1, '#a98bff');
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w * G.U.clamp(xpF, 0, 1), 7);
+    ctx.fillRect(0, 0, w * G.U.clamp(xpF, 0, 1), XH);
+    // Cuánta llevas, cuánta pide este nivel y el porcentaje.
+    ctx.font = F(800, 9);
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)';
+    const xpTxt = Math.floor(pl.xp) + ' / ' + pl.xpNext + ' XP · ' + Math.floor(G.U.clamp(xpF, 0, 1) * 100) + '%';
+    ctx.strokeText(xpTxt, w / 2, 9);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(xpTxt, w / 2, 9);
 
     // ---------- vida + nivel ----------
     const px = 16, py = 20;
