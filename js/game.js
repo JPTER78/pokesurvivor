@@ -347,6 +347,15 @@ G.Game = (() => {
 
   function maybeLevelUp() {
     if (pendingLevels <= 0 || state !== 'playing') return;
+    // Antes de mostrar cartas: ¿el Pokémon debe evolucionar?
+    // (Sólo en solitario; en cooperativo cada cliente evoluciona a la suya.)
+    if (!G.Coop.active && pl && !pl.dead && G.evolutionOf) {
+      const ev = G.evolutionOf(pl.dex);
+      if (ev && pl.level >= ev.level && G.DEX_BY && G.DEX_BY[ev.to]) {
+        G.Evolution.start(pl, G.DEX_BY[ev.to]);
+        return;   // la cinemática se encarga; las cartas saldrán después
+      }
+    }
     if (G.Coop.active) {
       // En grupo, las cartas salen a la vez para todos y se espera a que elijan.
       if (G.Coop.players().every(p => p.dead)) return;
@@ -520,6 +529,20 @@ G.Game = (() => {
     }
     if (G.Input.tap('keyq')) pl.cycle(-1);
     if (G.Input.tap('keye') || G.Input.tap('tab')) pl.cycle(1);
+    // DEBUG: L sube de nivel al instante para probar evoluciones.
+    // Primero lleva a 16 (Bulbasaur -> Ivysaur), luego a 32 (-> Venusaur),
+    // y después suma 5 niveles cada pulsación.
+    if (G.Input.tap('keyl')) {
+      let target;
+      if (pl.level < 16) target = 16;
+      else if (pl.level < 32) target = 32;
+      else target = pl.level + 5;
+      pl.level = target;
+      pl.xp = 0;
+      pl.xpNext = G.Player.xpFor(target + 1);
+      pendingLevels += 1;
+      G.UI.toast('Nivel ' + target + ' (DEBUG)', 1200);
+    }
   }
 
   // ---------------- bucle ----------------
@@ -576,6 +599,12 @@ G.Game = (() => {
   function update(dt) {
     const coop = G.Coop.active;
     if (flashT > 0) flashT -= dt;
+    // Cinemática de evolución: todo se para mientras dura (como la Sentencia).
+    if (G.Evolution && G.Evolution.cinematic) {
+      G.Evolution.cineTick(dt);
+      G.Camera.follow(pl.x, pl.y, dt);
+      return;
+    }
     // La Sentencia de Arceus: mientras dura la animación, todo lo demás se para.
     if (G.Judgment.cinematic) {
       G.Judgment.cineTick(dt);
@@ -712,6 +741,16 @@ G.Game = (() => {
       g.addColorStop(1, `rgba(200,205,220,${0.45 * fog})`);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
+    }
+    // Overlay oscuro durante la cinemática de evolución.
+    if (G.Evolution && G.Evolution.cinematic) {
+      ctx.fillStyle = 'rgba(0, 0, 20, 0.6)'; // Azul muy oscuro semitransparente
+      ctx.fillRect(0, 0, w, h);
+      // Opcional: un pequeño punto de luz en el centro para enfatizar al Pokémon.
+      // ctx.fillStyle = 'rgba(255,255,200,0.2)';
+      // ctx.beginPath();
+      // ctx.arc(w/2, h/2, Math.min(w,h)*0.15, 0, Math.PI*2);
+      // ctx.fill();
     }
     if (!G.Judgment.cinematic) G.HUD.draw(ctx, w, h, pl, st);
     G.Judgment.drawOverlay(ctx, w, h);

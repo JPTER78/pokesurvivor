@@ -426,6 +426,13 @@ G.Audio = (() => {
     reveal(o) { INST.bell(ctx.currentTime, [523, 659, 784, 988, 1319][((o && o.rarity) || 1) - 1], 0.3, 0.8, sfxBus); },
     rift:    () => { [196, 233, 277, 330].forEach((f, i) => INST.pad(ctx.currentTime + i * 0.08, f, 1.4, 1.2, sfxBus)); hiss(0.9, 0.08, 'bandpass', 900, 300); },
     legend:  () => { arp('square', [523, 659, 784, 1047, 1319, 1568], 0.08, 0.3, 0.05); SFX.shiny(); },
+    // Evolución del Pokémon: arpegio ascendente brillante + campana.
+    evolve:  () => { arp('square', [523, 659, 784, 988, 1175, 1319, 1568], 0.06, 0.45, 0.05);
+                     arp('triangle', [1047, 1319, 1568, 2093], 0.07, 0.5, 0.06);
+                     SFX.shiny(); },
+    // "Ding" brillante al revelar el nombre de la nueva forma.
+    evolveDing: () => { INST.bell(ctx.currentTime, 1568, 0.4, 0.9, sfxBus);
+                        INST.bell(ctx.currentTime + 0.05, 2093, 0.35, 0.8, sfxBus); },
     gameover: () => arp('triangle', [523, 440, 349, 262], 0.2, 0.35, 0.08),
     biome:   () => [392, 494, 587, 784].forEach(f => INST.pad(ctx.currentTime, f, 1.2, 1.4, sfxBus)),
     // La Sentencia de Arceus (systems/judgment.js).
