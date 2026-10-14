@@ -7,6 +7,8 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
+    ['En móvil, puedes elegir si la base del joystick táctil sigue al dedo o se queda en la posición inicial.',
+     'On mobile, you can choose whether the touch joystick base follows your finger or stays in its starting position.'],
     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
      'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.']
   ] },

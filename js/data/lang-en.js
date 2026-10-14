@@ -399,6 +399,7 @@ G.I18n.add({
   'Pantalla completa': 'Fullscreen', 'Sin barras del navegador.': 'Without browser bars.', 'Activar': 'Turn on', 'Sí': 'Yes', 'No': 'No',
   'Idioma': 'Language', 'El juego se recarga al cambiarlo.': 'The game reloads when you change it.',
   'En móvil o tablet': 'On mobile or tablet', 'En PC': 'On PC', 'Tamaño del joystick': 'Joystick size', 'Cuánto hay que arrastrar el dedo.': 'How far you need to drag your finger.',
+  'Seguimiento del joystick': 'Joystick tracking', 'La base del joystick sigue al dedo cuando supera el radio.': 'The joystick\'s base follows your finger once it moves beyond the radius.',
   'Pequeño': 'Small', 'Normal': 'Normal', 'Grande': 'Large', 'o flechas': 'or arrow keys', 'moverse': 'move', 'o clic en el icono': 'or click its icon', 'elegir ataque': 'choose move',
   'ataque anterior / siguiente': 'previous / next move', 'elegir carta al subir de nivel': 'choose a card when leveling up',
   'Pon el dedo en cualquier parte y arrastra para moverte: el joystick aparece donde tocas. Toca un ataque de abajo para cambiarlo y el botón de arriba a la derecha para pausar. Se juega en horizontal.': 'Put your finger anywhere and drag to move: the joystick appears where you touch. Tap a move at the bottom to switch to it and the top-right button to pause. Play in landscape.',

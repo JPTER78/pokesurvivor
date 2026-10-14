@@ -1,7 +1,7 @@
 /* ============ touch.js — controles táctiles ============
  * Joystick flotante: pones el dedo en cualquier sitio de la pantalla de juego
  * y ahí aparece; arrastras para moverte y al soltar desaparece. Si el dedo se
- * aleja más que el radio, la base le sigue (nunca se queda "atascado").
+ * aleja más que el radio, la base le sigue por defecto (nunca se queda "atascado").
  *
  * Botones del HUD (iconos de ataque, pausa): el HUD los registra en cada
  * fotograma con addButton(); un toque (o un clic con el ratón) sobre uno lo
@@ -72,7 +72,9 @@ G.Touch = (() => {
     if (!stick || e.pointerId !== stick.id) return;
     stick.x = e.clientX; stick.y = e.clientY;
     const dx = stick.x - stick.ox, dy = stick.y - stick.oy, d = Math.hypot(dx, dy), r = R();
-    if (d > r) { stick.ox = stick.x - dx / d * r; stick.oy = stick.y - dy / d * r; }
+    if (d > r && G.Settings.get('stickFollow') !== false) {
+      stick.ox = stick.x - dx / d * r; stick.oy = stick.y - dy / d * r;
+    }
   }
 
   function up(e) { if (stick && e.pointerId === stick.id) stick = null; }
