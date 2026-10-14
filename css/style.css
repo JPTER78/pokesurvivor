@@ -818,3 +818,18 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #dex-detail .btn { position: sticky; bottom: 0; order: 9; margin-top: auto; padding: 8px 6px; font-size: 15px;
     box-shadow: 0 -6px 10px rgba(5,10,25,.6); }
 }
+
+/* Desafíos: cajas desplazables y botones accesibles también en Android. */
+#scr-play-mode, #scr-challenges { padding: 66px 12px 12px; }
+.challenge-box { width: min(100%, 600px); max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.challenge-box .row { flex-wrap: wrap; gap: 8px; }
+.mode-buttons { display: grid; gap: 12px; margin-top: 16px; }
+.challenge-card { margin-top: 12px; }
+.challenge-card p { overflow-wrap: anywhere; }
+.challenge-box .btn { min-height: 44px; }
+.challenge-card > .btn { width: 100%; }
+#challenge-hud { position: fixed; z-index: 10; top: max(48px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); pointer-events: none; padding: 3px 8px; border-radius: 5px; background: #050914bb; color: #ffd23f; font-size: 12px; white-space: nowrap; }
+@media (max-height: 520px) {
+  #scr-play-mode, #scr-challenges { padding-top: 50px; }
+  .challenge-card p { margin: 8px 0; font-size: 14px; }
+}

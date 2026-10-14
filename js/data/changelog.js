@@ -6,6 +6,12 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-14', title: ['Modo Desafíos V0.1', 'Challenges mode V0.1'], new: [
+    ['Supervivencia Extrema: sobrevive 10 minutos de juego activo en solitario, con un 25 % más de daño enemigo. Usa tu compañero y tus mejoras; tus marcas se guardan fuera del ranking normal.',
+     'Extreme Survival: survive 10 minutes of active solo play with 25% more enemy damage. Keep your partner and upgrades; records are saved separately from normal leaderboards.'],
+    ['La recompensa propuesta de 500 monedas queda pendiente de habilitación. Puedes repetir el desafío sin límite.',
+     'The proposed 500 coin reward is pending enablement. You can retry without limits.']
+  ] },
   { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
      'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.']

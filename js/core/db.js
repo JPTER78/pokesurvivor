@@ -88,6 +88,7 @@ G.DB = (() => {
       itemsFound: {},         // id -> fecha: objetos equipables encontrados
       evoMoves: {},           // id -> fecha: movimientos evolucionados alguna vez
       ach: {},                // id -> fecha: logros conseguidos
+      challenges: {},          // marcas y primera finalización, independientes del ranking
       missions: {},           // misiones del día / semana (systems/progress.js)
       profile: { favs: [], title: '' },   // perfil público: 3 favoritos y título
       stats: { runs: 0, bestTime: 0, bestLevel: 0, totalKills: 0, pulls: 0, coinsEarned: 0, shinies: 0,
@@ -123,6 +124,7 @@ G.DB = (() => {
    */
   function sanitize(s) {
     const n = v => (Number.isFinite(+v) && +v > 0 ? Math.floor(+v) : 0);
+    s.challenges = G.Challenges.mergeProgress(s.challenges, {});
     s.coins = n(s.coins);
     s.tickets.t1 = n(s.tickets.t1);
     s.tickets.t10 = n(s.tickets.t10);
@@ -190,6 +192,7 @@ G.DB = (() => {
       r[coll] = r[coll] || {};
       for (const k in older[coll] || {}) if (!r[coll][k]) r[coll][k] = older[coll][k];
     }
+    r.challenges = G.Challenges.mergeProgress(a.challenges, b.challenges);
     // Misiones del mismo día/semana: el mayor progreso y lo ya recogido.
     const mo = older.missions || {}, mr = r.missions = r.missions || {};
     for (const [per, list] of [['day', 'daily'], ['week', 'weekly']]) {

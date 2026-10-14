@@ -11,7 +11,7 @@ G.MenuUI = (() => {
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
       b.onclick = () => {
         const go = b.dataset.go;
-        if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
+        if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else openPlayMode(); }
         else if (go === 'dex') openDex();
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
@@ -22,12 +22,38 @@ G.MenuUI = (() => {
       };
     });
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
+    $('btn-normal-run').onclick = () => { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); };
+    $('btn-challenges').onclick = openChallenges;
+    $('challenges-back').onclick = openPlayMode;
     G.Social.on(() => { if (G.UI.isOpen('scr-menu')) socialLine(); });
     $('btn-logout').onclick = () => {
       if (G.DB.guest && !confirm('Eres invitado: se perderá todo el progreso. ¿Salir?')) return;
       G.Audio.music(null);
       G.DB.logout().then(() => G.Flow.toLogin());
     };
+  }
+
+  function openPlayMode() { G.UI.show('scr-play-mode', true); }
+
+  function openChallenges() {
+    G.UI.show('scr-challenges', true);
+    const box = $('challenge-list');
+    box.innerHTML = '';
+    for (const def of G.Challenges.LIST) {
+      const progress = G.Challenges.progress(G.DB.save, def.id);
+      const card = document.createElement('article');
+      card.className = 'panel challenge-card';
+      card.innerHTML = `<h3>${def.name}</h3><p>${def.description}</p>
+        <p><b>Reglas especiales:</b> ${def.rules}</p>
+        <p><b>Objetivo:</b> sobrevivir ${G.U.mmss(def.duration)} de juego activo. Las pausas y elecciones no cuentan.</p>
+        <p><b>Estado:</b> ${progress.completedAt ? 'Completado' : 'Pendiente'}<br>
+        <b>Mejor intento:</b> ${G.U.mmss(progress.bestTime)}</p>
+        <p class="sub">Recompensa propuesta: ${def.rewardCoins} monedas por la primera victoria. Pendiente de habilitación; esta versión no entrega el premio.</p>
+        ${G.DB.guest ? '<p class="sub">Como invitado, el progreso sólo dura esta sesión.</p>' : ''}
+        <button class="btn gold" data-sfx="confirm">Comenzar desafío</button>`;
+      card.querySelector('button').onclick = () => G.Game.startRun(null, def.id);
+      box.appendChild(card);
+    }
   }
 
   // ---------------- menú principal ----------------
@@ -359,5 +385,5 @@ G.MenuUI = (() => {
     return el;
   }
 
-  return { init, open, GEN_NAMES };
+  return { init, open, openPlayMode, openChallenges, GEN_NAMES };
 })();
