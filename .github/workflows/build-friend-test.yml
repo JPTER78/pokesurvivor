@@ -1,0 +1,35 @@
+name: Build friend lookup test
+
+on:
+  push:
+    branches:
+      - fix/friend-lookup
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/friend-lookup
+          persist-credentials: true
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate published game
+        run: node tools/build.js
+      - name: Commit generated assets to test branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/app.min.js version.json
+          if ! git diff --cached --quiet; then
+            git commit -m "build: refresh compiled game for friend lookup test"
+            git push origin HEAD:fix/friend-lookup
+          fi
