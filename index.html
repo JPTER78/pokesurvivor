@@ -178,6 +178,7 @@
   <div class="menu-right">
     <div class="box">
       <div class="menu-list">
+        <button id="btn-maomao-preview" class="menu-item hidden" type="button">Probar a Maomao<small>Veneno / Planta · prueba visual como invitado</small></button>
         <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
@@ -407,6 +408,24 @@
   </div>
 </section>
 
+<!-- ====== Modos y desafíos ====== -->
+<section id="scr-play-mode" class="scr dim hidden">
+  <div class="box challenge-box">
+    <div class="row between"><h2>Jugar</h2><button class="btn ghost" data-back>Volver</button></div>
+    <div class="mode-buttons">
+      <button id="btn-normal-run" class="btn gold" data-sfx="confirm">Partida normal</button>
+      <button id="btn-challenges" class="btn" data-sfx="click">Desafíos</button>
+    </div>
+  </div>
+</section>
+<section id="scr-challenges" class="scr dim hidden">
+  <div class="box challenge-box">
+    <div class="row between"><h2>Desafíos</h2><button id="challenges-back" class="btn ghost">Volver</button></div>
+    <div id="challenge-list"></div>
+  </div>
+</section>
+<div id="challenge-hud" class="hidden" role="status"></div>
+
 <!-- ====== Misiones, logros y perfil ====== -->
 <section id="scr-goals" class="scr dim hidden">
   <div class="box wide">
@@ -555,6 +574,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=025032c5a0"></script>
+<script defer src="js/app.min.js?v=8a4329de85"></script>
 </body>
 </html>

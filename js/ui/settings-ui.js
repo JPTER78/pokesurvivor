@@ -140,7 +140,16 @@ G.SettingsUI = (() => {
       + `<div class="row wrap" style="gap:8px;margin-top:12px">
            <button class="btn" id="set-logout">Cerrar sesión</button>
            <button class="btn danger" id="set-delete">Borrar cuenta</button>
-         </div><p class="note" id="set-msg"></p>`;
+         </div><p class="note" id="set-msg"></p>`
+      + (`<h3 class="set-h">Transferencia de partida</h3>
+          <p class="sub">${G.DB.mode === 'local'
+            ? 'Prueba local. No conecta a Firebase y no modifica la cuenta original.'
+            : 'Solo tras autorización administrativa de importación única en Firebase Tiliko; no modifica la cuenta original.'}
+            Se respalda tu partida antes de importar.</p>
+          <div class="row wrap" style="gap:8px;margin-top:12px">
+            <button class="btn" id="set-transfer-import">Importar respaldo JSON</button>
+            <button class="btn small" id="set-transfer-export">Descargar respaldo</button>
+          </div>`);
   }
 
   function wire(box) {
@@ -150,6 +159,8 @@ G.SettingsUI = (() => {
     });
     const full = $('set-full'); if (full) full.onclick = toggleFull;
     box.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); }; });
+    const importBtn = $('set-transfer-import'); if (importBtn) importBtn.onclick = () => G.SaveTransfer.chooseFile();
+    const exportBtn = $('set-transfer-export'); if (exportBtn) exportBtn.onclick = () => G.SaveTransfer.exportCurrent();
     const lo = $('set-login'); if (lo) lo.onclick = () => { close(); leave(); };
     const out = $('set-logout'); if (out) out.onclick = () => { close(); leave(); };
     const del = $('set-delete');

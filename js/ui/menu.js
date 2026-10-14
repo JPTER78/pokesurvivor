@@ -5,16 +5,17 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', gifts: 'ticket' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
       b.onclick = () => {
         const go = b.dataset.go;
-        if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
+        if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else openPlayMode(); }
         else if (go === 'dex') openDex();
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
+        else if (go === 'gifts') G.GiftsUI.open();
         else if (go === 'goals') G.GoalsUI.open();
         else if (go === 'friends') G.FriendsUI.open();
         else if (go === 'rank') G.RankingUI.open();
@@ -22,12 +23,38 @@ G.MenuUI = (() => {
       };
     });
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
+    $('btn-normal-run').onclick = () => { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); };
+    $('btn-challenges').onclick = openChallenges;
+    $('challenges-back').onclick = openPlayMode;
     G.Social.on(() => { if (G.UI.isOpen('scr-menu')) socialLine(); });
     $('btn-logout').onclick = () => {
       if (G.DB.guest && !confirm('Eres invitado: se perderá todo el progreso. ¿Salir?')) return;
       G.Audio.music(null);
       G.DB.logout().then(() => G.Flow.toLogin());
     };
+  }
+
+  function openPlayMode() { G.UI.show('scr-play-mode', true); }
+
+  function openChallenges() {
+    G.UI.show('scr-challenges', true);
+    const box = $('challenge-list');
+    box.innerHTML = '';
+    for (const def of G.Challenges.LIST) {
+      const progress = G.Challenges.progress(G.DB.save, def.id);
+      const card = document.createElement('article');
+      card.className = 'panel challenge-card';
+      card.innerHTML = `<h3>${def.name}</h3><p>${def.description}</p>
+        <p><b>Reglas especiales:</b> ${def.rules}</p>
+        <p><b>Objetivo:</b> sobrevivir ${G.U.mmss(def.duration)} de juego activo. Las pausas y elecciones no cuentan.</p>
+        <p><b>Estado:</b> ${progress.completedAt ? 'Completado' : 'Pendiente'}<br>
+        <b>Mejor intento:</b> ${G.U.mmss(progress.bestTime)}</p>
+        <p class="sub">Recompensa propuesta: ${def.rewardCoins} monedas por la primera victoria. Pendiente de habilitación; esta versión no entrega el premio.</p>
+        ${G.DB.guest ? '<p class="sub">Como invitado, el progreso sólo dura esta sesión.</p>' : ''}
+        <button class="btn gold" data-sfx="confirm">Comenzar desafío</button>`;
+      card.querySelector('button').onclick = () => G.Game.startRun(null, def.id);
+      box.appendChild(card);
+    }
   }
 
   // ---------------- menú principal ----------------
@@ -67,6 +94,10 @@ G.MenuUI = (() => {
       `Runs <b style="color:#fff">${st.runs}</b> · Mejor tiempo <b style="color:#fff">${G.U.mmss(st.bestTime)}</b><br>` +
       `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString('es')}</b>` +
       (G.DB.guest ? '<br><span style="color:#ffb0b8">Modo invitado: no se guarda</span>' : '');
+
+    const preview = $('btn-maomao-preview');
+    preview.classList.toggle('hidden', !G.MaomaoPreview.allowed());
+    preview.onclick = () => G.Game.startRun(null, null, 'maomao');
 
     socialLine();
     // Premios de misiones por recoger.
@@ -134,7 +165,15 @@ G.MenuUI = (() => {
       c.onclick = () => { dexFilter = k; openDex(); };
       fb.appendChild(c);
     }
+    if (s.owned[G.GiftCodes.MAOMAO_DEX]) {
+      const special = document.createElement('button');
+      special.className = 'gen-tab' + (dexGen === 0 ? ' on' : '');
+      special.innerHTML = '<b>Especial</b><small>1/1</small>';
+      special.onclick = () => { dexGen = 0; dexSel = G.GiftCodes.MAOMAO_DEX; openDex(); };
+      tabs.appendChild(special);
+    }
     renderGrid();
+    if (dexGen === 0 && s.owned[G.GiftCodes.MAOMAO_DEX]) dexSel = G.GiftCodes.MAOMAO_DEX;
     showDetail(dexSel);
   }
 
@@ -142,7 +181,9 @@ G.MenuUI = (() => {
     const s = G.DB.save;
     const grid = $('dex-grid');
     grid.innerHTML = '';
-    for (const p of G.DEX) {
+    const catalog = dexGen === 0 && s.owned[G.GiftCodes.MAOMAO_DEX]
+      ? [G.DEX_BY[G.GiftCodes.MAOMAO_DEX]] : G.DEX;
+    for (const p of catalog) {
       if (p.gen !== dexGen) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
       if (dexFilter === 'own' && !own) continue;
@@ -194,7 +235,7 @@ G.MenuUI = (() => {
           <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
       <div class="center">
-        <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
+        <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${p.gen === 0 ? 'Especial' : GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
@@ -209,7 +250,7 @@ G.MenuUI = (() => {
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
-      ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
+      ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${p.gen === 0 ? 'Especial' : GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
@@ -359,5 +400,5 @@ G.MenuUI = (() => {
     return el;
   }
 
-  return { init, open, GEN_NAMES };
+  return { init, open, openPlayMode, openChallenges, GEN_NAMES };
 })();

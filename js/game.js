@@ -34,6 +34,10 @@ G.Game = (() => {
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
+    // Suspender el reloj nunca concede una victoria. Salir o perder red falla.
+    document.addEventListener('visibilitychange', () => G.Challenges.suspend());
+    addEventListener('offline', () => { if (G.Challenges.active) endRun(false); });
+    addEventListener('pagehide', () => { if (G.Challenges.active) endRun(false); });
     G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
     Backdrop.init();
     last = performance.now();
@@ -85,11 +89,18 @@ G.Game = (() => {
   // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
-  function startRun(coop = null) {
+  function startRun(coop = null, challengeId = null, previewId = null) {
+    if (previewId && (previewId !== 'maomao' || coop || challengeId || !G.MaomaoPreview.allowed())) return;
+    if (challengeId && (coop || G.Coop.active || G.Social.room || navigator.onLine === false)) {
+      G.UI.toast('Los desafíos requieren conexión y jugar en solitario, fuera de una sala.', 4000);
+      return;
+    }
+    if (challengeId && state !== 'ui') return;
+    G.Challenges.begin(challengeId);
     holdBy = []; awayBy = null;
     const save = G.DB.save;
-    const mon = G.DEX_BY[save.partner];
-    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+    const mon = previewId ? G.MaomaoPreview.mon : G.DEX_BY[save.partner];
+    const perks = G.Upgrades.perks(previewId ? {} : G.DB.upgradesOf(mon.dex));
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -112,6 +123,7 @@ G.Game = (() => {
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    G.Challenges.bindPlayer(pl);
     banked = { t1: 0, t10: 0 };
     caught = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
@@ -136,10 +148,11 @@ G.Game = (() => {
     G.Sprites.preload([mon.dex], 8000, pl.shiny);
     G.Audio.music(G.BIOME_MUSIC[0]);
     // Para el ranking: el servidor apunta cuándo empieza la partida (anti-trampas).
-    if (!coop || G.Coop.isHost) G.Ranking.runStarted(coop ? 'g' : 's');
+    if (!mon.customPreview && !G.Challenges.active && (!coop || G.Coop.isHost)) G.Ranking.runStarted(coop ? 'g' : 's');
     deathT = 0;
 
     state = 'playing';
+    if (previewId) G.UI.toast('Maomao: prueba visual. Las diagonales usan poses aproximadas.', 5000);
   }
 
   function quitRun() {
@@ -271,8 +284,9 @@ G.Game = (() => {
     G.Audio.sfx('shinyGet');
   };
 
-  function endRun(dead = true) {
+  function endRun(dead = true, challengeWon = false) {
     if (state === 'over' || !pl) return;
+    const challenge = G.Challenges.active ? G.Challenges.finish(challengeWon && !pl.dead && clean()) : null;
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
     const wasHost = !!pl.coopHost;
     const team = coop ? G.Coop.members.slice() : [];
@@ -290,34 +304,34 @@ G.Game = (() => {
       recogidas: pl.coins
     };
     const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
-    const record = time > save.stats.bestTime;
+    const record = !challenge && time > save.stats.bestTime;
 
     save.coins += coins;
     bankTickets(false);
-    save.stats.runs++;
+    if (!challenge) save.stats.runs++;
     save.stats.totalKills += pl.kills;
-    save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
+    if (!challenge) save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
     if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
-    save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
+    if (!challenge) save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
     const judge = G.Judgment.summary();
     if (judge) G.Progress.event('judgeEnd', judge);
     G.Judgment.reset();
-    G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
+    G.Progress.event('runEnd', { time: challenge ? challenge.time : time, challenge: !!challenge, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
     G.Progress.checkAch();
     // A la nube: un récord, enseguida; si no, al acabar la partida (como mucho cada 20 min).
-    G.DB.commit(record ? true : 'run');
+    G.DB.commit(challenge || record ? true : 'run');
     if (G.Social.me) G.Social.publishProfile();
 
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.
     const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
     // Si la partida se ha tocado (ver clean()), no sube al ranking (sin avisar); lo demás, sí.
-    const ok = clean();
-    if (ok && !coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
-    else if (ok && wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
+    const ok = !pl.mon.customPreview && clean();
+    if (!challenge && ok && !coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
+    else if (!challenge && ok && wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
     G.RunUI.showOver({
-      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,
+      dead, time: challenge ? challenge.time : time, challenge, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
@@ -509,7 +523,7 @@ G.Game = (() => {
     }
     if (state === 'ui') {
       // Esc en una subpantalla del menú vuelve al menú.
-      if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-dex', 'scr-upgrades', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
+      if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-dex', 'scr-upgrades', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals', 'scr-play-mode', 'scr-challenges'].some(G.UI.isOpen)
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
       return;
     }
@@ -560,13 +574,20 @@ G.Game = (() => {
     if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
     frameDt = state === 'playing' ? dt : 0;
 
+    const wasPlaying = state === 'playing';
     handleKeys();
+    G.Challenges.tick(ts, wasPlaying && state === 'playing' && !document.hidden && navigator.onLine !== false);
 
     if (state === 'playing') update(dt);
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
     // La red se atiende siempre (también con las cartas de nivel abiertas).
     if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
 
+    if (G.Challenges.active && state !== 'over') {
+      if (pl.dead) endRun(true);
+      else if (G.Challenges.ready) endRun(false, true);
+    }
+    G.RunUI.challengeHUD();
     if (pl && state !== 'ui') render(); else Backdrop.render(ctx, w, h, dpr, dt);
     G.UI.tick(dt);
 
@@ -575,6 +596,7 @@ G.Game = (() => {
 
   function update(dt) {
     const coop = G.Coop.active;
+    if (G.Challenges.active && pl.dead) { endRun(true); return; }
     if (flashT > 0) flashT -= dt;
     // La Sentencia de Arceus: mientras dura la animación, todo lo demás se para.
     if (G.Judgment.cinematic) {
@@ -629,6 +651,8 @@ G.Game = (() => {
     G.Pickups.update(dt, all, onCollect);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
+    // Caer en una grieta también falla: comprobar antes de su recuperación normal.
+    if (G.Challenges.active && pl.dead) { endRun(true); return; }
     G.Rift.update(dt, pl, time);
     G.Judgment.update(dt, pl, time);
     G.Events.update(dt, all, time);
@@ -847,7 +871,7 @@ G.Game = (() => {
 G.Flow = {
   boot() {
     G.UI.initChrome();
-    G.LoginUI.init(); G.TestUI.init(); G.MenuUI.init(); G.GachaUI.init();
+    G.LoginUI.init(); G.TestUI.init(); G.MenuUI.init(); G.GiftsUI.init(); G.GachaUI.init();
     G.SocialUI.init(); G.RankingUI.init(); G.ModUI.init(); G.GoalsUI.init(); G.ProfileUI.init(); G.SettingsUI.init(); G.SupportUI.init(); G.NewsUI.init(); G.Updater.init();
     // Tu nombre arriba a la derecha abre tu perfil.
     document.getElementById('user-pill').onclick = () => G.GoalsUI.open('profile');

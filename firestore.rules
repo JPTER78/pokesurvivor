@@ -30,17 +30,80 @@ service cloud.firestore {
       allow read, delete: if signedIn() && me() == uid;
       allow read: if admin();
 
+      // Prohibido recrear una cuenta con sello de migración, grant vigente
+      // o Pokémon de regalo ya adjudicado.
       allow create: if signedIn() && me() == uid && validSaveDoc()
+        && request.resource.data.save.get('migrationImported', false) == false
+        && !exists(/databases/$(database)/documents/migrationGrants/$(uid))
+        && !('10001' in request.resource.data.save.get('owned', {}))
+        && !('10001' in request.resource.data.save.get('shiny', {}))
+        && !('maomao' in request.resource.data.save.get('gifts', {}))
         && (marked() || (saneSave(request.resource.data.save) && freshSave(request.resource.data.save)));
       allow update: if signedIn() && me() == uid && validSaveDoc()
-        && (resource.data.get('sus', false) == false || marked())       // la marca no se quita
-        && (marked() || (saneSave(request.resource.data.save)
+        && (resource.data.get('sus', false) == false || marked())
+        // Preservar la marca de importación única (seguridad V0.3).
+        && (resource.data.save.get('migrationImported', false) == false
+            || request.resource.data.save.get('migrationImported', false) == true)
+        && (request.resource.data.save.get('migrationImported', false)
+              == resource.data.save.get('migrationImported', false)
+            || authorizedMigration(uid))
+        // El premio custom sólo puede añadirse por el canje exacto MAO25.
+        && (authorizedGift() || (giftUnchanged() && (authorizedMigration(uid) || marked()
+              || (saneSave(request.resource.data.save)
               && possibleSave(resource.data.save, request.resource.data.save,
-                              (request.time - resource.data.updatedAt).seconds())));
+                              (request.time - resource.data.updatedAt).seconds())))));
       // El admin sólo puede poner o quitar la marca.
       allow update: if admin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sus'])
         && request.resource.data.sus is bool;
+    }
+
+    // Código promocional público MAO25, reutilizable entre diferentes cuentas,
+    // pero una sola entrega por cuenta. La validación real está en Firestore.
+    function giftUnchanged() {
+      let old = resource.data.save;
+      let next = request.resource.data.save;
+      return next.get('owned', {}).get('10001', null) == old.get('owned', {}).get('10001', null)
+        && next.get('shiny', {}).get('10001', null) == old.get('shiny', {}).get('10001', null)
+        && next.get('gifts', {}).get('maomao', null) == old.get('gifts', {}).get('maomao', null);
+    }
+    function authorizedGift() {
+      let old = resource.data.save;
+      let next = request.resource.data.save;
+      return old.get('owned', {}).get('10001', null) == null
+        && old.get('gifts', {}).get('maomao', null) == null
+        && next.get('owned', {}).get('10001', null) is map
+        && next.get('owned', {}).get('10001', {}).keys().hasOnly(['at', 'from'])
+        && next.get('owned', {}).get('10001', {}).get('from', '') == 'gift'
+        && next.get('owned', {}).get('10001', {}).get('at', 0) is int
+        && next.get('owned', {}).get('10001', {}).get('at', 0) >= request.time.toMillis() - 300000
+        && next.get('owned', {}).get('10001', {}).get('at', 0) <= request.time.toMillis() + 300000
+        && next.get('shiny', {}).get('10001', null) == null
+        && next.get('gifts', {}).get('maomao', '') == 'MAO25'
+        && next.diff(old).affectedKeys().hasOnly(['owned', 'gifts', 'updated'])
+        && next.get('owned', {}).diff(old.get('owned', {})).affectedKeys().hasOnly(['10001'])
+        && next.get('gifts', {}).diff(old.get('gifts', {})).affectedKeys().hasOnly(['maomao'])
+        && next.get('created', 0) == old.get('created', 0)
+        && next.get('name', '') == old.get('name', '')
+        && next.get('updated', 0) is int
+        && next.get('updated', 0) >= old.get('updated', 0)
+        && saneSave(next);
+    }
+
+    // Importación única y específica para el titular autorizado desde Firebase
+    // Console (Admin SDK también puede crear grants, pero NUNCA el cliente).
+    // El respaldo original es un JSON local sin firma: la concesión debe ser
+    // deliberada. La marca de importación impide reutilizar el permiso.
+    function authorizedMigration(uid) {
+      let path = /databases/$(database)/documents/migrationGrants/$(uid);
+      return exists(path)
+        && get(path).data.get('approved', false) == true
+        && get(path).data.get('expiresAt', request.time) > request.time
+        && resource.data.save.get('migrationImported', false) == false
+        && request.resource.data.save.get('migrationImported', false) == true
+        && request.resource.data.save.get('name', '') == resource.data.save.get('name', '')
+        && request.resource.data.save.get('created', 0) == resource.data.save.get('created', 0)
+        && saneSave(request.resource.data.save);
     }
 
     function marked() { return request.resource.data.get('sus', false) == true; }
@@ -104,18 +167,25 @@ service cloud.firestore {
     function mx(a, b) { return a > b ? a : b; }
     // <logros> (generado por tools/make_rules.js, no editar a mano)
     function achNew() { return request.resource.data.save.get('ach', {}).diff(resource.data.save.get('ach', {})).addedKeys(); }
-    function achV() { return 1 * achNew().intersection(['own10', 'lvl20', 'kills1k', 'boss1', 'group1'].toSet()).size()
-        + 2 * achNew().intersection(['shiny1', 'evo1', 'items5', 'rift1', 'mis10'].toSet()).size()
-        + 3 * achNew().intersection(['time10'].toSet()).size()
-        + 4 * achNew().intersection(['own50'].toSet()).size()
-        + 10 * achNew().intersection(['own100', 'shiny5', 'pulls100', 'time15', 'lvl40', 'judge', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
-        + 20 * achNew().intersection(['own250', 'shiny20', 'time20', 'judge60', 'judgeBoss', 'boss100', 'arenas', 'leg30'].toSet()).size()
-        + 30 * achNew().intersection(['own500', 'kills100k', 'evoAll', 'mis200'].toSet()).size()
-        + 50 * achNew().intersection(['legAll'].toSet()).size()
-        + 100 * achNew().intersection(['ownAll'].toSet()).size()
-        + 0.333 * achNew().intersection(['own1'].toSet()).size()
-        + 0.667 * achNew().intersection(['time5'].toSet()).size(); }
+    function achV() { let newly = achNew(); return newly.size() == 0 ? 0 : 1 * newly.intersection(['own10', 'lvl20', 'kills1k', 'boss1', 'group1'].toSet()).size()
+        + 2 * newly.intersection(['shiny1', 'evo1', 'items5', 'rift1', 'mis10'].toSet()).size()
+        + 3 * newly.intersection(['time10'].toSet()).size()
+        + 4 * newly.intersection(['own50'].toSet()).size()
+        + 10 * newly.intersection(['own100', 'shiny5', 'pulls100', 'time15', 'lvl40', 'judge', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
+        + 20 * newly.intersection(['own250', 'shiny20', 'time20', 'judge60', 'judgeBoss', 'boss100', 'arenas', 'leg30'].toSet()).size()
+        + 30 * newly.intersection(['own500', 'kills100k', 'evoAll', 'mis200'].toSet()).size()
+        + 50 * newly.intersection(['legAll'].toSet()).size()
+        + 100 * newly.intersection(['ownAll'].toSet()).size()
+        + 0.333 * newly.intersection(['own1'].toSet()).size()
+        + 0.667 * newly.intersection(['time5'].toSet()).size(); }
     // </logros>
+
+    // Se consulta sólo el permiso propio. Ningún usuario puede concederse
+    // permisos de migración: los documentos se crean por Firebase Console/SDK.
+    match /migrationGrants/{uid} {
+      allow get: if signedIn() && me() == uid;
+      allow list, create, update, delete: if false;
+    }
 
     // ---------- apodos ----------
 

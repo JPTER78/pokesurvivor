@@ -13,6 +13,8 @@ G.Sprites = (() => {
   /** Unidades de mundo por píxel de arte. Tiles y sprites comparten escala. */
   const PX = 2;
   const sheets = new Map();          // "dex/Anim[/s]" -> {img, ready, failed}
+  // Solo Mao Mao sustituye sus hojas por poses ampliadas en memoria.
+  const expandedMeta = new Map();
 
   function meta(dex) { return G.SPRITE_META[dex] || null; }
 
@@ -62,7 +64,7 @@ G.Sprites = (() => {
     if (!m) return null;
     const name = animName(dex, anim, shiny);
     if (shiny && m.sh && m.sa && m.sa[name]) return m.sa[name];
-    return m.a[name] || null;
+    return expandedMeta.get(dex + '/' + name + (shiny ? '/s' : '')) || m.a[name] || null;
   }
 
   // Hojas en memoria como mucho. Antes no se soltaba ninguna: en partidas de
@@ -74,8 +76,14 @@ G.Sprites = (() => {
     const drop = old.slice(0, Math.max(sheets.size - Math.floor(MAX_SHEETS * 0.75), 0));
     for (const [k, s] of drop) {
       sheets.delete(k);
-      s.img.onload = s.img.onerror = null;
-      s.img.src = '';                 // suelta la imagen decodificada
+      expandedMeta.delete(k);
+      // Las poses adicionales son un Canvas, no un Image.
+      if (typeof s.img.src === 'string') {
+        s.img.onload = s.img.onerror = null;
+        s.img.src = '';
+      } else {
+        s.img.width = s.img.height = 0;
+      }
     }
   }
 
@@ -96,8 +104,24 @@ G.Sprites = (() => {
     if (sheets.size >= MAX_SHEETS) evict(now);
     s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0, at: now,
           src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png` };
-    s.img.onload = () => { s.ready = true; };
-    s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
+    const source = s.img;
+    source.onload = () => {
+      if (dex === 10001 && !shiny && G.MaomaoAnimation) {
+        try {
+          const extra = G.MaomaoAnimation.expand(name, source, m.a[name]);
+          if (extra) {
+            s.img = extra.img;
+            expandedMeta.set(k, extra.meta);
+          }
+        } catch (e) {
+          // En navegadores sin memoria para Canvas, mantener los sprites
+          // originales y permitir seguir jugando sin pantallas vacías.
+          console.warn('[Mao Mao] animación original conservada:', e.message);
+        }
+      }
+      s.ready = true;
+    };
+    source.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
     s.img.src = s.src;
     sheets.set(k, s);
     return s;

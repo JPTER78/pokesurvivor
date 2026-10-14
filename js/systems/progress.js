@@ -130,6 +130,8 @@ G.Progress = (() => {
   // ---------------- eventos ----------------
 
   function event(kind, d = {}) {
+    // Las misiones de finalizar runs normales no usan resultados de desafíos.
+    if (kind === 'runEnd' && d.challenge) return;
     const s = G.DB.save;
     if (!s) return;
     ensure(s);
