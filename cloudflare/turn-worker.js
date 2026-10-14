@@ -50,6 +50,19 @@ const JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@sys
 
 let keys = null, keysAt = 0;                  // claves públicas de Google (caché)
 
+/**
+ * Comparación de secretos en tiempo constante. Con !== el tiempo de respuesta
+ * depende de cuántos caracteres coinciden. Se comparan los SHA-256 de los dos
+ * textos (misma longitud siempre) con timingSafeEqual de Workers.
+ */
+async function safeEq(a, b) {
+  const enc = new TextEncoder();
+  const [x, y] = await Promise.all([crypto.subtle.digest('SHA-256', enc.encode(String(a))), crypto.subtle.digest('SHA-256', enc.encode(String(b)))]);
+  return crypto.subtle.timingSafeEqual(x, y);
+}
+/** ¿La petición lleva la clave MAU_SECRET correcta? */
+const hasSecret = async (req, env) => !!env.MAU_SECRET && await safeEq(req.headers.get('X-PS-Secret') || '', env.MAU_SECRET);
+
 function cors(origin) {
   return {
     'Access-Control-Allow-Origin': ORIGINS.includes(origin) ? origin : ORIGINS[0],
@@ -72,11 +85,19 @@ async function verify(token) {
   const now = Math.floor(Date.now() / 1000);
   if (head.alg !== 'RS256' || !PROJECTS.includes(body.aud) || body.iss !== 'https://securetoken.google.com/' + body.aud) return null;
   if (!body.sub || body.exp < now || body.iat > now + 300) return null;
-  if (!keys || Date.now() - keysAt > 3600e3) {
-    const r = await fetch(JWKS);
-    keys = (await r.json()).keys; keysAt = Date.now();
-  }
-  const jwk = keys.find(k => k.kid === head.kid);
+  // Claves de Google: caché de 1 h. Si llega un token con una clave que no está (Google las
+  // rota), se vuelven a pedir (como mucho una vez por minuto). Si Google no responde,
+  // el token no vale en vez de romper la petición con un error 500.
+  const load = async () => {
+    try {
+      const r = await fetch(JWKS);
+      const j = await r.json();
+      if (Array.isArray(j.keys)) { keys = j.keys; keysAt = Date.now(); }
+    } catch (e) { /* se sigue con las que hubiera */ }
+  };
+  if (!keys || Date.now() - keysAt > 3600e3) await load();
+  let jwk = (keys || []).find(k => k.kid === head.kid);
+  if (!jwk && Date.now() - keysAt > 60e3) { await load(); jwk = (keys || []).find(k => k.kid === head.kid); }
   if (!jwk) return null;
   const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64url(parts[2]), new TextEncoder().encode(parts[0] + '.' + parts[1]));
@@ -91,7 +112,7 @@ export default {
     // Ajuste manual (con la clave): el contador del mes no puede ser menor que N
     // (p. ej. las cuentas que entraron antes de que existiera el contador).
     if (new URL(req.url).pathname === '/mau/seed') {
-      if (!env.MAU_SECRET || req.headers.get('X-PS-Secret') !== env.MAU_SECRET) return new Response('{"error":"no autorizado"}', { status: 401 });
+      if (!(await hasSecret(req, env))) return new Response('{"error":"no autorizado"}', { status: 401 });
       const n = parseInt(new URL(req.url).searchParams.get('n') || '0', 10);
       const r = await env.MAU.get(env.MAU.idFromName(monthKey())).fetch('https://mau/?seed=' + (n > 0 ? n : 0));
       return new Response(r.body, { status: r.status, headers: { 'content-type': 'application/json' } });
@@ -100,7 +121,7 @@ export default {
     if (LIMIT <= 0 && new URL(req.url).pathname.startsWith('/mau') && new URL(req.url).pathname !== '/mau/seed')
       return new Response('{"open":true,"v":3}', { headers: { ...h, 'content-type': 'application/json', 'cache-control': 'no-store' } });
     if (new URL(req.url).pathname === '/mau/new') {
-      if (!env.MAU_SECRET || req.headers.get('X-PS-Secret') !== env.MAU_SECRET) return new Response('{"error":"no autorizado"}', { status: 401 });
+      if (!(await hasSecret(req, env))) return new Response('{"error":"no autorizado"}', { status: 401 });
       const uid = new URL(req.url).searchParams.get('uid') || '';
       if (!/^[A-Za-z0-9]{10,128}$/.test(uid)) return new Response('{"error":"uid"}', { status: 400 });
       const r = await env.MAU.get(env.MAU.idFromName(monthKey())).fetch('https://mau/?new=1&uid=' + encodeURIComponent(uid));
@@ -110,6 +131,8 @@ export default {
       const stub = env.MAU.get(env.MAU.idFromName(monthKey()));
       let uid = '';
       if (req.method === 'POST') {
+        // Un token pesa ~1 KB: cuerpos grandes se rechazan antes de leerlos.
+        if (+(req.headers.get('Content-Length') || 0) > 8192) return new Response('{"error":"demasiado grande"}', { status: 413, headers: { ...h, 'content-type': 'application/json' } });
         // El token va en el cuerpo (text/plain, sin OPTIONS previo) o, en juegos antiguos, en Authorization.
         const tok = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '') || (await req.text()).trim().slice(0, 4096);
         uid = await verify(tok);
@@ -151,7 +174,9 @@ export default {
 
 /**
  * ¿Se ha gastado ya casi todo el TURN gratis del mes? Mira el gasto real en la
- * API de analíticas de Cloudflare y lo guarda 30 min en la caché (no gasta
+ * API de analíticas de Cloudflare y lo guarda 10 min en la caché (antes 30: con
+ * una cuenta gratis cualquiera puede gastar GB de TURN, y cuanto más corto, menos
+ * se pasa del tope entre una lectura y la siguiente) (no gasta
  * peticiones del plan: es una subpetición). Si algo falla, no corta nada.
  */
 async function turnFull(env) {
@@ -175,7 +200,7 @@ async function turnFull(env) {
     const gb = rows.reduce((a, x) => a + (x.sum.egressBytes || 0), 0) / 1e9;
     full = gb >= TURN_CAP_GB;
   } catch (e) { full = false; }
-  await cache.put(cacheKey, new Response(full ? '1' : '0', { headers: { 'cache-control': 'max-age=1800' } }));
+  await cache.put(cacheKey, new Response(full ? '1' : '0', { headers: { 'cache-control': 'max-age=600' } }));
   return full;
 }
 

@@ -1,6 +1,9 @@
 /* DESACTIVADO desde el 11-10-2026: se aceptan todas las cuentas (sin tope). El
  * activador se quitó de Firebase; OJO: `firebase deploy --only functions` lo
- * volvería a poner. Ver js/net/signups.js y cloudflare/turn-worker.js (LIMIT). */
+ * volvería a poner. Ver js/net/signups.js y cloudflare/turn-worker.js (LIMIT).
+ * firebase.json ya NO declara "functions": así un `firebase deploy` normal no
+ * puede activar Identity Platform (funciones de bloqueo = se cobra por usuario).
+ * Esta carpeta se queda sólo como referencia. */
 /* ============ functions/index.js — "portero" de cuentas nuevas ============
  *
  * Firebase (Identity Platform) cobra a partir de 50.000 usuarios con cuenta al

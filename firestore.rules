@@ -10,6 +10,7 @@ rules_version = '2';
 //   reports/{tabla__id__uid}  reportes de marcas sospechosas (sólo los lee el admin)
 //   lbs/{tabla}            resumen con el top 50 de cada tabla
 //   pres/{uid}             en línea (aproximado) · inv/{para_de} invitaciones
+//   bans/{uid}             cuentas baneadas del ranking (sólo las escribe el admin)
 // Todo lo demás está cerrado.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -19,12 +20,33 @@ service cloud.firestore {
     // Moderación (pantalla oculta del juego, js/ui/mod-ui.js): sólo esta cuenta.
     function admin() { return signedIn() && me() in ['rshaa5gKD3fXw6lE4PPXITbowaG2']; }
 
+    // ---------- validadores pequeños ----------
+    // Las reglas no tienen bucles: las listas (de 4 elementos como mucho) se
+    // comprueban posición por posición.
+    // Apodo: lo mismo que acepta el juego (js/core/db.js y js/net/social.js, VALID).
+    function okName(n) { return n is string && n.matches('^[A-Za-z0-9_ñÑáéíóúÁÉÍÓÚ]{3,16}$'); }
+    // El lower() de las reglas sólo baja las letras ASCII: "Ñandú".lower() sigue siendo "Ñandú",
+    // y el juego guarda "ñandú" (toLowerCase). Por eso los apodos con Ñ o tilde en mayúscula
+    // (Ángel, Ñandú...) no se podían registrar. Esta versión baja también esas letras.
+    function lc(s) { return s.replace('Ñ', 'ñ').replace('Á', 'á').replace('É', 'é').replace('Í', 'í').replace('Ó', 'ó').replace('Ú', 'ú').lower(); }
+    function nameAt(l, i) { return l.size() <= i || okName(l[i]); }
+    function dexAt(l, i) { return l.size() <= i || (l[i] is int && l[i] >= 1 && l[i] <= 2000); }
+    function boolAt(l, i) { return l.size() <= i || l[i] is bool; }
+    function uidAt(l, i) { return l.size() <= i || (l[i] is string && l[i].size() >= 1 && l[i].size() <= 128); }
+    function nameList(l) { return l is list && l.size() <= 4 && nameAt(l, 0) && nameAt(l, 1) && nameAt(l, 2) && nameAt(l, 3); }
+    function dexList(l) { return l is list && l.size() <= 4 && dexAt(l, 0) && dexAt(l, 1) && dexAt(l, 2) && dexAt(l, 3); }
+    function boolList(l) { return l is list && l.size() <= 4 && boolAt(l, 0) && boolAt(l, 1) && boolAt(l, 2) && boolAt(l, 3); }
+    function uidList(l) { return l is list && l.size() <= 4 && uidAt(l, 0) && uidAt(l, 1) && uidAt(l, 2) && uidAt(l, 3); }
+    function natAt(m, k, max) { return !(k in m) || (m[k] is int && m[k] >= 0 && m[k] <= max); }
+
     // ---------- partida guardada ----------
     // Sólo su dueño la lee y la escribe. Ya no se marca a nadie solo (14-10-2026:
     // los márgenes contra partidas imposibles dejaban fuera del ranking a gente
-    // legal). Lo único que deja a alguien sin ranking es que el admin lo banee
-    // (ban = true; el campo viejo "sus" ya no cuenta para nada). El jugador no
-    // puede quitarse el baneo: si está, sus guardados tienen que llevarlo.
+    // legal). Lo único que deja a alguien sin ranking es que el admin lo banee.
+    // El baneo vive en bans/{uid} (abajo), que el jugador no puede tocar. Antes
+    // estaba aquí dentro (ban = true), pero el jugador podía borrar su partida
+    // (allow delete) y volver a crearla con ban = false: baneo evadido. El campo
+    // ban de aquí se sigue respetando por si hay baneos antiguos sin migrar.
     match /saves/{uid} {
       allow read, delete: if signedIn() && me() == uid;
       allow read: if admin();
@@ -48,10 +70,22 @@ service cloud.firestore {
     }
     function tk(s, k) { return s.get('tickets', {}).get(k, 0); }
     // Sólo que los números tengan sentido (el juego ya los limpia al cargar).
+    // Los topes son muy holgados (nadie legal se acerca): sólo cortan los
+    // valores absurdos (1e300, Infinity...) que luego rompen cuentas y pantallas.
     function saneSave(s) {
-      return s.get('coins', 0) is number && s.get('coins', 0) >= 0
-        && tk(s, 't1') is number && tk(s, 't1') >= 0
-        && tk(s, 't10') is number && tk(s, 't10') >= 0;
+      return s.get('coins', 0) is number && s.get('coins', 0) >= 0 && s.get('coins', 0) <= 1000000000000
+        && tk(s, 't1') is number && tk(s, 't1') >= 0 && tk(s, 't1') <= 10000000
+        && tk(s, 't10') is number && tk(s, 't10') >= 0 && tk(s, 't10') <= 10000000;
+    }
+
+    // ---------- baneos ----------
+    // Sólo el admin escribe aquí. Cualquiera puede saber si existe el documento
+    // (exists() de las reglas no pasa por "read"), pero sólo el admin lo lee.
+    match /bans/{uid} {
+      allow read, create, update, delete: if admin();
+    }
+    function banned() {
+      return exists(/databases/$(database)/documents/bans/$(me()));
     }
 
     // ---------- apodos ----------
@@ -62,6 +96,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uid'])
         && request.resource.data.uid == me()
         && lower.size() >= 3 && lower.size() <= 16
+        && lower.matches('^[a-z0-9_ñáéíóú]{3,16}$')
         && lower == lower.lower();
       allow delete: if signedIn() && resource.data.uid == me();
     }
@@ -72,15 +107,35 @@ service cloud.firestore {
       allow create, update: if signedIn()
         && me() == uid
         && request.resource.data.keys().hasOnly(['name', 'lower', 'at', 'favs', 'title', 'best', 'medals'])
-        && request.resource.data.name is string
-        && request.resource.data.lower == request.resource.data.name.lower()
+        && okName(request.resource.data.name)
+        && request.resource.data.lower == lc(request.resource.data.name)
         && request.resource.data.at == request.time
-        && (!('favs' in request.resource.data) || (request.resource.data.favs is list && request.resource.data.favs.size() <= 3))
+        && (!('favs' in request.resource.data) || validFavs(request.resource.data.favs))
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
-        && (!('best' in request.resource.data) || request.resource.data.best is map)
-        && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
+        && (!('best' in request.resource.data) || validBest(request.resource.data.best))
+        && (!('medals' in request.resource.data) || validMedals(request.resource.data.medals))
         && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
       allow delete: if signedIn() && me() == uid;
+    }
+
+    // Lo que enseña el perfil de cada jugador (js/net/social.js, profileData). Antes
+    // sólo se pedía "es un mapa": se podía guardar cualquier cosa (texto con HTML
+    // en 'level', por ejemplo) y se enseñaba tal cual a quien abriera el perfil.
+    function favAt(l, i) {
+      return l.size() <= i || (l[i] is map && l[i].keys().hasOnly(['dex', 'shiny'])
+        && l[i].dex is int && l[i].dex >= 1 && l[i].dex <= 2000 && l[i].shiny is bool);
+    }
+    function validFavs(l) { return l is list && l.size() <= 3 && favAt(l, 0) && favAt(l, 1) && favAt(l, 2); }
+    function medalAt(l, i) { return l.size() <= i || (l[i] is string && l[i].size() >= 1 && l[i].size() <= 40); }
+    function validMedals(l) {
+      return l is list && l.size() <= 8 && medalAt(l, 0) && medalAt(l, 1) && medalAt(l, 2) && medalAt(l, 3)
+        && medalAt(l, 4) && medalAt(l, 5) && medalAt(l, 6) && medalAt(l, 7);
+    }
+    function validBest(b) {
+      return b is map && b.keys().hasOnly(['solo', 'group', 'level', 'bosses', 'legends', 'kills', 'medals'])
+        && natAt(b, 'solo', 86400) && natAt(b, 'group', 86400) && natAt(b, 'level', 100000)
+        && natAt(b, 'bosses', 1000000000) && natAt(b, 'legends', 5000) && natAt(b, 'kills', 1000000000000)
+        && natAt(b, 'medals', 5000);
     }
 
     // ---------- amigos ----------
@@ -99,12 +154,21 @@ service cloud.firestore {
         && request.resource.data.to in request.resource.data.users
         && pid == request.resource.data.users[0] + '_' + request.resource.data.users[1]
         && request.resource.data.names is map
+        && request.resource.data.names.size() == 2
+        && request.resource.data.names.keys().hasOnly(request.resource.data.users)
+        // Cada apodo tiene que ser el del perfil de esa cuenta. Antes valía cualquier texto:
+        // quien pedía amistad elegía cómo se veía él (y la otra persona) en la lista del otro,
+        // y podía hacerse pasar por alguien.
+        && request.resource.data.names[me()] == get(/databases/$(database)/documents/profiles/$(me())).data.name
+        && request.resource.data.names[request.resource.data.to] == get(/databases/$(database)/documents/profiles/$(request.resource.data.to)).data.name
         && request.resource.data.at == request.time;
       // Sólo quien la recibe puede aceptarla.
       allow update: if signedIn()
         && resource.data.to == me()
         && resource.data.status == 'pending'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'at', 'names'])
+        && request.resource.data.names.diff(resource.data.names).affectedKeys().hasOnly([me()])
+        && request.resource.data.names[me()] == get(/databases/$(database)/documents/profiles/$(me())).data.name
         && request.resource.data.status == 'ok';
       allow delete: if signedIn() && me() in resource.data.users;
     }
@@ -125,7 +189,10 @@ service cloud.firestore {
     //     Arceus acaba las partidas hacia el minuto 31-32; 1 h por si alguien
     //     muy bueno aguanta mucho más)
     //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
-    //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban)
+    //   - la cuenta no puede estar baneada por el admin (bans/{uid}; y el campo
+    //     viejo saves/{uid}.ban)
+    //   - apodos, Pokémon y shiny con la forma y el tamaño que toca (esto se
+    //     copia luego al resumen del top y se enseña a todos)
     function validEntry(board, id) {
       let d = request.resource.data;
       let run = get(/databases/$(database)/documents/runs/$(me())).data;
@@ -134,15 +201,21 @@ service cloud.firestore {
         && d.t <= (request.time - run.startedAt).seconds() + 30
         && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
+        && !banned()
         && get(/databases/$(database)/documents/saves/$(me())).data.get('ban', false) == false
-        && d.uids is list && me() in d.uids
-        && d.names is list && d.names.size() == d.uids.size()
-        && d.dex is list && d.dex.size() == d.uids.size()
-        && d.shiny is list && d.shiny.size() == d.uids.size()
+        && uidList(d.uids) && me() in d.uids
+        && nameList(d.names) && d.names.size() == d.uids.size()
+        && dexList(d.dex) && d.dex.size() == d.uids.size()
+        && boolList(d.shiny) && d.shiny.size() == d.uids.size()
         && d.at == request.time
         && (board.matches('s_.*')
               ? (d.uids.size() == 1 && id == me())
-              : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')))
+              : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')
+                 // uids en orden (el juego los ordena): con otro orden el mismo equipo
+                 // sacaba un id distinto y ocupaba varios puestos del top 50.
+                 && d.uids[0] < d.uids[1]
+                 && (d.uids.size() < 3 || d.uids[1] < d.uids[2])
+                 && (d.uids.size() < 4 || d.uids[2] < d.uids[3])))
         && (resource == null || d.t > resource.data.t);
     }
 
@@ -176,7 +249,10 @@ service cloud.firestore {
       let row = d.top[d.me];
       return me() in e.uids
         && changed.hasOnly([d.me, d.ev])
+        && row is map && row.keys().hasOnly(['t', 'uids', 'names', 'dex', 'lv', 'kills', 'shiny'])
         && row.t == e.t && row.uids == e.uids && row.names == e.names && row.dex == e.dex
+        && row.lv == e.lv && row.kills == e.kills
+        && (!('shiny' in row) || row.shiny == e.shiny)
         && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t));
     }
     function removeMine(d, old, changed) {
@@ -194,7 +270,9 @@ service cloud.firestore {
       allow create, update: if signedIn() && me() == uid
         && request.resource.data.keys().hasOnly(['at', 'room', 'play', 'on'])
         && request.resource.data.at == request.time
-        && request.resource.data.room is string && request.resource.data.room.size() <= 40
+        // 'room' ya no lleva el id de la sala (cualquiera con sesión podía leerlo y
+        // entrar en la sala de otro): el juego sólo escribe '' o '1'.
+        && request.resource.data.room is string && request.resource.data.room.size() <= 1
         && request.resource.data.play is bool && request.resource.data.on is bool;
       allow delete: if signedIn() && me() == uid;
     }
@@ -223,7 +301,7 @@ service cloud.firestore {
         && request.resource.data.by == me()
         && request.resource.data.board is string && request.resource.data.board.size() <= 40
         && request.resource.data.e is string && request.resource.data.e.size() <= 160
-        && request.resource.data.names is list && request.resource.data.names.size() <= 4
+        && nameList(request.resource.data.names)
         && request.resource.data.t is int
         && request.resource.data.at == request.time
         && rid == request.resource.data.board + '__' + request.resource.data.e + '__' + me();

@@ -26,7 +26,15 @@ G.CHANGELOG = [
     ['Amigos: si tu móvil u ordenador tiene la hora (o la zona horaria) mal puesta, tus amigos ya no salen siempre desconectados y sus invitaciones te llegan.',
      'Friends: if your phone or computer has the wrong time (or time zone), your friends no longer always show as offline and their invitations reach you.'],
     ['Los avisos grandes de la partida (un Gholdengo cerca, una marea...) ya salen siempre centrados.',
-     'Big in-game announcements (a nearby Gholdengo, a swarm...) are always centered now.']
+     'Big in-game announcements (a nearby Gholdengo, a swarm...) are always centered now.'],
+    ['Cooperativo: ya no puede quedarse un enemigo inmortal por un golpe con un valor raro, y sólo el anfitrión de tu sala puede empezar la partida.',
+     'Co-op: an enemy can no longer become immortal because of a hit with an odd value, and only your room’s host can start the game.'],
+    ['Ranking, perfiles y lista de amigos: los datos de otros jugadores se comprueban antes de enseñarse, y los apodos de la lista de amigos son siempre los reales.',
+     'Leaderboard, profiles and friends list: other players’ data is checked before it is shown, and the nicknames in the friends list are always the real ones.'],
+    ['Amigos: una invitación sólo se acepta si viene de un amigo confirmado.',
+     'Friends: an invitation is only accepted if it comes from a confirmed friend.'],
+    ['Apodos con Ñ o con tilde en mayúscula (Ángel, Ñandú...) ya se pueden registrar.',
+     'Nicknames with a capital Ñ or accented letter (Ángel, Ñandú...) can now be registered.']
   ] },
   { d: '2026-10-13', title: ['La Sentencia de Arceus', 'The Judgment of Arceus'], new: [
     ['La Sentencia de Arceus: al llegar al minuto 30, Arceus baja del cielo y te lleva a las Ruinas del Juicio. Es invencible, te persigue cada vez más deprisa y lanza pilares de luz, rayos y ondas; si te toca, te quita casi media vida. Cada 5 segundos acude un legendario con el doble de vida y de daño que el anterior. ¿Cuánto aguantarás?',

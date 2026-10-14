@@ -29,6 +29,17 @@ G.Net = (() => {
   // junta ('failed') y el anfitrión lo reintenta cada RETRY_MS. Por la base de datos
   // sólo pasa la señalización (unos pocos mensajes pequeños para conectarse).
   const ALLOW_RELAY = false, RETRY_MS = 15000;
+  /*
+   * Formato de los mensajes por la base de datos: { f: quien lo escribe, p: texto JSON }.
+   * La regla de database.rules.json obliga a que f sea el uid de quien escribe, así que
+   * el que recibe puede fiarse de f. Antes era sólo un texto JSON con "f" dentro, y
+   * cualquier miembro de la sala podía escribir en la cola de otro haciéndose pasar por
+   * el anfitrión (y, por ejemplo, ofrecerle su propia conexión).
+   * ACCEPT_LEGACY deja pasar el formato viejo mientras los jugadores se actualizan;
+   * cuando lo hayan hecho (el actualizador tarda minutos) hay que ponerlo a false y
+   * publicar la regla estricta (docs/seguridad/database.rules.strict.json).
+   */
+  const ACCEPT_LEGACY = true;
 
   // ---------------- TURN (Cloudflare) ----------------
   const TURN_URL = 'https://turn.pokesurvivor.com/';
@@ -78,11 +89,18 @@ G.Net = (() => {
     qref.on('child_added', s => {
       const raw = s.val();
       s.ref.remove().catch(() => {});
-      let m;
-      try { m = JSON.parse(raw); } catch (e) { return; }
-      if (!m || !m.f) return;
-      if (m.sig) onSignal(m.f, m.sig);
-      else deliver(m.f, m.d);
+      let m, from;
+      try {
+        if (raw && typeof raw === 'object') {
+          if (typeof raw.f !== 'string' || typeof raw.p !== 'string') return;
+          m = JSON.parse(raw.p); from = raw.f;
+        } else if (ACCEPT_LEGACY && typeof raw === 'string') {
+          m = JSON.parse(raw); from = m && m.f;
+        } else return;
+      } catch (e) { return; }
+      if (!m || typeof m !== 'object' || typeof from !== 'string' || !from) return;
+      if (m.sig) onSignal(from, m.sig);
+      else deliver(from, m.d);
     });
     // Invitado: hueco para el anfitrión desde ya (se sustituye al llegar su
     // oferta). Así, si no llega nunca, se sigue por el relé y se sabe cuándo se va.
@@ -186,8 +204,10 @@ G.Net = (() => {
   async function onSignal(from, sig) {
     let p = peers.get(from);
     try {
+      if (!sig || typeof sig !== 'object') return;
       if (sig.sdp && sig.sdp.type === 'offer') {
-        if (isHost) return;
+        // Sólo el anfitrión de la sala ofrece conexión (antes valía cualquiera).
+        if (isHost || from !== hostUid) return;
         if (p) drop(from, true);
         await waitTurn();
         p = newPeer(from);
@@ -203,7 +223,11 @@ G.Net = (() => {
         if (p && p.pc) await p.pc.setRemoteDescription(sig.sdp);
       } else if (sig.c) {
         if (p && p.pc && p.pc.remoteDescription) await p.pc.addIceCandidate(sig.c).catch(() => {});
-        else { if (!pendingIce.has(from)) pendingIce.set(from, []); pendingIce.get(from).push(sig.c); }
+        else if (from === hostUid) {
+          // (Sólo del anfitrión y con tope: antes se guardaban sin límite de cualquiera.)
+          if (!pendingIce.has(from)) pendingIce.set(from, []);
+          if (pendingIce.get(from).length < 100) pendingIce.get(from).push(sig.c);
+        }
       }
     } catch (e) {
       console.warn('[Net] señalización:', e.message);
@@ -211,9 +235,10 @@ G.Net = (() => {
     }
   }
 
-  function signal(to, sig) { relayPush(to, { f: uid, sig }); }
+  function signal(to, sig) { relayPush(to, { sig }); }
 
   function drop(u, silent) {
+    pendingIce.delete(u);
     const p = peers.get(u);
     if (!p) return;
     clearTimeout(p.timer);
@@ -226,9 +251,10 @@ G.Net = (() => {
 
   // ---------------- envío / recepción ----------------
 
-  function relayPush(to, env) {
+  /** Deja un mensaje en la cola de otro jugador. payload = { sig } o { d }. */
+  function relayPush(to, payload) {
     if (!rtdb || !roomId) return;
-    rtdb.ref('rooms/' + roomId + '/q/' + to).push(JSON.stringify(env)).catch(e => console.warn('[Net] relé:', e.code || e.message));
+    rtdb.ref('rooms/' + roomId + '/q/' + to).push({ f: uid, p: JSON.stringify(payload) }).catch(e => console.warn('[Net] relé:', e.code || e.message));
   }
 
   function send(to, msg) {
@@ -242,7 +268,7 @@ G.Net = (() => {
     // pareja no está conectada). Sólo pasa el aviso de empezar.
     if (!ALLOW_RELAY && !(msg && msg.k === 'start')) return;
     stats.relaySent++;
-    relayPush(to, { f: uid, d: msg });
+    relayPush(to, { d: msg });
   }
 
   function toHost(msg) { if (!isHost && hostUid) send(hostUid, msg); }

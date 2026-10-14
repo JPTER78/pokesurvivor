@@ -157,7 +157,23 @@ G.Ranking = (() => {
 
   // ---------------- guardar ----------------
 
-  const rowOf = (id, v) => ({ id, t: v.t, uids: v.uids || [], names: v.names || [], dex: v.dex || [], shiny: v.shiny || [], lv: v.lv, kills: v.kills });
+  /**
+   * Una fila del ranking tal como se enseña. Viene de la nube (la escribe
+   * cualquier jugador) y se pinta con innerHTML: aquí se fuerza la forma y el
+   * tipo de cada campo (números = números de verdad, listas de 4 como mucho).
+   * Antes se copiaba tal cual y un lv/kills con texto HTML se ejecutaba en el
+   * navegador de todo el que abría el ranking.
+   */
+  const rowOf = (id, v) => {
+    v = v && typeof v === 'object' ? v : {};
+    const list = (a, f) => (Array.isArray(a) ? a.slice(0, 4).map(f) : []);
+    return {
+      id: String(id), t: G.U.int(v.t, 86400),
+      uids: list(v.uids, String), names: list(v.names, x => String(x).slice(0, 16)),
+      dex: list(v.dex, x => G.U.int(x, 5000)), shiny: list(v.shiny, Boolean),
+      lv: G.U.int(v.lv, 100000), kills: G.U.int(v.kills, 1e12)
+    };
+  };
   const sorted = top => Object.entries(top || {}).map(([id, v]) => rowOf(id, v)).sort((a, b) => b.t - a.t);
   const now = () => firebase.firestore.FieldValue.serverTimestamp();
 
@@ -522,15 +538,41 @@ G.Ranking = (() => {
     return { rows, boards };
   }
 
-  /** Admin: banea o desbanea una cuenta del ranking (baneada = no puede subir marcas). */
-  function setMarked(uid, on) { return fbx().fs.collection('saves').doc(uid).update({ ban: !!on }); }
+  /**
+   * Admin: banea o desbanea una cuenta del ranking (baneada = no puede subir marcas).
+   * El baneo es el documento bans/{uid}, que el jugador no puede tocar. Antes
+   * era un campo de su propia partida (saves/{uid}.ban): borrando la partida y
+   * volviéndola a crear se quitaba el baneo. Al desbanear también se limpia
+   * el campo viejo, por si la cuenta estaba baneada de la forma antigua.
+   */
+  async function setMarked(uid, on) {
+    const fs = fbx().fs;
+    if (on) { await fs.collection('bans').doc(uid).set({ at: now() }); return; }
+    await fs.collection('bans').doc(uid).delete();
+    await fs.collection('saves').doc(uid).update({ ban: false }).catch(() => {});
+  }
   /** Admin: borra reportes ya vistos. */
   function dismiss(ids) { return Promise.all(ids.map(id => fbx().fs.collection('reports').doc(id).delete().catch(() => {}))); }
   /** Admin: cuentas baneadas del ranking. */
   async function markedAccounts() {
-    const s = await fbx().fs.collection('saves').where('ban', '==', true).limit(100).get();
-    return s.docs.map(d => { const v = d.data().save || {}; return { uid: d.id, name: v.name || '?', coins: v.coins || 0,
-      t1: (v.tickets || {}).t1 || 0, t10: (v.tickets || {}).t10 || 0, owned: Object.keys(v.owned || {}).length }; });
+    const fs = fbx().fs;
+    const [bans, old] = await Promise.all([fs.collection('bans').limit(200).get(), fs.collection('saves').where('ban', '==', true).limit(100).get()]);
+    const view = (uid, v) => {
+      v = v && typeof v === 'object' ? v : {}; const t = v.tickets || {};
+      return { uid, name: String(v.name || '?').slice(0, 40), coins: G.U.int(v.coins), t1: G.U.int(t.t1), t10: G.U.int(t.t10),
+               owned: v.owned && typeof v.owned === 'object' ? Object.keys(v.owned).length : 0 };
+    };
+    const out = new Map(), inBans = new Set(bans.docs.map(d => d.id));
+    for (const d of old.docs) {
+      out.set(d.id, view(d.id, d.data().save));
+      // Baneo de la forma antigua: se pasa a bans/ (así ya no se evade borrando la partida).
+      if (!inBans.has(d.id)) fs.collection('bans').doc(d.id).set({ at: now() }).catch(() => {});
+    }
+    await Promise.all(bans.docs.filter(d => !out.has(d.id)).map(async d => {
+      const s = await fs.collection('saves').doc(d.id).get().catch(() => null);
+      out.set(d.id, view(d.id, s && s.exists ? s.data().save : null));
+    }));
+    return [...out.values()];
   }
 
   return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, myRank, removeMine,

@@ -36,6 +36,7 @@ G.Coop = (() => {
   const mates = new Map();              // uid -> { uid, name, color, pl, connected, q:[], flushT, xpMul }
   let outEv = [];                       // invitado: eventos para el anfitrión
   let flushT = 0;
+  const MAX_HIT = 1e7;                  // daño máximo de un golpe de un invitado (descarta valores absurdos)
   let hitFrom = null;                   // invitado cuyo golpe se está aplicando (no repetirle el número)
   let api = {};                         // callbacks del juego (game.js)
   let waiting = new Set();              // subida de nivel: quién falta por elegir
@@ -224,7 +225,15 @@ G.Coop = (() => {
 
   G.Net.on((from, msg) => {
     if (!msg) return;
-    if (msg.k === 'start') { if (G.Flow.startCoop) G.Flow.startCoop(msg); return; }
+    if (msg.k === 'start') {
+      // Sólo vale si lo manda el anfitrión de TU sala y no estás ya en una partida.
+      // Antes lo aceptaba de cualquiera: un miembro de la sala (o quien se hiciera
+      // pasar por él) podía arrancarte una partida con la lista de jugadores que quisiera.
+      const r = G.Social.room;
+      if (active || !r || from !== r.host || msg.host !== r.host) return;
+      if (G.Flow.startCoop) G.Flow.startCoop(msg);
+      return;
+    }
     if (!active || msg.k !== 'f') return;
     if (host) onClientFrame(from, msg); else if (from === hostUid) onHostFrame(msg);
   });
@@ -257,8 +266,15 @@ G.Coop = (() => {
         case 'h': {
           const e = G.EnemyMgr.get(ev[1]);
           if (!e || e.dead || e.remote) break;
+          // El golpe lo manda otro jugador: se limpia antes de aplicarlo. Un NaN dejaba
+          // al enemigo con hp NaN (no moría nunca, y la partida de todos se atascaba con
+          // un jefe inmortal); Infinity o un número enorme lo mataba al instante.
+          const dmg = +ev[2];
+          if (!(dmg >= 0 && dmg <= MAX_HIT)) break;
+          const fin = x => (Number.isFinite(+x) ? +x : 0);
+          const col = typeof ev[3] === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(ev[3]) ? ev[3] : '#fff';
           hitFrom = from;
-          e.hurt(ev[2], ev[3], ev[4], ev[5], ev[6]);
+          e.hurt(dmg, col, fin(ev[4]), fin(ev[5]), G.U.clamp(fin(ev[6]), 0, 400));
           hitFrom = null;
           break;
         }
@@ -320,8 +336,11 @@ G.Coop = (() => {
       if (msg.lu && msg.lu[0] > seenSeq) { seenSeq = msg.lu[0]; api.levelStart(msg.lu[1]); }
       else if (!msg.lu && api.inLevelUp && api.inLevelUp()) api.resume();
     }
-    api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
-                   t1: (msg.tk || [])[0], t10: (msg.tk || [])[1] });
+    // Lo que manda el anfitrión se limpia: un NaN o un negativo acabaría en tu partida guardada.
+    const I = G.U.int, N = G.U.num;
+    api.syncTeam({ time: N(msg.t, 86400), level: I(msg.lv, 100000), xp: N(msg.xp, 1e12), xpNext: N(msg.xn, 1e12),
+                   kills: I(msg.ki, 1e9), bosses: I(msg.bo, 1e9), coins: N(msg.co, 1e9),
+                   t1: I((msg.tk || [])[0], 1e4), t10: I((msg.tk || [])[1], 1e4) });
     for (const u in msg.p || {}) {
       const m = mates.get(u);
       if (m) m.pl.net = readState(msg.p[u]);

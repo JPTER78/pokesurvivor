@@ -82,8 +82,10 @@ G.Social = (() => {
     const NICK = 'ps.nick.' + uid;
     let cachedNick = null;
     try { cachedNick = localStorage.getItem(NICK); } catch (e) { /* nada */ }
-    const prof = cachedNick ? { name: cachedNick }
+    let prof = cachedNick ? { name: cachedNick }
       : await fb.fs.collection('profiles').doc(uid).get().then(s => s.exists ? s.data() : null).catch(() => null);
+    // Un apodo con formato raro (no pasó por claimNick) no se usa: acabaría en un innerHTML.
+    if (prof && !(typeof prof.name === 'string' && VALID.test(prof.name))) { prof = null; try { localStorage.removeItem(NICK); } catch (e) { /* nada */ } }
     if (prof) {
       me = { uid, name: prof.name };
       if (G.DB.user !== prof.name) G.DB.setName(prof.name);
@@ -155,7 +157,9 @@ G.Social = (() => {
     // Sin amigos nadie lo lee: no se gasta una escritura (cupo diario de Firebase).
     if (!fb || !me || !hasFriends()) return;
     lastBeat = Date.now();
-    fb.fs.collection('pres').doc(uid).set({ on, at: fts(), room: room ? room.id : '', play: playing }).catch(() => {});
+    // 'room' ya no lleva el id de la sala (cualquiera con sesión leía pres/ y podía entrar
+    // en la sala de otro): sólo '1' si estás en una. Para entrar están las invitaciones.
+    fb.fs.collection('pres').doc(uid).set({ on, at: fts(), room: room ? '1' : '', play: playing }).catch(() => {});
   }
   function setPlaying(p) { if (playing !== !!p) { playing = !!p; writeStatus(); } }
   // Al volver a la pestaña tras un rato, un latido; al cerrarla, "desconectado".
@@ -434,7 +438,10 @@ G.Social = (() => {
     // Las caducadas se borran; sólo se aceptan de amigos confirmados.
     if (!v || (v.at && now() - msOf(v.at) > INVITE_TTL)) { ref.delete().catch(() => {}); return; }
     const f = friends.get(v.from);
-    if (f && f.status !== 'ok') return;
+    // Sólo de amigos confirmados (antes, si no era amigo, pasaba: faltaba el !f).
+    // Si la lista de amigos aún no ha cargado se deja pasar: las reglas ya exigen amistad al crearla.
+    if (friends.size && (!f || f.status !== 'ok')) return;
+    if (typeof v.room !== 'string' || v.room.length > 40) return;
     invites.set(v.from, { from: v.from, name: v.name, room: v.room, at: msOf(v.at) || now() });
     emit('invites');
   }
@@ -511,16 +518,33 @@ G.Social = (() => {
     const c = profCache.get(other);
     if (c && Date.now() - c.at < 10 * 60 * 1000) return c.v;     // lo leído vale 10 min
     const d = await fb.fs.collection('profiles').doc(other).get().catch(() => null);
-    const v = d && d.exists ? d.data() : null;
+    const v = d && d.exists ? cleanProfile(d.data()) : null;
     profCache.set(other, { at: Date.now(), v });
     return v;
+  }
+
+  /**
+   * El perfil de otro jugador con la forma y los tipos que toca (viene de la
+   * nube y se pinta con innerHTML en goals-ui.js). Todo número es un entero acotado.
+   */
+  function cleanProfile(v) {
+    if (!v || typeof v !== 'object') return null;
+    const I = G.U.int, b = v.best && typeof v.best === 'object' ? v.best : {};
+    return {
+      name: typeof v.name === 'string' ? v.name.slice(0, 16) : '',
+      title: typeof v.title === 'string' ? v.title.slice(0, 40) : '',
+      favs: (Array.isArray(v.favs) ? v.favs : []).slice(0, 3).filter(f => f && typeof f === 'object').map(f => ({ dex: I(f.dex, 5000), shiny: !!f.shiny })),
+      best: { solo: I(b.solo, 86400), group: I(b.group, 86400), level: I(b.level, 1e5), bosses: I(b.bosses, 1e9),
+              legends: I(b.legends, 5000), kills: I(b.kills, 1e12), medals: I(b.medals, 5000) },
+      medals: (Array.isArray(v.medals) ? v.medals : []).slice(0, 8).map(String)
+    };
   }
 
   // Al cerrar sesión o borrar la cuenta.
   G.DB.onLeave(why => stop(why));
 
   return {
-    start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
+    start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData, cleanProfile,
     createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },

@@ -117,7 +117,7 @@ G.ModUI = (() => {
       const row = document.createElement('div');
       row.className = 'rk-row mod-row';
       row.innerHTML = `<span class="pos"></span>
-        <span class="who"><b translate="no">${esc(a.name)}</b><small translate="no">${a.coins.toLocaleString('es')} monedas · ${a.t1} tickets · ${a.t10} ×10 · ${a.owned} Pokémon · ${esc(a.uid)}</small></span>`;
+        <span class="who"><b translate="no">${esc(a.name)}</b><small translate="no">${G.U.int(a.coins).toLocaleString('es')} monedas · ${G.U.int(a.t1)} tickets · ${G.U.int(a.t10)} ×10 · ${G.U.int(a.owned)} Pokémon · ${esc(a.uid)}</small></span>`;
       const acts = document.createElement('span');
       acts.className = 'mod-acts';
       acts.append(btn('Desbanear', 'ghost', async () => {

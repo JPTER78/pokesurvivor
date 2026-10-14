@@ -619,7 +619,8 @@ G.DB = (() => {
 
   /** Cambia el nombre que se ve en la partida (al elegir apodo). */
   function setName(n) {
-    if (!save || guest) return;
+    // Sólo apodos con el formato del juego (el nombre acaba en innerHTML en varias pantallas).
+    if (!save || guest || typeof n !== 'string' || !VALID.test(n)) return;
     save.name = n; user = n;
     commit();
   }

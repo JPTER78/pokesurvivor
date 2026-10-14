@@ -247,7 +247,9 @@
     }
 
     function showData(d) {
-      const b = d.best || {};
+      // Los perfiles de otros vienen de la nube: se limpian antes de pintarlos.
+      d = G.Social.cleanProfile(d) || { name: '', favs: [], best: {}, medals: [] };
+      const b = d.best;
       const body = $('prof-body');
       body.innerHTML = `
         <div class="prof-head"><h2 translate="no">${esc(d.name || '???')}</h2>${d.title ? `<span class="prof-title">${esc(d.title)}</span>` : ''}</div>

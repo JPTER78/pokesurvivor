@@ -1,0 +1,44 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        ".read": "auth != null && data.child('m').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('host').val() === auth.uid) || data.child('host').val() === auth.uid)",
+        "host": {
+          ".read": "auth != null"
+        },
+        "open": {
+          ".read": "auth != null"
+        },
+        "m": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && (!newData.exists() || data.exists() || (root.child('rooms').child($room).child('open').val() === true))",
+            ".validate": "!newData.exists() || (newData.child('name').isString() && newData.child('name').val().length <= 16)",
+            "name": { ".validate": "newData.isString() && newData.val().length <= 16" },
+            "dex": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 2000" },
+            "shiny": { ".validate": "newData.isBoolean()" },
+            "at": { ".validate": "newData.isNumber()" },
+            "protocol": { ".validate": "newData.isNumber()" },
+            "online": { ".validate": "newData.isBoolean()" },
+            "offlineAt": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "q": {
+          "$to": {
+            ".read": "auth != null && auth.uid === $to",
+            "$msg": {
+              ".write": "auth != null && (auth.uid === $to || root.child('rooms').child($room).child('m').child(auth.uid).exists())",
+              ".validate": "!newData.exists() || (newData.hasChildren(['f', 'p']) && newData.child('f').val() === auth.uid)",
+              "f": { ".validate": "newData.isString()" },
+              "p": { ".validate": "newData.isString() && newData.val().length < 200000" },
+              "$other": { ".validate": false }
+            }
+          }
+        }
+      }
+    }
+  }
+}

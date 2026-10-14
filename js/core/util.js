@@ -38,6 +38,22 @@ G.U = {
     return (h >>> 0) / 4294967296;
   },
 
+  /**
+   * Entero seguro (0..max) a partir de cualquier cosa. Para enseñar datos que
+   * vienen de OTROS jugadores (ranking, perfiles): un valor que parece número
+   * pero es texto con HTML se queda en 0 en vez de acabar en un innerHTML.
+   */
+  int(v, max = 1e12) {
+    v = Math.floor(Number(v));
+    return Number.isFinite(v) ? Math.min(Math.max(v, 0), max) : 0;
+  },
+
+  /** Como int() pero sin redondear (el reloj y la experiencia llevan decimales). */
+  num(v, max = 1e12) {
+    v = Number(v);
+    return Number.isFinite(v) ? Math.min(Math.max(v, 0), max) : 0;
+  },
+
   /** "3:07" a partir de segundos. */
   mmss(s) {
     const m = Math.floor(s / 60);
