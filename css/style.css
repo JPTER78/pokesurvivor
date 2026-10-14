@@ -705,7 +705,8 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 .st-buff span { padding: 1px 6px; border-radius: 6px; background: rgba(0,0,0,.25); }
 .st-buff .st-m { background: none; padding-left: 0; }
 .st-buff i { font-style: normal; opacity: .7; margin-right: 4px; }
-.st-buff span.on { background: var(--gold); color: #1a1a1a; }
+.st-buff span.on { background: var(--gold); color: #1a1a1a; text-shadow: none; }
+.st-buff span.on i { opacity: 1; }
 .card .st-pv { color: var(--gold); margin-top: 2px; }
 @media (max-width: 520px) { .stats-list { grid-template-columns: 1fr; } }
 .credits { margin: 4px 0 12px; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; }
