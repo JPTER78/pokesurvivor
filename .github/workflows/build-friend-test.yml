@@ -24,6 +24,11 @@ jobs:
           node-version: '22'
       - name: Generate published game
         run: node tools/build.js
+      - name: Verify Firebase configuration in compiled bundle
+        run: |
+          grep -q 'pokesurvivor-tiliko' js/app.min.js
+          test -s index.html
+          test -s version.json
       - name: Commit generated assets to test branch
         run: |
           git config user.name "github-actions[bot]"
