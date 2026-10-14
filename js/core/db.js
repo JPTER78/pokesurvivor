@@ -677,6 +677,10 @@ G.DB = (() => {
     if (save.migrationImported)
       throw new Error('Esta cuenta ya utilizó su migración única.');
 
+    // Evita que una sincronización anterior aún pendiente termine sobrescribiendo
+    // el resultado local después de confirmar la transacción de importación.
+    if (pushing) await pushing;
+
     // Normalización de esquema y eliminación de valores imposibles.
     const incoming = migrate(plain(external), save.name);
     let transferred = null;
@@ -690,7 +694,7 @@ G.DB = (() => {
       const next = merge(merge(plain(save), remote), incoming);
       next.name = remote.name;
       next.created = remote.created;  // respetar la fecha del documento existente
-      next.updated = Math.max(Date.now(), next.updated || 0);
+      next.updated = Date.now(); // no heredar relojes futuros de un JSON importado
       next.migrationImported = true;
       const doc = { save: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION };
       if (snap.data().sus === true) doc.sus = true; // nunca quitar marcas existentes
