@@ -73,7 +73,8 @@ G.DB = (() => {
       created: Date.now(),
       updated: Date.now(),    // última modificación (para fusionar)
       coins: START_COINS,
-      owned: {},              // dex -> { at, from: 'starter'|'gacha'|'wild' }
+      owned: {},              // dex -> { at, from: 'starter'|'gacha'|'wild'|'gift' }
+      gifts: {},              // recompensa -> código ya canjeado (una vez por cuenta)
       shiny: {},              // dex -> { at, from } — variantes shiny conseguidas
       partner: null,          // dex del Pokémon con el que juegas
       partnerShiny: false,    // jugar con su versión shiny (si la tienes)
@@ -193,6 +194,10 @@ G.DB = (() => {
       for (const k in older[coll] || {}) if (!r[coll][k]) r[coll][k] = older[coll][k];
     }
     r.challenges = G.Challenges.mergeProgress(a.challenges, b.challenges);
+    // Los regalos ya canjeados nunca se pierden por cambios de navegador.
+    r.gifts = {};
+    if ((a.gifts || {}).maomao === G.GiftCodes.MAOMAO_CODE ||
+        (b.gifts || {}).maomao === G.GiftCodes.MAOMAO_CODE) r.gifts.maomao = G.GiftCodes.MAOMAO_CODE;
     // Una importación autorizada no puede perder su sello en futuras fusiones.
     r.migrationImported = !!(a.migrationImported || b.migrationImported);
     // Misiones del mismo día/semana: el mayor progreso y lo ya recogido.
@@ -712,6 +717,74 @@ G.DB = (() => {
     return { ok: true };
   }
 
+  /**
+   * Canje del regalo de Mao Mao: el mismo código sirve para varias cuentas,
+   * pero una cuenta sólo lo recibe una vez. El código no da otros premios.
+   * Local: prueba real de persistencia del navegador, sin tocar Firebase.
+   * Nube: transacción; las reglas Firestore autorizan SOLO el añadido de 10001
+   * y su marca de canje con el código correcto.
+   */
+  async function redeemGift(rawCode) {
+    const code = G.GiftCodes.normalize(rawCode);
+    if (!G.GiftCodes.isMaomao(code))
+      throw new Error('Código de regalo inválido.');
+    if (!save || guest || !key)
+      throw new Error('Inicia sesión en tu cuenta para canjear regalos.');
+    if (G.Game.state !== 'ui')
+      throw new Error('Sal de la partida para canjear el código.');
+    if (save.owned[G.GiftCodes.MAOMAO_DEX] || (save.gifts || {}).maomao)
+      return { ok: true, already: true };
+
+    const addPrize = s => {
+      s.gifts = s.gifts || {};
+      s.owned = s.owned || {};
+      s.owned[G.GiftCodes.MAOMAO_DEX] = { at: Date.now(), from: 'gift' };
+      s.gifts.maomao = code;
+      s.updated = Date.now();
+      return s;
+    };
+    if (mode === 'local') {
+      const original = plain(save);
+      applyInPlace(addPrize(plain(save)));
+      if (!commit(true)) {
+        applyInPlace(original);
+        throw new Error('No se pudo guardar el regalo en este navegador.');
+      }
+      return { ok: true, already: false, local: true };
+    }
+
+    if (mode !== 'cloud' || !fs || !uid || navigator.onLine === false)
+      throw new Error('Conéctate a Firebase Tiliko para canjear el regalo.');
+    if (pushing) await pushing;
+    let redeemed = null, already = false;
+    await fs.runTransaction(async tx => {
+      const ref = docRef();
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Tu partida aún no está guardada en Firebase.');
+      const remote = migrate(plain(snap.data().save), save.name);
+      if (remote.owned[G.GiftCodes.MAOMAO_DEX] || (remote.gifts || {}).maomao) {
+        redeemed = remote; already = true;
+        return;
+      }
+      const next = addPrize(plain(remote));
+      const doc = { save: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION };
+      if (snap.data().sus === true) doc.sus = true;
+      tx.set(ref, doc);
+      redeemed = next;
+    });
+    if (!redeemed) throw new Error('No se pudo confirmar el canje.');
+    // Conserva también el progreso local aún pendiente de sincronizar.
+    const combined = merge(plain(save), redeemed);
+    applyInPlace(combined);
+    write(K_CLOUD + uid, save);
+    clearTimeout(pushT); pushT = 0; pushDue = 0;
+    lastPush = Date.now();
+    pending = !already && JSON.stringify(combined) !== JSON.stringify(redeemed);
+    if (pending) { setSync('pending'); schedulePush(PUSH_GAP_URGENT); }
+    else setSync('ok');
+    return { ok: true, already, local: false };
+  }
+
   /** Funciones que se ejecutan al cerrar sesión o borrar la cuenta (amigos, salas...). */
   const leaveHooks = [];
 
@@ -821,7 +894,7 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
-    importExternalSave,
+    importExternalSave, redeemGift,
     owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
