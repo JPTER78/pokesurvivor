@@ -29,3 +29,11 @@ El fork todavía incluye un `CNAME` heredado con `pokesurvivor.com`: ese dominio
 - `node tools/build.js --sin-seo` debe compilar.
 - `main` debe seguir siendo descendiente del mismo historial, sin sobrescribir nuevos commits.
 - Después de fusionar, Cloudflare Pages debe publicar la rama `main` bajo el dominio propio.
+
+## Estado de integración
+
+- Fusionado en `main` del fork mediante PR #1.
+- Cloudflare Pages `pokesurvivor-tiliko.pages.dev` configurado para publicar desde **main**.
+- Google requiere agregar el dominio anterior a los dominios autorizados de Firebase Tiliko.
+- Los canjes `MAO25` en cuentas reales seguirán bloqueados hasta que se publiquen las reglas de regalos en Firebase Console (tras revisión y respaldo). No implica pérdida de progreso.
+- El ataque de Mao Mao es `1.52`, idéntico al Kyogre del catálogo, sin modificar HP/velocidad.
