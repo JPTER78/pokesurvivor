@@ -12,6 +12,8 @@ G.CHANGELOG = [
     ['Móvil: ya puedes colocar los botones donde quieras. En Ajustes > Controles > Colocar los botones arrastras los ataques (con el objeto), la pausa y el joystick, que ahora también puede ser fijo en vez de aparecer donde pones el dedo.',
      'Mobile: you can now place the buttons wherever you want. In Settings > Controls > Place the buttons, drag the attacks (with the item), the pause button and the joystick, which can now also be fixed instead of appearing where you put your finger.']
   ], chg: [
+    ['Danza Espada, Agilidad, Fortaleza, Acua Aro y los poderes de altar se ven arriba a la izquierda con su icono y un aro que se vacía según el tiempo que les queda (parpadea al acabarse).',
+     'Swords Dance, Agility, Harden, Aqua Ring and altar powers show at the top left with their icon and a ring that empties as their time runs out (it blinks when ending).'],
     ['Las tablas de la semana y del mes del ranking empiezan de cero, como el histórico: ahora sólo cuentan partidas con la Sentencia de Arceus y todas las tablas cuadran entre sí.',
      'The weekly and monthly leaderboards start from scratch, like the all-time one: now only runs with the Judgment of Arceus count, and all boards match each other.'],
     ['Aviso importante: la única web oficial de PokéSurvivor es pokesurvivor.com. El juego es y será gratis: si alguna otra web te pide pagar (por tickets, monedas o lo que sea), no somos nosotros. Lo verás también al entrar y en el Aviso legal.',
