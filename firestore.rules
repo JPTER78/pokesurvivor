@@ -167,17 +167,17 @@ service cloud.firestore {
     function mx(a, b) { return a > b ? a : b; }
     // <logros> (generado por tools/make_rules.js, no editar a mano)
     function achNew() { return request.resource.data.save.get('ach', {}).diff(resource.data.save.get('ach', {})).addedKeys(); }
-    function achV() { return 1 * achNew().intersection(['own10', 'lvl20', 'kills1k', 'boss1', 'group1'].toSet()).size()
-        + 2 * achNew().intersection(['shiny1', 'evo1', 'items5', 'rift1', 'mis10'].toSet()).size()
-        + 3 * achNew().intersection(['time10'].toSet()).size()
-        + 4 * achNew().intersection(['own50'].toSet()).size()
-        + 10 * achNew().intersection(['own100', 'shiny5', 'pulls100', 'time15', 'lvl40', 'judge', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
-        + 20 * achNew().intersection(['own250', 'shiny20', 'time20', 'judge60', 'judgeBoss', 'boss100', 'arenas', 'leg30'].toSet()).size()
-        + 30 * achNew().intersection(['own500', 'kills100k', 'evoAll', 'mis200'].toSet()).size()
-        + 50 * achNew().intersection(['legAll'].toSet()).size()
-        + 100 * achNew().intersection(['ownAll'].toSet()).size()
-        + 0.333 * achNew().intersection(['own1'].toSet()).size()
-        + 0.667 * achNew().intersection(['time5'].toSet()).size(); }
+    function achV() { let newly = achNew(); return newly.size() == 0 ? 0 : 1 * newly.intersection(['own10', 'lvl20', 'kills1k', 'boss1', 'group1'].toSet()).size()
+        + 2 * newly.intersection(['shiny1', 'evo1', 'items5', 'rift1', 'mis10'].toSet()).size()
+        + 3 * newly.intersection(['time10'].toSet()).size()
+        + 4 * newly.intersection(['own50'].toSet()).size()
+        + 10 * newly.intersection(['own100', 'shiny5', 'pulls100', 'time15', 'lvl40', 'judge', 'runs50', 'kills10k', 'boss25', 'evo25', 'itemsAll', 'rift10', 'leg10', 'mis50', 'group10'].toSet()).size()
+        + 20 * newly.intersection(['own250', 'shiny20', 'time20', 'judge60', 'judgeBoss', 'boss100', 'arenas', 'leg30'].toSet()).size()
+        + 30 * newly.intersection(['own500', 'kills100k', 'evoAll', 'mis200'].toSet()).size()
+        + 50 * newly.intersection(['legAll'].toSet()).size()
+        + 100 * newly.intersection(['ownAll'].toSet()).size()
+        + 0.333 * newly.intersection(['own1'].toSet()).size()
+        + 0.667 * newly.intersection(['time5'].toSet()).size(); }
     // </logros>
 
     // Se consulta sólo el permiso propio. Ningún usuario puede concederse
