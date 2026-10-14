@@ -2,7 +2,7 @@
 G.MaomaoPreview = (() => {
   const enabled = new URLSearchParams(location.search).get('maomao') === '1';
   const mon = Object.freeze({ dex: 10001, name: 'Maomao', types: ['poison', 'grass'],
-    hp: 110, spd: 112, atk: 1.35, rarity: 5, bst: 530, gen: 0,
+    hp: 110, spd: 112, atk: 1.52, rarity: 5, bst: 530, gen: 0,
     start: 'poison-sting', customPreview: true });
   function allowed() {
     return enabled && !G.FIREBASE_CONFIG && G.DB.guest &&
