@@ -34,7 +34,7 @@ G.GiftsUI = (() => {
           : 'No se pudo canjear: ' + (err && err.message || 'Error desconocido');
       } finally {
         busy = false;
-        $('gift-redeem').disabled = false;
+        $('gift-redeem').disabled = !!(G.DB.save && G.DB.save.owned[G.GiftCodes.MAOMAO_DEX]);
       }
     };
   }
