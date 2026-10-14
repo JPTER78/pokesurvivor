@@ -762,6 +762,18 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .upg-btns { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .ban-picker { grid-column: 1 / -1; }
 .bind-panel { grid-column: 1 / -1; }
+/* Mejoras: Teraorbe (systems/tera.js) */
+.tera-panel { grid-column: 1 / -1; display: grid; gap: 8px; }
+.tera-panel .sub { margin: 4px 0 0; font-size: 13px; }
+.tera-head { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; }
+.tera-orb { width: 32px; height: 32px; justify-self: center; image-rendering: pixelated;
+  background: url(../assets/tera/fx/orb.png) 0 0 / 224px 32px no-repeat; }
+.tera-orb.on { background-position: -96px 0; }
+.tera-crown { width: 54px; height: 56px; image-rendering: pixelated; background-size: 270px 56px; background-repeat: no-repeat; }
+.tera-types { display: flex; flex-wrap: wrap; gap: 6px; }
+.tera-chip { border-color: var(--tc); }
+.tera-chip.on { border-color: var(--tc); color: var(--tc); background: rgba(0,0,0,.45); }
+.tera-chip:disabled:not(.on) { opacity: .45; cursor: default; }
 .bind-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .bind-slot { display: flex; align-items: center; gap: 6px; margin: 0; }
 .bind-slot span { font-weight: 700; color: var(--gold); min-width: 14px; }
