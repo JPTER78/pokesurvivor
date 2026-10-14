@@ -30,17 +30,54 @@ service cloud.firestore {
       allow read, delete: if signedIn() && me() == uid;
       allow read: if admin();
 
+      // Pokémon de regalo 10001: jamás aparece al crear una cuenta.
       allow create: if signedIn() && me() == uid && validSaveDoc()
+        && !('10001' in request.resource.data.save.get('owned', {}))
+        && !('10001' in request.resource.data.save.get('shiny', {}))
+        && !('maomao' in request.resource.data.save.get('gifts', {}))
         && (marked() || (saneSave(request.resource.data.save) && freshSave(request.resource.data.save)));
       allow update: if signedIn() && me() == uid && validSaveDoc()
-        && (resource.data.get('sus', false) == false || marked())       // la marca no se quita
-        && (authorizedMigration(uid) || marked() || (saneSave(request.resource.data.save)
+        && (resource.data.get('sus', false) == false || marked())
+        && (authorizedGift() || (giftUnchanged() && (authorizedMigration(uid) || marked() ||
+              (saneSave(request.resource.data.save)
               && possibleSave(resource.data.save, request.resource.data.save,
-                              (request.time - resource.data.updatedAt).seconds())));
+                              (request.time - resource.data.updatedAt).seconds())))));
       // El admin sólo puede poner o quitar la marca.
       allow update: if admin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sus'])
         && request.resource.data.sus is bool;
+    }
+
+    // Código promocional público MAO25, reutilizable entre diferentes cuentas,
+    // pero una sola entrega por cuenta. La validación real está en Firestore.
+    function giftUnchanged() {
+      let old = resource.data.save;
+      let next = request.resource.data.save;
+      return next.get('owned', {}).get('10001', null) == old.get('owned', {}).get('10001', null)
+        && next.get('shiny', {}).get('10001', null) == old.get('shiny', {}).get('10001', null)
+        && next.get('gifts', {}).get('maomao', null) == old.get('gifts', {}).get('maomao', null);
+    }
+    function authorizedGift() {
+      let old = resource.data.save;
+      let next = request.resource.data.save;
+      return old.get('owned', {}).get('10001', null) == null
+        && old.get('gifts', {}).get('maomao', null) == null
+        && next.get('owned', {}).get('10001', null) is map
+        && next.get('owned', {}).get('10001', {}).keys().hasOnly(['at', 'from'])
+        && next.get('owned', {}).get('10001', {}).get('from', '') == 'gift'
+        && next.get('owned', {}).get('10001', {}).get('at', 0) is int
+        && next.get('owned', {}).get('10001', {}).get('at', 0) >= request.time.toMillis() - 300000
+        && next.get('owned', {}).get('10001', {}).get('at', 0) <= request.time.toMillis() + 300000
+        && next.get('shiny', {}).get('10001', null) == null
+        && next.get('gifts', {}).get('maomao', '') == 'MAO25'
+        && next.diff(old).affectedKeys().hasOnly(['owned', 'gifts', 'updated'])
+        && next.get('owned', {}).diff(old.get('owned', {})).affectedKeys().hasOnly(['10001'])
+        && next.get('gifts', {}).diff(old.get('gifts', {})).affectedKeys().hasOnly(['maomao'])
+        && next.get('created', 0) == old.get('created', 0)
+        && next.get('name', '') == old.get('name', '')
+        && next.get('updated', 0) is int
+        && next.get('updated', 0) >= old.get('updated', 0)
+        && saneSave(next);
     }
 
     // Importación única y específica para el titular autorizado desde Firebase
