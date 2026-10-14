@@ -31,7 +31,7 @@ test('V0.4 contiene login Google, regalos, animaciones y poder 1.52',()=>{
   assert.match(html,/js\/data\/maomao-animation\.js/);
   assert.match(html,/js\/ui\/gifts-ui\.js/);
   assert.match(html,/Mao Mao V0\.4/);
-  assert.match(mon,/atk:\s*1\.35/);
+  assert.match(mon,/atk:\s*1\.52/);
   assert.match(mon,/start:\s*'poison-sting'/);
   assert.doesNotMatch(cfg,/pokesurvivor-free/);
 });
