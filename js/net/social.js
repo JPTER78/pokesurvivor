@@ -234,9 +234,24 @@ G.Social = (() => {
     name = (name || '').trim();
     if (!me) return { ok: false, error: 'Primero elige tu apodo.' };
     if (!VALID.test(name)) return { ok: false, error: 'Escribe el apodo exacto de tu amigo.' };
-    const n = await fb.fs.collection('names').doc(name.toLowerCase()).get().catch(() => null);
-    if (!n || !n.exists) return { ok: false, error: 'No hay ningún jugador con ese apodo.' };
-    const other = n.data().uid;
+    // Diferenciar errores de Firestore de apodos inexistentes.
+    // Recuperar perfiles antiguos cuyo indice names no se haya creado.
+    let other;
+    try {
+      const lower = name.toLowerCase();
+      const n = await fb.fs.collection('names').doc(lower).get();
+      if (n.exists) {
+        other = n.data().uid;
+      } else {
+        const matches = await fb.fs.collection('profiles').where('lower', '==', lower).limit(2).get();
+        if (matches.empty) return { ok: false, error: 'No hay ningún jugador con ese apodo.' };
+        if (matches.size > 1) return { ok: false, error: 'Hay perfiles duplicados con ese apodo.' };
+        other = matches.docs[0].id;
+      }
+    } catch (e) {
+      console.warn('[Social] buscar amigo:', e);
+      return { ok: false, error: 'No se pudo buscar el apodo (' + ((e && e.code) || 'error') + ').' };
+    }
     if (other === uid) return { ok: false, error: 'Ese eres tú.' };
     const f = friends.get(other);
     if (f && f.status === 'ok') return { ok: false, error: 'Ya sois amigos.' };
