@@ -22,9 +22,16 @@
   const MAINTENANCE = false;
   function maintenance() {
     if (!MAINTENANCE || /[?&]dev\b/.test(location.search)) return false;
-    const en = typeof G === 'object' && G.I18n ? G.I18n.lang === 'en' : !/^es/i.test(navigator.language || '');
+    const lg = typeof G === 'object' && G.I18n ? G.I18n.lang : /^es/i.test(navigator.language || '') ? 'es' : /^fr/i.test(navigator.language || '') ? 'fr' : 'en';
+    const en = lg === 'en';
     const el = document.getElementById('boot');
     el.setAttribute('translate', 'no');
+    if (lg === 'fr') {
+      el.innerHTML = '<div class="boot-in"><h1>PokéSurvivor</h1><p><b>Le jeu est en maintenance.</b></p><p>Nous déménageons le jeu sur de nouveaux serveurs pour qu\'il reste gratuit pour tout le monde. ' +
+        'Ton compte, ta partie et tes Pokémon sont en sécurité. Reviens dans quelques heures !</p>' +
+        '<button class="btn gold" style="margin-top:12px" onclick="location.reload()">Réessayer</button></div>';
+      return true;
+    }
     el.innerHTML = '<div class="boot-in"><h1>PokéSurvivor</h1>' + (en
       ? '<p><b>We are under maintenance.</b></p><p>We are moving the game to new servers so it can stay free for everyone. ' +
         'Your account, your save and your Pokémon are safe. Please come back in a few hours!</p>'

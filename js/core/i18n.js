@@ -1,6 +1,6 @@
-/* ============ i18n.js — idiomas (español / inglés) ============
- * El juego está escrito en español. Si el idioma es inglés, todo texto que
- * se enseña se traduce con el diccionario de js/data/lang-en.js, sin tener que
+/* ============ i18n.js — idiomas (español / inglés / francés) ============
+ * El juego está escrito en español. Si el idioma es inglés o francés, todo texto que
+ * se enseña se traduce con el diccionario de js/data/lang-en.js (o lang-fr.js), sin tener que
  * tocar cada pantalla:
  *   - el DOM (menús, cartas, avisos...) con un MutationObserver,
  *   - el canvas (HUD, avisos, números) envolviendo fillText/strokeText,
@@ -13,16 +13,19 @@
  *   3. trozos dentro de un texto más largo, sólo palabras enteras
  * Lo que escriben los jugadores (apodos) va marcado con translate="no".
  *
- * Idioma: el elegido en Ajustes; si no, /en/ en la dirección o el del navegador
- * (español si el navegador está en español, inglés en cualquier otro caso).
+ * Idioma: el elegido en Ajustes; si no, /en/ o /fr/ en la dirección o el del navegador
+ * (español o francés si el navegador está en ese idioma, inglés en cualquier otro caso).
  */
 G.I18n = (() => {
   const KEY = 'ps.lang';
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
-  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
+  const LANGS = ['es', 'en', 'fr'];
+  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : /\/fr(\/|$)/.test(location.pathname) ? 'fr' : null;
   const nav = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-  const lang = saved === 'es' || saved === 'en' ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const lang = LANGS.includes(saved) ? saved : byPath || (nav.startsWith('es') ? 'es' : nav.startsWith('fr') ? 'fr' : 'en');
+  /** Código regional para fechas, números y monedas. */
+  const locale = { es: 'es-ES', en: 'en-GB', fr: 'fr-FR' }[lang];
   document.documentElement.lang = lang;
 
   const exact = new Map(), exactLow = new Map();
@@ -31,8 +34,10 @@ G.I18n = (() => {
   const L = '\\p{L}\\p{N}';
   const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  /** Añade traducciones { 'texto en español': 'English text' }. */
-  function add(dict) {
+  /** Añade traducciones { 'texto en español': 'texto traducido' } del idioma forLang
+   *  (por defecto inglés). Sólo se cargan las del idioma actual. */
+  function add(dict, forLang = 'en') {
+    if (forLang !== lang) return;
     const fr = [];
     for (const [es, en] of Object.entries(dict)) {
       if (!en || es === en) continue;
@@ -97,6 +102,22 @@ G.I18n = (() => {
   function f(es, ...vals) { let i = 0; return t(es).replace(/\{x\}/g, () => vals[i++]); }
 
   // ---------------- DOM ----------------
+  // Teclas: el juego lee la posición física (e.code), así que en un teclado AZERTY
+  // las teclas de WASD son ZQSD. Las etiquetas <kbd> se cambian a lo que pone la tecla.
+  let KEYS = lang === 'fr' ? { W: 'Z', A: 'Q', Q: 'A', WASD: 'ZQSD' } : null;
+  function kbd(p, v) {
+    const k = p.__k0 || (p.__k0 = v.trim());
+    const r = KEYS[k];
+    return r ? v.replace(k, r) : t(v);
+  }
+  // Si el navegador sabe la distribución real del teclado (Chrome, Edge), se usa esa.
+  if (KEYS && navigator.keyboard && navigator.keyboard.getLayoutMap) {
+    navigator.keyboard.getLayoutMap().then(m => {
+      const key = c => (m.get('Key' + c) || c).toUpperCase();
+      KEYS = { W: key('W'), A: key('A'), Q: key('Q'), WASD: ['W', 'A', 'S', 'D'].map(key).join('') };
+      document.querySelectorAll('kbd').forEach(el => { if (el.__k0 && el.firstChild) el.firstChild.nodeValue = KEYS[el.__k0] || t(el.__k0); });
+    }).catch(() => { /* nada */ });
+  }
   const ATTRS = ['placeholder', 'title', 'alt', 'aria-label'];
   const skipEl = el => !!(el && el.closest && el.closest('[translate="no"], script, style, code'));
 
@@ -105,7 +126,7 @@ G.I18n = (() => {
     if (!p || skipEl(p)) return;
     const v = n.nodeValue;
     if (n.__tr === v) return;
-    const r = t(v);
+    const r = KEYS && p.tagName === 'KBD' ? kbd(p, v) : t(v);
     n.__tr = r;
     if (r !== v) n.nodeValue = r;
   }
@@ -128,6 +149,7 @@ G.I18n = (() => {
   function startDom() {
     if (lang === 'es') return;
     // Los enlaces a las páginas de la web, a su versión en inglés.
+    // (En francés también: las páginas de la web sólo existen en español e inglés.)
     const EN_LINKS = { 'guia/': 'en/guide/', 'pokedex/': 'en/pokedex/' };
     document.querySelectorAll('a[href]').forEach(a => { const h = a.getAttribute('href'); if (EN_LINKS[h]) a.setAttribute('href', EN_LINKS[h]); });
     walk(document.body);
@@ -142,11 +164,16 @@ G.I18n = (() => {
   }
 
   // ---------------- canvas y ventanas del navegador ----------------
+  // En el canvas no hay <kbd>: se cambian las teclas dentro del texto (WASD, Q / E).
+  function keysIn(s) {
+    if (!KEYS || s.indexOf('WASD') < 0) return s;
+    return s.replace(/\bWASD\b/g, KEYS.WASD).replace(/\/ Q \//g, '/ ' + KEYS.Q + ' /');
+  }
   if (lang !== 'es') {
     const P = CanvasRenderingContext2D.prototype;
     for (const k of ['fillText', 'strokeText', 'measureText']) {
       const orig = P[k];
-      P[k] = function (s, ...a) { return orig.call(this, typeof s === 'string' ? t(s) : s, ...a); };
+      P[k] = function (s, ...a) { return orig.call(this, typeof s === 'string' ? keysIn(t(s)) : s, ...a); };
     }
     const oc = window.confirm, oa = window.alert;
     window.confirm = s => oc.call(window, t(s));
@@ -158,6 +185,6 @@ G.I18n = (() => {
     location.reload();
   }
 
-  return { lang, add, t, f, set, startDom, walk };
+  return { lang, locale, add, t, f, set, startDom, walk };
 })();
 G.T = G.I18n.t;
