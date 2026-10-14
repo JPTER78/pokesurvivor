@@ -11,7 +11,9 @@ G.MaomaoPreview = (() => {
   return { enabled, mon, allowed };
 })();
 
-if (G.MaomaoPreview.enabled) {
+// Registrar el Pokémon especial para que pueda usarse tras canjear el regalo.
+// No añadirlo a G.DEX: así nunca sale en gacha, salvajes ni grietas.
+{
   G.DEX_BY[10001] = G.MaomaoPreview.mon;
   G.SPRITE_META[10001] = {"s":1,"a":{"Idle":{"w":40,"h":44,"n":1,"r":8,"d":[40],"ax":20,"ay":39},"Walk":{"w":40,"h":44,"n":2,"r":8,"d":[9,9],"ax":20,"ay":39},"Attack":{"w":40,"h":44,"n":3,"r":8,"d":[9,9,9],"ax":20,"ay":39},"Shoot":{"w":40,"h":44,"n":3,"r":8,"d":[9,9,9],"ax":20,"ay":39},"Charge":{"w":40,"h":44,"n":2,"r":8,"d":[9,9],"ax":20,"ay":39},"Faint":{"w":40,"h":44,"n":3,"r":8,"d":[12,12,30],"ax":20,"ay":39},"Hurt":{"w":40,"h":44,"n":1,"r":8,"d":[9],"ax":20,"ay":39}}};
 }
