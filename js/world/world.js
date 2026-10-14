@@ -138,7 +138,7 @@ G.World = (() => {
       if (Math.hypot(tx, ty) < 7) continue;
       // Mantener libres los pasos: sin árboles, rocas, cofres ni altares encima.
       // Las grietas mantienen su decoración y corredor propios.
-      if (!arena && escapeLane(tx, ty)) continue;
+      if (arenaDist(tx, ty) >= arena_outer() + 2 && escapeLane(tx, ty)) continue;
       if (broken.has(tx + ',' + ty)) continue;
 
       // Necesita suelo alrededor para no pegarse a paredes / agua.
