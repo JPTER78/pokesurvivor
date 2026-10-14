@@ -47,7 +47,7 @@
       end.setHours(24, 0, 0, 0);
       if (kind === 'w') { const add = (8 - (now.getDay() || 7)) % 7; end.setDate(end.getDate() + add); }
       const mins = Math.max(1, Math.round((end - now) / 60000));
-      return mins >= 1440 ? Math.floor(mins / 1440) + ' d ' + Math.floor(mins % 1440 / 60) + ' h'
+      return mins >= 1440 ? Math.floor(mins / 1440) + (G.I18n.lang === 'fr' ? ' j ' : ' d ') + Math.floor(mins % 1440 / 60) + ' h'
                           : Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min';
     }
 
@@ -196,7 +196,7 @@
       const fill = q => {
         const g = $('fav-grid');
         g.innerHTML = '';
-        const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d] && (!q || G.DEX_BY[d].name.toLowerCase().includes(q)));
+        const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d] && (!q || G.DEX_BY[d].name.toLowerCase().includes(q) || G.T(G.DEX_BY[d].name).toLowerCase().includes(q)));
         for (const d of mons.slice(0, 120)) {
           for (const shiny of G.DB.ownsShiny(d) ? [false, true] : [false]) {
             const c = document.createElement('div');

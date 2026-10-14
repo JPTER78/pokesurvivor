@@ -7,7 +7,7 @@ G.SupportUI = (() => {
   const $ = G.UI.$;
   const F = G.Funding;
   const val = v => typeof v === 'number'
-    ? (Math.round(v * 100) / 100).toLocaleString(G.I18n.lang === 'en' ? 'en' : 'es', { style: 'currency', currency: 'EUR' }) + ' / mes'
+    ? (Math.round(v * 100) / 100).toLocaleString(G.I18n.locale, { style: 'currency', currency: 'EUR' }) + ' / mes'
     : v;
 
   function init() {
@@ -30,7 +30,7 @@ G.SupportUI = (() => {
       <p class="sub">Cuanta más gente juega, más cuestan los servidores. Lo que sobre se guarda para los gastos de los meses siguientes.</p>
       <div class="row wrap" style="gap:8px;justify-content:center;margin-top:10px">
         <a class="btn gold" href="${F.url}" target="_blank" rel="noopener">${G.Icons.html('heart', 18)} Donar en Ko-fi</a>
-        ${window.PS_PAGES ? `<a class="btn" href="${G.I18n.lang === 'en' ? 'en/support/' : 'apoyar/'}" target="_blank">Más información</a>` : ''}
+        ${window.PS_PAGES ? `<a class="btn" href="${G.I18n.lang !== 'es' ? 'en/support/' : 'apoyar/'}" target="_blank">Más información</a>` : ''}
       </div>`;
     $('scr-support').classList.remove('hidden');
   }
