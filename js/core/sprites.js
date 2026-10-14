@@ -169,6 +169,8 @@ G.Sprites = (() => {
       this.hold = false;       // se queda en el último fotograma (Faint)
       this.done = false;
       this.dir = 0;
+      this.tera = null;        // Teratipo si está teracristalizado (systems/tera.js)
+      this.teraFx = null;      // su transformación (para saber qué se ve en cada momento)
       // Las hojas se cargan al dibujarse por primera vez; la run las precarga
       // todas con preload() para que no parpadeen al primer ataque.
     }
@@ -248,6 +250,8 @@ G.Sprites = (() => {
       const dx = Math.round(x - m.ax * k), dy = Math.round(y - m.ay * k);
       const prev = ctx.globalAlpha;
       if (alpha < 1) ctx.globalAlpha = prev * alpha;
+      // Teracristalizado: cuerpo de cristal y corona (systems/tera.js).
+      if (this.tera && G.Tera.drawSprite(ctx, this, s, m, Math.min(frame, m.n - 1), row, dx, dy, k, opts)) { ctx.globalAlpha = prev; return; }
       // Destello: blanco entero (enemigos) o medio blanco encima (tu Pokémon).
       if (!opts.flash || opts.softFlash) ctx.drawImage(s.img, sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
       if (opts.flash) {

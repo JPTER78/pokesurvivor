@@ -15,6 +15,11 @@
  *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos],
  *                            ja:[x,y,anim,dir] (Arceus, sólo en la Sentencia) }
  *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny}] }
+ *
+ * Teracristalización: el que se teracristaliza lo cuenta ('tera', tipo; el
+ * anfitrión lo reparte como 'tera', uid, tipo; 'stellar' es la ráfaga Astral)
+ * y los demás ven la transformación en su copia. Las versiones viejas no conocen el evento y lo
+ * ignoran (siguen viendo el sprite de siempre).
  */
 G.Coop = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
@@ -270,6 +275,11 @@ G.Coop = (() => {
         case 'hs': holdOn(from); break;
         case 'he': holdOff(from); break;
         case 're': G.Rift.enterRequest(); break;
+        case 'tera':
+          if (!G.Tera.valid(ev[1])) break;
+          G.Tera.remote(m.pl, ev[1]);
+          emit(['tera', from, ev[1]], from);
+          break;
         case 'bye': mateGone(from); break;
       }
     }
@@ -346,6 +356,7 @@ G.Coop = (() => {
       case 'hp': api.hold && api.hold(ev[1]); break;
       case 'ha': hostAway = !!ev[1]; updateAway(); break;
       case 'sh': api.shiny(ev[1]); break;
+      case 'tera': { const m = mates.get(ev[1]); if (m && G.Tera.valid(ev[2])) G.Tera.remote(m.pl, ev[2]); break; }
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
       case 'jd': case 'jk': G.Judgment.onEvent(ev); break;
@@ -357,6 +368,13 @@ G.Coop = (() => {
   }
 
   // ---------------- ganchos que llaman los módulos del juego ----------------
+
+  /** Te has teracristalizado: los demás lo ven en tu copia. */
+  function tera(type) {
+    if (!active) return;
+    if (host) emit(['tera', me, type]);
+    else { outEv.push(['tera', type]); flushClient(true); }
+  }
 
   /** Tu ataque: los demás lo repiten como fantasma. */
   function cast(pl, m) {
@@ -466,7 +484,7 @@ G.Coop = (() => {
   return {
     ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
-    propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,
+    propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd, tera,
     /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */
     broadcast(ev) { emit(ev); },
     toHost(ev) { if (active && !host) { outEv.push(ev); flushClient(true); } },

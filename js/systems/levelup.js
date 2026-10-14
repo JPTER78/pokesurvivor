@@ -40,10 +40,11 @@ G.LevelUp = (() => {
         !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)) && !(buffs >= 2 && G.Moves.BY_ID[id].kind === 'buff'));
       for (const id of G.U.pickN(pool, 6)) {
         const d = G.Moves.BY_ID[id];
+        const type = id === 'tera-blast' ? G.Tera.blastType(pl) : d.type;   // Teraexplosión: su Teratipo
         out.push({
           w: 10, type: 'new', key: 'new:' + id,
-          icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: G.U.TYPE_NAME[d.type],
+          icon: G.Moves.icon(id, type), color: G.U.TYPE_COLOR[type],
+          tag: G.U.TYPE_NAME[type],
           title: d.name, desc: d.desc,
           apply: p => p.addMove(id)
         });
@@ -76,7 +77,7 @@ G.LevelUp = (() => {
       if (!txt) continue;
       out.push({
         w: 8, type: 'up', key: 'up:' + m.id,
-        icon: 'move:' + m.id, color: G.U.TYPE_COLOR[m.type],
+        icon: G.Moves.icon(m.id, m.type), color: G.U.TYPE_COLOR[m.type],
         tag: 'Nv.' + m.lvl + ' > ' + (m.lvl + 1),
         title: m.name, desc: txt,
         apply: () => G.Moves.levelUp(m)

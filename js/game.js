@@ -118,6 +118,7 @@ G.Game = (() => {
     // antes de aprender nada: addMove ya los coloca.
     (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
     pl.addMove(G.startMoveOf(mon.dex));
+    G.Tera.reset(pl);              // Teraorbe de este Pokémon (si lo tiene): vacío al empezar
     // Mejora "Veto": movimientos que no quieres que te salgan.
     pl.banned = new Set((save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque al azar.
@@ -519,6 +520,7 @@ G.Game = (() => {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
     }
     if (G.Input.tap('keyq')) pl.cycle(-1);
+    if (G.Input.tap('keyt')) G.Tera.activate(pl);
     if (G.Input.tap('keye') || G.Input.tap('tab')) pl.cycle(1);
   }
 
@@ -629,6 +631,7 @@ G.Game = (() => {
     G.Pickups.update(dt, all, onCollect);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
+    G.Tera.update(dt, pl, time);
     G.Rift.update(dt, pl, time);
     G.Judgment.update(dt, pl, time);
     G.Events.update(dt, all, time);
@@ -667,6 +670,7 @@ G.Game = (() => {
     G.World.drawLiquid(ctx, cam, t);
     G.Hazards.draw(ctx);
     G.Combat.drawGroundFields(ctx);
+    G.Tera.drawGround(ctx);
     G.Pickups.draw(ctx);
 
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
@@ -677,6 +681,7 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
+    if (pl && state !== 'ui') for (const d of G.Tera.drawables()) items.push({ y: d.y, ent: d });
     const arceus = pl && state !== 'ui' ? G.Judgment.drawable() : null;
     if (arceus) items.push({ y: arceus.y, ent: arceus });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
@@ -699,6 +704,7 @@ G.Game = (() => {
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
     G.FX.draw(ctx);
+    G.Tera.drawAir(ctx);
     G.Judgment.drawAir(ctx);
     ctx.restore();
 
