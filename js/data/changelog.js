@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-14', title: ['Maomao: prueba visual', 'Maomao: visual playtest'], new: [
+    ['Prueba opcional de Maomao Veneno/Planta como invitado, con poses provisionales de movimiento, ataque y caída. Disponible sólo en la versión de pruebas con ?maomao=1.',
+     'Optional guest playtest of Poison/Grass Maomao with provisional movement, attack and faint poses. Available only in the test version with ?maomao=1.']
+  ] },
   { d: '2026-10-14', title: ['Modo Desafíos V0.1', 'Challenges mode V0.1'], new: [
     ['Supervivencia Extrema: sobrevive 10 minutos de juego activo en solitario, con un 25 % más de daño enemigo. Usa tu compañero y tus mejoras; tus marcas se guardan fuera del ranking normal.',
      'Extreme Survival: survive 10 minutes of active solo play with 25% more enemy damage. Keep your partner and upgrades; records are saved separately from normal leaderboards.'],

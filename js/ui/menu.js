@@ -94,6 +94,10 @@ G.MenuUI = (() => {
       `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString('es')}</b>` +
       (G.DB.guest ? '<br><span style="color:#ffb0b8">Modo invitado: no se guarda</span>' : '');
 
+    const preview = $('btn-maomao-preview');
+    preview.classList.toggle('hidden', !G.MaomaoPreview.allowed());
+    preview.onclick = () => G.Game.startRun(null, null, 'maomao');
+
     socialLine();
     // Premios de misiones por recoger.
     G.Progress.checkAch();

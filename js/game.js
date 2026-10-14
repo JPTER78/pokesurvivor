@@ -89,7 +89,8 @@ G.Game = (() => {
   // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
-  function startRun(coop = null, challengeId = null) {
+  function startRun(coop = null, challengeId = null, previewId = null) {
+    if (previewId && (previewId !== 'maomao' || coop || challengeId || !G.MaomaoPreview.allowed())) return;
     if (challengeId && (coop || G.Coop.active || G.Social.room || navigator.onLine === false)) {
       G.UI.toast('Los desafíos requieren conexión y jugar en solitario, fuera de una sala.', 4000);
       return;
@@ -98,8 +99,8 @@ G.Game = (() => {
     G.Challenges.begin(challengeId);
     holdBy = []; awayBy = null;
     const save = G.DB.save;
-    const mon = G.DEX_BY[save.partner];
-    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+    const mon = previewId ? G.MaomaoPreview.mon : G.DEX_BY[save.partner];
+    const perks = G.Upgrades.perks(previewId ? {} : G.DB.upgradesOf(mon.dex));
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -147,10 +148,11 @@ G.Game = (() => {
     G.Sprites.preload([mon.dex], 8000, pl.shiny);
     G.Audio.music(G.BIOME_MUSIC[0]);
     // Para el ranking: el servidor apunta cuándo empieza la partida (anti-trampas).
-    if (!G.Challenges.active && (!coop || G.Coop.isHost)) G.Ranking.runStarted(coop ? 'g' : 's');
+    if (!mon.customPreview && !G.Challenges.active && (!coop || G.Coop.isHost)) G.Ranking.runStarted(coop ? 'g' : 's');
     deathT = 0;
 
     state = 'playing';
+    if (previewId) G.UI.toast('Maomao: prueba visual. Las diagonales usan poses aproximadas.', 5000);
   }
 
   function quitRun() {
@@ -324,7 +326,7 @@ G.Game = (() => {
     // Ranking: en solitario cada uno lo suyo; en grupo lo sube el anfitrión.
     const mark = { t: Math.floor(time), lv: pl.level, kills: pl.kills };
     // Si la partida se ha tocado (ver clean()), no sube al ranking (sin avisar); lo demás, sí.
-    const ok = clean();
+    const ok = !pl.mon.customPreview && clean();
     if (!challenge && ok && !coop) G.Ranking.submitSolo(Object.assign(mark, { dex: pl.dex, shiny: pl.shiny }));
     else if (!challenge && ok && wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
