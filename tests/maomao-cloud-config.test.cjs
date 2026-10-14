@@ -24,7 +24,7 @@ test('Sólo el dominio exacto, vía HTTPS, activa el Firebase de Tiliko',()=>{
     assert.equal(boot(host),null,'No debe abrir Firebase desde '+host);
   assert.equal(boot(hostname,'http:'),null);
 });
-test('V0.4 contiene login Google, regalos, animaciones y poder 1.35',()=>{
+test('V0.4 contiene login Google, regalos, animaciones y poder 1.52',()=>{
   assert.match(html,/id="btn-google"/);
   assert.match(html,/data-go="gifts"/);
   assert.match(html,/js\/data\/maomao-animation\.js/);
