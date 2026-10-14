@@ -761,7 +761,9 @@ G.DB = (() => {
       const ref = docRef();
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error('Tu partida aún no está guardada en Firebase.');
-      const remote = migrate(plain(snap.data().save), save.name);
+      // No normalizar campos adicionales: las reglas sólo permiten cambiar
+      // owned[10001], gifts.maomao y updated en esta transacción.
+      const remote = plain(snap.data().save);
       if (remote.owned[G.GiftCodes.MAOMAO_DEX] || (remote.gifts || {}).maomao) {
         redeemed = remote; already = true;
         return;
