@@ -8,12 +8,13 @@ function fixture(search='?maomao=1'){
  for(const file of ['js/data/pokedex.js','js/data/sprites-meta.js','js/data/moves.js','js/data/maomao-preview.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
  return {G,ctx};
 }
-test('Maomao no cambia los catálogos públicos y sólo se registra bajo opción de prueba',()=>{
- const off=fixture('');const on=fixture();assert.equal(off.G.DEX_BY[10001],undefined);
- assert.equal(off.G.SPRITE_META[10001],undefined);assert.equal(on.G.DEX.length,off.G.DEX.length);
+test('Maomao queda registrada para regalos sin entrar al catálogo público ni al gacha',()=>{
+ const off=fixture('');const on=fixture();assert.equal(off.G.DEX_BY[10001].name,'Maomao');
+ assert.ok(off.G.SPRITE_META[10001]);assert.equal(on.G.DEX.length,off.G.DEX.length);
  assert.equal(on.G.DEX.some(p=>p.dex===10001),false);
  assert.equal(on.G.MaomaoPreview.mon.rarity,5);assert.equal(on.G.MaomaoPreview.mon.leg,undefined);
  assert.equal(on.G.MaomaoPreview.allowed(),true);
+ assert.equal(off.G.MaomaoPreview.allowed(),false);
 });
 test('Repertorio coincide con Veneno/Planta, sin alterar movimientos existentes',()=>{
  const {G}=fixture();const pool=G.Moves.poolFor(G.MaomaoPreview.mon);
