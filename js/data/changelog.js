@@ -19,6 +19,8 @@ G.CHANGELOG = [
     ['El código del juego pasa a una licencia no comercial (PolyForm Noncommercial 1.0.0): se puede seguir estudiando y modificando, pero nadie puede cobrar por él.',
      'The game’s code moves to a non-commercial license (PolyForm Noncommercial 1.0.0): you can still study and modify it, but nobody may charge for it.']
   ], fix: [
+    ['Móvil, especialmente iPhone instalado como app: corregida la imagen que podía deformarse y los controles que podían quedar desplazados del toque, también al girar el dispositivo o volver a la app.',
+     'Mobile, especially iPhone installed as an app: fixed the image becoming distorted and controls being offset from your touch, including after rotating the device or returning to the app.'],
     ['Cooperativo: la partida ya no se queda parada con cada uno esperando a que el otro elija. Un objeto y las cartas de nivel ya no se tapan, y si la conexión pierde un aviso se arregla solo.',
      'Co-op: the game no longer freezes with each player waiting for the other to choose. An item and the level-up cards no longer cover each other, and if the connection drops a message it fixes itself.'],
     ['Cooperativo: al volver de una grieta, quien no era el anfitrión ya ve a todos los enemigos (antes algunos eran invisibles y sólo se veían sus ataques).',
