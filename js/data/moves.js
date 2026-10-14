@@ -248,6 +248,13 @@
       desc: 'Onda sonora que sale en todas direcciones.',
       cd: 1.15, dmg: 12, speed: 260, count: 9, pierce: 1, life: 0.9, size: 7 },
 
+    // Como en Escarlata/Púrpura: es de tipo Normal hasta que te teracristalizas y
+    // entonces es de tu Teratipo (systems/tera.js). Sólo para quien tiene Teraorbe
+    // (tera: true; ver poolFor). 80 de potencia en los juegos, como Foco Resplandor.
+    { id: 'tera-blast', name: 'Teraexplosión', type: 'normal', kind: 'beam', tera: true,
+      desc: 'Normal; al teracristalizarte, del tipo de tu Teratipo.',
+      cd: 1.05, dmg: 22, radius: 220, width: 32 },
+
     // ---------------- VENENO (extra) ----------------
     { id: 'poison-sting', name: 'Picotazo Veneno', type: 'poison', kind: 'projectile',
       desc: 'Aguijón rápido que envenena.',
@@ -412,8 +419,9 @@
   }
 
   // Pool de movimientos por tipo. El pool `normal` lo tienen todos.
+  // (Teraexplosión no: sólo la tiene quien tiene Teraorbe, ver poolFor.)
   const POOL = {};
-  for (const m of RAW) (POOL[m.type] = POOL[m.type] || []).push(m.id);
+  for (const m of RAW) if (!m.tera) (POOL[m.type] = POOL[m.type] || []).push(m.id);
 
   const BY_ID = {};
   for (const m of RAW) {
@@ -422,11 +430,18 @@
     BY_ID[m.id] = m;
   }
 
-  /** Movimientos que este Pokémon puede aprender (sus tipos + normal). */
+  /** Movimientos que este Pokémon puede aprender (sus tipos + normal; + Teraexplosión si tiene Teraorbe). */
   function poolFor(mon) {
     const ids = new Set(POOL.normal);
     for (const t of mon.types) for (const id of (POOL[t] || [])) ids.add(id);
+    if (G.Tera && G.Tera.typeOf(mon.dex)) ids.add('tera-blast');
     return [...ids];
+  }
+
+  /** Icono de un movimiento; si ahora es de otro tipo (Teraexplosión), con el emblema de ese tipo. */
+  function icon(id, type) {
+    const d = BY_ID[id];
+    return 'move:' + id + (d && type && type !== d.type ? ':' + type : '');
   }
 
   /**
@@ -557,6 +572,6 @@
     return true;
   }
 
-  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
+  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, icon, instance, levelUp, nextUpText, startFor,
               EVO, NEED_NAME, evoInfo, evolve };
 })();

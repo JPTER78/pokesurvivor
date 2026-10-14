@@ -6,6 +6,20 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-14', title: ['Teracristalización', 'Terastallization'], new: [
+    ['Teracristalización: en Mejoras compra el Teraorbe de cada Pokémon y elige su Teratipo, cualquiera de los 18 tipos.',
+     'Terastallization: buy each Pokémon\'s Tera Orb in Upgrades and pick its Tera Type, any of the 18 types.'],
+    ['En la partida, desde el minuto 2 aparece un cristal Tera (con una flecha que te lleva): quédate 2 segundos a su lado para cargar el orbe y pulsa T (o toca el orbe). Una vez por partida.',
+     'During a run, from minute 2 a Tera crystal appears (an arrow points to it): stay next to it for 2 seconds to charge the orb, then press T (or tap the orb). Once per run.'],
+    ['Tu Pokémon se vuelve de cristal con la corona de su Teratipo hasta el final de la partida: +20 % de daño a los movimientos de ese tipo y te defiendes como ese tipo.',
+     'Your Pokémon turns to crystal with the crown of its Tera Type until the end of the run: +20% damage to moves of that type, and you defend as that type.'],
+    ['Movimiento nuevo, Teraexplosión, sólo para Pokémon con Teraorbe: es de tipo Normal y, como en Escarlata y Púrpura, al teracristalizarte pasa a ser de tu Teratipo.',
+     'New move, Tera Blast, only for Pokémon with a Tera Orb: it is Normal-type and, as in Scarlet and Violet, it becomes your Tera Type when you Terastallize.'],
+    ['Teracristalización Astral: a veces aparece un cristal Astral, más raro y que se va al minuto. Cárgalo y pulsa T para una ráfaga de 15 segundos: +50 % de daño a todos tus movimientos, más velocidad y recarga y menos daño recibido, con la corona Astral y su anillo de gemas.',
+     'Stellar Terastallization: sometimes a rarer Stellar crystal appears and fades after a minute. Charge it and press T for a 15-second burst: +50% damage to all your moves, more speed and faster recharge and less damage taken, with the Stellar crown and its ring of gems.'],
+    ['En grupo, tus compañeros también ven tu transformación.',
+     'In co-op, your teammates also see your transformation.']
+  ] },
   { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
      'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.'],

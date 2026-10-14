@@ -290,7 +290,63 @@ G.MenuUI = (() => {
       box.appendChild(el);
       if (u.id === 'ban' && lvl > 0 && banOpen) box.appendChild(banPicker(lvl));
     }
+    box.appendChild(teraPanel());
     box.appendChild(bindPanel());
+  }
+
+  // ---------------- Teraorbe: Teracristalización (systems/tera.js) ----------------
+  // save.ptera[dex] = Teratipo. El orbe se compra una vez por Pokémon (empieza
+  // con su primer tipo); cambiar de Teratipo cuesta (el Astral, más).
+  function teraPanel() {
+    const s = G.DB.save;
+    const T = G.Tera, mon = G.DEX_BY[upgDex], cur = T.typeOf(upgDex);
+    const pct = v => Math.round(v * 100);
+    const el = document.createElement('div');
+    el.className = 'panel tera-panel';
+    const orb = `<span class="tera-orb${cur ? ' on' : ''}" aria-hidden="true"></span>`;
+    const how = `Desde el minuto 2 aparece un cristal Tera en el mapa: quédate ${T.CHARGE} s a su lado para cargar el orbe y pulsa T (o toca el orbe). Una vez por partida, hasta el final.`;
+    // El Astral no se elige: sale en partida, más raro (systems/tera.js).
+    const star = `A veces aparece un cristal Astral, más raro y que dura poco: cárgalo y pulsa T para una ráfaga Astral de ${T.STELLAR_TIME} s (+${pct(T.STELLAR_BONUS)} % de daño a todos tus movimientos, más velocidad y recarga, y menos daño recibido).`;
+    if (!cur) {
+      el.innerHTML = `<div class="tera-head">${orb}<div><b>Teraorbe</b>
+        <p class="sub">Tu Pokémon se teracristaliza: +${pct(T.BONUS)} % de daño a los movimientos de su Teratipo y se defiende como ese tipo. Como en los juegos, no aprende movimientos nuevos: puede salirle Teraexplosión, de tipo Normal, que al teracristalizarse pasa a ser de su Teratipo.</p>
+        <p class="sub">${how}</p><p class="sub">${star}</p></div>
+        <button class="btn small gold" data-buy-orb data-sfx="none" ${s.coins < T.ORB_COST ? 'disabled' : ''}><span class="coin"></span> ${T.ORB_COST}</button></div>`;
+      el.querySelector('[data-buy-orb]').onclick = () => {
+        const sv = G.DB.save;
+        if (T.typeOf(upgDex) || sv.coins < T.ORB_COST) { renderUpgrades(); return; }
+        sv.coins -= T.ORB_COST;
+        sv.ptera = sv.ptera || {};
+        sv.ptera[upgDex] = mon.types[0];
+        G.DB.commit(true);
+        G.Audio.sfx('buy');
+        G.UI.refreshCoins();
+        G.UI.toast(`${mon.name} · Teraorbe · Teratipo ${T.NAME(mon.types[0])}`);
+        renderUpgrades();
+      };
+      return el;
+    }
+    const what = `+${pct(T.BONUS)} % de daño a los movimientos de tipo ${T.NAME(cur)} y te defiendes como tipo ${T.NAME(cur)}. Teraexplosión (Normal) puede salirte en las cartas y, al teracristalizarte, pasa a ser de tipo ${T.NAME(cur)}.`;
+    el.innerHTML = `<div class="tera-head">${orb}<div><b>Teraorbe</b> · Teratipo <b style="color:${T.COL[cur]}">${T.NAME(cur)}</b>
+        <p class="sub">${what}</p><p class="sub">${how}</p><p class="sub">${star}</p></div>
+        <span class="tera-crown" style="background-image:url(assets/tera/crowns/${cur}.png)" role="img" aria-label="Corona Tera ${T.NAME(cur)}"></span></div>
+      <p class="sub tera-cost">Cambiar de Teratipo: <span class="coin"></span> ${T.CHANGE_COST}</p>
+      <div class="tera-types">${T.TYPES.map(t => `<button class="chip tera-chip${t === cur ? ' on' : ''}" data-t="${t}" style="--tc:${T.COL[t]}" ${t === cur || s.coins < T.CHANGE_COST ? 'disabled' : ''}>${T.NAME(t)}</button>`).join('')}</div>`;
+    el.querySelectorAll('[data-t]').forEach(b => {
+      b.onclick = () => {
+        const sv = G.DB.save, t = b.dataset.t, price = T.CHANGE_COST;
+        if (!T.pickable(t) || T.typeOf(upgDex) === t || sv.coins < price) { renderUpgrades(); return; }
+        if (!confirm(`¿Cambiar el Teratipo de ${mon.name} a ${T.NAME(t)} por ${price} monedas?`)) return;
+        sv.coins -= price;
+        sv.ptera[upgDex] = t;
+        G.DB.commit(true);
+        G.Audio.sfx('buy');
+        G.UI.refreshCoins();
+        G.UI.toast(`${mon.name} · Teratipo ${T.NAME(t)}`);
+        renderUpgrades();
+      };
+    });
+    return el;
   }
 
   // ---------------- atajos: hueco fijo para cada movimiento ----------------

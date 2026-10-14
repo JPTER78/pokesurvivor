@@ -25,6 +25,55 @@ G.HUD = (() => {
     }
   }
 
+  // Flecha que señala algo del mapa: grande y latiendo en el borde si no se ve;
+  // si se ve, una flecha que bota encima. cols: [halo, claro, medio, oscuro].
+  const RIFT_COLS = ['#b48aff', '#e2d0ff', '#a06bff', '#1a0b33'];
+  const TERA_COLS = ['#74e9ef', '#d8fbff', '#15e1b6', '#0a2a33'];
+  const STELLAR_COLS = ['#ffffff', '#fff3fb', '#ff9ae6', '#2a1038'];
+  function beacon(ctx, w, h, cam, wx, wy, label, nearLabel, cols) {
+    const sx = (wx - cam.left()) * cam.scale, sy = (wy - cam.top()) * cam.scale;
+    const now = performance.now() / 1000, beat = 0.5 + Math.sin(now * 7) * 0.5;
+    const off = sx < 0 || sx > w || sy < 0 || sy > h;
+    ctx.save();
+    if (off) {
+      const M = 52, ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
+      const a = Math.atan2(sy - ey, sx - ex), ca = Math.cos(a), sa = Math.sin(a);
+      ctx.translate(ex, ey);
+      // Halo que late.
+      ctx.globalAlpha = 0.18 + beat * 0.22;
+      ctx.fillStyle = cols[0];
+      ctx.beginPath(); ctx.arc(0, 0, 30 + beat * 8, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = 1;
+      const tri = (k) => {
+        ctx.beginPath();
+        ctx.moveTo(ca * 40 * k, sa * 40 * k);
+        ctx.lineTo(Math.cos(a + 2.45) * 20 * k, Math.sin(a + 2.45) * 20 * k);
+        ctx.lineTo(Math.cos(a - 2.45) * 20 * k, Math.sin(a - 2.45) * 20 * k);
+        ctx.closePath();
+      };
+      tri(1.12); ctx.fillStyle = cols[3]; ctx.fill();
+      tri(1); ctx.fillStyle = beat > 0.5 ? cols[1] : cols[2]; ctx.fill();
+      ctx.font = F(800, 12);
+      ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
+      const lx = -ca * 34, ly = -sa * 30 + 4;
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+      ctx.strokeText(label, lx, ly);
+      ctx.fillStyle = cols[1];
+      ctx.fillText(label, lx, ly);
+    } else {
+      // Encima: flecha hacia abajo que bota.
+      const by = sy - 46 - Math.abs(Math.sin(now * 4)) * 10;
+      ctx.translate(sx, by);
+      ctx.beginPath(); ctx.moveTo(-15, -12); ctx.lineTo(15, -12); ctx.lineTo(0, 8); ctx.closePath();
+      ctx.lineWidth = 4; ctx.strokeStyle = cols[3]; ctx.stroke();
+      ctx.fillStyle = beat > 0.5 ? cols[1] : cols[2]; ctx.fill();
+      ctx.font = F(800, 11); ctx.textAlign = 'center';
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+      ctx.strokeText(nearLabel, 0, -18); ctx.fillStyle = cols[1]; ctx.fillText(nearLabel, 0, -18);
+    }
+    ctx.restore();
+  }
+
   function draw(ctx, w, h, pl, st) {
     ctx.save();
     ctx.textBaseline = 'alphabetic';
@@ -151,49 +200,22 @@ G.HUD = (() => {
     // flecha que bota encima; en la arena, cuenta atrás.
     const rift = G.Rift.rift;
     if (rift) {
-      const sx = (rift.x - cam.left()) * cam.scale, sy = (rift.y - 40 - cam.top()) * cam.scale;
-      const now = performance.now() / 1000, beat = 0.5 + Math.sin(now * 7) * 0.5;
-      const label = 'GRIETA · ' + Math.round(G.U.dist(pl.x, pl.y, rift.x, rift.y) / 32) + ' m · ' + Math.ceil(rift.ttl) + ' s';
-      const off = sx < 0 || sx > w || sy < 0 || sy > h;
-      ctx.save();
-      if (off) {
-        const M = 52, ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
-        const a = Math.atan2(sy - ey, sx - ex), ca = Math.cos(a), sa = Math.sin(a);
-        ctx.translate(ex, ey);
-        // Halo que late.
-        ctx.globalAlpha = 0.18 + beat * 0.22;
-        ctx.fillStyle = '#b48aff';
-        ctx.beginPath(); ctx.arc(0, 0, 30 + beat * 8, 0, 6.2832); ctx.fill();
-        ctx.globalAlpha = 1;
-        const tri = (k) => {
-          ctx.beginPath();
-          ctx.moveTo(ca * 40 * k, sa * 40 * k);
-          ctx.lineTo(Math.cos(a + 2.45) * 20 * k, Math.sin(a + 2.45) * 20 * k);
-          ctx.lineTo(Math.cos(a - 2.45) * 20 * k, Math.sin(a - 2.45) * 20 * k);
-          ctx.closePath();
-        };
-        tri(1.12); ctx.fillStyle = '#1a0b33'; ctx.fill();
-        tri(1); ctx.fillStyle = beat > 0.5 ? '#e2d0ff' : '#a06bff'; ctx.fill();
-        ctx.font = F(800, 12);
-        ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
-        const lx = -ca * 34, ly = -sa * 30 + 4;
-        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
-        ctx.strokeText(label, lx, ly);
-        ctx.fillStyle = '#e2d0ff';
-        ctx.fillText(label, lx, ly);
-      } else {
-        // Encima de la grieta: flecha hacia abajo que bota.
-        const by = sy - 46 - Math.abs(Math.sin(now * 4)) * 10;
-        ctx.translate(sx, by);
-        ctx.beginPath(); ctx.moveTo(-15, -12); ctx.lineTo(15, -12); ctx.lineTo(0, 8); ctx.closePath();
-        ctx.lineWidth = 4; ctx.strokeStyle = '#1a0b33'; ctx.stroke();
-        ctx.fillStyle = beat > 0.5 ? '#e2d0ff' : '#a06bff'; ctx.fill();
-        ctx.font = F(800, 11); ctx.textAlign = 'center';
-        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
-        const l2 = 'GRIETA · ' + Math.ceil(rift.ttl) + ' s';
-        ctx.strokeText(l2, 0, -18); ctx.fillStyle = '#e2d0ff'; ctx.fillText(l2, 0, -18);
-      }
-      ctx.restore();
+      beacon(ctx, w, h, cam, rift.x, rift.y - 40,
+             'GRIETA · ' + Math.round(G.U.dist(pl.x, pl.y, rift.x, rift.y) / 32) + ' m · ' + Math.ceil(rift.ttl) + ' s',
+             'GRIETA · ' + Math.ceil(rift.ttl) + ' s', RIFT_COLS);
+    }
+    // Cristal Tera (para cargar el Teraorbe, systems/tera.js): la misma flecha, en turquesa.
+    const tera = G.Tera.orbState(pl);
+    if (tera && tera.crystal) {
+      const c = tera.crystal;
+      beacon(ctx, w, h, cam, c.x, c.y - 70, 'CRISTAL TERA · ' + Math.round(G.U.dist(pl.x, pl.y, c.x, c.y) / 32) + ' m',
+             c.charge > 0 ? 'CARGANDO · ' + Math.round(c.charge * 100) + ' %' : 'CRISTAL TERA', TERA_COLS);
+    }
+    // El cristal Astral (raro): con lo que le queda antes de desvanecerse.
+    if (tera && tera.stellar) {
+      const c = tera.stellar;
+      beacon(ctx, w, h, cam, c.x, c.y - 70, 'CRISTAL ASTRAL · ' + Math.round(G.U.dist(pl.x, pl.y, c.x, c.y) / 32) + ' m · ' + Math.ceil(c.ttl) + ' s',
+             c.charge > 0 ? 'CARGANDO · ' + Math.round(c.charge * 100) + ' %' : 'CRISTAL ASTRAL · ' + Math.ceil(c.ttl) + ' s', STELLAR_COLS);
     }
     if (G.Rift.inArena) {
       ctx.textAlign = 'center';
@@ -286,7 +308,7 @@ G.HUD = (() => {
         const C = 22, P = (S - C * 2) / 3;
         g.forEach((gm, k) => {
           const cx = x + P + (k % 2) * (C + P), cy = y + P + Math.floor(k / 2) * (C + P);
-          G.Icons.draw(ctx, 'move:' + gm.id, cx, cy, C);
+          G.Icons.draw(ctx, G.Moves.icon(gm.id, gm.type), cx, cy, C);
           const f = cdOf(gm);
           if (f > 0) { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(cx, cy, C, C * f); }
           if (gm.evolved) { ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 1; ctx.strokeRect(cx + 0.5, cy + 0.5, C - 1, C - 1); }
@@ -306,7 +328,7 @@ G.HUD = (() => {
         }
 
         // emblema del tipo + insignia de la familia
-        G.Icons.draw(ctx, 'move:' + m.id, x + (S - 32) / 2, y + (S - 32) / 2 - 2, 32);
+        G.Icons.draw(ctx, G.Moves.icon(m.id, m.type), x + (S - 32) / 2, y + (S - 32) / 2 - 2, 32);
 
         // nivel del movimiento (puntitos)
         const dots = m.def.maxLvl;
@@ -343,6 +365,34 @@ G.HUD = (() => {
         ctx.fillStyle = BOND;
         ctx.fillText('×' + pl.bonds, bx + 25, by + 20);
       }
+    }
+
+    // ---------- Teraorbe (el primero por la izquierda, antes del objeto; systems/tera.js) ----------
+    const orb = G.Tera.orbState(pl);
+    if (orb) {
+      const now = performance.now(), hue = G.Tera.RAINBOW[Math.floor(now / 120) % 7];
+      const tera = orb.charged && !orb.used, star = orb.sCharged && !orb.burst, ready = tera || star, lit = ready || orb.burst > 0;
+      const ox = sx - 2 * S - 30, oy = sy;
+      roundRect(ctx, ox, oy, S, S, 12);
+      ctx.fillStyle = lit ? 'rgba(8,40,48,.94)' : 'rgba(10,16,28,.7)';
+      ctx.fill();
+      ctx.lineWidth = lit ? 2.5 : 1.2;
+      // Turquesa: Teracristalización lista. De colores: carga o ráfaga Astral.
+      ctx.strokeStyle = tera ? '#74e9ef' : lit ? hue : 'rgba(140,170,210,.22)';
+      ctx.stroke();
+      G.Tera.drawOrb(ctx, ox + (S - 32) / 2, oy + (S - 32) / 2, 32, now);
+      if (orb.burst > 0) {                       // lo que queda de la ráfaga Astral
+        ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(ox + 7, oy + S - 9, S - 14, 4);
+        ctx.fillStyle = hue; ctx.fillRect(ox + 7, oy + S - 9, (S - 14) * orb.burst / orb.burstTime, 4);
+      }
+      ctx.font = F(700, 9);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = orb.burst > 0 || star ? '#ffffff' : tera ? '#74e9ef' : orb.used ? '#8fa3c4' : '#cfe3ff';
+      ctx.fillText(orb.burst > 0 ? 'Astral · ' + Math.ceil(orb.burst) + ' s'
+        : tera ? (touch ? '¡Tócalo!' : 'T: ¡Tera!')
+        : star ? (touch ? '¡Tócalo!' : 'T: ¡Astral!')
+        : orb.used ? 'Tera ' + G.Tera.NAME(orb.type) : 'Teraorbe', ox + S / 2, oy - 6);
+      if (ready) G.Touch.addButton(ox, oy, S, S, () => { if (G.Game.state === 'playing') G.Tera.activate(pl); }, 6);
     }
 
     // ---------- objeto equipado (a la izquierda de los movimientos) ----------

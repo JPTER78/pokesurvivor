@@ -81,6 +81,7 @@ G.DB = (() => {
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+      ptera: {},              // dex -> Teratipo: Pokémon con Teraorbe (systems/tera.js)
       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
       pity: {},               // generación del banner -> tiradas sin ★5
       legends: {},            // dex -> fecha: legendarios vencidos en grietas
@@ -148,6 +149,12 @@ G.DB = (() => {
         s.pban[d] = [...new Set(l.filter(id => typeof id === 'string' && (!G.Moves || G.Moves.BY_ID[id])))].slice(0, 3);
       }
     } else s.pban = {};
+    // Teraorbes: uno de los 18 tipos, para un Pokémon que existe.
+    if (s.ptera && typeof s.ptera === 'object') {
+      for (const d of Object.keys(s.ptera)) {
+        if ((G.DEX_BY && !G.DEX_BY[d]) || (G.Tera && !G.Tera.pickable(s.ptera[d]))) delete s.ptera[d];
+      }
+    } else s.ptera = {};
     if (G.Upgrades) for (const d of Object.keys(s.pupg || {})) {
       const u = s.pupg[d];
       if (!u || typeof u !== 'object') { delete s.pupg[d]; continue; }
@@ -163,6 +170,7 @@ G.DB = (() => {
    * conexión y la de la nube). Nunca se pierde nada conseguido:
    *   - colecciones (owned, shiny): unión
    *   - mejoras y estadísticas: el máximo de cada una
+   *   - Teraorbes: unión (el Teratipo, el de la más reciente)
    *   - monedas, compañero, pity...: los de la versión más reciente
    * Es idempotente: fusionar dos veces da lo mismo.
    */
@@ -185,6 +193,9 @@ G.DB = (() => {
       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
+    // Teraorbes: no se pierde ninguno; si están en las dos, el tipo de la más reciente.
+    r.ptera = r.ptera || {};
+    for (const d in older.ptera || {}) if (!r.ptera[d]) r.ptera[d] = older.ptera[d];
     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
       r[coll] = r[coll] || {};

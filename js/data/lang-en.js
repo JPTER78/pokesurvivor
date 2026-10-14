@@ -575,5 +575,34 @@ G.I18n.add({
   // ---------------- reportar marcas del ranking ----------------
   'Reportar marca sospechosa': 'Report suspicious record', 'Ya la has reportado': 'You already reported it',
   'Ya has reportado esta marca': 'You already reported this record',
-  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it'
+  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it',
+
+  // ---------------- Teracristalización (systems/tera.js) ----------------
+  'Teraorbe': 'Tera Orb', 'Teratipo': 'Tera Type', 'Astral': 'Stellar',
+  'Tu Pokémon se teracristaliza: +{x} % de daño a los movimientos de su Teratipo y se defiende como ese tipo. Como en los juegos, no aprende movimientos nuevos: puede salirle Teraexplosión, de tipo Normal, que al teracristalizarse pasa a ser de su Teratipo.':
+    'Your Pokémon Terastallizes: +{x}% damage to moves of its Tera Type, and it defends as that type. As in the games, it learns no new moves: it can get Tera Blast, a Normal-type move that becomes its Tera Type when it Terastallizes.',
+  'Desde el minuto 2 aparece un cristal Tera en el mapa: quédate {x} s a su lado para cargar el orbe y pulsa T (o toca el orbe). Una vez por partida, hasta el final.':
+    'From minute 2 a Tera crystal appears on the map: stay next to it for {x} s to charge the orb, then press T (or tap the orb). Once per run, until the end.',
+  'A veces aparece un cristal Astral, más raro y que dura poco: cárgalo y pulsa T para una ráfaga Astral de {x} s (+{x} % de daño a todos tus movimientos, más velocidad y recarga, y menos daño recibido).':
+    'Sometimes a rarer, short-lived Stellar crystal appears: charge it and press T for a {x} s Stellar burst (+{x}% damage to all your moves, more speed and faster recharge, and less damage taken).',
+  '¡Ha aparecido un cristal Astral! Es raro y dura poco: cárgalo para una ráfaga Astral': 'A Stellar crystal has appeared! It is rare and short-lived: charge it for a Stellar burst',
+  'El cristal Astral se ha desvanecido': 'The Stellar crystal has faded',
+  '¡Carga Astral! Pulsa T para una ráfaga Astral de {x} s': 'Stellar charge! Press T for a {x} s Stellar burst',
+  '¡Carga Astral! Toca el orbe para una ráfaga Astral de {x} s': 'Stellar charge! Tap the orb for a {x} s Stellar burst',
+  '¡Ráfaga Astral! +{x} % de daño a todo durante {x} s': 'Stellar burst! +{x}% damage to everything for {x} s',
+  'La ráfaga Astral ha terminado': 'The Stellar burst has ended',
+  'CRISTAL ASTRAL · {x} m · {x} s': 'STELLAR CRYSTAL · {x} m · {x} s', 'CRISTAL ASTRAL · {x} s': 'STELLAR CRYSTAL · {x} s',
+  'T: ¡Astral!': 'T: Stellar!', 'Astral · {x} s': 'Stellar · {x} s',
+  '+{x} % de daño a los movimientos de tipo {x} y te defiendes como tipo {x}. Teraexplosión (Normal) puede salirte en las cartas y, al teracristalizarte, pasa a ser de tipo {x}.':
+    '+{x}% damage to {x}-type moves, and you defend as the {x} type. Tera Blast (Normal) can show up in your cards and becomes {x}-type when you Terastallize.',
+  'Teraexplosión': 'Tera Blast', 'Normal; al teracristalizarte, del tipo de tu Teratipo.': 'Normal; when you Terastallize, it becomes your Tera Type.',
+  'Cambiar de Teratipo:': 'Change Tera Type:', '· Teratipo': '· Tera Type',
+  '¿Cambiar el Teratipo de {x} a {x} por {x} monedas?': "Change {x}'s Tera Type to {x} for {x} coins?",
+  '{x} · Teraorbe · Teratipo {x}': '{x} · Tera Orb · Tera Type {x}', '{x} · Teratipo {x}': '{x} · Tera Type {x}',
+  'Corona Tera {x}': '{x} Tera crown',
+  '¡Ha aparecido un cristal Tera! Quédate a su lado para cargar el Teraorbe': 'A Tera crystal has appeared! Stay next to it to charge the Tera Orb',
+  '¡Teraorbe cargado! Pulsa T para teracristalizarte': 'Tera Orb charged! Press T to Terastallize',
+  '¡Teraorbe cargado! Toca el orbe para teracristalizarte': 'Tera Orb charged! Tap the orb to Terastallize',
+  'CRISTAL TERA · {x} m': 'TERA CRYSTAL · {x} m', 'CRISTAL TERA': 'TERA CRYSTAL', 'CARGANDO · {x} %': 'CHARGING · {x}%',
+  'T: ¡Tera!': 'T: Tera!', '¡Tócalo!': 'Tap it!', 'Tera {x}': 'Tera {x}'
 });
