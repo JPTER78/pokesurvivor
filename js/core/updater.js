@@ -20,7 +20,11 @@
 G.Updater = (() => {
   const EVERY = 5 * 60 * 1000, COUNTDOWN = 5;
   const tag = document.querySelector('script[src*="app.min.js?v="]');
-  const mine = tag ? (tag.getAttribute('src').match(/v=([0-9a-f]+)/) || [])[1] : null;
+  // GitHub Pages sirve los módulos de fuente mientras no ejecute build.js.
+  // En ese caso usamos el marcador de versión del HTML publicado.
+  const pageVersion = document.querySelector('meta[name="ps-version"]');
+  const mine = tag ? (tag.getAttribute('src').match(/v=([0-9a-f]+)/) || [])[1]
+    : (pageVersion && pageVersion.getAttribute('content')) || null;
   let pending = false, lastCheck = 0, timer = 0, counting = false;
 
   async function check() {
