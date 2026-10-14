@@ -71,6 +71,11 @@ async function run() {
           await page.waitForTimeout(100);
           // Centers come from shared layout; the pointer is dispatched at its actual visual position.
           if (mobile) {
+            // Emulators may report a fine pointer even with hasTouch. Activate
+            // touch UI before targeting a pause button that must be visible.
+            await page.touchscreen.tap(150, 150);
+            await page.waitForFunction(() => G.Touch.active);
+            await page.waitForTimeout(50);
             const p = await page.evaluate(() => { const s = G.Viewport.size, b = G.ControlLayout.pause(s.width, s.height, s.safe, null); return { x: b.x + 20, y: b.y + 20 }; });
             await page.touchscreen.tap(p.x, p.y);
           } else await page.keyboard.press('Escape');
