@@ -193,6 +193,8 @@ G.DB = (() => {
       for (const k in older[coll] || {}) if (!r[coll][k]) r[coll][k] = older[coll][k];
     }
     r.challenges = G.Challenges.mergeProgress(a.challenges, b.challenges);
+    // Una importación autorizada no puede perder su sello en futuras fusiones.
+    r.migrationImported = !!(a.migrationImported || b.migrationImported);
     // Misiones del mismo día/semana: el mayor progreso y lo ya recogido.
     const mo = older.missions || {}, mr = r.missions = r.missions || {};
     for (const [per, list] of [['day', 'daily'], ['week', 'weekly']]) {
@@ -654,6 +656,58 @@ G.DB = (() => {
     return true;
   }
 
+  /**
+   * Importación excepcional y única para el Firebase DE TILIKO.
+   * El usuario debe tener un documento migrationGrants/{uid} aprobado por el
+   * administrador. No sirve un JSON por sí solo para demostrar autenticidad.
+   * Nunca aplica a Invitado/local; no altera la cuenta del juego original.
+   */
+  async function importExternalSave(external) {
+    if (mode !== 'cloud' || guest || !uid || !save || !fs)
+      throw new Error('La migración a la nube exige iniciar sesión en Firebase Tiliko.');
+    if (!external || typeof external !== 'object' || Array.isArray(external))
+      throw new Error('Respaldo inválido.');
+    const grantRef = fs.collection('migrationGrants').doc(uid);
+    const grantSnap = await grantRef.get();
+    const grant = grantSnap.exists ? grantSnap.data() : null;
+    if (!grant || grant.approved !== true ||
+        !grant.expiresAt || typeof grant.expiresAt.toMillis !== 'function' ||
+        grant.expiresAt.toMillis() <= Date.now())
+      throw new Error('Tu cuenta no tiene una autorización de migración vigente. No se modificó nada.');
+    if (save.migrationImported)
+      throw new Error('Esta cuenta ya utilizó su migración única.');
+
+    // Normalización de esquema y eliminación de valores imposibles.
+    const incoming = migrate(plain(external), save.name);
+    let transferred = null;
+    await fs.runTransaction(async tx => {
+      const ref = docRef();
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Esta cuenta aún no tiene partida en Firebase. Juega una partida y espera la sincronización.');
+      const remote = migrate(plain(snap.data().save), save.name);
+      if (remote.migrationImported) throw new Error('La importación única ya se utilizó en esta cuenta.');
+      // Conserva todo el progreso local y remoto que pueda haberse guardado.
+      const next = merge(merge(plain(save), remote), incoming);
+      next.name = remote.name;
+      next.created = remote.created;  // respetar la fecha del documento existente
+      next.updated = Math.max(Date.now(), next.updated || 0);
+      next.migrationImported = true;
+      const doc = { save: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION };
+      if (snap.data().sus === true) doc.sus = true; // nunca quitar marcas existentes
+      tx.set(ref, doc);
+      transferred = next;
+    });
+    if (!transferred) throw new Error('La migración no pudo confirmarse.');
+    // Refresca la copia local SOLO tras confirmación real de Firestore.
+    applyInPlace(transferred);
+    write(K_CLOUD + uid, save);
+    clearTimeout(pushT); pushT = 0; pushDue = 0;
+    pending = false;
+    lastPush = Date.now();
+    setSync('ok');
+    return { ok: true };
+  }
+
   /** Funciones que se ejecutan al cerrar sesión o borrar la cuenta (amigos, salas...). */
   const leaveHooks = [];
 
@@ -763,6 +817,7 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
+    importExternalSave,
     owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
