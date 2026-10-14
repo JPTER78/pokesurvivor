@@ -1,6 +1,7 @@
-/* Importación de respaldos — SOLO para la rama de pruebas local de Tiliko.
- * Nunca escribe en Firebase ni utiliza red. No incorporar a producción hasta
- * diseñar una migración autenticada y revisada contra reglas antitrampas.
+/* Importación de respaldos de PokéSurvivor, sin modificar el original.
+ * Local: prueba aislada y con backup del progreso del navegador.
+ * Nube Tiliko: solo mediante autorización administrada y una única transacción.
+ * La versión Cloudflare de pruebas tiene Firebase desactivado deliberadamente.
  */
 G.SaveTransfer = (() => {
   'use strict';
@@ -12,9 +13,13 @@ G.SaveTransfer = (() => {
     'stats', 'pbind', 'pban'];
   const map = x => !!x && typeof x === 'object' && !Array.isArray(x);
   const num = x => Number.isFinite(x) && x >= 0 && Number.isInteger(x);
-  function localOnly() {
-    if (!G.DB.save || G.DB.guest || G.DB.mode !== 'local') {
-      G.UI.toast('La importación sólo funciona en una cuenta LOCAL, no en Invitado ni en Firebase.', 6000);
+  function eligible() {
+    if (!G.DB.save || G.DB.guest || !['local', 'cloud'].includes(G.DB.mode)) {
+      G.UI.toast('Inicia sesión en una cuenta para transferir la partida. Invitado no guarda.', 6000);
+      return false;
+    }
+    if (G.DB.mode === 'cloud' && !G.DB.online) {
+      G.UI.toast('Para importar a Firebase Tiliko necesitas conexión y sesión activa.', 6000);
       return false;
     }
     if (G.Game.state !== 'ui') {
@@ -35,7 +40,7 @@ G.SaveTransfer = (() => {
       save: JSON.parse(JSON.stringify(save)) };
   }
   function exportCurrent() {
-    if (!localOnly()) return;
+    if (!eligible()) return;
     download(backupObject(G.DB.save), 'tiliko-mi-cuenta-local-' + new Date().toISOString().slice(0, 10) + '.json');
     G.UI.toast('Copia local preparada. Consérvala en privado.', 4500);
   }
@@ -64,7 +69,7 @@ G.SaveTransfer = (() => {
     return s;
   }
   function chooseFile() {
-    if (!localOnly()) return;
+    if (!eligible()) return;
     const input = document.createElement('input');
     input.type = 'file'; input.accept = '.json,application/json';
     input.onchange = async () => {
@@ -74,16 +79,19 @@ G.SaveTransfer = (() => {
         if (file.size > MAX_BYTES) throw Error('El archivo es demasiado grande (máximo 3 MB).');
         const parsed = JSON.parse(await file.text(), (k, v) => ['__proto__', 'constructor', 'prototype'].includes(k) ? undefined : v);
         const s = validateEnvelope(parsed);
-        if (!localOnly()) return;
+        if (!eligible()) return;
         const owned = Object.keys(s.owned).length;
         const shiny = Object.keys(s.shiny).length;
         const upgraded = Object.values(s.pupg).filter(x => map(x) && Object.values(x).some(n => n > 0)).length;
+        const cloud = G.DB.mode === 'cloud';
         const msg = [
           'COPIA ENCONTRADA', '', 'Origen: ' + String(parsed.sourceSite || 'sin indicar').slice(0, 80),
           'Pokémon: ' + owned, 'Shinies: ' + shiny, 'Pokémon con mejoras: ' + upgraded,
           'Monedas: ' + s.coins, 'Tickets: ' + s.tickets.t1 + ' ×1 / ' + s.tickets.t10 + ' ×10', '',
-          '¿Importar SOLO a la cuenta local de esta página de pruebas?',
-          'Se hará una copia de seguridad local antes de cambiar nada. NO se enviará a Firebase.'
+          cloud ? '¿Fusionar con TU cuenta Firebase Tiliko? Requiere autorización administrativa por cuenta y solo se permite una vez.'
+            : '¿Importar SOLO a la cuenta local de esta página de pruebas?',
+          cloud ? 'Se guardará en Firebase Tiliko SOLO si existe permiso vigente. La cuenta original no se toca.'
+            : 'Se hará una copia de seguridad local antes de cambiar nada. NO se enviará a Firebase.'
         ].join('\n');
         if (!confirm(msg)) return;
         const target = G.DB.save;
@@ -94,19 +102,27 @@ G.SaveTransfer = (() => {
         catch (_) { throw Error('No hay espacio para guardar la copia de seguridad. No se importó nada.'); }
         s.updated = Math.max(Date.now(), (target.updated || 0) + 1);
         s.name = target.name;
-        const merged = G.DB.merge(original, s);
-        merged.name = target.name;
-        try {
-          for (const k of Object.keys(target)) delete target[k];
-          Object.assign(target, merged);
-          if (!G.DB.commit(true)) throw Error('Falló el guardado local.');
-        } catch (e) {
-          for (const k of Object.keys(target)) delete target[k];
-          Object.assign(target, original);
-          G.DB.commit(true);
-          throw e;
+        if (cloud) {
+          // La comprobación real se hace dentro de Firestore y es atómica.
+          // Si no hay permiso o falla la transacción, NO se modifica el guardado.
+          await G.DB.importExternalSave(s);
+        } else {
+          const merged = G.DB.merge(original, s);
+          merged.name = target.name;
+          try {
+            for (const k of Object.keys(target)) delete target[k];
+            Object.assign(target, merged);
+            if (!G.DB.commit(true)) throw Error('Falló el guardado local.');
+          } catch (e) {
+            for (const k of Object.keys(target)) delete target[k];
+            Object.assign(target, original);
+            G.DB.commit(true);
+            throw e;
+          }
         }
-        alert('¡Importación local terminada! Tus datos anteriores siguen respaldados en este navegador. Recarga la página para ver los Pokémon y mejoras importados. No se ha enviado nada a Firebase.');
+        alert(cloud
+          ? 'Migración a Firebase Tiliko confirmada. Se conservaron tus progresos y se registró el uso único del permiso. La cuenta original no se modificó.'
+          : '¡Importación local terminada! Tus datos anteriores siguen respaldados en este navegador. Recarga la página para ver los Pokémon y mejoras importados. No se ha enviado nada a Firebase.');
         location.reload();
       } catch (e) { alert('No se importó la partida: ' + e.message); }
     };
