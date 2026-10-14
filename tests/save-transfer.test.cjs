@@ -38,9 +38,10 @@ function fixture() {
   return { ctx, data, save, file, get picked() { return picked; },
     get reloaded() { return reloaded; }, get confirmed() { return confirmed; } };
 }
-test('Invitado, nube y partida en curso bloquean importación', () => {
+test('Invitado, nube sin sesión y partida en curso bloquean importación', () => {
   const f = fixture(); f.ctx.G.DB.guest = true; f.ctx.G.SaveTransfer.chooseFile(); assert.equal(f.picked, undefined);
-  f.ctx.G.DB.guest = false; f.ctx.G.DB.mode = 'cloud'; f.ctx.G.SaveTransfer.chooseFile(); assert.equal(f.picked, undefined);
+  f.ctx.G.DB.guest = false; f.ctx.G.DB.mode = 'cloud'; f.ctx.G.DB.online = false;
+  f.ctx.G.SaveTransfer.chooseFile(); assert.equal(f.picked, undefined);
   f.ctx.G.DB.mode = 'local'; f.ctx.G.Game.state = 'playing';
   f.ctx.G.SaveTransfer.chooseFile(); assert.equal(f.picked, undefined);
 });
@@ -72,4 +73,27 @@ test('Exportador no hace peticiones ni escribe progreso', () => {
   assert.match(EXPORT, /pokesurvivor\.com/);
   assert.match(EXPORT, /URL\.createObjectURL/);
   assert.doesNotMatch(src, /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|sendBeacon|\.setItem\s*\(/);
+});
+
+test('La importación cloud solo llama a la operación autorizada y no cambia nada ante un rechazo', async () => {
+  const f = fixture();
+  f.ctx.G.DB.mode = 'cloud'; f.ctx.G.DB.online = true;
+  let called = 0;
+  f.ctx.G.DB.importExternalSave = async s => { called++; assert.equal(s.coins, 850); throw Error('Sin permiso'); };
+  f.ctx.G.SaveTransfer.chooseFile();
+  const inp = f.picked; inp.files = [f.file()]; await inp.onchange();
+  assert.equal(called, 1);
+  assert.equal(f.save.coins, 500); assert.equal(f.reloaded, 0);
+  assert.ok([...f.data.keys()].some(k => k.startsWith('ps.transfer.backup.')));
+});
+test('El importador cloud espera al éxito de la transacción antes de recargar', async () => {
+  const f = fixture();
+  f.ctx.G.DB.mode = 'cloud'; f.ctx.G.DB.online = true;
+  f.ctx.G.DB.importExternalSave = async s => {
+    assert.equal(f.reloaded, 0); assert.equal(f.save.coins, 500);
+    Object.assign(f.save, s);
+  };
+  f.ctx.G.SaveTransfer.chooseFile(); const inp = f.picked;
+  inp.files = [f.file()]; await inp.onchange();
+  assert.equal(f.reloaded, 1); assert.equal(f.save.coins, 850);
 });
