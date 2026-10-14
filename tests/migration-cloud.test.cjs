@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const code = fs.readFileSync(path.join(__dirname, '../js/core/db.js'), 'utf8');
+const code = fs.readFileSync(path.join(__dirname, '../js/core/db.js'), 'utf8').replace(/\r\n/g, '\n');
 const rules = fs.readFileSync(path.join(__dirname, '../firestore.rules'), 'utf8');
 const injection = [
   '  function __testSetup(v) {',
