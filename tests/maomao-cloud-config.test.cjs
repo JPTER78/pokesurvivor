@@ -8,7 +8,7 @@ const root=path.join(__dirname,'..');
 const cfg=fs.readFileSync(path.join(root,'js/core/firebase-config.js'),'utf8');
 const mon=fs.readFileSync(path.join(root,'js/data/maomao-preview.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'dev.html'),'utf8');
-const hostname='pokesurvivor-tiliko-maomao-cloud-test.pages.dev';
+const hostname='pokesurvivor-tiliko.pages.dev';
 function boot(host,protocol='https:'){
   const ctx={G:{},location:{hostname:host,protocol}};
   vm.runInNewContext(cfg,ctx);
@@ -19,8 +19,9 @@ test('Sólo el dominio exacto, vía HTTPS, activa el Firebase de Tiliko',()=>{
   assert.equal(a.projectId,'pokesurvivor-tiliko');
   assert.equal(a.authDomain,'pokesurvivor-tiliko.firebaseapp.com');
   assert.equal(a.databaseURL.includes('tiliko'),true);
+  assert.equal(boot('pokesurvivor-tiliko-maomao-cloud-test.pages.dev').projectId,'pokesurvivor-tiliko');
   for(const host of ['pokesurvivor-tiliko-import-test.pages.dev','pokesurvivor-free.pages.dev','localhost',
-       'other.'+hostname,'pokesurvivor-tiliko-maomao-anim-test.pages.dev'])
+       'other.'+hostname,'pokesurvivor-tiliko-maomao-anim-test.pages.dev','pokesurvivor.com','www.pokesurvivor.com','tiliko2803.github.io'])
     assert.equal(boot(host),null,'No debe abrir Firebase desde '+host);
   assert.equal(boot(hostname,'http:'),null);
 });
