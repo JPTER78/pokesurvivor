@@ -58,10 +58,11 @@ G.LevelUp = (() => {
       const weight = id => { const d = G.Moves.BY_ID[id]; return G.Stats.fit(pl.mon, d.cat) >= 0.999 ? 2 : 1; };
       for (const id of pickWeighted(pool, 6, weight)) {
         const d = G.Moves.BY_ID[id];
+        const type = id === 'tera-blast' ? G.Tera.blastType(pl) : d.type;   // Teraexplosión: su Teratipo
         out.push({
           w: 10, type: 'new', key: 'new:' + id,
-          icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: G.U.TYPE_NAME[d.type] + (d.cat ? ' · ' + G.Stats.NAME[d.cat] : ''),
+          icon: G.Moves.icon(id, type), color: G.U.TYPE_COLOR[type],
+          tag: G.U.TYPE_NAME[type] + (d.cat ? ' · ' + G.Stats.NAME[d.cat] : ''),
           title: G.T(d.name, 'move'), desc: d.desc + fitNote(pl.mon, d.cat),
           apply: p => p.addMove(id)
         });
@@ -94,7 +95,7 @@ G.LevelUp = (() => {
       if (!txt) continue;
       out.push({
         w: 8, type: 'up', key: 'up:' + m.id,
-        icon: 'move:' + m.id, color: G.U.TYPE_COLOR[m.type],
+        icon: G.Moves.icon(m.id, m.type), color: G.U.TYPE_COLOR[m.type],
         tag: 'Nv.' + m.lvl + ' > ' + (m.lvl + 1),
         title: G.T(m.name, 'move'), desc: txt,
         apply: () => G.Moves.levelUp(m)
