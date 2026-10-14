@@ -833,3 +833,35 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #scr-play-mode, #scr-challenges { padding-top: 50px; }
   .challenge-card p { margin: 8px 0; font-size: 14px; }
 }
+
+/* === modal gift z-index Android === */
+/* El menú permanece como fondo al abrir el canje; debe estar POR DEBAJO
+   del modal. Sin esta capa, el menú (posterior en el DOM) intercepta taps. */
+#scr-gifts {
+  z-index: 70; /* encima de menú z20, barra superior z25 y ajustes z60 */
+  isolation: isolate;
+}
+#scr-gifts .box.settings {
+  min-width: 0;
+  max-height: calc(100dvh - 16px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#scr-gifts #gift-code {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+}
+@media (max-height: 520px) {
+  /* En móvil horizontal no reservar espacio para la barra, que queda tapada. */
+  #scr-gifts { padding: 6px 10px; }
+  #scr-gifts .box.settings { max-height: calc(100dvh - 12px); }
+  #scr-gifts .sub { margin: 5px 0; }
+  #scr-gifts #gift-form { display: grid; gap: 6px; }
+  #scr-gifts #gift-status { margin: 2px 0; }
+}
