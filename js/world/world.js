@@ -58,6 +58,17 @@ G.World = (() => {
   }
   const fbm = (x, y, s) => vnoise(x, y, s) * 0.65 + vnoise(x * 2.13 + 17, y * 2.13 - 9, s + 1) * 0.35;
 
+  // Vías de escape suaves en el mundo infinito (NO en las arenas).
+  // Dos familias de corredores serpenteantes se cruzan periódicamente. Se
+  // evalúan por coordenadas y semilla, sin BFS costoso en móviles.
+  const LANE_STEP = 22, LANE_HALF = 2.1;
+  const laneDistance = n => Math.abs(n - Math.round(n / LANE_STEP) * LANE_STEP);
+  function escapeLane(tx, ty) {
+    const vertical = tx - 1.4 * Math.sin(ty / 21 + seed * 0.00011);
+    const horizontal = ty - 1.4 * Math.sin(tx / 23 + seed * 0.00017);
+    return laneDistance(vertical) <= LANE_HALF || laneDistance(horizontal) <= LANE_HALF;
+  }
+
   /** Terreno "puro" de un tile (sin caché). */
   function arenaDist(tx, ty) { return arena ? Math.hypot(tx - arena.tx, ty - arena.ty) : Infinity; }
 
@@ -84,6 +95,7 @@ G.World = (() => {
     }
     const d = Math.hypot(tx, ty);
     if (d < 9) return FLOOR;                          // claro inicial
+    if (escapeLane(tx, ty)) return FLOOR;            // rutas de salida entre paredes y líquidos
     const ramp = G.U.clamp((d - 9) / 8, 0, 1);       // aparición suave
     if (fbm(tx / 13, ty / 13, seed + 101) < 0.04 + 0.23 * ramp) return LIQUID;
     if (fbm(tx / 8, ty / 8, seed + 202) > 1 - 0.27 * ramp) return WALL;
@@ -124,6 +136,9 @@ G.World = (() => {
       if (c.terr[j * N + i] !== FLOOR) continue;
       const tx = c.cx * N + i, ty = c.cy * N + j;
       if (Math.hypot(tx, ty) < 7) continue;
+      // Mantener libres los pasos: sin árboles, rocas, cofres ni altares encima.
+      // Las grietas mantienen su decoración y corredor propios.
+      if (!arena && escapeLane(tx, ty)) continue;
       if (broken.has(tx + ',' + ty)) continue;
 
       // Necesita suelo alrededor para no pegarse a paredes / agua.
