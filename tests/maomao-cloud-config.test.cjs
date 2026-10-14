@@ -34,5 +34,5 @@ test('V0.4 contiene login Google, regalos, animaciones y poder 1.52',()=>{
   assert.match(mon,/atk:\s*1\.52/);
   assert.match(mon,/start:\s*'poison-sting'/);
   // Revisar el projectId real, no los comentarios de seguridad.
-  assert.doesNotMatch(cfg,/projectId:\\s*['"]pokesurvivor-free['"]/);
+  assert.equal(cfg.includes("projectId: 'pokesurvivor-free'"),false);
 });
