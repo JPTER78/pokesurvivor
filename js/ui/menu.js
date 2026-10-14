@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', gifts: 'ticket' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -15,6 +15,7 @@ G.MenuUI = (() => {
         else if (go === 'dex') openDex();
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
+        else if (go === 'gifts') G.GiftsUI.open();
         else if (go === 'goals') G.GoalsUI.open();
         else if (go === 'friends') G.FriendsUI.open();
         else if (go === 'rank') G.RankingUI.open();
@@ -164,7 +165,15 @@ G.MenuUI = (() => {
       c.onclick = () => { dexFilter = k; openDex(); };
       fb.appendChild(c);
     }
+    if (s.owned[G.GiftCodes.MAOMAO_DEX]) {
+      const special = document.createElement('button');
+      special.className = 'gen-tab' + (dexGen === 0 ? ' on' : '');
+      special.innerHTML = '<b>Especial</b><small>1/1</small>';
+      special.onclick = () => { dexGen = 0; dexSel = G.GiftCodes.MAOMAO_DEX; openDex(); };
+      tabs.appendChild(special);
+    }
     renderGrid();
+    if (dexGen === 0 && s.owned[G.GiftCodes.MAOMAO_DEX]) dexSel = G.GiftCodes.MAOMAO_DEX;
     showDetail(dexSel);
   }
 
@@ -172,7 +181,9 @@ G.MenuUI = (() => {
     const s = G.DB.save;
     const grid = $('dex-grid');
     grid.innerHTML = '';
-    for (const p of G.DEX) {
+    const catalog = dexGen === 0 && s.owned[G.GiftCodes.MAOMAO_DEX]
+      ? [G.DEX_BY[G.GiftCodes.MAOMAO_DEX]] : G.DEX;
+    for (const p of catalog) {
       if (p.gen !== dexGen) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
       if (dexFilter === 'own' && !own) continue;
@@ -224,7 +235,7 @@ G.MenuUI = (() => {
           <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
       <div class="center">
-        <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
+        <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${p.gen === 0 ? 'Especial' : GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
@@ -239,7 +250,7 @@ G.MenuUI = (() => {
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
-      ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
+      ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${p.gen === 0 ? 'Especial' : GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
