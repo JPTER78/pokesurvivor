@@ -1,12 +1,15 @@
 /* PokéSurvivor Tiliko — versión propia con Google + Mao Mao.
- * Firebase SOLO en estos dos dominios HTTPS controlados por Tiliko:
- * la versión propia (rama main) y su prueba previa aislada.
+ * Firebase SOLO en dominios HTTPS controlados por Tiliko:
+ * Cloudflare Tiliko y GitHub Pages en /pokesurvivor/.
  * Nunca se conecta al Firebase original pokesurvivor-free.
  * En cualquier otro dominio usa modo local.
  */
 G.FIREBASE_CONFIG = (location.protocol === 'https:' &&
   (location.hostname === 'pokesurvivor-tiliko.pages.dev' ||
-   location.hostname === 'pokesurvivor-tiliko-maomao-cloud-test.pages.dev'))
+   location.hostname === 'pokesurvivor-tiliko-maomao-cloud-test.pages.dev' ||
+   (location.hostname === 'tiliko2803.github.io' &&
+    (location.pathname === '/pokesurvivor' ||
+     location.pathname.startsWith('/pokesurvivor/')))))
   ? {
   apiKey: 'AIzaSyBO_-FdM_k9kUIWxqpUEQc03a9IKWbJaao',
   authDomain: 'pokesurvivor-tiliko.firebaseapp.com',
