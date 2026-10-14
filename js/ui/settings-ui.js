@@ -141,12 +141,15 @@ G.SettingsUI = (() => {
            <button class="btn" id="set-logout">Cerrar sesión</button>
            <button class="btn danger" id="set-delete">Borrar cuenta</button>
          </div><p class="note" id="set-msg"></p>`
-      + (G.DB.mode === 'local' ? `<h3 class="set-h">Transferencia de partida (prueba local)</h3>
-          <p class="sub">Sólo en este navegador. No conecta a Firebase ni cambia la cuenta pública. Se respalda tu partida antes de importar.</p>
+      + (`<h3 class="set-h">Transferencia de partida</h3>
+          <p class="sub">${G.DB.mode === 'local'
+            ? 'Prueba local. No conecta a Firebase y no modifica la cuenta original.'
+            : 'Solo tras autorización administrativa de importación única en Firebase Tiliko; no modifica la cuenta original.'}
+            Se respalda tu partida antes de importar.</p>
           <div class="row wrap" style="gap:8px;margin-top:12px">
             <button class="btn" id="set-transfer-import">Importar respaldo JSON</button>
-            <button class="btn small" id="set-transfer-export">Descargar copia local</button>
-          </div>` : '');
+            <button class="btn small" id="set-transfer-export">Descargar respaldo</button>
+          </div>`);
   }
 
   function wire(box) {
