@@ -21,11 +21,11 @@ function run() {
   // operación de conjuntos; uno a uno se pasaba del tope de 1.000 operaciones).
   const groups = {};
   for (const a of L) { const v = +val(a.reward).toFixed(3); if (v > 0) (groups[v] = groups[v] || []).push(a.id); }
-  const terms = Object.entries(groups).map(([v, list]) => `${v} * achNew().intersection([${list.map(i => `'${i}'`).join(', ')}].toSet()).size()`);
+  const terms = Object.entries(groups).map(([v, list]) => `${v} * newly.intersection([${list.map(i => `'${i}'`).join(', ')}].toSet()).size()`);
   const block = [
     '    // <logros> (generado por tools/make_rules.js, no editar a mano)',
     "    function achNew() { return request.resource.data.save.get('ach', {}).diff(resource.data.save.get('ach', {})).addedKeys(); }",
-    `    function achV() { return ${terms.join('\n        + ')}; }`,
+    `    function achV() { let newly = achNew(); return newly.size() == 0 ? 0 : ${terms.join('\n        + ')}; }`,
     '    // </logros>'
   ].join('\n');
   const src = fs.readFileSync(RULES, 'utf8');

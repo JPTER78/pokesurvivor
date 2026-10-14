@@ -5,7 +5,11 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io</title>
+<title>PokéSurvivor Tiliko — Mao Mao con Google (V0.4)</title>
+<style>
+  /* Entorno de pruebas en nube: no usar invitado/cuentas locales para evitar errores. */
+  #scr-login .tab[data-tab="register"], #scr-login #btn-guest { display: none !important; }
+</style>
 <meta name="description" content="Sobrevive a hordas de Pokémon con tu compañero en este fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo con amigos. Sin descargas ni anuncios.">
 <!-- seo:begin -->
 <link rel="canonical" href="https://pokesurvivor.com/">
@@ -78,7 +82,7 @@
 }
 </script>
 <!-- seo:end -->
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=gift-input-fix-20261014">
 </head>
 <body>
 
@@ -93,7 +97,8 @@
       <div class="t1">PokéSurvivor</div>
       <div class="t2">Mundo Misterioso</div>
     </div>
-    <p class="login-tag">Sobrevive a las hordas con tu compañero Pokémon · gratis, en PC y móvil</p>
+    <p class="login-tag"><strong>Mao Mao V0.4 — PRUEBA CON GOOGLE / FIREBASE TILIKO</strong></p>
+    <p class="note center">Entra con tu cuenta de Google de Tiliko. Esta página usa tu partida real de Tiliko, no la del PokéSurvivor original. El canje MAO25 necesita las reglas nuevas de Firestore antes de funcionar.</p>
     <div class="tabs">
       <div class="tab on" data-tab="login">Entrar</div>
       <div class="tab" data-tab="register">Crear cuenta</div>
@@ -162,6 +167,22 @@
   </div>
 </section>
 
+<!-- ====== Código de regalo ====== -->
+<section id="scr-gifts" class="scr dim hidden">
+  <div class="box settings" id="gift-panel">
+    <div class="row between"><h2>Código de regalo</h2><button class="btn small ghost" id="gift-close" type="button">Cerrar</button></div>
+    <p class="sub">El mismo código sirve para varias cuentas; cada cuenta recibe el regalo una sola vez.</p>
+    <div class="center"><canvas id="gift-stage" class="stage hidden" width="200" height="155"></canvas></div>
+    <p id="gift-owned" class="gold center hidden">★ Mao Mao · Veneno / Planta · ¡Conseguida!</p>
+    <form id="gift-form" autocomplete="off">
+      <label for="gift-code">Código de 5 caracteres</label>
+      <input id="gift-code" class="field" type="text" maxlength="5" minlength="5" placeholder="ABCDE" autocapitalize="characters" spellcheck="false" inputmode="text" autocomplete="off" aria-label="Código de regalo" style="text-align:center;text-transform:uppercase;letter-spacing:0.25em" required>
+      <p class="note" id="gift-status" aria-live="polite"></p>
+      <button class="btn gold" id="gift-redeem" type="submit" style="width:100%">Canjear regalo</button>
+    </form>
+  </div>
+</section>
+
 <!-- ====== Menú principal ====== -->
 <section id="scr-menu" class="scr hidden">
   <div class="menu-left">
@@ -179,10 +200,12 @@
   <div class="menu-right">
     <div class="box">
       <div class="menu-list">
+        <button id="btn-maomao-preview" class="menu-item hidden" type="button">Probar a Maomao<small>Veneno / Planta · prueba visual como invitado</small></button>
         <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
+        <button class="menu-item" data-go="gifts">Código de regalo<small>Canjea un regalo especial de 5 caracteres</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
         <button class="menu-item" data-go="friends">Amigos<small id="menu-friends-sub">Juega en grupo, hasta 4</small></button>
         <button class="menu-item" data-go="rank">Ranking<small>Quién aguanta más</small></button>
@@ -408,6 +431,24 @@
   </div>
 </section>
 
+<!-- ====== Modos y desafíos ====== -->
+<section id="scr-play-mode" class="scr dim hidden">
+  <div class="box challenge-box">
+    <div class="row between"><h2>Jugar</h2><button class="btn ghost" data-back>Volver</button></div>
+    <div class="mode-buttons">
+      <button id="btn-normal-run" class="btn gold" data-sfx="confirm">Partida normal</button>
+      <button id="btn-challenges" class="btn" data-sfx="click">Desafíos</button>
+    </div>
+  </div>
+</section>
+<section id="scr-challenges" class="scr dim hidden">
+  <div class="box challenge-box">
+    <div class="row between"><h2>Desafíos</h2><button id="challenges-back" class="btn ghost">Volver</button></div>
+    <div id="challenge-list"></div>
+  </div>
+</section>
+<div id="challenge-hud" class="hidden" role="status"></div>
+
 <!-- ====== Misiones, logros y perfil ====== -->
 <section id="scr-goals" class="scr dim hidden">
   <div class="box wide">
@@ -564,8 +605,12 @@
 <script defer src="js/data/music.js"></script>
 <script defer src="js/data/pokedex.js"></script>
 <script defer src="js/data/sprites-meta.js"></script>
+<script defer src="js/data/maomao-preview.js"></script>
+<script defer src="js/data/maomao-animation.js"></script>
+<script defer src="js/data/gift-codes.js"></script>
 <!-- núcleo -->
 <script defer src="js/core/firebase-config.js"></script>
+<script defer src="js/systems/challenges.js"></script>
 <script defer src="js/core/db.js"></script>
 <script defer src="js/core/audio.js"></script>
 <script defer src="js/core/input.js"></script>
@@ -619,6 +664,7 @@
 <script defer src="js/ui/login.js"></script>
 <script defer src="js/ui/test.js"></script>
 <script defer src="js/ui/menu.js"></script>
+<script defer src="js/ui/gifts-ui.js"></script>
 <script defer src="js/ui/slots.js"></script>
 <script defer src="js/ui/gacha-ui.js"></script>
 <script defer src="js/ui/run-ui.js"></script>
@@ -626,6 +672,7 @@
 <script defer src="js/ui/ranking-ui.js"></script>
 <script defer src="js/ui/mod-ui.js"></script>
 <script defer src="js/ui/goals-ui.js"></script>
+<script defer src="js/ui/save-transfer.js"></script>
 <script defer src="js/ui/settings-ui.js"></script>
 <script defer src="js/ui/support-ui.js"></script>
 <script defer src="js/ui/news-ui.js"></script>

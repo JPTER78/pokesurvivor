@@ -103,8 +103,11 @@ G.RunUI = (() => {
   }
 
   function showOver(r, onBack) {
-    $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
+    $('over-title').textContent = r.challenge ? (r.challenge.won ? '¡Desafío superado!' : 'Desafío fallido') : r.dead ? 'Has caído…' : 'Run terminada';
     $('over-stats').innerHTML = `
+      ${r.challenge ? `<div class="challenge-result" style="grid-column:1/-1"><b>${r.challenge.name}</b>
+        <p>Mejor marca: ${G.U.mmss(r.challenge.bestTime)} · ${r.challenge.completedAt ? 'Completado' : 'Pendiente'}</p>
+        <p class="sub">Premio de 500 monedas pendiente de habilitación.</p></div>` : ''}
       <div><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
       <div><span>Nivel</span><b>${r.level}</b></div>
       <div><span>Derrotados</span><b>${r.kills}</b></div>
@@ -120,7 +123,7 @@ G.RunUI = (() => {
       ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
         <div class="caught-row" id="over-caught"></div></div>` : ''}
       ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">¡Nuevo récord de tiempo!</div>' : ''}
-      ${askSupport(r) ? `<div class="support-ask" id="over-ask" style="grid-column:1/-1">
+      ${!r.challenge && askSupport(r) ? `<div class="support-ask" id="over-ask" style="grid-column:1/-1">
         <button class="x" type="button" aria-label="Cerrar">×</button>
         <p>¿Te está gustando PokéSurvivor? Lo hago yo solo y los servidores cuestan dinero. Si quieres, puedes ayudarme a mantenerlo en línea.</p>
         <a class="btn small gold" href="${G.Funding.url}" target="_blank" rel="noopener">${G.Icons.html('heart', 14)} Apoyar en Ko-fi</a>
@@ -233,5 +236,11 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  function challengeHUD() {
+    const el = $('challenge-hud'), run = G.Challenges.active;
+    el.classList.toggle('hidden', !run);
+    if (run) el.textContent = 'Desafío · ' + G.U.mmss(Math.ceil(run.def.duration - run.time));
+  }
+
+  return { challengeHUD, showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
 })();

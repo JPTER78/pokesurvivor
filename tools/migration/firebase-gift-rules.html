@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Reglas Firebase Tiliko — Regalos Mao Mao MAO25</title><style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0b1223;color:#fff}body{max-width:640px;margin:auto;padding:20px 15px 60px;line-height:1.55}h1{font-size:1.35rem}h2{font-size:1.08rem}code{background:#263348;padding:3px;border-radius:4px}p{margin:12px 0}a{color:#ffe187}button{min-height:50px;width:100%;font-size:1rem;background:#ffd25d;color:#111e35;font-weight:700;border:0;border-radius:10px}button:disabled{opacity:.45}aside{padding:14px;border:1px solid #626d86;border-radius:10px;margin:18px 0;background:#17233b}#status{font-size:.92rem}textarea{width:100%;height:110px;box-sizing:border-box;background:#152039;color:#fff;border:1px solid #526788;border-radius:9px;padding:8px}summary{cursor:pointer}
+</style></head><body>
+<h1>PokéSurvivor Tiliko — Reglas de regalos MAO25</h1>
+<p>Esta página solo te ayuda a <strong>copiar las reglas de migración y regalos</strong> desde el navegador del teléfono. No tiene acceso a tu cuenta de Firebase ni cambia el servidor por sí sola.</p>
+<aside><strong>Comprueba primero:</strong> estás en <code>pokesurvivor-tiliko</code> y ya hiciste un respaldo de las reglas actuales. <strong>Nunca</strong> publiques estas reglas en <code>pokesurvivor-free</code> (el original).</aside>
+<h2>Copiar el archivo completo</h2>
+<p>El botón carga el archivo <code>firestore.rules</code> incluido en esta misma versión del repositorio y lo coloca en el portapapeles. No se necesitan permisos de cuenta ni instalar nada.</p>
+<button id="copy" disabled>Preparando reglas…</button><p id="status" role="status">Verificando el archivo...</p>
+<details><summary>Copiar manualmente si el portapapeles está bloqueado</summary><textarea id="raw" readonly spellcheck="false"></textarea></details>
+<h2>Publicar en Firebase Console</h2>
+<ol><li>Abre la pestaña <strong>Firestore Database → Reglas</strong> del proyecto <code>pokesurvivor-tiliko</code>.</li>
+<li>Pega el contenido completo sustituyendo solo las reglas existentes.</li>
+<li>Revisa que no haya errores de sintaxis y usa <strong>Publicar</strong> únicamente después de confirmar que las pruebas del emulador terminaron correctamente.</li>
+<li>El código público <strong>MAO25</strong> funciona para cada cuenta una vez; no necesitas crear <strong>migrationGrants</strong> para canjear regalos. Esa colección solo se utiliza para migraciones manuales autorizadas.</li></ol>
+<p><a href="https://github.com/Tiliko2803/pokesurvivor/blob/test/maomao-cloud-v0.4/firestore.rules" target="_blank" rel="noopener">Ver el archivo de reglas en GitHub</a></p>
+<script>
+(async()=>{
+ const s=document.getElementById('status'),b=document.getElementById('copy'),t=document.getElementById('raw');
+ try{
+  const r=await fetch('/firestore.rules',{cache:'no-store'});
+  if(!r.ok)throw Error('La copia no está publicada todavía ('+r.status+').');
+  const rules=await r.text();
+  if(!rules.includes('rules_version =')||!rules.includes('function authorizedMigration(uid)')||!rules.includes('match /migrationGrants/{uid}')||!rules.includes('function authorizedGift()')||!rules.includes("== 'MAO25'"))throw Error('El archivo recibido no es la versión con regalos y migración esperada.');
+  t.value=rules;b.disabled=false;b.textContent='Copiar todas las reglas nuevas';
+  s.textContent='Archivo comprobado: '+rules.split('\n').length+' líneas. Solo se copiará texto.';
+  b.addEventListener('click',async()=>{
+   try{await navigator.clipboard.writeText(rules);s.textContent='¡Reglas copiadas! Regresa a Firebase Console. No publiques hasta confirmar que las pruebas del emulador pasaron.';}
+   catch(e){t.focus();t.select();s.textContent='El navegador bloqueó el portapapeles. Abre «Copiar manualmente» y copia el texto seleccionado.';}
+  });
+ }catch(e){b.textContent='Reglas no disponibles';s.textContent=e.message;}
+})();
+</script>
+</body></html>

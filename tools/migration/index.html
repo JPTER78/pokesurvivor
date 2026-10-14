@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Transferir mi partida — PokéSurvivor Tiliko (prueba)</title>
+<style>
+:root{font-family:system-ui,sans-serif;color-scheme:dark;background:#0b1224;color:#f6f6ff}body{max-width:650px;margin:0 auto;padding:20px 16px 64px;line-height:1.52}h1{font-size:1.5rem}h2{font-size:1.12rem;margin-top:26px}a{color:#ffd663}.btn,button{display:inline-block;border:0;border-radius:8px;background:#ffca43;color:#13192d;font-weight:750;padding:13px 17px;min-height:44px;text-decoration:none;cursor:pointer}p,li{max-width:62ch}.card{background:#162443;border:1px solid #344364;border-radius:12px;padding:14px;margin:14px 0}.muted{color:#bfcbdf;font-size:.95rem}code{overflow-wrap:anywhere}#copytext{width:100%;height:68px;background:#070e20;color:#f8e3b6;border:1px solid #5571a3;border-radius:6px;padding:9px;box-sizing:border-box;resize:none}
+</style></head><body>
+<h1>Transferir una partida de PokéSurvivor</h1>
+<p>Herramienta <strong>de pruebas locales</strong>, hecha para Android. No modifica tu cuenta del servidor original ni escribe en Firebase Tiliko.</p>
+<div class="card"><strong>Privacidad:</strong> el exportador lee una copia guardada por <em>pokesurvivor.com</em> en tu propio navegador y descarga un JSON. <strong>No envía el archivo a ningún servidor.</strong> No compartas ese JSON: contiene tu progreso.</div>
+<h2>1. Preparar el exportador en Brave</h2>
+<ol>
+<li>Abre <a href="https://pokesurvivor.com/" target="_blank" rel="noopener">PokéSurvivor original</a> en Brave e inicia sesión con tu cuenta de siempre. Espera a que el estado de guardado indique que está sincronizado.</li>
+<li>En esta página, toca «Copiar código del marcador».</li>
+<li>En Brave, crea un marcador/favorito del sitio original llamado <strong>Exportar PokéSurvivor</strong>, edita su URL y pega el código. Debe empezar con <code>javascript:</code>.</li>
+<li>De vuelta en <em>pokesurvivor.com</em>, escribe <strong>Exportar PokéSurvivor</strong> en la barra de direcciones y toca la sugerencia del marcador. No lo abras desde el administrador de marcadores si Brave lo bloquea.</li>
+<li>Aparecerá «Copia de tu partida»; verifica nombre y Pokémon, luego toca «Descargar respaldo JSON».</li>
+</ol>
+<button id="copy" type="button">Copiar código del marcador</button>
+<p id="copy-status" class="muted" role="status"></p>
+<details><summary>Copiar manualmente</summary><textarea id="copytext" readonly spellcheck="false"></textarea></details>
+<div class="card"><strong>¿Brave bloquea los marcadores JavaScript?</strong><p>Como alternativa puedes instalar <a href="https://addons.mozilla.org/es-MX/android/addon/violentmonkey/" target="_blank" rel="noopener">Violentmonkey para Firefox Android</a>, añadir este <a href="pokesurvivor-export.user.js" target="_blank" rel="noopener">script de exportación</a> y acceder al juego original desde Firefox. No instales extensiones de origen desconocido.</p></div>
+<h2>2. Probar la copia sin Firebase</h2>
+<ol>
+<li>Abre <a href="/" target="_blank" rel="noopener">PokéSurvivor Tiliko — migración de prueba</a>.</li>
+<li>Registra una <strong>cuenta local de pruebas</strong>. No uses Invitado: sus cambios desaparecen al terminar la sesión.</li>
+<li>Entra en <strong>Ajustes → Cuenta → Importar respaldo JSON</strong> y selecciona el archivo descargado.</li>
+<li>Comprueba en la pantalla de confirmación cuántos Pokémon, mejoras y monedas contiene. Confirma solo si coinciden con los datos que esperas.</li>
+<li>Después de recargar, verifica tu colección y prueba Supervivencia Extrema con las mejoras recuperadas.</li>
+</ol>
+<p class="muted">La importación crea primero un respaldo local de la cuenta de pruebas. La web solo guarda en ese navegador: no se transfieren todavía las cuentas ni sus premios a Firebase.</p>
+<p><a href="https://github.com/Tiliko2803/pokesurvivor/tree/test/save-migration-v0.1/tools/migration" target="_blank" rel="noopener">Revisar código abierto de las herramientas</a></p>
+<script>
+const scriptURL=new URL('pokesurvivor-export.user.js',location.href).href;
+const bookmarklet='javascript:(()=>{const s=document.createElement("script");s.src='+JSON.stringify(scriptURL)+';s.onerror=()=>alert("No se pudo cargar el exportador");document.head.appendChild(s)})()';
+document.getElementById('copytext').value=bookmarklet;
+document.getElementById('copy').onclick=async()=>{const s=document.getElementById('copy-status');try{await navigator.clipboard.writeText(bookmarklet);s.textContent='¡Copiado! Ahora edita el marcador de Brave y pega el código como su URL.'}catch(e){s.textContent='Tu navegador bloqueó el portapapeles: usa «Copiar manualmente».';document.getElementById('copytext').focus();document.getElementById('copytext').select()}};
+</script>
+</body></html>

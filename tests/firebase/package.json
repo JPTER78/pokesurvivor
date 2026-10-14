@@ -1,0 +1,12 @@
+{
+  "name": "pokesurvivor-firestore-rules-emulator-tests",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Tests locales de reglas de migración; nunca desplegar Firebase desde este paquete.",
+  "engines": { "node": ">=22" },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.4.0",
+    "firebase-tools": "^14.17.0"
+  }
+}
