@@ -17,7 +17,8 @@ G.FIREBASE_CONFIG = {
   projectId: 'pokesurvivor-tiliko',
   storageBucket: 'pokesurvivor-tiliko.firebasestorage.app',
   messagingSenderId: '66123917149',
-  appId: '1:66123917149:web:43aeada37f7ce9a3e36ab4'
+  appId: '1:66123917149:web:43aeada37f7ce9a3e36ab4',
+  databaseURL: 'https://pokesurvivor-tiliko-default-rtdb.europe-west1.firebasedatabase.app'
 };
 
 /* Ejemplo de cómo debe quedar:
