@@ -35,7 +35,7 @@
 
 * { box-sizing: border-box; }
 .hidden { display: none !important; }
-html, body { height: 100%; margin: 0; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 body {
   background: #050914;
   color: var(--ink);
@@ -45,7 +45,11 @@ body {
   -webkit-font-smoothing: none;
 }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
-#game { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; }
+/* A transformed root contains fixed overlays too: menus and canvas occupy the
+   same visible viewport, including when iOS pans it for the keyboard. JS sets
+   the measured visual viewport; 100% is the pre-boot/older-browser fallback. */
+#app { position: fixed; left: 0; top: 0; width: 100%; height: 100%; transform: translate(0, 0); }
+#game { display: block; width: 100%; height: 100%; touch-action: none; }
 button { font: inherit; color: inherit; }
 input { font: inherit; }
 
@@ -53,13 +57,16 @@ input { font: inherit; }
 .scr {
   position: fixed; inset: 0; z-index: 20;
   display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+  padding: calc(var(--screen-top, 20px) + env(safe-area-inset-top, 0px))
+           calc(var(--screen-x, 20px) + env(safe-area-inset-right, 0px))
+           calc(var(--screen-bottom, 20px) + env(safe-area-inset-bottom, 0px))
+           calc(var(--screen-x, 20px) + env(safe-area-inset-left, 0px));
   animation: fade .2s ease-out;
 }
 .scr.hidden { display: none; }
 /* Pantallas que se abren con la barra superior a la vista: empiezan debajo de ella. */
 @media (min-height: 521px) {
-  #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 66px; }
+  #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { --screen-top: 66px; }
 }
 .scr.dim { background: radial-gradient(circle at 50% 40%, rgba(10,20,50,.55), rgba(3,6,16,.88)); }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -236,7 +243,7 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 #scr-menu { justify-content: space-between; align-items: stretch; padding: 0; }
 .menu-left {
   flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  padding: 30px; min-width: 0;
+  padding: 30px; padding-left: max(30px, env(safe-area-inset-left, 0px)); min-width: 0;
 }
 .menu-left .logo .t1 { font-size: clamp(36px, 6vw, 64px); }
 .partner-card { text-align: center; margin-top: 10px; }
@@ -246,7 +253,7 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
   width: min(380px, 100%); display: flex; flex-direction: column;
   /* Arriba deja sitio a la barra superior; si no cabe todo, se desplaza
      (los márgenes auto lo centran sin que se salga por arriba). */
-  padding: 70px 24px 18px; gap: 14px; overflow-y: auto;
+  padding: 70px 24px 18px; padding-right: max(24px, env(safe-area-inset-right, 0px)); padding-bottom: max(18px, env(safe-area-inset-bottom, 0px)); gap: 14px; overflow-y: auto;
   background: linear-gradient(90deg, transparent, rgba(5,10,25,.65) 30%);
 }
 .menu-right > :first-child { margin-top: auto; }
@@ -268,7 +275,7 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
   #menu-partner { height: min(30vh, 200px); width: auto; }
 }
 .topbar {
-  position: fixed; top: 14px; right: 16px; z-index: 25;
+  position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); z-index: 25;
   display: flex; gap: 10px; align-items: center;
 }
 .pill {
@@ -681,7 +688,7 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 .lay-help { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
 .lay-turn { color: var(--gold); font-size: 13px; margin: 4px 0; }
 .lay-btns { justify-content: center; gap: 8px; margin-top: 6px; }
-.box.settings { width: min(640px, 100%); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; }
+.box.settings { width: min(640px, 100%); max-height: 100%; display: flex; flex-direction: column; }
 .set-body { overflow-y: auto; padding-right: 4px; min-height: 0; }
 #set-tabs { flex-wrap: wrap; }
 #set-tabs .gen-tab { padding: 6px 12px; }
@@ -709,10 +716,10 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
  * Todo más compacto: la barra superior deja sitio, el menú va en dos
  * columnas y la línea de créditos se esconde (está en Ajustes → Acerca de). */
 @media (max-height: 520px) {
-  .scr { padding: 50px 10px 6px; }
+  .scr { --screen-top: 50px; --screen-x: 10px; --screen-bottom: 6px; }
   /* Sin barra superior encima: no hace falta dejarle hueco. */
   #scr-login, #scr-test, #scr-result, #scr-starters, #scr-nick, #scr-levelup, #scr-pause,
-  #scr-over, #scr-item, #scr-settings, #scr-legal, #scr-profile { padding: 6px 10px; }
+  #scr-over, #scr-item, #scr-settings, #scr-legal, #scr-profile { --screen-top: 6px; }
   .split { grid-template-columns: 1fr; }
   .logo .t1 { font-size: 30px; }
   .box { padding: 10px 14px; border-radius: 10px; }
@@ -722,7 +729,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .note { margin-top: 8px; font-size: 12px; }
   .btn { padding: 7px 14px; }
   .btn.small { padding: 4px 9px; font-size: 13px; }
-  .topbar { top: 5px; right: 6px; gap: 5px; }
+  .topbar { top: calc(5px + env(safe-area-inset-top, 0px)); right: calc(6px + env(safe-area-inset-right, 0px)); gap: 5px; }
   .pill { padding: 2px 8px; font-size: 13px; gap: 5px; }
   #user-pill { max-width: 130px; overflow: hidden; white-space: nowrap; }
   .topbar .btn.small { padding: 2px 6px; }
@@ -730,7 +737,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .sound-panel { top: 40px; }
 
   #scr-menu { flex-direction: row; padding: 0; overflow: hidden; }
-  .menu-left { padding: 50px 8px 6px; }
+  .menu-left { padding: 50px 8px 6px; padding-left: calc(8px + env(safe-area-inset-left, 0px)); padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
   .menu-left .logo { margin-bottom: 2px; }
   .menu-left .logo .t1 { font-size: 28px; }
   .logo .t2 { font-size: 10px; margin-top: 2px; letter-spacing: 2px; }
@@ -738,7 +745,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .partner-card { margin-top: 2px; }
   .partner-card .nm { font-size: 17px; }
   .partner-card .lv { font-size: 12px; }
-  .menu-right { width: min(54vw, 420px); padding: 50px 8px 6px; gap: 6px; justify-content: flex-start; overflow-y: auto; }
+  .menu-right { width: min(54%, 420px); padding: 50px 8px 6px; padding-right: calc(8px + env(safe-area-inset-right, 0px)); padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); gap: 6px; justify-content: flex-start; overflow-y: auto; }
   .menu-right .box { padding: 6px 8px; }
   .menu-right > .box:last-child { display: none; }
   .menu-right > :first-child { margin-top: 0; }
@@ -749,7 +756,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .menu-item.play { grid-column: span 2; font-size: 21px; }
   .menu-item::before { display: none; }
   .mi-ico img { width: 20px; height: 20px; }
-  .box.settings { max-height: calc(100dvh - 12px); }
+  .box.settings { max-height: 100%; }
 }
 /* Móviles muy bajos (iPhone SE y similares): sin subtítulos en el menú, para que quepa entero. */
 @media (max-height: 400px) {
@@ -798,7 +805,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .news-btn { position: relative; }
 .news-btn .dot { display: none; position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; background: #ff5f6d; box-shadow: 0 0 0 2px var(--shadow); }
 .news-btn.new .dot { display: block; }
-.box.news-box { width: min(640px, 100%); max-height: calc(100dvh - 90px); display: flex; flex-direction: column; }
+.box.news-box { width: min(640px, 100%); max-height: 100%; display: flex; flex-direction: column; }
 .news-body { overflow-y: auto; padding-right: 4px; }
 .news-day { padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .news-day:last-child { border-bottom: 0; }

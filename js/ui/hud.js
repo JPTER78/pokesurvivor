@@ -30,6 +30,7 @@ G.HUD = (() => {
     ctx.textBaseline = 'alphabetic';
     G.Touch.clearButtons();
     const touch = G.Touch.active;
+    const sa = G.Touch.safeArea();
 
     // ---------- barra de experiencia (borde superior) ----------
     const xpF = pl.xp / pl.xpNext;
@@ -41,7 +42,7 @@ G.HUD = (() => {
     ctx.fillRect(0, 0, w * G.U.clamp(xpF, 0, 1), 7);
 
     // ---------- vida + nivel ----------
-    const px = 16, py = 20;
+    const px = 16 + sa.left, py = 20 + sa.top;
     ctx.font = F(800, 13);
     ctx.fillStyle = '#eaf2ff';
     ctx.textAlign = 'left';
@@ -91,7 +92,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 14;
+      const x0 = w - sa.right - tw - 16 - (touch ? 56 : 0), y0 = 14 + sa.top;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
@@ -245,16 +246,14 @@ G.HUD = (() => {
     const n = Math.max(1, pl.slots.length);
     const totalW = n * S + (n - 1) * GAP;
     let sx = (w - totalW) / 2;
-    // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
-    let sy = h - S - 18 - (touch ? Math.min(28, G.Touch.safeArea().bottom) : 0);
+    let sy = h - S - 18 - sa.bottom;
     // En móvil, donde la haya puesto el jugador: el bloque objeto + todos los
     // huecos (aunque aún no estén llenos), por su centro, como en el editor
     // (layout-ui.js); los ataques nuevos van saliendo hacia la derecha.
-    const pb = touch && G.Touch.spot('bar');
-    if (pb) {
-      const nAll = Math.max(n, pl.maxMoves), bw = S + 18 + nAll * S + (nAll - 1) * GAP;
-      sx = G.U.clamp(pb[0] * w - bw / 2, 6, Math.max(6, w - bw - 6)) + S + 18;
-      sy = G.U.clamp(pb[1] * h - S / 2, 24, h - S - 6);
+    if (touch) {
+      const nAll = Math.max(n, pl.maxMoves);
+      const layout = G.ControlLayout.bar(w, h, sa, G.Touch.spot('bar'), nAll);
+      sx = layout.attackX; sy = layout.y;
     }
     const BOND = '#ff8ad8';
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
@@ -365,10 +364,8 @@ G.HUD = (() => {
 
     // ---------- botón de pausa (táctil) ----------
     if (touch) {
-      const sa = G.Touch.safeArea();
-      const pp = G.Touch.spot('pause');
-      const bx = pp ? G.U.clamp(pp[0] * w - 20, 4, w - 44) : w - 52 - Math.min(44, sa.right);
-      const by = pp ? G.U.clamp(pp[1] * h - 20, 10, h - 44) : 12 + Math.min(20, sa.top), bs = 40;
+      const pause = G.ControlLayout.pause(w, h, sa, G.Touch.spot('pause'));
+      const bx = pause.x, by = pause.y, bs = pause.width;
       roundRect(ctx, bx, by, bs, bs, 10);
       ctx.fillStyle = 'rgba(10,16,28,.7)'; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(244,248,255,.8)'; ctx.stroke();
@@ -383,7 +380,7 @@ G.HUD = (() => {
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
       ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
-                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
+                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - sa.bottom - 4);
     }
 
     ctx.restore();

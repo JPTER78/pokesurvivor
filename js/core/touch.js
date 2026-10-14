@@ -16,16 +16,14 @@ G.Touch = (() => {
   let buttons = [];
 
   const R = () => 56 * (G.Settings.get('stick') || 1);
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   /** Dónde ha colocado el jugador una cosa ('bar', 'pause', 'stick'): [x, y] en 0..1, o null. */
   function spot(k) { const p = G.Settings.get('pad'); return p && Array.isArray(p[k]) ? p[k] : null; }
   const STICK_DEF = [0.14, 0.72];
   const fixed = () => G.Settings.get('stickMode') === 'fixed';
   /** Centro del joystick fijo, en px de pantalla. */
-  function stickBase(w = cv.clientWidth, h = cv.clientHeight) {
-    const p = spot('stick') || STICK_DEF, r = R();
-    return { x: clamp(p[0] * w, r + 4, w - r - 4), y: clamp(p[1] * h, r + 4, h - r - 4) };
+  function stickBase(w = G.Viewport.size.width, h = G.Viewport.size.height) {
+    return G.ControlLayout.stick(w, h, safeArea(), spot('stick') || STICK_DEF, R());
   }
 
   function init(canvas) {
@@ -35,18 +33,24 @@ G.Touch = (() => {
     cv.addEventListener('pointermove', move);
     cv.addEventListener('pointerup', up);
     cv.addEventListener('pointercancel', up);
+    cv.addEventListener('lostpointercapture', up);
     cv.addEventListener('contextmenu', e => e.preventDefault());
     // iPhone: la pulsación larga sobre el juego abría la lupa y el menú de
-    // "Copiar / Seleccionar todo". Cortar el toque aquí lo evita (los eventos
-    // pointer, que son los que usa el joystick, siguen llegando).
-    // Además, los botones (movimientos, pausa) se pulsan también desde aquí: en
-    // iPhone (Safari y Chrome usan WebKit) a veces no llegaba el pointerdown de
-    // un segundo dedo con el otro en el joystick y no se podía cambiar de movimiento.
+    // "Copiar / Seleccionar todo". Cortar el toque aquí lo evita.
+    // Touch owns the whole finger lifecycle. Ignore its companion pointer
+    // events, so a second finger works in WebKit without duplicate actions.
     cv.addEventListener('touchstart', e => {
       if (e.cancelable) e.preventDefault();
-      if (!active) { active = true; document.body.classList.add('touch'); }
-      for (const t of e.changedTouches) { const b = hit(t.clientX, t.clientY); if (b) press(b); }
+      activate();
+      for (const t of e.changedTouches) begin('t' + t.identifier, G.Viewport.toLocal(t), true);
     }, { passive: false });
+    cv.addEventListener('touchmove', e => {
+      if (e.cancelable) e.preventDefault();
+      for (const t of e.changedTouches) moveStick('t' + t.identifier, G.Viewport.toLocal(t));
+    }, { passive: false });
+    for (const ev of ['touchend', 'touchcancel']) cv.addEventListener(ev, e => {
+      for (const t of e.changedTouches) end('t' + t.identifier);
+    });
     document.addEventListener('selectstart', e => {
       if (!e.target.closest || !e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
     });
@@ -62,43 +66,55 @@ G.Touch = (() => {
     return null;
   }
 
-  // Un mismo toque llega por touchstart y por pointerdown: se pulsa una sola vez.
-  let lastKey = '', lastAt = 0;
-  function press(b) {
-    const k = Math.round(b.x) + ',' + Math.round(b.y), now = performance.now();
-    if (k === lastKey && now - lastAt < 350) return;
-    lastKey = k; lastAt = now;
-    b.fn();
+  function activate() {
+    if (!active) {
+      active = true; document.body.classList.add('touch');
+      if (G.Game) G.Game.checkOrientation();
+      G.Viewport.refresh();
+    }
   }
 
   function down(e) {
+    if (e.pointerType === 'touch') return;
     const touchy = e.pointerType !== 'mouse';
-    if (touchy && !active) { active = true; document.body.classList.add('touch'); }
-    const b = hit(e.clientX, e.clientY);
-    if (b) { e.preventDefault(); press(b); return; }
-    if (!touchy || stick || !G.Game || G.Game.state !== 'playing') return;
+    if (touchy) activate();
+    if (!begin('p' + e.pointerId, G.Viewport.toLocal(e), touchy)) return;
+    e.preventDefault();
+    if (stick && stick.id === 'p' + e.pointerId) {
+      try { cv.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
+    }
+  }
+
+  function begin(id, p, touchy) {
+    if (!p) return false;
+    const b = hit(p.x, p.y);
+    if (b) { b.fn(); return true; }
+    if (!touchy || stick || !G.Game || G.Game.state !== 'playing') return false;
     if (fixed()) {
       // Fijo: sólo si el dedo cae cerca del joystick (si no, no hace nada).
       const b0 = stickBase();
-      if (Math.hypot(e.clientX - b0.x, e.clientY - b0.y) > R() * 2.2) return;
-      e.preventDefault();
-      stick = { id: e.pointerId, fixed: true, ox: b0.x, oy: b0.y, x: e.clientX, y: e.clientY };
+      if (Math.hypot(p.x - b0.x, p.y - b0.y) > R() * 2.2) return false;
+      stick = { id, fixed: true, ox: b0.x, oy: b0.y, x: p.x, y: p.y };
     } else {
-      e.preventDefault();
-      stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY };
+      stick = { id, ox: p.x, oy: p.y, x: p.x, y: p.y };
     }
-    try { cv.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
+    return true;
   }
 
   function move(e) {
-    if (!stick || e.pointerId !== stick.id) return;
-    stick.x = e.clientX; stick.y = e.clientY;
+    if (e.pointerType !== 'touch') moveStick('p' + e.pointerId, G.Viewport.toLocal(e));
+  }
+
+  function moveStick(id, p) {
+    if (!stick || id !== stick.id || !p) return;
+    stick.x = p.x; stick.y = p.y;
     if (stick.fixed) return;
     const dx = stick.x - stick.ox, dy = stick.y - stick.oy, d = Math.hypot(dx, dy), r = R();
     if (d > r) { stick.ox = stick.x - dx / d * r; stick.oy = stick.y - dy / d * r; }
   }
 
-  function up(e) { if (stick && e.pointerId === stick.id) stick = null; }
+  function end(id) { if (stick && id === stick.id) stick = null; }
+  function up(e) { end('p' + e.pointerId); }
   function reset() { stick = null; }
 
   /** Dirección del joystick (con fuerza 0..1), o null si no se usa. */
@@ -112,21 +128,7 @@ G.Touch = (() => {
   }
 
   /** Márgenes del iPhone (barra de inicio abajo, muesca a los lados), en px. */
-  let safe = null;
-  function safeArea() {
-    if (safe) return safe;
-    const d = document.createElement('div');
-    d.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;' +
-      'padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
-    document.body.appendChild(d);
-    const cs = getComputedStyle(d);
-    safe = { top: parseFloat(cs.paddingTop) || 0, right: parseFloat(cs.paddingRight) || 0,
-             bottom: parseFloat(cs.paddingBottom) || 0, left: parseFloat(cs.paddingLeft) || 0 };
-    d.remove();
-    return safe;
-  }
-  addEventListener('resize', () => { safe = null; });
-  addEventListener('orientationchange', () => { safe = null; });
+  function safeArea() { return G.Viewport.safeArea(); }
 
   /** El HUD vacía y vuelve a registrar sus botones cada fotograma. */
   function clearButtons() { buttons = []; }

@@ -658,8 +658,8 @@ G.Judgment = (() => {
 
   /** Ceniza y chispas que caen (en pantalla). */
   function ember(dt) {
-    const cv = document.getElementById('game');
-    const w = cv ? cv.clientWidth : 800, h = cv ? cv.clientHeight : 600;
+    const size = G.Viewport.size;
+    const w = size ? size.width : 800, h = size ? size.height : 600;
     if (embers.length < 70 && Math.random() < dt * 40) {
       const spark = Math.random() < 0.3;
       embers.push({ x: Math.random() * w, y: -6, vx: G.U.rand(-25, 10), vy: G.U.rand(20, 55), life: G.U.rand(5, 10),
