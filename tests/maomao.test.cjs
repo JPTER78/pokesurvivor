@@ -13,7 +13,7 @@ test('Maomao queda registrada para regalos sin entrar al catálogo público ni a
  assert.ok(off.G.SPRITE_META[10001]);assert.equal(on.G.DEX.length,off.G.DEX.length);
  assert.equal(on.G.DEX.some(p=>p.dex===10001),false);
  assert.equal(on.G.MaomaoPreview.mon.rarity,5);assert.equal(on.G.MaomaoPreview.mon.leg,undefined);
- assert.equal(on.G.MaomaoPreview.mon.atk,1.35);
+ assert.equal(on.G.MaomaoPreview.mon.atk,1.52);
  assert.equal(on.G.MaomaoPreview.mon.hp,110);
  assert.equal(on.G.MaomaoPreview.mon.spd,112);
  assert.equal(on.G.MaomaoPreview.allowed(),true);
