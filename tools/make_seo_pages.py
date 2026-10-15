@@ -550,7 +550,6 @@ puedes hacer una <b>donación voluntaria</b>. <b>Todo el dinero se usa para los 
         title, desc = 'Apoyar PokéSurvivor: donaciones para los servidores', 'PokéSurvivor es gratis y sin anuncios. Las donaciones voluntarias se usan sólo para los servidores y el dominio.'
     else:
         h1 = 'Support PokéSurvivor'
-        donation_notice = "You'll be able to donate from here very soon."
         btns = ''.join(x for x in [f'<a class="btn" href="{kofi}" rel="noopener">Donate on Ko-fi</a>' if kofi else '',
                                    f'<a class="btn ghost" href="{spons}" rel="noopener">GitHub Sponsors</a>' if spons else ''])
         body = f"""<article class="doc"><h1>{h1}</h1>
@@ -561,7 +560,7 @@ you can make a <b>voluntary donation</b>. <b>All the money goes to the servers a
 <table class="list"><tbody>{rows}</tbody></table>
 <p>The servers store saves and accounts, the leaderboards and group games: the more people play, the more they cost.</p>
 <h2>How to support</h2>
-<p>{btns or donation_notice}</p>
+<p>{btns or 'You\'ll be able to donate from here very soon.'}</p>
 <p>Sharing the game with your friends, recommending it and reporting bugs helps a lot too, and it\'s free.</p>
 {cta(pid, lang, 'Back to the game')}</article>"""
         title, desc = 'Support PokéSurvivor: donations for the servers', 'PokéSurvivor is free and ad-free. Voluntary donations only pay for the servers and the domain.'

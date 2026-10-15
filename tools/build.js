@@ -27,8 +27,6 @@ let joined = files.map(f => `/* ${f} */\n` + fs.readFileSync(path.join(ROOT, f),
 // hacerse invencible, saltar el reloj, etc. (dev.html sigue igual, para programar).
 //   --expose   sin encerrar ni ofuscar (para las pruebas automáticas)
 const EXPOSE = process.argv.includes('--expose');
-// Offline builds may omit the optional obfuscator while retaining the private scope.
-const MINIFY_ONLY = process.argv.includes('--minify-only');
 if (!EXPOSE) {
   const WIN_G = 'window.G = window.G || {};';
   if (!joined.includes(WIN_G)) throw new Error('util.js ya no crea G como se esperaba: revisa build.js');
@@ -45,7 +43,7 @@ execFileSync(npx, ['--yes', 'terser@5', tmp, '--compress', 'passes=1', '--mangle
 // Y ofuscado: el código queda ilegible y se rompe solo si lo reformatean para
 // tocarlo. Las cadenas, en una tabla codificada (sólo una parte, para no frenar
 // el juego). Semilla fija: el mismo código da siempre el mismo archivo.
-if (!EXPOSE && !MINIFY_ONLY) {
+if (!EXPOSE) {
   execFileSync(npx, ['--yes', 'javascript-obfuscator@4.1.1', outJs, '--output', outJs,
     '--compact', 'true', '--self-defending', 'true', '--seed', '7',
     '--string-array', 'true', '--string-array-encoding', 'base64', '--string-array-threshold', '0.1',
