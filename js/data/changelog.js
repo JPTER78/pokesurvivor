@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-15', title: ['Gacha sin animación', 'Gacha without the animation'], new: [
+    ['En el gacha, «Abrir sin animación» enseña el resultado al momento, sin la tragaperras. Se recuerda en este aparato. Si la dejas apagada, un clic en la tragaperras sigue acelerándola.',
+     'In the gacha, “Open without animation” shows the result right away, without the slot machine. This device remembers it. If you leave it off, a click on the slot machine still speeds it up.']
+  ] },
   { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
      'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.'],

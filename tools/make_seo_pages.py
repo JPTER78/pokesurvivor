@@ -475,6 +475,9 @@ def ach_page(lang):
 
 # ================= novedades =================
 NEWS = [
+ ('2026-10-15', ('Gacha sin animación', 'Gacha without the animation'),
+  ('En el gacha, «Abrir sin animación» enseña el resultado al momento, sin la tragaperras. Se recuerda en este aparato.',
+   'In the gacha, “Open without animation” shows the result right away, without the slot machine. This device remembers it.')),
  ('2026-10-14', ('Coloca los botones a tu gusto en el móvil', 'Place the buttons your way on mobile'),
   ('En Ajustes > Controles > Colocar los botones puedes arrastrar los ataques, la pausa y el joystick a donde quieras, y elegir un joystick fijo.',
    'In Settings > Controls > Place the buttons you can drag the attacks, the pause button and the joystick wherever you want, and choose a fixed joystick.')),

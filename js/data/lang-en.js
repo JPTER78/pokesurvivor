@@ -301,6 +301,8 @@ G.I18n.add({
   'Tirar ×1 ·': 'Pull ×1 ·', 'Tirar ×10 ·': 'Pull ×10 ·', 'tickets ×10': '×10 tickets', 'tickets y {x}': 'tickets and {x}',
   'No tienes tickets suficientes: consíguelos jugando': 'Not enough tickets: earn them by playing', '¡NUEVO!': 'NEW!', '¡SHINY NUEVO!': 'NEW SHINY!',
   'Repetido ·': 'Duplicate ·', '· {x} {x} shiny': '· {x} {x} shiny', '{x} Shiny': '{x} Shiny', 'Clic para acelerar': 'Click to speed up',
+  'Abrir sin animación': 'Open without animation',
+  'Muestra el resultado al momento, sin la tragaperras': 'Shows the result right away, without the slot machine',
   'TIRADA': 'PULL', 'TIRADA ×10': 'PULL ×10', '¡SUERTE!': 'GOOD LUCK!', '¡¿SHINY?!': 'SHINY?!', '¡¿LEGENDARIO?!': 'LEGENDARY?!', '¡¿ÉPICO?!': 'EPIC?!', 'SHINY ·': 'SHINY ·',
   // mejoras
   'Pokémon': 'Pokémon',
