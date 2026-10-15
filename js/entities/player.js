@@ -38,10 +38,11 @@ G.Player = class Player {
     this.bonds = 0;            // vínculos por usar (premio de los legendarios)
 
     this.buffs = {
-      atk: { n: 0, t: 0, amount: 0 },
-      spd: { n: 0, t: 0, amount: 0 },
-      def: { n: 0, t: 0, amount: 0 },
-      regen: { n: 0, t: 0, amount: 0 }
+      // dur: lo que dura entero (para el aro del HUD) · src: el movimiento que lo dio
+      atk: { n: 0, t: 0, amount: 0, dur: 0, src: null },
+      spd: { n: 0, t: 0, amount: 0, dur: 0, src: null },
+      def: { n: 0, t: 0, amount: 0, dur: 0, src: null },
+      regen: { n: 0, t: 0, amount: 0, dur: 0, src: null }
     };
 
     this.level = 1;
@@ -303,12 +304,13 @@ G.Player = class Player {
     this.power = { def, t: dur, dur };
   }
 
-  addBuff(stat, amount, dur, maxStacks) {
+  addBuff(stat, amount, dur, maxStacks, src) {
     const b = this.buffs[stat];
     if (!b) return;
     b.amount = amount;
     b.n = Math.min(maxStacks, b.n + 1);
-    b.t = dur;
+    b.t = b.dur = dur;
+    if (src) b.src = src;
   }
 
   // ---------------- ciclo ----------------
