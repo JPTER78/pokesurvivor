@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
+    ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
+     'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
+  ] },
   { d: '2026-10-15', title: ['Gacha sin animación', 'Gacha without the animation'], new: [
     ['En el gacha, «Abrir sin animación» enseña el resultado al momento, sin la tragaperras. Se recuerda en este aparato. Si la dejas apagada, un clic en la tragaperras sigue acelerándola.',
      'In the gacha, “Open without animation” shows the result right away, without the slot machine. This device remembers it. If you leave it off, a click on the slot machine still speeds it up.']
@@ -29,6 +33,8 @@ G.CHANGELOG = [
      'Co-op: after coming back from a rift, players who are not the host can see every enemy again (some used to be invisible, with only their attacks showing).'],
     ['Amigos: si tu móvil u ordenador tiene la hora (o la zona horaria) mal puesta, tus amigos ya no salen siempre desconectados y sus invitaciones te llegan.',
      'Friends: if your phone or computer has the wrong time (or time zone), your friends no longer always show as offline and their invitations reach you.'],
+    ['Jugar en dos aparatos (PC y móvil) ya no hace perder monedas ni tickets: antes, si uno tenía la partida abierta con datos viejos y guardaba, borraba lo ganado en el otro. Ahora se suma lo de los dos. Y al volver al juego tras un rato fuera, se trae lo conseguido en el otro aparato (Pokémon, shinies...) sin recargar.',
+     'Playing on two devices (PC and phone) no longer loses coins or tickets: before, if one had the game open with old data and saved, it erased what you earned on the other. Now both are added up. And when you come back to the game after a while away, it brings in what you got on the other device (Pokémon, shinies...) without reloading.'],
     ['Los avisos grandes de la partida (un Gholdengo cerca, una marea...) ya salen siempre centrados.',
      'Big in-game announcements (a nearby Gholdengo, a swarm...) are always centered now.']
   ] },

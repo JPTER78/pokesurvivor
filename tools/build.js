@@ -64,5 +64,7 @@ html = html.replace(/<!-- dev.html: página fuente[^>]*-->/, '<!-- GENERADO desd
 fs.writeFileSync(OUT, html);
 // Versión publicada: los jugadores la miran cada 5 min y, si cambia, el juego se
 // actualiza solo (en el menú, o al acabar la partida). Ver js/core/updater.js.
-fs.writeFileSync(path.join(ROOT, 'version.json'), JSON.stringify({ v: hash, at: new Date().toISOString() }) + '\n');
-console.log(`${SIN_SEO ? '[sin SEO] ' : ''}${EXPOSE ? '[SIN PROTEGER, sólo pruebas] ' : ''}ok: ${files.length} scripts · ${(joined.length / 1024).toFixed(0)} KB -> ${(min.length / 1024).toFixed(0)} KB (app.min.js?v=${hash})`);
+// --forzar: versión obligatoria, también corta las partidas en curso (guardándolas).
+const FORZAR = process.argv.includes('--forzar');
+fs.writeFileSync(path.join(ROOT, 'version.json'), JSON.stringify(Object.assign({ v: hash, at: new Date().toISOString() }, FORZAR ? { force: true } : {})) + '\n');
+console.log(`${FORZAR ? '[OBLIGATORIA] ' : ''}${SIN_SEO ? '[sin SEO] ' : ''}${EXPOSE ? '[SIN PROTEGER, sólo pruebas] ' : ''}ok: ${files.length} scripts · ${(joined.length / 1024).toFixed(0)} KB -> ${(min.length / 1024).toFixed(0)} KB (app.min.js?v=${hash})`);

@@ -534,6 +534,7 @@ G.I18n.add({
   'Pausa: esperando a {x} (anfitrión)…': 'Paused: waiting for {x} (host)…',
   'Novedades': "What's new",
   'Hay una versión nueva del juego: actualizando en {x} s…': 'A new version of the game is out: updating in {x} s…',
+  'Actualización obligatoria: tu partida se guarda y el juego se recarga en {x} s…': 'Required update: your run is saved and the game reloads in {x} s…',
   'No se pudo conectar (reintentando…)': 'Could not connect (retrying…)',
   'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.':
     "Can't connect to one of your friends: their network (or yours) doesn't allow group play. Try another Wi-Fi or mobile data; it retries automatically.",

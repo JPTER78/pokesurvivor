@@ -14,14 +14,19 @@
  *   - Antes de recargar se espera a que la partida guardada suba a la nube
  *     (como mucho unos segundos; si no, queda en este navegador y se sube al
  *     entrar).
+ *   - Versión OBLIGATORIA (node tools/build.js --forzar escribe force:true en
+ *     version.json): quien esté en partida ve un aviso de 10 s y la partida
+ *     se termina como al abandonarla (se guardan monedas, tickets, récords y
+ *     ranking), sube a la nube y se recarga. Sólo la entienden los jugadores
+ *     que ya tengan este updater.js (desde el 15-10-2026).
  * Sólo funciona en la web publicada (con app.min.js); en dev.html o con
  * doble clic (file://) no hace nada.
  */
 G.Updater = (() => {
-  const EVERY = 5 * 60 * 1000, COUNTDOWN = 5;
+  const EVERY = 5 * 60 * 1000, COUNTDOWN = 5, FORCED = 10;
   const tag = document.querySelector('script[src*="app.min.js?v="]');
   const mine = tag ? (tag.getAttribute('src').match(/v=([0-9a-f]+)/) || [])[1] : null;
-  let pending = false, lastCheck = 0, timer = 0, counting = false;
+  let pending = false, forced = false, lastCheck = 0, timer = 0, counting = false;
 
   async function check() {
     if (!mine || pending) return;
@@ -30,7 +35,7 @@ G.Updater = (() => {
       const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) return;
       const j = await r.json();
-      if (j && j.v && j.v !== mine) { pending = true; console.log('[Actualizar] versión nueva', j.v, '(esta es', mine + ')'); }
+      if (j && j.v && j.v !== mine) { pending = true; forced = !!j.force; console.log('[Actualizar] versión nueva', j.v, '(esta es', mine + ')', forced ? 'OBLIGATORIA' : ''); }
     } catch (e) { /* sin red: se mira la próxima vez */ }
   }
 
@@ -65,7 +70,30 @@ G.Updater = (() => {
     tick();
   }
 
+  /** ¿Está jugando una partida (que una versión obligatoria debe cerrar)? */
+  function inRun() { return G.Game && G.Game.state !== 'ui' && G.Game.state !== 'over'; }
+
+  /** Versión obligatoria en partida: aviso, se termina la partida (se guarda todo) y se recarga. */
+  function forceEnd() {
+    counting = true;
+    let n = FORCED;
+    const tick = () => {
+      if (!inRun()) { reload(); return; }                                 // la ha acabado él mismo
+      if (n <= 0) {
+        G.Game.quit();                                                    // como abandonar: se guarda lo ganado
+        setTimeout(reload, 4000);                                         // deja salir récord y ranking
+        return;
+      }
+      G.UI.toast('Actualización obligatoria: tu partida se guarda y el juego se recarga en ' + n + ' s…', 1500);
+      n--;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+
   function loop() {
+    if (pending && forced && !counting && inRun()) { forceEnd(); return; }
+    if (pending && forced && !counting && G.Game && G.Game.state === 'over') { reload(); return; }   // resumen: ya está guardado
     if (pending && !counting && safe()) countdown();
     if (!pending && Date.now() - lastCheck > EVERY) check();
   }

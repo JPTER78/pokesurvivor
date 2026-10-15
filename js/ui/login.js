@@ -82,30 +82,11 @@ G.LoginUI = (() => {
     $('btn-auth').textContent = m === 'login' ? 'Entrar' : 'Crear cuenta';
     $('f-pass').autocomplete = m === 'login' ? 'current-password' : 'new-password';
     $('login-err').textContent = '';
-    // Sólo se pregunta si quedan plazas al ir a crear cuenta (cada llamada al Worker cuenta).
-    if (m === 'register' && G.DB.mode === 'cloud' && G.Signups) G.Signups.check().then(applySignups);
-  }
-
-  /** Tope de cuentas del mes alcanzado: sin "Crear cuenta" hasta el mes siguiente. */
-  function applySignups(open) {
-    const reg = document.querySelector('#scr-login .tab[data-tab="register"]');
-    if (reg) reg.classList.toggle('hidden', !open);
-    if (!open && mode === 'register') setMode('login');
-    const note = $('signup-closed');
-    note.classList.toggle('hidden', open);
-    if (!open) note.textContent = 'Este mes se han llenado las plazas de cuentas nuevas: vuelven el 1 de ' + G.Signups.nextMonthName() +
-      '. Si ya tienes cuenta, entra normal. Si no, juega como invitado.';
-    $('btn-google').textContent = open ? 'Entrar con Google' : 'Entrar con Google (si ya tienes cuenta)';
   }
 
   function open() {
     G.UI.chrome(false);
     G.UI.show('scr-login');
-    // Abiertas: no se pregunta hasta ir a "Crear cuenta". Cerradas (con la pestaña
-    // escondida): se vuelve a preguntar (va con caché de 30 min) para reabrir a tiempo.
-    if (G.DB.mode === 'cloud' && G.Signups) {
-      if (G.Signups.closed) G.Signups.check().then(applySignups); else applySignups(true);
-    }
     if (!G.DB.storageOk) $('login-err').textContent = 'Este navegador no deja guardar datos: juega como invitado.';
     $('btn-google').classList.toggle('hidden', G.DB.mode !== 'cloud');
     $('login-mode').textContent = modeNote();
