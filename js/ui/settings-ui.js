@@ -9,9 +9,26 @@ G.SettingsUI = (() => {
   const VERSION = '1.2 · 2026-10-09';
   const REPO = 'https://github.com/JPTER78/pokesurvivor';
   let tab = 'sound';
+  let activeKeyCaptureBtn = null;
+  let keyCaptureCleanup = null;
+
+  function stopKeyCapture() {
+    if (keyCaptureCleanup) {
+      keyCaptureCleanup();
+      keyCaptureCleanup = null;
+    }
+    if (activeKeyCaptureBtn) {
+      const en = window.G && G.I18n && G.I18n.lang === 'en';
+      activeKeyCaptureBtn.classList.remove('listening');
+      activeKeyCaptureBtn.textContent = en ? '🎮 Assign button' : '🎮 Asignar botón';
+      activeKeyCaptureBtn = null;
+    }
+  }
 
   function init() {
-    document.querySelectorAll('#set-tabs .gen-tab').forEach(b => { b.onclick = () => { tab = b.dataset.t; render(); }; });
+    document.querySelectorAll('#set-tabs .gen-tab').forEach(b => {
+      b.onclick = () => { stopKeyCapture(); tab = b.dataset.t; render(); };
+    });
     $('set-close').onclick = close;
     $('btn-settings').innerHTML = G.Icons.html('gear', 20);
     $('btn-settings').onclick = () => open();
@@ -25,11 +42,15 @@ G.SettingsUI = (() => {
   }
 
   function open(t) {
+    stopKeyCapture();
     if (t) tab = t;
     $('scr-settings').classList.remove('hidden');
     render();
   }
-  function close() { $('scr-settings').classList.add('hidden'); }
+  function close() {
+    stopKeyCapture();
+    $('scr-settings').classList.add('hidden');
+  }
   const isOpen = () => !$('scr-settings').classList.contains('hidden');
 
   // ---------------- pantalla completa ----------------
@@ -63,6 +84,113 @@ G.SettingsUI = (() => {
   function choice(key, opts) {
     const cur = G.Settings.get(key);
     return `<div class="chips set-chips">${opts.map(([v, l]) => `<button class="chip ${v === cur ? 'on' : ''}" data-k="${key}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
+  }
+
+  function getSensLabel(val) {
+    const en = window.G && G.I18n && G.I18n.lang === 'en';
+    const v = Math.round(val * 10) / 10;
+    if (v <= 0.45) return `${v.toFixed(1)}× (${en ? 'Slow' : 'Lenta'})`;
+    if (v < 0.95) return `${v.toFixed(1)}× (${en ? 'Moderate' : 'Moderada'})`;
+    if (Math.abs(v - 1.0) < 0.05) return `1.0× (Normal)`;
+    if (v <= 1.55) return `${v.toFixed(1)}× (${en ? 'Fast' : 'Rápida'})`;
+    return `${v.toFixed(1)}× (${en ? 'Very fast' : 'Muy rápida'})`;
+  }
+
+  function renderGamepadControls() {
+    if (!window.G || !G.Input || !G.Input.GAME_ACTIONS) return '';
+    const en = window.G && G.I18n && G.I18n.lang === 'en';
+    const info = G.Input.gamepadInfo ? G.Input.gamepadInfo() : { connected: false };
+    const actions = G.Input.GAME_ACTIONS;
+    const actMap = G.Input.getActionMap ? G.Input.getActionMap() : {};
+    const defMap = G.Input.DEFAULT_ACTION_MAP || {};
+    const buttons = G.Input.CONTROLLER_BUTTONS || [];
+    const curSens = G.Input.getCursorSensitivity ? G.Input.getCursorSensitivity() : 0.4;
+
+    let rowsHtml = '';
+    for (const act of actions) {
+      const assignedBtn = actMap[act.id] != null ? actMap[act.id] : act.defaultButton;
+      const isDef = assignedBtn === defMap[act.id];
+      const btnName = G.Input.getButtonName ? G.Input.getButtonName(assignedBtn) : (en ? `Button ${assignedBtn}` : `Botón ${assignedBtn}`);
+
+      let optHtml = '';
+      for (const b of buttons) {
+        const isSel = b.index === assignedBtn;
+        const bLabel = G.Input.getButtonName ? G.Input.getButtonName(b.index) : b.name;
+        optHtml += `<option value="${b.index}" ${isSel ? 'selected' : ''}>${esc(bLabel)}</option>`;
+      }
+
+      const actName = G.I18n && G.I18n.t ? G.I18n.t(act.name) : act.name;
+      const actDesc = G.I18n && G.I18n.t ? G.I18n.t(act.desc) : act.desc;
+      const listenBtnTitle = en ? 'Press a button on your controller to assign it to this action' : 'Presiona un botón en tu mando para asignarlo a esta acción';
+      const listenBtnText = en ? '🎮 Assign button' : '🎮 Asignar botón';
+
+      rowsHtml += `
+        <div class="gp-action-row" data-act-id="${act.id}" id="gp-act-row-${act.id}">
+          <div class="gp-action-info">
+            <b>${esc(actName)}</b>
+            <small>${esc(actDesc)}</small>
+          </div>
+          <kbd class="gp-btn-badge ${isDef ? '' : 'custom'}" id="gp-badge-${act.id}">${esc(btnName)}</kbd>
+          <div class="gp-action-controls">
+            <select class="field small gp-button-select" data-act-id="${act.id}">
+              ${optHtml}
+            </select>
+            <button class="btn small gp-listen-btn" data-act-id="${act.id}" title="${esc(listenBtnTitle)}">${esc(listenBtnText)}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    const sensLabel = getSensLabel(curSens);
+    const sensChips = [
+      [0.4, en ? '0.4× Slow' : '0.4× Lenta'],
+      [0.7, en ? '0.7× Moderate' : '0.7× Moderada'],
+      [1.0, '1.0× Normal'],
+      [1.4, en ? '1.4× Fast' : '1.4× Rápida'],
+      [1.8, en ? '1.8× Very fast' : '1.8× Muy rápida']
+    ];
+
+    const sensHtml = `
+      <div class="gp-sensitivity-box">
+        <div class="row between" style="align-items:center;margin-bottom:6px">
+          <div>
+            <b>${en ? 'Pointer Sensitivity' : 'Sensibilidad del puntero'}</b>
+            <small style="display:block;color:var(--muted)">${en ? 'Adjust cursor speed with the left stick in menus and interface.' : 'Ajusta la velocidad del cursor con el stick analógico izquierdo.'}</small>
+          </div>
+          <span class="gp-sens-val gold" id="gp-sens-badge">${esc(sensLabel)}</span>
+        </div>
+        <div class="gp-slider-row">
+          <span class="gp-slider-lbl">0.2×</span>
+          <input type="range" class="gp-slider" id="gp-sens-slider" min="0.2" max="2.4" step="0.1" value="${curSens.toFixed(1)}">
+          <span class="gp-slider-lbl">2.4×</span>
+        </div>
+        <div class="chips gp-sens-chips" style="margin-top:8px">
+          ${sensChips.map(([v, l]) => `<button class="chip ${Math.abs(curSens - v) < 0.05 ? 'on' : ''}" data-sens="${v}">${esc(l)}</button>`).join('')}
+        </div>
+      </div>
+    `;
+
+    const secTitle = en ? 'Controller / Gamepad (PS4, PS5, Xbox, Switch)' : 'Mando / Control (PS4, PS5, Xbox, Switch)';
+    const secSub = en ? 'Assign the controller button of your choice to each in-game action.' : 'Asigna a cada control del juego el botón de tu control que prefieras.';
+    const connTitle = info.connected ? (en ? 'Controller connected: ' : 'Mando conectado: ') + esc(info.name) : (en ? 'No controller detected' : 'Ningún mando detectado');
+    const connSub = info.connected ? (en ? 'Left Stick: cursor · Right Stick: scroll & switch pages · D-pad: menus' : 'Stick Izq: puntero · Stick Der: mover y cambiar páginas · Cruceta: menús') : (en ? 'Connect your controller via USB or Bluetooth and press any button to activate.' : 'Conecta tu control por cable USB o Bluetooth y pulsa un botón para activarlo.');
+    const footerNote = en ? 'Left Stick: Visual pointer · Right Stick: Horizontal/vertical scroll & pages · D-pad: Menu navigation' : 'Stick Izq: Puntero visual · Stick Der: Scroll horizontal/vertical y páginas · Cruceta: Navegación de menú';
+    const resetText = en ? 'Reset default controls' : 'Restablecer controles por defecto';
+
+    return section(secTitle, secSub)
+      + `<div class="gp-status-banner ${info.connected ? 'connected' : 'disconnected'}">
+           <span class="gp-dot ${info.connected ? 'green' : 'gray'}"></span>
+           <div class="grow">
+             <b>${connTitle}</b>
+             <small>${connSub}</small>
+           </div>
+         </div>`
+      + sensHtml
+      + `<div class="gp-action-list">${rowsHtml}</div>`
+      + `<div class="row between" style="margin-top:12px;align-items:center;flex-wrap:wrap;gap:8px">
+           <small style="color:var(--muted)">${footerNote}</small>
+           <button class="btn small danger" id="gp-reset-all">${resetText}</button>
+         </div>`;
   }
 
   function render() {
@@ -100,7 +228,8 @@ G.SettingsUI = (() => {
              <div><kbd>Q</kbd> / <kbd>E</kbd></div><span>ataque anterior / siguiente</span>
              <div><kbd>Esc</kbd> o <kbd>P</kbd></div><span>pausa</span>
              <div><kbd>1</kbd>–<kbd>3</kbd></div><span>elegir carta al subir de nivel</span>
-           </div>`;
+           </div>`
+        + renderGamepadControls();
     } else if (tab === 'acc') {
       renderAccount(box);
     } else {
@@ -167,6 +296,134 @@ G.SettingsUI = (() => {
       G.Audio.music(null);
       G.Flow.toLogin();
     };
+
+    // ---------------- Mando / Gamepad: Asignar botón a cada acción ----------------
+    box.querySelectorAll('.gp-button-select').forEach(sel => {
+      sel.onchange = () => {
+        stopKeyCapture();
+        const en = window.G && G.I18n && G.I18n.lang === 'en';
+        const actId = sel.dataset.actId;
+        const btnIdx = +sel.value;
+        G.Input.setActionMap(actId, btnIdx);
+        const btnName = G.Input.getButtonName(btnIdx);
+        G.UI.toast(en ? `🎮 Control mapped to: ${btnName}` : `🎮 Control asignado a: ${btnName}`, 2200);
+        render();
+      };
+    });
+
+    box.querySelectorAll('.gp-listen-btn').forEach(btn => {
+      btn.onclick = () => {
+        const en = window.G && G.I18n && G.I18n.lang === 'en';
+        const actId = btn.dataset.actId;
+        if (activeKeyCaptureBtn === btn) {
+          stopKeyCapture();
+          return;
+        }
+        stopKeyCapture();
+
+        activeKeyCaptureBtn = btn;
+        btn.classList.add('listening');
+        btn.textContent = en ? '🟡 Press a button on your controller...' : '🟡 Pulsa un botón en tu mando...';
+
+        // Escucha directa del mando (presionar cualquier botón en el control)
+        G.Input.listenNextButton(btnIdx => {
+          stopKeyCapture();
+          G.Input.setActionMap(actId, btnIdx);
+          const btnName = G.Input.getButtonName(btnIdx);
+          G.UI.toast(en ? `🎮 Control mapped to: ${btnName}` : `🎮 Control asignado a: ${btnName}`, 2500);
+          render();
+        });
+
+        const onKeyDown = e => {
+          const code = e.code.toLowerCase();
+          if (code === 'escape') {
+            stopKeyCapture();
+            render();
+            return;
+          }
+          if (code === 'digit1' || code === 'numpad1') G.Input.setActionMap(actId, 0);
+          else if (code === 'digit2' || code === 'numpad2') G.Input.setActionMap(actId, 1);
+          else if (code === 'digit3' || code === 'numpad3') G.Input.setActionMap(actId, 2);
+          else if (code === 'digit4' || code === 'numpad4') G.Input.setActionMap(actId, 3);
+          stopKeyCapture();
+          render();
+        };
+
+        window.addEventListener('keydown', onKeyDown, { capture: true, once: true });
+        keyCaptureCleanup = () => {
+          window.removeEventListener('keydown', onKeyDown, { capture: true });
+          if (G.Input && G.Input.cancelListenNextButton) G.Input.cancelListenNextButton();
+        };
+      };
+    });
+
+    const resetAllBtn = $('gp-reset-all');
+    if (resetAllBtn) {
+      resetAllBtn.onclick = () => {
+        const en = window.G && G.I18n && G.I18n.lang === 'en';
+        stopKeyCapture();
+        G.Input.resetActionMap();
+        G.UI.toast(en ? '🎮 Controller controls reset to default' : '🎮 Controles del mando restablecidos por defecto', 2500);
+        render();
+      };
+    }
+
+    // Sensibilidad del puntero con el mando
+    const sensSlider = $('gp-sens-slider');
+    const sensBadge = $('gp-sens-badge');
+    if (sensSlider) {
+      sensSlider.oninput = () => {
+        const val = parseFloat(sensSlider.value);
+        if (G.Input && G.Input.setCursorSensitivity) {
+          G.Input.setCursorSensitivity(val);
+        }
+        if (sensBadge) sensBadge.textContent = getSensLabel(val);
+        box.querySelectorAll('.gp-sens-chips .chip').forEach(c => {
+          c.classList.toggle('on', Math.abs(parseFloat(c.dataset.sens) - val) < 0.05);
+        });
+      };
+    }
+
+    box.querySelectorAll('.gp-sens-chips .chip').forEach(chip => {
+      chip.onclick = () => {
+        const en = window.G && G.I18n && G.I18n.lang === 'en';
+        const val = parseFloat(chip.dataset.sens);
+        if (G.Input && G.Input.setCursorSensitivity) {
+          G.Input.setCursorSensitivity(val);
+        }
+        if (sensSlider) sensSlider.value = val.toFixed(1);
+        if (sensBadge) sensBadge.textContent = getSensLabel(val);
+        box.querySelectorAll('.gp-sens-chips .chip').forEach(c => c.classList.remove('on'));
+        chip.classList.add('on');
+        G.UI.toast(en ? `🎮 Cursor sensitivity: ${val.toFixed(1)}×` : `🎮 Sensibilidad del cursor: ${val.toFixed(1)}×`, 1800);
+      };
+    });
+
+    // Live feedback: ilumina la fila de la acción cuando se presiona su botón en el mando
+    if (tab === 'ctl' && typeof navigator !== 'undefined' && navigator.getGamepads) {
+      function checkGamepadButtons() {
+        if (!isOpen() || tab !== 'ctl') return;
+        let gps = null;
+        try { gps = navigator.getGamepads(); } catch (e) { return; }
+        if (gps) {
+          const gp = Array.from(gps).find(g => g && g.connected);
+          if (gp && gp.buttons) {
+            const actMap = G.Input.getActionMap ? G.Input.getActionMap() : {};
+            const actions = G.Input.GAME_ACTIONS || [];
+            for (const act of actions) {
+              const row = document.getElementById(`gp-act-row-${act.id}`);
+              const btnIdx = actMap[act.id] != null ? actMap[act.id] : act.defaultButton;
+              if (row && gp.buttons[btnIdx]) {
+                const isDown = gp.buttons[btnIdx].pressed || gp.buttons[btnIdx].value > 0.5;
+                row.classList.toggle('gp-pressed', isDown);
+              }
+            }
+          }
+        }
+        requestAnimationFrame(checkGamepadButtons);
+      }
+      requestAnimationFrame(checkGamepadButtons);
+    }
   }
 
   /** Cerrar sesión (si estás en una partida, se abandona). */

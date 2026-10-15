@@ -242,6 +242,7 @@ G.Player = class Player {
     this.flash = 0.14;
     G.Audio.sfx('hurt');
     G.Camera.kick(0.28);
+    if (G.Input && G.Input.rumble) G.Input.rumble(150, 0.4, 0.7);
     G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), eff === 'super' ? '#ff3048' : eff === 'weak' ? '#c9a0a8' : '#ff6b7a', eff === 'super');
     G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ff5f6d', 6, 90);
     // Banda Focus: aguanta el golpe con 1 de vida (una vez cada 60 s).
@@ -277,6 +278,9 @@ G.Player = class Player {
       this.level++;
       this.xpNext = Player.xpFor(this.level);
       leveled++;
+    }
+    if (leveled > 0 && G.Input && G.Input.rumble) {
+      G.Input.rumble(200, 0.7, 0.3);
     }
     return leveled;
   }
