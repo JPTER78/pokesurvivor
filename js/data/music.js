@@ -148,5 +148,30 @@ G.MUSIC.judgment = {
   drums: { kick: 'X..xX..xX..xX.xx', snare: '....X.......X..X', hat: 'x.x.x.x.x.x.x.x.' }
 };
 
+/* ---------------- Evolución del Pokémon ----------------
+ * Épico y ascendente, con arpegios que suben de registro en cada compás
+ * y una fanfarria final. Sin batería hasta la segunda mitad: empieza mágico
+ * y termina triunfal. */
+G.MUSIC.evolution = {
+  bpm: 128,
+  chords: ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'G',
+           'C', 'C', 'G', 'G', 'Am', 'F', 'C', 'G'],
+  melody: [{ inst: 'lead', vel: 1, bars: [
+    'C5:4 E5:4 G5:4 C6:4', 'D5:4 F5:4 A5:4 D6:4',
+    'E5:4 G5:4 C6:4 E6:4', 'F5:4 A5:4 D6:4 F6:4',
+    'G5:4 B5:4 E6:4 G6:4', 'A5:4 C6:4 F6:4 A6:4',
+    'G5:4 B5:4 E6:4 G6:4', 'F5:4 A5:4 D6:4 F6:4',
+    'C6:2 E6:2 G6:2 C7:2 E6:2 G6:2 C7:2 E7:2', 'C6:2 E6:2 G6:2 C7:2 E6:2 G6:2 C7:2 E7:2',
+    'G6:2 B6:2 D7:2 G7:2 B6:2 D7:2 G7:2 B7:2', 'G6:2 B6:2 D7:2 G7:2 B6:2 D7:2 G7:2 B7:2',
+    'A5:4 C6:4 E6:4 A6:4', 'F5:4 A5:4 C6:4 F6:4',
+    'C5:4 E5:4 G5:4 C6:4', 'G5:4 B5:4 D6:4 G6:4'] }],
+  parts: [
+    { inst: 'bass', octave: 2, vel: 0.9, pattern: 'R...R...R...R...' },
+    { inst: 'bell', octave: 5, vel: 0.7, pattern: '0.2.3.5.0.2.3.5.' },
+    { inst: 'pad', octave: 3, vel: 0.7, pattern: 'C---------------' }
+  ],
+  drums: { kick: 'X.......X.......', snare: '....X.......X...', hat: '..o...o...o...o.' }
+};
+
 /** Tema de cada bioma durante la run. */
 G.BIOME_MUSIC = ['forest', 'cave', 'volcano'];
