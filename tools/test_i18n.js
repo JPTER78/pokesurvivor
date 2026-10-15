@@ -1,4 +1,3 @@
-/* Run with node tools/test_i18n.js; no browser or third-party packages needed. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -32,10 +31,14 @@ assert.equal(zh.G.I18n.locale, 'zh-TW');
 for (const [src, expected] of [
   ['Jugar', '開始遊戲'], ['MEJORAS', '強化'], ['  Volver  ', '  返回  '],
   ['Pregunta 2 de 8', '第 2 題，共 8 題'],
-  ['¡Has conseguido a Bulbasaur shiny!', '你獲得了異色 妙蛙種子！'],
-  ['¡Un Gholdengo shiny anda cerca!', '附近有異色 賽富豪！'],
+  ['¡Has conseguido a Bulbasaur shiny!', '獲得了閃光 妙蛙種子！'],
+  ['¡Un Gholdengo shiny anda cerca!', '附近有閃光 賽富豪！'],
   ['¡Poder Furia! daño ×2 durante 10 s', '狂怒之力！傷害 ×2，持續 10 秒'],
-  ['Los 151 Pokémon de la generación 1. ¡Los legendarios esperan!', '收錄 151 隻寶可夢的第 1 世代卡池。傳說寶可夢等著你！']
+  ['Los 151 Pokémon de la generación 1. ¡Los legendarios esperan!', '共 151 隻第 1 世代寶可夢，傳說寶可夢等著你！'],
+  ['Vida', '體力'], ['Gacha', '扭蛋'], ['Vínculo', '羈絆'],
+  ['La Sentencia de Arceus', '阿爾宙斯的審判'],
+  ['Derrota a 20 Pokémon de tipo Agua', '擊敗 20 隻 水系寶可夢'],
+  ['Aguanta 5 minutos con un Pokémon de tipo Fuego', '生存 5 分鐘，使用 火系寶可夢']
 ]) assert.equal(zh.G.T(src), expected, src);
 assert.equal(zh.G.I18n.f('Pregunta {x} de {x}', 3, 8), '第 3 題，共 8 題');
 const ctx = new zh.CanvasRenderingContext2D();
@@ -43,7 +46,7 @@ ctx.fillText('¡Has conseguido a Pikachu shiny!', 10, 20);
 ctx.strokeText('Pausa', 3, 4);
 assert.equal(ctx.measureText('Pausa'), '暫停'.length);
 assert.deepEqual(zh.calls.slice(0, 3), [
-  ['fillText', '你獲得了異色 皮卡丘！', 10, 20], ['strokeText', '暫停', 3, 4], ['measureText', '暫停']
+  ['fillText', '獲得了閃光 皮卡丘！', 10, 20], ['strokeText', '暫停', 3, 4], ['measureText', '暫停']
 ]);
 assert.equal(zh.window.confirm('Volver'), true);
 assert.deepEqual(zh.calls.at(-1), ['confirm', '返回']);

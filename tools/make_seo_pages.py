@@ -582,14 +582,14 @@ def game_en():
     s = s.replace('<head>\n<meta charset="utf-8">', '<head>\n<meta charset="utf-8">\n<base href="../">', 1)
     rep = [
         ('<title>PokéSurvivor — 免費寶可夢生存遊戲</title>', '<title>PokéSurvivor – Free online Pokémon survival game (Survivor.io style)</title>'),
-        ('content="與寶可夢夥伴抵禦敵群！免費瀏覽器與手機同人遊戲，收錄 966 隻寶可夢、異色、傳說與好友合作模式，免下載、無廣告。"',
+        ('content="與寶可夢夥伴抵禦敵群！免費瀏覽器與手機同人遊戲，收錄 966 隻寶可夢、閃光、傳說與好友合作模式，免下載、無廣告。"',
          f'content="Survive hordes of Pokémon with your partner in this free fan game for browser and mobile: {N} Pokémon, shinies, legendaries and online co-op with friends. No downloads, no ads."'),
         ('<link rel="canonical" href="https://pokesurvivor.com/">', '<link rel="canonical" href="https://pokesurvivor.com/en/">'),
         ('<meta property="og:locale" content="zh_TW">', '<meta property="og:locale" content="en_US">'),
         ('content="PokéSurvivor：像素地圖中被敵群包圍的寶可夢"', 'content="PokéSurvivor: a Pokémon surrounded by hordes on a pixel art map"'),
         ('<meta property="og:url" content="https://pokesurvivor.com/">', '<meta property="og:url" content="https://pokesurvivor.com/en/">'),
         ('<meta property="og:title" content="PokéSurvivor — 與寶可夢一起迎戰敵群">', '<meta property="og:title" content="PokéSurvivor – Survive the Pokémon hordes">'),
-        ('<meta property="og:description" content="免費瀏覽器與手機同人遊戲：966 隻寶可夢、異色、傳說與最多 4 人合作。免下載、無廣告。">',
+        ('<meta property="og:description" content="免費瀏覽器與手機同人遊戲：966 隻寶可夢、閃光、傳說與最多 4 人合作。免下載、無廣告。">',
          f'<meta property="og:description" content="A free fan game for browser and mobile: {N} Pokémon, shinies, legendaries and co-op with up to 4 friends. No downloads, no ads.">'),
         ('<meta name="twitter:title" content="PokéSurvivor — 與寶可夢一起迎戰敵群">', '<meta name="twitter:title" content="PokéSurvivor – Survive the Pokémon hordes">'),
         ('<meta name="twitter:description" content="免費瀏覽器與手機同人遊戲，支援最多 4 人合作。免下載、無廣告。">',

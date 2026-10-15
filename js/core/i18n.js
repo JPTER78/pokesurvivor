@@ -1,16 +1,9 @@
-/* i18n — 西班牙文原文，支援英文與繁體中文。
- * 依語系載入字典，依序比對完整句、{x} 動態樣板與單字片段。
- * DOM（含動態節點與無障礙屬性）、Canvas、confirm/alert 共用翻譯；
- * 玩家輸入以 translate="no" 保護。
- * 優先使用設定中的語言，其次為 /en/ 入口，預設繁體中文。
- */
 G.I18n = (() => {
   const KEY = 'ps.lang';
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
   const supported = ['es', 'en', 'zh-Hant'];
   const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
-  // 此分支預設繁體中文；保留已儲存的語言與英文入口。
   const lang = supported.includes(saved) ? saved : byPath || 'zh-Hant';
   const locale = { es: 'es-ES', en: 'en-GB', 'zh-Hant': 'zh-TW' }[lang];
   document.documentElement.lang = lang;
