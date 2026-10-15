@@ -702,6 +702,9 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 .row.wrap { flex-wrap: wrap; }
 .touch-hint { display: none; }
 body.touch .touch-hint { display: block; }
+.gamepad-hint { display: none; color: #ffd23f; }
+body.gamepad-active .gamepad-hint { display: block; }
+body.gamepad-active .kbd-hint { display: none; }
 #pause-sound + .row, #scr-pause .row { flex-wrap: wrap; }
 a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 
@@ -842,3 +845,228 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #dex-detail .btn { position: sticky; bottom: 0; order: 9; margin-top: auto; padding: 8px 6px; font-size: 15px;
     box-shadow: 0 -6px 10px rgba(5,10,25,.6); }
 }
+
+/* ============ Mando / Gamepad: Puntero Virtual, Sensibilidad y Configuración ============ */
+.gp-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  margin-top: -13px;
+  pointer-events: none;
+  z-index: 999999;
+  transition: transform 0.04s linear, opacity 0.2s ease;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.85));
+}
+.gp-cursor.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.gp-cursor-ball {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid var(--gold);
+  background: radial-gradient(circle, rgba(255,210,63,0.35) 0%, rgba(10,18,38,0.7) 70%);
+  box-shadow: 0 0 10px rgba(255,210,63,0.5), inset 0 0 6px rgba(255,210,63,0.4);
+  box-sizing: border-box;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.gp-cursor-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 6px #ffffff;
+  pointer-events: none;
+}
+.gp-cursor.hovering .gp-cursor-ball {
+  transform: scale(1.22);
+  border-color: #5fe08a;
+  background: radial-gradient(circle, rgba(95,224,138,0.4) 0%, rgba(10,18,38,0.7) 70%);
+  box-shadow: 0 0 14px rgba(95,224,138,0.75);
+}
+.gp-cursor.hovering .gp-cursor-dot {
+  background: #5fe08a;
+  box-shadow: 0 0 8px #5fe08a;
+}
+.gp-cursor.clicking .gp-cursor-ball {
+  transform: scale(0.88);
+  border-color: #ffffff;
+  box-shadow: 0 0 16px #ffffff;
+}
+
+/* Indicador de foco y hover por mando */
+.gp-focused, .gp-hover {
+  outline: 2px solid var(--gold) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 12px rgba(255,210,63,0.65) !important;
+  transform: translateY(-1px);
+  transition: outline 0.1s ease, box-shadow 0.1s ease, transform 0.1s ease;
+}
+
+/* Estado de conexión del mando */
+.gp-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 8px 0 10px;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid rgba(244,248,255,0.15);
+}
+.gp-status-banner.connected {
+  border-color: rgba(95,224,138,0.45);
+  background: rgba(95,224,138,0.08);
+}
+.gp-status-banner .gp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 10px;
+}
+.gp-status-banner .gp-dot.green {
+  background: #5fe08a;
+  box-shadow: 0 0 8px #5fe08a;
+}
+.gp-status-banner .gp-dot.gray {
+  background: #6b7a94;
+}
+
+/* Caja de configuración de sensibilidad */
+.gp-sensitivity-box {
+  background: rgba(0,0,0,0.22);
+  border: 2px solid rgba(244,248,255,0.14);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 8px 0 12px;
+}
+.gp-sens-val {
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+}
+.gp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 6px;
+}
+.gp-slider-lbl {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 36px;
+  text-align: center;
+  font-weight: 600;
+}
+.gp-slider {
+  flex: 1;
+  cursor: pointer;
+}
+.gp-sens-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Lista de mapeo de botones */
+.gp-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 48vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin: 8px 0;
+}
+.gp-action-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.25);
+  border: 2px solid rgba(244,248,255,0.12);
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.gp-action-row.gp-pressed {
+  border-color: var(--gold);
+  background: rgba(255,210,63,0.18);
+  transform: translateX(2px);
+}
+.gp-action-info b {
+  display: block;
+  font-size: 15px;
+  color: var(--ink);
+}
+.gp-action-info small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.gp-btn-badge {
+  padding: 3px 9px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: #fff;
+  min-width: 68px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.gp-btn-badge.custom {
+  background: rgba(255,210,63,0.2);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.gp-action-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.gp-button-select {
+  padding: 4px 8px;
+  font-size: 14px;
+  min-width: 130px;
+}
+.gp-listen-btn {
+  white-space: nowrap;
+}
+.gp-listen-btn.listening {
+  background: var(--gold) !important;
+  color: #0b1020 !important;
+  animation: blink 0.8s steps(2) infinite;
+  box-shadow: 0 0 12px rgba(255,210,63,0.8);
+}
+
+@media (max-width: 640px) {
+  .gp-action-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .gp-action-controls {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .gp-button-select {
+    flex: 1;
+    min-width: 120px;
+  }
+  .gp-btn-badge {
+    align-self: flex-start;
+  }
+}
+
