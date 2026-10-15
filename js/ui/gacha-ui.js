@@ -11,6 +11,10 @@ G.GachaUI = (() => {
     $('pull-10').onclick = () => pull(10, 't1');
     $('pull-10b').onclick = () => pull(10, 't10');
     $('pull-close').onclick = close;
+    $('gacha-skip').onclick = () => {
+      G.Settings.set('gachaSkip', !G.Settings.get('gachaSkip'));
+      syncSkip();
+    };
 
     const tabs = $('gacha-gens');
     G.Gacha.BANNERS.forEach(b => {
@@ -73,7 +77,15 @@ G.GachaUI = (() => {
     $('pull-1').disabled = !G.Gacha.costOf(s, 1);
     $('pull-10').disabled = !G.Gacha.costOf(s, 10, 't1');
     $('pull-10b').disabled = !G.Gacha.costOf(s, 10, 't10');
+    syncSkip();
     G.UI.refreshCoins();
+  }
+
+  function syncSkip() {
+    const b = $('gacha-skip');
+    const on = !!G.Settings.get('gachaSkip');
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
   }
 
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -87,16 +99,22 @@ G.GachaUI = (() => {
     busy = true;
 
     const best = Math.max(...res.map(r => r.rarity));
+    const skip = !!G.Settings.get('gachaSkip');
     const fx = $('pull-fx'), slot = $('slot'), out = $('pull-results');
     out.innerHTML = '';
     $('pull-close').classList.add('hidden');
-    slot.style.display = '';
+    slot.style.display = skip ? 'none' : '';
     fx.classList.remove('hidden');
 
-    // La tragaperras (ui/slots.js) y luego las cartas.
-    await G.Slots.play(slot, res);
+    // Con «Abrir sin animación» las cartas salen al momento. Si no, la
+    // tragaperras (ui/slots.js) y luego las cartas, una a una.
+    if (!skip) {
+      await G.Slots.play(slot, res);
+      slot.style.display = 'none';
+    }
     G.Audio.sfx('burst', { rarity: best });
-    slot.style.display = 'none';
+    if (skip && res.some(r => r.shiny)) G.Audio.sfx('shiny');
+    else if (skip && best >= 5) G.Audio.sfx('legend');
 
     for (const r of res) {
       const mon = G.DEX_BY[r.dex];
@@ -110,8 +128,10 @@ G.GachaUI = (() => {
         : `Repetido · <span class="coin"></span> +${r.refund}`;
       c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
       out.appendChild(c);
-      G.Audio.sfx('reveal', { rarity: r.rarity });
-      await wait(n === 10 ? 150 : 0);
+      if (!skip) {
+        G.Audio.sfx('reveal', { rarity: r.rarity });
+        await wait(n === 10 ? 150 : 0);
+      }
     }
     $('pull-close').classList.remove('hidden');
     busy = false;
