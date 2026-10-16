@@ -37,6 +37,7 @@ for (const [src, expected] of [
   ['Los 151 Pokémon de la generación 1. ¡Los legendarios esperan!', '共 151 隻第 1 世代寶可夢，傳說寶可夢等著你！'],
   ['Vida', '體力'], ['Gacha', '扭蛋'], ['Vínculo', '羈絆'],
   ['La Sentencia de Arceus', '阿爾宙斯的審判'],
+  ['Actualización obligatoria: tu partida se guarda y el juego se recarga en 10 s…', '必要更新：本局進度將儲存，遊戲將於 10 秒後重新載入…'],
   ['Derrota a 20 Pokémon de tipo Agua', '擊敗 20 隻 水系寶可夢'],
   ['Aguanta 5 minutos con un Pokémon de tipo Fuego', '生存 5 分鐘，使用 火系寶可夢']
 ]) assert.equal(zh.G.T(src), expected, src);

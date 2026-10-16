@@ -5,13 +5,11 @@
  * Dos caminos, a la vez:
  *   directo  WebRTC (canal de datos entre navegadores, sin pasar por ningún
  *            servidor). La negociación (señalización) va por la base de datos.
- *            Si la red no deja conectar directo (algunos routers y datos
- *            móviles), WebRTC pasa por el TURN de Cloudflare (sigue siendo
- *            "directo" para el juego). Las claves las da cloudflare/turn-worker.js
- *            sólo a jugadores con cuenta.
- *   relé     Si ni así (o el Worker no responde), los mensajes van por la
- *            Realtime Database: rooms/{sala}/q/{destinatario}/{id}. Funciona,
- *            pero cuesta 1 $ el GB: antes del TURN era casi todo el gasto.
+ *            Sólo con STUN gratuito de Google: si la red no deja conectar
+ *            directo (algunos routers y datos móviles), esa pareja no puede
+ *            jugar junta. El TURN de Cloudflare se QUITÓ el 15-10-2026 (de pago).
+ *   relé     (APAGADO) los mensajes irían por la Realtime Database:
+ *            rooms/{sala}/q/{destinatario}/{id}, a 1 $ el GB.
  *
  * Se envía por el canal directo si está abierto; si no, por el relé. El que
  * recibe escucha los dos, así que no hace falta ponerse de acuerdo.
@@ -21,38 +19,14 @@
  *       peers() · mode(uid) -> 'connecting' | 'direct' | 'relay' | 'closed'
  */
 G.Net = (() => {
-  const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
-               { urls: 'stun:stun.cloudflare.com:3478' }];
+  const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
   const DIRECT_TIMEOUT = 9000;     // ms para conseguir canal directo antes de usar el relé
   // Relé por la Realtime Database APAGADO (12-10-2026): a 1 $ el GB era lo que más
-  // costaba del cooperativo. Sin conexión directa ni TURN, esa pareja no puede jugar
+  // costaba del cooperativo. Sin conexión directa, esa pareja no puede jugar
   // junta ('failed') y el anfitrión lo reintenta cada RETRY_MS. Por la base de datos
   // sólo pasa la señalización (unos pocos mensajes pequeños para conectarse).
   const ALLOW_RELAY = false, RETRY_MS = 15000;
 
-  // ---------------- TURN (Cloudflare) ----------------
-  const TURN_URL = 'https://turn.pokesurvivor.com/';
-  let turn = null, turnAt = 0, turnReq = null;
-  /** Pide (o reutiliza) credenciales TURN. Nunca falla: sin ellas, se sigue como antes. */
-  function fetchTurn() {
-    const fb = G.DB.fb;
-    if (!fb || fb.emulator || !fb.auth || !fb.auth.currentUser) return Promise.resolve(null);
-    if (turn && Date.now() - turnAt < (turn.ttl - 600) * 1000) return Promise.resolve(turn);
-    if (turnReq) return turnReq;
-    turnReq = fb.auth.currentUser.getIdToken()
-      .then(tok => fetch(TURN_URL, { headers: { Authorization: 'Bearer ' + tok } }))
-      .then(r => (r.ok ? r.json() : null))
-      .then(j => {
-        if (j && j.iceServers) { turn = { servers: [].concat(j.iceServers), ttl: j.ttl || 3600 }; turnAt = Date.now(); }
-        return turn;
-      })
-      .catch(e => { console.warn('[Net] TURN:', e.message); return null; })
-      .finally(() => { turnReq = null; });
-    return turnReq;
-  }
-  /** Espera las credenciales como mucho 2,5 s (si tardan más, se conecta sin ellas). */
-  const waitTurn = () => Promise.race([fetchTurn(), new Promise(r => setTimeout(r, 2500))]);
-  const iceServers = () => (turn ? ICE.concat(turn.servers) : ICE);
 
   let rtdb = null, uid = null, roomId = null, isHost = false, hostUid = null;
   let qref = null;
@@ -73,7 +47,6 @@ G.Net = (() => {
     const fb = G.DB.fb;
     rtdb = fb.rtdb; uid = fb.uid;
     roomId = id; isHost = host; hostUid = hostId;
-    fetchTurn();                    // se piden ya, para tenerlas al conectar
     qref = rtdb.ref('rooms/' + id + '/q/' + uid);
     qref.on('child_added', s => {
       const raw = s.val();
@@ -117,7 +90,7 @@ G.Net = (() => {
     peers.set(u, p);
     // Sin WebRTC (navegador antiguo o bloqueado): directamente por el relé.
     let pc;
-    try { pc = p.pc = new RTCPeerConnection({ iceServers: iceServers() }); }
+    try { pc = p.pc = new RTCPeerConnection({ iceServers: ICE }); }
     catch (e) { p.mode = 'relay'; emitPeer(u); return p; }
     pc.onicecandidate = e => { if (e.candidate) signal(u, { c: e.candidate.toJSON() }); };
     pc.onconnectionstatechange = () => {
@@ -131,28 +104,13 @@ G.Net = (() => {
 
   function wireChannel(u, p, dc) {
     p.dc = dc;
-    dc.onopen = () => { clearTimeout(p.timer); p.mode = 'direct'; emitPeer(u); checkTurn(p); };
+    dc.onopen = () => { clearTimeout(p.timer); p.mode = 'direct'; emitPeer(u); };
     dc.onclose = () => { if (p.mode === 'direct') { p.mode = 'connecting'; useRelay(u); } };
     dc.onmessage = e => {
       let m;
       try { m = JSON.parse(e.data); } catch (err) { return; }
       deliver(u, m);
     };
-  }
-
-  /**
-   * ¿El canal "directo" pasa en realidad por el TURN de Cloudflare? Entonces se
-   * manda menos a menudo (ver coop.js): el TURN se paga por GB a partir de 1.000 al mes.
-   */
-  async function checkTurn(p) {
-    try {
-      const st = await p.pc.getStats();
-      st.forEach(s => {
-        if (s.type !== 'candidate-pair' || !s.nominated || s.state !== 'succeeded') return;
-        const l = st.get(s.localCandidateId), r = st.get(s.remoteCandidateId);
-        if ((l && l.candidateType === 'relay') || (r && r.candidateType === 'relay')) p.turn = true;
-      });
-    } catch (e) { /* nada */ }
   }
 
   function useRelay(u) {
@@ -169,7 +127,6 @@ G.Net = (() => {
 
   /** Anfitrión: abre conexión con un invitado. */
   async function connect(u) {
-    await waitTurn();
     if (!roomId || peers.has(u)) return;
     const p = newPeer(u);
     if (!p.pc) return;
@@ -189,7 +146,6 @@ G.Net = (() => {
       if (sig.sdp && sig.sdp.type === 'offer') {
         if (isHost) return;
         if (p) drop(from, true);
-        await waitTurn();
         p = newPeer(from);
         if (!p.pc) return;
         p.pc.ondatachannel = e => wireChannel(from, p, e.channel);
@@ -260,15 +216,11 @@ G.Net = (() => {
     mode(u) { const p = peers.get(u); return p ? p.mode : 'closed'; },
     /** ¿Va por el relé (o no hay conexión)? Entonces se manda menos a menudo. */
     slow(u) { const p = peers.get(u); return !p || p.mode !== 'direct'; },
-    /** ¿Va directo pero a través del TURN de Cloudflare? (se manda algo menos) */
-    viaTurn(u) { const p = peers.get(u); return !!p && p.mode === 'direct' && !!p.turn; },
     peers() { return [...peers.keys()]; },
     get open_() { return !!roomId; },
     get isHost() { return isHost; },
     get uid() { return uid; },
     get hostUid() { return hostUid; },
-    stats,
-    /** ¿Hay credenciales TURN? (para pruebas y diagnóstico) */
-    get turn() { return !!turn; }
+    stats
   };
 })();
