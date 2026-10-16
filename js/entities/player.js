@@ -57,6 +57,7 @@ G.Player = class Player {
     this.coins = 0;            // monedas recogidas en esta run
     this.t1 = 0; this.t10 = 0; // tickets del gacha recogidos en esta run
     this.dmgDealt = 0;
+    this.dealtOther = 0;       // daño de objetos (Casco Dentado), para el medidor
 
     this.invuln = 0;
     this.flash = 0;

@@ -399,6 +399,14 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .stats > div { background: rgba(0,0,0,.22); border-radius: 9px; padding: 8px 10px; }
 .stats > div > span:first-child { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .stats b { font-size: 22px; }
+.stats .dmg-dps { color: var(--muted); font-size: 13px; }
+.dmg-sub { color: var(--muted); font-size: 12px; text-transform: uppercase; margin: 8px 0 2px; }
+.dmg-row { display: grid; grid-template-columns: minmax(0, 10em) 1fr auto 3em; align-items: center; gap: 8px; font-size: 14px; margin-top: 3px; }
+.dmg-row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dmg-bar { height: 6px; border-radius: 3px; background: rgba(0,0,0,.55); overflow: hidden; }
+.dmg-bar > i { display: block; height: 100%; }
+.stats .dmg-row b { font-size: 14px; }
+.dmg-row small { color: var(--muted); text-align: right; }
 
 kbd {
   display: inline-block; padding: 0 6px; border: 2px solid rgba(244,248,255,.4); border-bottom-width: 3px;

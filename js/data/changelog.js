@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Medidor de daño', 'Damage meter'], new: [
+    ['Medidor de daño: pulsa R en partida (o actívalo en Ajustes > Gráficos) para ver cuánto daño hace cada uno de tus movimientos, quemaduras y venenos incluidos. En grupo enseña el daño de cada compañero y su parte del total. Al acabar la partida, lo tienes todo en el resumen.',
+     'Damage meter: press R in a run (or turn it on in Settings > Graphics) to see how much damage each of your moves deals, burns and poison included. In co-op it shows each teammate’s damage and their share of the total. When the run ends, it’s all in the summary.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']

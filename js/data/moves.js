@@ -435,7 +435,7 @@
    */
   function instance(id, lvl = 1) {
     const def = BY_ID[id];
-    const s = Object.assign({}, def, { id, def, lvl, t: 0 });
+    const s = Object.assign({}, def, { id, def, lvl, t: 0, dealt: 0 });
     delete s.ups;
     for (let i = 0; i < lvl - 1; i++) applyMods(s, def.ups[i].m);
     return s;

@@ -406,6 +406,8 @@ G.I18n.add({
   'Cuántos efectos y partículas se dibujan. {x} la baja sola si el juego va a tirones (ahora: {x}).': 'How many effects and particles are drawn. {x} lowers it automatically if the game stutters (now: {x}).',
   'alta': 'high', 'media': 'medium', 'baja': 'low',
   'Pantalla': 'Display', 'Números de daño': 'Damage numbers', 'Los números que salen al golpear y al recibir daño.': 'The numbers that pop up when you hit or get hit.',
+  'Medidor de daño': 'Damage meter', 'Cuánto daño hace cada movimiento (y cada compañero en grupo). Tecla R.': 'How much damage each move (and each teammate in co-op) deals. Key R.',
+  'DAÑO': 'DAMAGE', 'DAÑO DEL GRUPO': 'TEAM DAMAGE', 'Daño': 'Damage', 'Objetos': 'Items', 'Tus movimientos': 'Your moves',
   'Menos sacudidas y destellos': 'Less shaking and flashing', 'La cámara tiembla menos y los fogonazos son suaves.': 'The camera shakes less and flashes are softer.',
   'Mostrar FPS': 'Show FPS', 'Fotogramas por segundo, en la esquina de abajo.': 'Frames per second, in the bottom corner.',
   'Pantalla completa': 'Fullscreen', 'Sin barras del navegador.': 'Without browser bars.', 'Activar': 'Turn on', 'Sí': 'Yes', 'No': 'No',
