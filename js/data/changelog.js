@@ -7,8 +7,8 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-16', title: ['Busca tus Pokémon', 'Find your Pokémon'], new: [
-    ['Busca Pokémon por nombre en la colección, en todas las regiones o combinando los filtros. En Mejoras, elige tu Pokémon con un selector con búsqueda y el estilo del juego.',
-     'Search Pokémon by name in your collection, across all regions or combined with filters. In Upgrades, choose your Pokémon with a searchable selector matching the game’s style.']
+    ['Busca Pokémon por nombre en la colección, en todas las regiones o combinando los filtros. Los selectores de Pokémon, atajos de movimientos, títulos del perfil y filtros del ranking tienen búsqueda y el estilo del juego.',
+     'Search Pokémon by name in your collection, across all regions or combined with filters. Pokémon, move shortcut, profile title and leaderboard selectors now include search and match the game’s style.']
   ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',

@@ -284,6 +284,9 @@ G.I18n.add({
   'Proyecto de fan sin ánimo de lucro · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK ·': 'Non-profit fan project · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK ·',
   'Aviso legal': 'Legal notice',
   // búsqueda y selectores
+  'Buscar…': 'Search…', 'Sin resultados.': 'No results.',
+  'Buscar movimiento…': 'Search moves…', 'Buscar título…': 'Search titles…',
+  'Movimiento del hueco {x}': 'Move for slot {x}',
   'Buscar Pokémon por nombre…': 'Search Pokémon by name…',
   'Buscar Pokémon por nombre': 'Search Pokémon by name',
   'Elegir Pokémon para mejorar': 'Choose a Pokémon to upgrade',

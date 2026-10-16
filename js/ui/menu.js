@@ -10,6 +10,7 @@ G.MenuUI = (() => {
     $('dex-search').onkeydown = e => e.stopPropagation();
     upgSelect = G.SearchSelect.create($('upg-mon'), {
       label: 'Elegir Pokémon para mejorar',
+      placeholder: 'Buscar Pokémon por nombre…', emptyText: 'No hay Pokémon con ese nombre.',
       onChange(value) { upgDex = value; G.Audio.sfx('select'); renderUpgrades(); }
     });
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
@@ -313,22 +314,29 @@ G.MenuUI = (() => {
     el.className = 'panel bind-panel';
     el.innerHTML = `<b>Atajos de movimientos</b>
       <p class="sub" style="margin:2px 0 8px">Elige qué movimiento va siempre en cada hueco (teclas 1-4 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.</p>
-      <div class="bind-slots">${[0, 1, 2, 3].map(i => `<label class="bind-slot"><span>${i + 1}</span>
-        <select class="field" data-slot="${i}"><option value="">Libre</option>${ids.map(id =>
-          `<option value="${id}" ${list[i] === id ? 'selected' : ''}>${G.Moves.BY_ID[id].name}</option>`).join('')}</select></label>`).join('')}</div>`;
-    el.querySelectorAll('select[data-slot]').forEach(sel => {
-      sel.onchange = () => {
-        const l = (s.pbind[upgDex] || [null, null, null, null]).slice(0, 4);
-        while (l.length < 4) l.push(null);
-        const i = +sel.dataset.slot, id = sel.value || null;
-        // Un movimiento sólo puede estar en un hueco.
-        for (let j = 0; j < 4; j++) if (id && l[j] === id) l[j] = null;
-        l[i] = id;
-        s.pbind[upgDex] = l;
-        G.DB.commit();
-        G.Audio.sfx('select');
-        renderUpgrades();
-      };
+      <div class="bind-slots">${[0, 1, 2, 3].map(i => `<div class="bind-slot"><span aria-hidden="true">${i + 1}</span>
+        <div data-slot="${i}"></div></div>`).join('')}</div>`;
+    const options = [{ value: null, label: 'Libre' }, ...ids.map(id => ({ value: id, label: G.Moves.BY_ID[id].name }))];
+    el.querySelectorAll('[data-slot]').forEach(host => {
+      const i = +host.dataset.slot;
+      const select = G.SearchSelect.create(host, {
+        label: G.I18n.f('Movimiento del hueco {x}', i + 1), placeholder: 'Buscar movimiento…',
+        onChange(id) {
+          const l = (s.pbind[upgDex] || [null, null, null, null]).slice(0, 4);
+          while (l.length < 4) l.push(null);
+          // Un movimiento sólo puede estar en un hueco.
+          for (let j = 0; j < 4; j++) if (id && l[j] === id) l[j] = null;
+          l[i] = id;
+          s.pbind[upgDex] = l;
+          G.DB.commit();
+          G.Audio.sfx('select');
+          renderUpgrades();
+          // El panel se reconstruye para reflejar los movimientos que cambian de hueco.
+          const next = $('upg-list').querySelector(`[data-slot="${i}"] button`);
+          if (next) next.focus({ preventScroll: true });
+        }
+      });
+      select.setOptions(options, list[i] || null);
     });
     return el;
   }
