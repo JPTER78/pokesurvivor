@@ -33,6 +33,13 @@
   --font: 'Pixelify', 'Segoe UI', system-ui, sans-serif;
 }
 
+/* Use local CJK fonts; no extra network or font download is needed. */
+html:lang(zh-Hant) {
+  --font: 'Pixelify', 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans CJK TC', system-ui, sans-serif;
+}
+html:lang(zh-Hant) body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
+html:lang(zh-Hant) .btn, html:lang(zh-Hant) .chip { letter-spacing: 0; }
+
 * { box-sizing: border-box; }
 .hidden { display: none !important; }
 html, body { height: 100%; margin: 0; }

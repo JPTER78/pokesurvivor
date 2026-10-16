@@ -11,10 +11,10 @@ G.RankingUI = (() => {
 
   function init() {
     const dl = $('rk-dl');
-    dl.innerHTML = G.DEX.map(p => `<option value="${esc(p.name)}">`).join('');
+    dl.innerHTML = G.DEX.map(p => `<option value="${esc(G.T(p.name))}">`).join('');
     $('rk-poke').onchange = () => {
       const v = $('rk-poke').value.trim().toLowerCase();
-      const p = G.DEX.find(x => x.name.toLowerCase() === v);
+      const p = G.DEX.find(x => x.name.toLowerCase() === v || G.T(x.name).toLowerCase() === v);
       if (!v) { setDex(null); return; }
       if (!p) { G.UI.toast('No hay ningún Pokémon con ese nombre'); return; }
       setDex(p.dex);
@@ -88,6 +88,15 @@ G.RankingUI = (() => {
     rows.forEach((r, i) => list.appendChild(rowEl(r, i + 1, r.uids.includes(uid), b, done)));
 
     // La frase se monta en cada idioma (traducirla por trozos sale rara).
+    if (G.I18n.lang === 'zh-Hant') {
+      const when = { d: '今天', w: '本週', m: '本月', y: '今年', a: '歷史' }[period];
+      const where = (mode === 's' ? '單人' : '多人') + (dex ? ' · ' + G.T(G.DEX_BY[dex].name) : '');
+      $('rk-me').innerHTML = !G.Social.me ? G.T('Elige un apodo (en Amigos) para salir en el ranking.')
+        : me && me.out ? `你尚未進入${when}${where}前 50 名。完整名次請查看歷史排行榜。`
+        : me ? `${when}${where}最佳名次：<b class="gold">#${me.pos}</b> · ${fmt(me.t)}`
+        : `尚無${when}${where}紀錄。`;
+      return;
+    }
     const en = G.I18n.lang === 'en';
     const pn = en ? { d: 'today', w: 'this week', m: 'this month', y: 'this year', a: 'of all time' }[period]
                   : { d: 'de hoy', w: 'de esta semana', m: 'de este mes', y: 'de este año', a: 'de siempre' }[period];
@@ -111,7 +120,7 @@ G.RankingUI = (() => {
     r.dex.forEach((d, i) => { if (G.DEX_BY[d]) mons.appendChild(G.UI.spriteCanvas(d, 44, 40, { scale: 1, shiny: !!r.shiny[i] })); });
     el.appendChild(mons);
     el.insertAdjacentHTML('beforeend',
-      `<span class="who"><b translate="no">${r.names.map((n, i) => `<a href="#" class="plink" data-u="${esc(r.uids[i] || '')}">${esc(n)}</a>`).join(' · ')}</b><small>Nv. ${r.lv || 1} · ${(r.kills || 0).toLocaleString('es')} derrotados</small></span>
+      `<span class="who"><b translate="no">${r.names.map((n, i) => `<a href="#" class="plink" data-u="${esc(r.uids[i] || '')}">${esc(n)}</a>`).join(' · ')}</b><small>Nv. ${r.lv || 1} · ${(r.kills || 0).toLocaleString(G.I18n.lang === 'zh-Hant' ? 'zh-TW' : 'es')} derrotados</small></span>
        <span class="time">${fmt(r.t)}</span>`);
     el.querySelectorAll('.plink').forEach(a => { a.onclick = e => { e.preventDefault(); G.ProfileUI.show(a.dataset.u); }; });
     // Reportar una marca sospechosa (no la tuya). Lo revisa el admin (mod-ui.js).

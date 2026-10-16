@@ -44,7 +44,7 @@ G.LevelUp = (() => {
           w: 10, type: 'new', key: 'new:' + id,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
           tag: G.U.TYPE_NAME[d.type],
-          title: d.name, desc: d.desc,
+          title: G.T(d.name, 'move'), desc: d.desc,
           apply: p => p.addMove(id)
         });
       }
@@ -59,7 +59,7 @@ G.LevelUp = (() => {
       out.push({
         w: 40, type: 'evo', key: 'evo:' + m.id,
         icon: 'move:' + m.id, color: '#ffd23f', tag: 'EVOLUCIÓN',
-        title: m.name + ' → ' + ev.name, desc: ev.text,
+        title: G.T(m.name, 'move') + ' → ' + G.T(ev.name, 'move'), desc: ev.text,
         apply: p => {
           G.Moves.evolve(m);
           G.FX.ring(p.x, p.y, 8, 120, '#ffd23f', 0.8, 6);
@@ -78,7 +78,7 @@ G.LevelUp = (() => {
         w: 8, type: 'up', key: 'up:' + m.id,
         icon: 'move:' + m.id, color: G.U.TYPE_COLOR[m.type],
         tag: 'Nv.' + m.lvl + ' > ' + (m.lvl + 1),
-        title: m.name, desc: txt,
+        title: G.T(m.name, 'move'), desc: txt,
         apply: () => G.Moves.levelUp(m)
       });
     }
@@ -95,7 +95,7 @@ G.LevelUp = (() => {
       out.push({
         w: evoFor ? 14 : pl.slots.length < pl.maxMoves ? 4 : 7,
         type: 'stat', key: 'stat:' + s.id,
-        icon: s.icon, color: evoFor ? '#ffd23f' : '#8fa3c4', tag: evoFor ? 'Evoluciona ' + evoFor.name : 'Mejora',
+        icon: s.icon, color: evoFor ? '#ffd23f' : '#8fa3c4', tag: evoFor ? 'Evoluciona ' + G.T(evoFor.name, 'move') : 'Mejora',
         title: s.title, desc: s.desc,
         apply: p => { s.apply(p); p.statsTaken[s.id] = (p.statsTaken[s.id] || 0) + 1; }
       });

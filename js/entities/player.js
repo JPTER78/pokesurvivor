@@ -489,9 +489,9 @@ G.Player = class Player {
       ctx.textAlign = 'center';
       const y = this.y - this.bodyH - 8;
       ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
-      ctx.strokeText(this.tag, this.x, y);
+      G.I18n.rawCanvas(ctx, 'strokeText', this.tag, this.x, y);
       ctx.fillStyle = this.dead ? '#ff8a96' : this.tagColor || '#fff';
-      ctx.fillText(this.tag, this.x, y);
+      G.I18n.rawCanvas(ctx, 'fillText', this.tag, this.x, y);
       if (this.dead) {
         ctx.font = '700 6px Pixelify,"Segoe UI",sans-serif';
         ctx.strokeText(this.revLabel || '', this.x, y - 8);
