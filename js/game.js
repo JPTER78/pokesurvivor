@@ -30,7 +30,8 @@ G.Game = (() => {
     cv = document.getElementById('game');
     ctx = cv.getContext('2d');
     resize();
-    addEventListener('resize', resize);
+    addEventListener('resize', () => { resize(); resizeSoon(); });
+    addEventListener('orientationchange', resizeSoon);
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
@@ -43,13 +44,29 @@ G.Game = (() => {
   function resize() {
     // Resolución interna como mucho ×1,5: en pantallas ×2 dibujar el doble de
     // píxeles era de lo que más costaba, y con el pixel art no se nota.
-    dpr = Math.min(1.5, window.devicePixelRatio || 1);
-    w = cv.clientWidth; h = cv.clientHeight;
-    cv.width = Math.round(w * dpr);
-    cv.height = Math.round(h * dpr);
-    G.Camera.resize(w, h, dpr);
+    const d = Math.min(1.5, window.devicePixelRatio || 1);
+    const cw = cv.clientWidth, ch = cv.clientHeight;
+    // Mismo tamaño que antes: no hay nada que hacer (cambiarle el tamaño al
+    // lienzo lo borraría).
+    if (cw !== w || ch !== h || d !== dpr) {
+      dpr = d; w = cw; h = ch;
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+      G.Camera.resize(w, h, dpr);
+    }
     checkOrientation();
   }
+
+  // iPhone, sobre todo como app de la pantalla de inicio: al girar el móvil, el
+  // evento 'resize' llega cuando la página todavía dice el tamaño de antes
+  // (medido en un iPhone: 844×797 cuando de verdad eran 844×390). Sin barra del
+  // navegador que aparezca o se esconda y dispare un segundo 'resize', ese
+  // tamaño erróneo se quedaba para siempre: el lienzo salía estirado por CSS,
+  // así que lo que se veía y donde tocaba el dedo ya no coincidían y los iconos
+  // de ataque dejaban de cambiar de movimiento. Volver a medir un momento
+  // después lo arregla; si no ha cambiado nada, resize() no toca nada.
+  const RECHECK = [100, 300, 600, 1000];
+  function resizeSoon() { for (const ms of RECHECK) setTimeout(resize, ms); }
 
   /** Móvil en vertical: aviso de girarlo (y pausa). */
   function checkOrientation() {
