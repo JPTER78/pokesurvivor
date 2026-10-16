@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Arreglos de iPhone', 'iPhone fixes'], fix: [
+    ['iPhone: si abres el juego desde su icono de la pantalla de inicio, tocar los iconos de ataque ya cambia de movimiento. Antes, al girar el móvil el juego se quedaba con el tamaño de pantalla de antes de girarlo, así que lo que veías y donde tocabas ya no coincidían (el botón de pausa sí respondía).',
+     'iPhone: if you open the game from its home-screen icon, tapping the attack icons switches moves again. Before, turning the phone left the game with the screen size it had before the turn, so what you saw and where you tapped no longer matched (the pause button did still work).']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
