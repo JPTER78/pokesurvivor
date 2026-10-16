@@ -390,8 +390,7 @@
     <div class="filters" id="rk-period"></div>
     <div class="row rk-tools">
       <div class="filters" id="rk-scope" style="margin:0"></div>
-      <input id="rk-poke" class="field" list="rk-dl" placeholder="Filtrar por Pokémon (histórico)" spellcheck="false">
-      <datalist id="rk-dl"></datalist>
+      <div id="rk-poke"></div>
       <button id="rk-clear" class="btn small ghost hidden">Quitar filtro</button>
     </div>
     <div id="rk-list" class="rk-list"></div>
@@ -448,6 +447,7 @@
     <div class="gen-tabs" id="dex-gens"></div>
     <div class="split" style="margin-top:8px">
       <div>
+        <input id="dex-search" class="field dex-search" type="search" placeholder="Buscar Pokémon por nombre…" aria-label="Buscar Pokémon por nombre" autocomplete="off">
         <div class="filters" id="dex-filters"></div>
         <div class="grid" id="dex-grid"></div>
       </div>
@@ -465,8 +465,8 @@
       <div class="grow">
         <p class="sub" style="margin:0">Cada Pokémon tiene sus propias mejoras: sólo cuentan cuando juegas con él.</p>
         <div class="row" style="margin-top:8px">
-          <label for="upg-mon" style="margin:0">Pokémon</label>
-          <select id="upg-mon" class="field" style="width:auto;min-width:220px"></select>
+          <span style="color:var(--muted);font-size:14px">Pokémon</span>
+          <div id="upg-mon"></div>
         </div>
       </div>
     </div>
@@ -620,6 +620,7 @@
 <script defer src="js/ui/hud.js"></script>
 <script defer src="js/ui/login.js"></script>
 <script defer src="js/ui/test.js"></script>
+<script defer src="js/ui/search-select.js"></script>
 <script defer src="js/ui/menu.js"></script>
 <script defer src="js/ui/slots.js"></script>
 <script defer src="js/ui/gacha-ui.js"></script>

@@ -3,8 +3,16 @@ G.MenuUI = (() => {
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
   let dexFilter = 'all', dexGen = 1, dexSel = null;
+  let upgSelect = null;
 
   function init() {
+    $('dex-search').oninput = () => { dexGen = 0; openDex(); };
+    $('dex-search').onkeydown = e => e.stopPropagation();
+    upgSelect = G.SearchSelect.create($('upg-mon'), {
+      label: 'Elegir Pokémon para mejorar',
+      placeholder: 'Buscar Pokémon por nombre…', emptyText: 'No hay Pokémon con ese nombre.',
+      onChange(value) { upgDex = value; G.Audio.sfx('select'); renderUpgrades(); }
+    });
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
@@ -111,10 +119,9 @@ G.MenuUI = (() => {
     // Pestañas de generación, con cuántos tienes de cada una.
     const tabs = $('dex-gens');
     tabs.innerHTML = '';
-    GEN_NAMES.forEach((name, i) => {
-      const g = i + 1;
-      const total = G.DEX.filter(p => p.gen === g).length;
-      const have = G.DEX.filter(p => p.gen === g && s.owned[p.dex]).length;
+    ['Todas', ...GEN_NAMES].forEach((name, g) => {
+      const total = G.DEX.filter(p => !g || p.gen === g).length;
+      const have = G.DEX.filter(p => (!g || p.gen === g) && s.owned[p.dex]).length;
       const b = document.createElement('button');
       b.className = 'gen-tab' + (g === dexGen ? ' on' : '');
       b.innerHTML = `<b>${name}</b><small>${have}/${total}</small>`;
@@ -142,8 +149,10 @@ G.MenuUI = (() => {
     const s = G.DB.save;
     const grid = $('dex-grid');
     grid.innerHTML = '';
+    const query = G.SearchSelect.normalize($('dex-search').value);
     for (const p of G.DEX) {
-      if (p.gen !== dexGen) continue;
+      if (dexGen && p.gen !== dexGen) continue;
+      if (query && !G.SearchSelect.normalize(p.name).includes(query)) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
       if (dexFilter === 'own' && !own) continue;
       if (dexFilter === 'miss' && own) continue;
@@ -237,13 +246,12 @@ G.MenuUI = (() => {
     const s = G.DB.save;
     if (!upgDex || !s.owned[upgDex]) upgDex = s.partner;
     // Selector con tus Pokémon: el compañero primero, luego los que ya tienen mejoras.
-    const sel = $('upg-mon');
     const lv = d => Object.values(s.pupg[d] || {}).reduce((a, b) => a + b, 0);
     const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d])
       .sort((a, b) => (b === s.partner) - (a === s.partner) || lv(b) - lv(a) || a - b);
-    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
-    sel.value = upgDex;
-    sel.onchange = () => { upgDex = +sel.value; G.Audio.sfx('select'); renderUpgrades(); };
+    upgSelect.setOptions(mons.map(d => ({ value: d,
+      label: G.DEX_BY[d].name + (d === s.partner ? ' (compañero)' : '') + (lv(d) ? ' · ' + lv(d) + ' niveles' : '')
+    })), upgDex);
     renderUpgrades();
   }
 
@@ -306,22 +314,29 @@ G.MenuUI = (() => {
     el.className = 'panel bind-panel';
     el.innerHTML = `<b>Atajos de movimientos</b>
       <p class="sub" style="margin:2px 0 8px">Elige qué movimiento va siempre en cada hueco (teclas 1-4 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.</p>
-      <div class="bind-slots">${[0, 1, 2, 3].map(i => `<label class="bind-slot"><span>${i + 1}</span>
-        <select class="field" data-slot="${i}"><option value="">Libre</option>${ids.map(id =>
-          `<option value="${id}" ${list[i] === id ? 'selected' : ''}>${G.Moves.BY_ID[id].name}</option>`).join('')}</select></label>`).join('')}</div>`;
-    el.querySelectorAll('select[data-slot]').forEach(sel => {
-      sel.onchange = () => {
-        const l = (s.pbind[upgDex] || [null, null, null, null]).slice(0, 4);
-        while (l.length < 4) l.push(null);
-        const i = +sel.dataset.slot, id = sel.value || null;
-        // Un movimiento sólo puede estar en un hueco.
-        for (let j = 0; j < 4; j++) if (id && l[j] === id) l[j] = null;
-        l[i] = id;
-        s.pbind[upgDex] = l;
-        G.DB.commit();
-        G.Audio.sfx('select');
-        renderUpgrades();
-      };
+      <div class="bind-slots">${[0, 1, 2, 3].map(i => `<div class="bind-slot"><span aria-hidden="true">${i + 1}</span>
+        <div data-slot="${i}"></div></div>`).join('')}</div>`;
+    const options = [{ value: null, label: 'Libre' }, ...ids.map(id => ({ value: id, label: G.Moves.BY_ID[id].name }))];
+    el.querySelectorAll('[data-slot]').forEach(host => {
+      const i = +host.dataset.slot;
+      const select = G.SearchSelect.create(host, {
+        label: G.I18n.f('Movimiento del hueco {x}', i + 1), placeholder: 'Buscar movimiento…',
+        onChange(id) {
+          const l = (s.pbind[upgDex] || [null, null, null, null]).slice(0, 4);
+          while (l.length < 4) l.push(null);
+          // Un movimiento sólo puede estar en un hueco.
+          for (let j = 0; j < 4; j++) if (id && l[j] === id) l[j] = null;
+          l[i] = id;
+          s.pbind[upgDex] = l;
+          G.DB.commit();
+          G.Audio.sfx('select');
+          renderUpgrades();
+          // El panel se reconstruye para reflejar los movimientos que cambian de hueco.
+          const next = $('upg-list').querySelector(`[data-slot="${i}"] button`);
+          if (next) next.focus({ preventScroll: true });
+        }
+      });
+      select.setOptions(options, list[i] || null);
     });
     return el;
   }

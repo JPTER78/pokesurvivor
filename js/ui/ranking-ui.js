@@ -7,25 +7,27 @@ G.RankingUI = (() => {
   const $ = G.UI.$;
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let mode = 's', period = 'w', scope = 'all', dex = null;
-  let token = 0;
+  let token = 0, pokeSelect = null;
+
+  function syncPokemon() {
+    pokeSelect.setOptions([{ value: null, label: 'Filtrar por Pokémon (histórico)' },
+      ...G.DEX.map(p => ({ value: p.dex, label: p.name }))], dex);
+  }
 
   function init() {
-    const dl = $('rk-dl');
-    dl.innerHTML = G.DEX.map(p => `<option value="${esc(p.name)}">`).join('');
-    $('rk-poke').onchange = () => {
-      const v = $('rk-poke').value.trim().toLowerCase();
-      const p = G.DEX.find(x => x.name.toLowerCase() === v);
-      if (!v) { setDex(null); return; }
-      if (!p) { G.UI.toast('No hay ningún Pokémon con ese nombre'); return; }
-      setDex(p.dex);
-    };
-    $('rk-clear').onclick = () => { $('rk-poke').value = ''; setDex(null); };
+    pokeSelect = G.SearchSelect.create($('rk-poke'), {
+      label: 'Filtrar por Pokémon (histórico)', placeholder: 'Buscar Pokémon por nombre…',
+      emptyText: 'No hay Pokémon con ese nombre.', onChange: setDex
+    });
+    syncPokemon();
+    $('rk-clear').onclick = () => setDex(null);
     $('rk-mod').onclick = () => G.ModUI.open();
   }
 
   /** El filtro por Pokémon sólo existe en el histórico: al elegir uno se pasa a esa pestaña. */
   function setDex(d) {
     dex = d;
+    syncPokemon();
     if (d && period !== 'a') period = 'a';
     $('rk-clear').classList.toggle('hidden', !d);
     tabs(); load();
@@ -55,7 +57,7 @@ G.RankingUI = (() => {
        mode, k => { mode = k; }, 'gen-tab');
     mk($('rk-period'), G.Ranking.PERIODS, period, k => {
       period = k;
-      if (k !== 'a' && dex) { dex = null; $('rk-poke').value = ''; $('rk-clear').classList.add('hidden'); }
+      if (k !== 'a' && dex) { dex = null; syncPokemon(); $('rk-clear').classList.add('hidden'); }
     }, 'chip');
     mk($('rk-scope'), [['all', 'Todos'], ['friends', 'Sólo amigos']], scope, k => { scope = k; }, 'chip');
   }
