@@ -343,10 +343,23 @@ G.Social = (() => {
   function enterRoom(id, host) {
     room = { id, host, isHost: host === uid, members: [], open: true };
     watchRoomDisconnect();
+    watchConnection();
+    attachRoom(id);
+    writeStatus();
+    emit('room');
+  }
+
+  function attachRoom(id) {
+    detachRoom();
     const mref = fb.rtdb.ref('rooms/' + id + '/m');
     mref.on('value', s => {
       if (!room || room.id !== id) return;
       const m = s.val() || {};
+      if (m[uid]) endLimbo();
+      // En partida, una lista sin ti es un corte (ver más abajo): se conserva la
+      // última buena, que es la que hace falta para recuperar la sala.
+      else if (inGame()) return;
+      if (room.isHost && inGame()) keepMates(id, m);
       // El anfitrión siempre primero; el resto por orden de llegada.
       room.members = Object.keys(m).map(k => Object.assign({ uid: k }, m[k]))
         .sort((a, b) => (a.uid === room.host ? -1 : b.uid === room.host ? 1 : (a.at || 0) - (b.at || 0)));
@@ -357,8 +370,83 @@ G.Social = (() => {
     const oref = fb.rtdb.ref('rooms/' + id + '/open');
     oref.on('value', s => { if (room && room.id === id) { room.open = s.val() === true; emit('room'); } }, () => {});
     roomRefs = [mref, href, oref];
-    writeStatus();
-    emit('room');
+  }
+
+  // ---------------- cortes de conexión en plena partida ----------------
+  //
+  // Si la conexión con la Realtime Database se corta unos segundos (Wi-Fi de
+  // una consola o un móvil que ahorra energía...), el servidor ejecuta el
+  // onDisconnect: borra la plaza del invitado (o la sala entera, si era el
+  // anfitrión). Antes eso sacaba al jugador de la partida aunque el juego
+  // siguiera conectado por WebRTC: «La sala se ha cerrado».
+  // Ahora, con una partida en grupo en marcha, se esperan GRACE_MS: al volver
+  // la conexión, el invitado recupera su plaza (se la guarda el anfitrión,
+  // ver keepMates) y el anfitrión vuelve a crear la sala con los mismos
+  // jugadores. Mientras tanto net.js no corta a nadie que siga conectado en
+  // directo. Sin cambios en las reglas de la base de datos.
+  const GRACE_MS = 20000;
+  let limboT = 0, limboRetry = 0, connRef = null, lostInRoom = false, restoring = false;
+  const inGame = () => !!(G.Coop && G.Coop.active);
+
+  function watchConnection() {
+    if (connRef || !fb.rtdb) return;
+    connRef = fb.rtdb.ref('.info/connected');
+    connRef.on('value', s => {
+      if (s.val() !== true) { if (room) lostInRoom = true; return; }
+      if (lostInRoom && room) restoreRoom();
+      lostInRoom = false;
+    });
+  }
+
+  async function restoreRoom() {
+    const r = room;
+    if (!r || !inGame() || restoring) return;
+    restoring = true;
+    try {
+      if (r.isHost) {
+        const host = (await fb.rtdb.ref('rooms/' + r.id + '/host').get()).val();
+        if (!host) {
+          const m = {};
+          for (const x of r.members) { const { uid: k, ...info } = x; m[k] = Object.assign(info, { at: ts() }); }
+          if (!m[uid]) m[uid] = memberInfo();
+          await fb.rtdb.ref('rooms/' + r.id).set({ host: uid, open: r.open, at: ts(), m });
+        }
+      } else {
+        await fb.rtdb.ref('rooms/' + r.id + '/m/' + uid).set(memberInfo());
+      }
+      if (room !== r) return;
+      watchRoomDisconnect();
+      attachRoom(r.id);
+    } catch (e) {
+      console.warn('[Social] no se pudo recuperar la sala:', e.code || e.message);
+    } finally {
+      restoring = false;
+    }
+  }
+
+  /**
+   * Anfitrión: a quien desaparece de la sala en plena partida pero sigue
+   * conectado en directo (un corte suyo con la base de datos) se le guarda
+   * la plaza: el anfitrión puede escribir en toda la sala, el invitado no
+   * podría volver a entrar solo (la sala ya no está abierta). Se espera un
+   * poco: si de verdad se ha ido, su canal se cierra antes.
+   */
+  function keepMates(id, m) {
+    for (const x of room.members) {
+      if (x.uid === uid || m[x.uid] || G.Net.mode(x.uid) !== 'direct') continue;
+      m[x.uid] = x;                                   // de momento sigue en la lista
+      setTimeout(() => {
+        if (!room || room.id !== id || !inGame() || G.Net.mode(x.uid) !== 'direct') return;
+        const { uid: k, ...info } = x;
+        fb.rtdb.ref('rooms/' + id + '/m/' + k).transaction(cur => cur || Object.assign(info, { at: ts() }))
+          .catch(e => console.warn('[Social] no se pudo guardar la plaza:', e.code || e.message));
+      }, 2500);
+    }
+  }
+
+  function endLimbo() {
+    if (limboT) { clearTimeout(limboT); limboT = 0; }
+    if (limboRetry) { clearInterval(limboRetry); limboRetry = 0; }
   }
 
   /** Si se cierra el navegador, la sala (anfitrión) o tu plaza (invitado) se borran solas. */
@@ -373,8 +461,21 @@ G.Social = (() => {
     roomRefs = [];
   }
 
-  function closedRoom() {
+  /** @param force  sin esperar (se acabó el plazo para recuperar la sala) */
+  function closedRoom(force = false) {
     if (!room) return;
+    // En plena partida en grupo, puede ser sólo un corte: se intenta recuperar.
+    if (!force && inGame()) {
+      detachRoom();
+      if (!limboT) {
+        limboT = setTimeout(() => { limboT = 0; closedRoom(true); }, GRACE_MS);
+        // Si el corte fue del anfitrión, su sala tarda en volver: se reintenta.
+        limboRetry = setInterval(restoreRoom, 3000);
+      }
+      restoreRoom();
+      return;
+    }
+    endLimbo();
     detachRoom();
     room = null;
     retractInvites();
@@ -386,6 +487,7 @@ G.Social = (() => {
   async function leaveRoom() {
     if (!room) return;
     const r = room;
+    endLimbo();
     detachRoom();
     room = null;
     const ref = r.isHost ? fb.rtdb.ref('rooms/' + r.id) : fb.rtdb.ref('rooms/' + r.id + '/m/' + uid);

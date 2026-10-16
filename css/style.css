@@ -658,6 +658,32 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 
 /* ---------- ajustes ---------- */
 #scr-settings { z-index: 60; }
+/* Mando (ui/pad-ui.js): encima de Ajustes */
+#scr-pad { z-index: 61; }
+.pad-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pad-preset { appearance: none; text-align: left; padding: 8px 10px; border-radius: 8px; border: 2px solid var(--edge-in);
+  background: rgba(0,0,0,.2); color: var(--ink); font: inherit; cursor: pointer; }
+.pad-preset b { display: block; }
+.pad-preset small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+.pad-preset.on { border-color: var(--gold); background: rgba(255,210,63,.1); }
+.pad-preset.on b { color: var(--gold); }
+.pad-nota { margin: 8px 0 0; }
+.pad-h { margin: 12px 0 2px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.pad-row { padding: 6px 0; }
+.pad-bs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.pad-g { display: inline-flex; }
+.pad-b { appearance: none; min-width: 44px; padding: 4px 10px; border: 2px solid var(--edge); border-radius: 8px;
+  background: #26468f; color: #fff; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; }
+.pad-g .pad-b:first-child:not(:last-child) { border-radius: 8px 0 0 8px; }
+.pad-b.pad-x { min-width: 0; padding: 4px 8px; margin-left: -2px; border-radius: 0 8px 8px 0; background: #1a3170; color: var(--muted); }
+.pad-b.add { background: none; border-style: dashed; border-color: var(--edge-in); color: var(--muted); }
+.pad-b.wait { background: var(--gold); border-color: #a55f00; border-style: solid; color: #20160a; }
+.pad-test { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; margin: 0 0 4px; border-radius: 8px;
+  background: rgba(0,0,0,.22); font-size: 14px; color: var(--muted); }
+.pad-test b { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
+.pad-test .pad-b { cursor: default; }
+.pad-hace { color: var(--gold); }
+@media (max-width: 560px) { .pad-presets { grid-template-columns: 1fr; } }
 /* Colocar los botones (layout-ui.js): por delante de Ajustes */
 #scr-layout { z-index: 66; display: block; background: radial-gradient(circle at 50% 40%, #24452c, #0d1a12); touch-action: none; }
 #scr-layout.hidden { display: none; }
@@ -712,7 +738,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   .scr { padding: 50px 10px 6px; }
   /* Sin barra superior encima: no hace falta dejarle hueco. */
   #scr-login, #scr-test, #scr-result, #scr-starters, #scr-nick, #scr-levelup, #scr-pause,
-  #scr-over, #scr-item, #scr-settings, #scr-legal, #scr-profile { padding: 6px 10px; }
+  #scr-over, #scr-item, #scr-settings, #scr-pad, #scr-legal, #scr-profile { padding: 6px 10px; }
   .split { grid-template-columns: 1fr; }
   .logo .t1 { font-size: 30px; }
   .box { padding: 10px 14px; border-radius: 10px; }

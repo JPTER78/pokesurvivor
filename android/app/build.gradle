@@ -1,0 +1,72 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'es.sund.pokesurvivor'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'es.sund.pokesurvivor'
+        minSdk 24
+        targetSdk 34
+        versionCode 10
+        versionName '1.0.9'
+        // Autoactualización: URL de un version.json con {versionCode, versionName,
+        // apkUrl, apkSha1}. Vacía = sin autoactualización. Se pasa al compilar:
+        //   gradle :app:assembleDebug -PurlActualizaciones=https://.../version.json
+        buildConfigField 'String', 'URL_ACTUALIZACIONES', "\"${project.findProperty('urlActualizaciones') ?: ''}\""
+    }
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Firma fija para que las actualizaciones se instalen encima. El
+    // keystore NO va en el repositorio: se copia a android/app/release.keystore
+    // desde la copia de seguridad antes de compilar (ver android/README.md).
+    signingConfigs {
+        fija {
+            storeFile file('release.keystore')
+            storePassword 'pokesurvivor'
+            keyAlias 'pokesurvivor'
+            keyPassword 'pokesurvivor'
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.fija
+        }
+        release {
+            signingConfig signingConfigs.fija
+            minifyEnabled false
+        }
+    }
+
+    // El juego (web) se empaqueta tal cual dentro de la APK: ver copiarJuego.
+    sourceSets {
+        main.assets.srcDirs += "$buildDir/generated/juego"
+    }
+    // Los sprites ya son PNG comprimidos: comprimirlos otra vez solo alarga el build.
+    androidResources {
+        noCompress 'png', 'ogg', 'mp3', 'woff2', 'ttf'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Copia el juego web (la raíz del repositorio) a assets/juego, sin lo que solo
+// sirve para la web publicada (SEO, Firebase hosting, herramientas, docs...).
+task copiarJuego(type: Sync) {
+    from(rootProject.file('..')) {
+        include 'dev.html', 'second.html', 'manifest.webmanifest', 'css/**', 'js/**', 'assets/**', 'favicon.ico', 'LICENSE', 'CREDITS.md'
+        exclude 'js/app.min.js', 'assets/og-image.jpg'
+    }
+    into "$buildDir/generated/juego/juego"
+}
+preBuild.dependsOn copiarJuego
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'androidx.core:core:1.13.1'
+}

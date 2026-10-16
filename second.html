@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<!-- second.html: panel de la segunda pantalla (consolas de dos pantallas como la AYN Thor).
+     La app Android lo abre en la pantalla de abajo; en PC se puede abrir en otra ventana.
+     No lleva el juego: sólo pinta lo que le manda js/core/second.js. Ver js/second/panel.js. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>PokéSurvivor · Segunda pantalla</title>
+<link rel="icon" href="favicon.ico">
+<style>
+@font-face { font-family: 'Pixelify'; src: url('assets/fonts/PixelifySans.ttf') format('truetype'); font-weight: 400 700; font-display: block; }
+:root { --navy: #0a1430; --box1: #2c519f; --box2: #1a3170; --edge: #f4f8ff; --gold: #ffd23f; --muted: #b9cbf0; --red: #ff5f6d; --green: #5fe08a;
+        --u: clamp(12px, 3.6vmin, 22px); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--navy); color: #fff;
+             font: 600 var(--u)/1.25 'Pixelify', 'Segoe UI', system-ui, sans-serif; user-select: none; touch-action: manipulation; }
+body { display: flex; flex-direction: column; padding: calc(var(--u) * .5); gap: calc(var(--u) * .5); }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+.hidden { display: none !important; }
+
+/* ---------- pestañas ---------- */
+#tabs { display: flex; gap: calc(var(--u) * .4); flex: none; }
+#tabs button { flex: 1; padding: calc(var(--u) * .55) 0; border-radius: 10px; background: var(--box2); border: 2px solid transparent; color: var(--muted); }
+#tabs button.on { background: var(--box1); border-color: var(--edge); color: #fff; }
+#tabs #pausa { flex: none; width: calc(var(--u) * 3); }
+#tabs #pausa.on { background: var(--gold); border-color: #a55f00; color: #20160a; }
+
+/* ---------- vida, nivel y reloj (siempre a la vista) ---------- */
+#vital { flex: none; display: grid; grid-template-columns: 1fr auto; gap: calc(var(--u) * .2) var(--u); align-items: end; }
+#nombre { font-weight: 800; font-size: 1.15em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#nombre small { color: var(--gold); font-weight: 700; margin-left: .5em; }
+#reloj { font-weight: 800; font-size: 1.9em; line-height: 1; }
+.bar { grid-column: 1 / -1; position: relative; height: calc(var(--u) * 1.15); border-radius: 99px; background: rgba(0, 0, 0, .55); overflow: hidden; }
+.bar > i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--red); }
+.bar > span { position: absolute; inset: 0; display: grid; place-items: center; font-size: .8em; }
+.bar.xp { height: calc(var(--u) * .35); }
+.bar.xp > i { background: linear-gradient(90deg, #4fd1ff, #a98bff); }
+.bar.boss > i { background: #ffcb3d; }
+.bar.boss > span { color: #20160a; font-weight: 800; text-transform: uppercase; }
+
+/* ---------- zona del modo ---------- */
+main { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: calc(var(--u) * .5); position: relative; }
+#linea { color: var(--muted); font-size: .85em; text-transform: uppercase; }
+#chips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .3); }
+#chips span { padding: .1em .6em; border-radius: 99px; background: rgba(0, 0, 0, .5); font-size: .85em; font-weight: 800; }
+
+#movs { flex: 1; min-height: 0; display: grid; gap: calc(var(--u) * .45); grid-auto-rows: minmax(0, calc(var(--u) * 3.6)); align-content: start; }
+.mov { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; gap: calc(var(--u) * .6); text-align: left;
+       padding: 0 calc(var(--u) * .7); border-radius: 12px; background: rgba(10, 16, 28, .8); border: 2px solid rgba(140, 170, 210, .22); }
+.mov.on { background: rgba(20, 30, 50, .95); border-color: var(--c); }
+.mov.ev { border-color: var(--gold); }
+.mov.fus { border-color: #ff8ad8; }
+.mov .sw { flex: none; width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6); border-radius: 8px; background: var(--c); display: grid; place-items: center; color: #0a1430; font-weight: 800; }
+.mov .sw, .mov .tx { position: relative; z-index: 1; }   /* por encima de la recarga */
+.mov .tx { flex: 1; min-width: 0; }
+.mov .tx b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mov .tx small { color: var(--muted); font-size: .75em; }
+.mov .cd { position: absolute; inset: 0 0 0 auto; width: 0; background: rgba(0, 0, 0, .6); pointer-events: none; }
+/* Modo Ataques: botones grandes para el dedo. */
+body[data-v="moves"] #movs { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; align-content: stretch; }
+body[data-v="moves"] .mov { flex-direction: column; justify-content: center; text-align: center; padding: calc(var(--u) * .5); }
+body[data-v="moves"] .mov .sw { width: calc(var(--u) * 2.6); height: calc(var(--u) * 2.6); font-size: 1.3em; }
+body[data-v="moves"] .mov .tx { flex: none; width: 100%; }
+body[data-v="moves"] .mov .cd { inset: 0 0 auto 0; width: auto; height: 0; }
+
+#mapa { flex: 1; min-height: 0; width: 100%; border-radius: 12px; background: #06102a; display: none; }
+body[data-v="map"] #mapa { display: block; }
+body[data-v="map"] #movs, body[data-v="map"] #chips, body[data-v="moves"] #linea, body[data-v="moves"] #chips, body[data-v="moves"] #jefe { display: none; }
+
+/* ---------- cartas de subir de nivel ---------- */
+#cartas { position: absolute; inset: 0; z-index: 5; background: var(--navy); display: flex; flex-direction: column; gap: calc(var(--u) * .45); }
+#cartas h2 { margin: 0; color: var(--gold); font-size: 1.2em; text-align: center; flex: none; }
+.carta { flex: 1; min-height: 0; display: flex; align-items: center; gap: var(--u); text-align: left; padding: 0 var(--u);
+         border-radius: 12px; background: linear-gradient(var(--box1), var(--box2)); border: 3px solid var(--edge); border-left: calc(var(--u) * .6) solid var(--c); }
+.carta.evo { border-color: var(--gold); border-left-color: var(--gold); }
+.carta b { display: block; font-size: 1.1em; }
+.carta b em { font-style: normal; font-size: .7em; padding: 0 .5em; border-radius: 99px; background: var(--c); color: #0a1430; margin-left: .4em; }
+.carta small { color: var(--muted); font-size: .8em; font-weight: 400; font-family: system-ui, sans-serif; }
+
+/* ---------- sin partida / apagada ---------- */
+#espera { position: fixed; inset: 0; z-index: 10; background: radial-gradient(circle at 50% 0, #1a2f6a, var(--navy) 60%); display: grid; place-content: center; text-align: center; gap: var(--u); padding: var(--u); }
+#espera h1 { margin: 0; color: var(--gold); font-size: 2.2em; text-shadow: 3px 3px 0 #a55f00, 5px 5px 0 #050914; }
+#espera p { margin: 0; color: var(--muted); }
+</style>
+</head>
+<body data-v="stats">
+
+<header id="tabs">
+  <button data-m="stats">Datos</button>
+  <button data-m="map">Mapa</button>
+  <button data-m="moves">Ataques</button>
+  <button id="pausa" aria-label="Pausa">❚❚</button>
+</header>
+
+<section id="vital">
+  <div id="nombre"></div>
+  <div id="reloj">0:00</div>
+  <div class="bar"><i id="hp"></i><span id="hp-t"></span></div>
+  <div class="bar xp"><i id="xp"></i></div>
+</section>
+
+<main>
+  <div id="linea"></div>
+  <div class="bar boss hidden" id="jefe"><i></i><span></span></div>
+  <div id="chips"></div>
+  <canvas id="mapa"></canvas>
+  <div id="movs"></div>
+  <div id="cartas" class="hidden"></div>
+</main>
+
+<section id="espera">
+  <h1 translate="no">PokéSurvivor</h1>
+  <p id="espera-t">Esperando al juego…</p>
+</section>
+
+<script>window.G = window.G || {};</script>
+<script defer src="js/core/i18n.js"></script>
+<script defer src="js/data/lang-en.js"></script>
+<script defer src="js/second/panel.js"></script>
+</body>
+</html>

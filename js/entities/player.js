@@ -373,9 +373,18 @@ G.Player = class Player {
     const tg = (ranged ? boss || threat : threat || boss)
             || G.Projectiles.nearest(all, this.x, this.y, 520)
             || G.World.nearestBreakable(this.x, this.y, 200);
-    this.target = tg;
-    if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
-    else if (this.walking) this.aim = this.moveAngle;
+    // Apuntado manual (stick derecho o ratón pulsado, ver gamepad.js): manda
+    // la dirección elegida; el blanco es el enemigo más cercano en ese cono.
+    const manual = G.Pad ? G.Pad.aimAngle(this) : null;
+    this.manualAim = manual != null;
+    if (this.manualAim) {
+      this.aim = manual;
+      this.target = G.Pad.targetInCone(all, this, manual);
+    } else {
+      this.target = tg;
+      if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
+      else if (this.walking) this.aim = this.moveAngle;
+    }
 
     // --- animación: mira al objetivo al atacar, si no a donde camina ---
     const face = this.attackFace > 0 || !this.walking ? this.aim : this.moveAngle;

@@ -30,7 +30,11 @@ G.Combat = (() => {
     m.t -= dt;
     if (m.t > 0) return;
     // Los ataques que necesitan blanco esperan a tenerlo (no gastes animación al aire).
-    if (needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
+    // Con apuntado manual, los ataques dirigidos salen hacia donde apuntas
+    // aunque no haya nadie (los que buscan blanco solo, como cadena o
+    // meteoro, siguen esperando a tener uno).
+    const libre = pl.manualAim && FREE_AIM.includes(m.kind);
+    if (needsTarget(m) && !libre && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
       m.t = 0.05;
       return;
     }
@@ -65,6 +69,7 @@ G.Combat = (() => {
 
   const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
+  const FREE_AIM = ['melee', 'beam', 'projectile', 'boomerang', 'cone', 'dash'];
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
     if (m.kind === 'beam') return m.radius + 20;

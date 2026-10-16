@@ -16,6 +16,7 @@ G.SettingsUI = (() => {
     $('btn-settings').innerHTML = G.Icons.html('gear', 20);
     $('btn-settings').onclick = () => open();
     $('btn-pause-settings').onclick = () => open('sound');
+    G.Settings.on(k => { if (k === 'second' && isOpen() && tab === 'ctl') render(true); });
     // Pantalla completa (si el navegador la permite; en iPhone, cómo conseguirla).
     if (canFull() || iosTip()) {
       $('btn-full').classList.remove('hidden');
@@ -29,7 +30,11 @@ G.SettingsUI = (() => {
     $('scr-settings').classList.remove('hidden');
     render();
   }
-  function close() { $('scr-settings').classList.add('hidden'); }
+  function close() {
+    // Con la pantalla del mando encima, Esc/Volver cierra primero esa.
+    if (G.PadUI && G.PadUI.isOpen) { G.PadUI.close(); return; }
+    $('scr-settings').classList.add('hidden');
+  }
   const isOpen = () => !$('scr-settings').classList.contains('hidden');
 
   // ---------------- pantalla completa ----------------
@@ -65,10 +70,35 @@ G.SettingsUI = (() => {
     return `<div class="chips set-chips">${opts.map(([v, l]) => `<button class="chip ${v === cur ? 'on' : ''}" data-k="${key}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
   }
 
-  function render() {
+  /** Mando: tiene su propia pantalla (ui/pad-ui.js); aquí, qué reparto hay puesto y el botón para abrirla. */
+  function pad() {
+    if (!G.Pad || !G.PadUI) return '';
+    const p = G.Pad.PRESETS.find(q => q.id === G.Pad.presetActual());
+    return section('Mando')
+      + `<div class="set-row"><div class="grow"><b>Botones y sticks</b><small>Ahora: ${esc(p ? p.nombre : 'Personalizado')}</small></div>
+           <button class="btn small" id="set-pad">Configurar</button></div>`;
+  }
+
+  /** Segunda pantalla (consolas de dos pantallas, o second.html en otra ventana): qué enseña. */
+  function second() {
+    if (!G.Second) return '';
+    // En la app sólo sale si la consola tiene pantalla de abajo; en el navegador, siempre (para abrir el panel).
+    if (G.Second.nativa && !G.Second.disponible) return '';
+    return section('Segunda pantalla', G.Second.nativa ? 'Qué se ve en la pantalla de abajo. También se cambia tocando sus pestañas.'
+                                                       : 'Un panel aparte para otra ventana u otro monitor.')
+      + choice('second', [['stats', 'Datos'], ['map', 'Mapa'], ['moves', 'Ataques'], ['off', 'Apagada']])
+      + toggle('secondCards', 'Cartas en la segunda pantalla', 'Al subir de nivel, las cartas también se pueden elegir ahí.')
+      + (G.Second.nativa ? '' : `<div class="set-row"><div class="grow"><b>Abrir el panel</b><small>En otra ventana de este navegador.</small></div>
+           <button class="btn small" id="set-second">Abrir</button></div>`);
+  }
+
+  /** @param keep  repintar sin volver arriba (un cambio dentro de la pestaña) */
+  function render(keep) {
     document.querySelectorAll('#set-tabs .gen-tab').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
     const box = $('set-body');
-    box.scrollTop = 0;
+    const top = keep === true ? box.scrollTop : 0;
+    // Al repintar se pierde el foco del mando: se devuelve al mismo control.
+    const foco = keep === true ? selector(box.querySelector('.gp-foco')) : null;
     if (tab === 'sound') {
       box.innerHTML = section('Sonido') + '<div id="set-sound" class="sound-inline"></div>';
       G.UI.soundControls($('set-sound'));
@@ -91,6 +121,8 @@ G.SettingsUI = (() => {
         + `<p class="sub">Pon el dedo en cualquier parte y arrastra para moverte: el joystick aparece donde tocas. Toca un ataque de abajo para cambiarlo y el botón de arriba a la derecha para pausar. Se juega en horizontal.</p>`
         + `<div class="set-row"><div class="grow"><b>Tamaño del joystick</b><small>Cuánto hay que arrastrar el dedo.</small></div></div>`
         + choice('stick', [[0.8, 'Pequeño'], [1, 'Normal'], [1.25, 'Grande']])
+        + second()
+        + pad()
         + `<div class="set-row"><div class="grow"><b>Colocar los botones</b><small>Pon los ataques, la pausa y el joystick (fijo, si quieres) donde quieras de la pantalla.</small></div>
              <button class="btn small" id="set-layout">Colocar</button></div>`
         + section('En PC')
@@ -122,6 +154,17 @@ G.SettingsUI = (() => {
            </div>`;
     }
     wire(box);
+    box.scrollTop = top;
+    if (foco && G.Pad) G.Pad.enfocar(box.querySelector(foco));
+  }
+
+  /** Selector que encuentra el mismo control después de repintar la pestaña. */
+  function selector(el) {
+    if (!el) return null;
+    if (el.id) return '#' + el.id;
+    const d = el.dataset;
+    if (d.k) return `[data-k="${d.k}"]` + (d.v !== undefined ? `[data-v="${d.v}"]` : '');
+    return null;
   }
 
   function renderAccount(box) {
@@ -146,11 +189,13 @@ G.SettingsUI = (() => {
   }
 
   function wire(box) {
-    box.querySelectorAll('.switch[data-k]').forEach(b => { b.onclick = () => { G.Settings.set(b.dataset.k, !G.Settings.get(b.dataset.k)); render(); }; });
+    box.querySelectorAll('.switch[data-k]').forEach(b => { b.onclick = () => { G.Settings.set(b.dataset.k, !G.Settings.get(b.dataset.k)); render(true); }; });
     box.querySelectorAll('.chip[data-k]').forEach(b => {
-      b.onclick = () => { const v = b.dataset.v; G.Settings.set(b.dataset.k, isNaN(+v) ? v : +v); render(); };
+      b.onclick = () => { const v = b.dataset.v; G.Settings.set(b.dataset.k, isNaN(+v) ? v : +v); render(true); };
     });
     const full = $('set-full'); if (full) full.onclick = toggleFull;
+    const pad = $('set-pad'); if (pad) pad.onclick = () => G.PadUI.open();
+    const sec = $('set-second'); if (sec) sec.onclick = () => window.open('second.html', 'ps-second', 'width=480,height=560');
     const lay = $('set-layout'); if (lay) lay.onclick = () => G.LayoutUI.open();
     box.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); }; });
     const lo = $('set-login'); if (lo) lo.onclick = () => { close(); leave(); };
@@ -177,5 +222,7 @@ G.SettingsUI = (() => {
     G.DB.logout().then(() => G.Flow.toLogin());
   }
 
-  return { init, open, close, get isOpen() { return isOpen(); } };
+  return { init, open, close, get isOpen() { return isOpen(); },
+           /** Repinta la pestaña abierta (la pantalla del mando, al cerrarse). */
+           refresh() { if (isOpen()) render(true); } };
 })();

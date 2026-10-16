@@ -21,3 +21,11 @@ docs/CONTACTOS_CREADORES.md
 
 # Caché local de wrangler (Cloudflare)
 .wrangler/
+
+# App Android
+android/app/release.keystore
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/salida/

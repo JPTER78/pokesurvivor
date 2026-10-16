@@ -1,4 +1,4 @@
-/* ============ input.js — teclado y ratón (el táctil está en touch.js) ============ */
+/* ============ input.js — teclado y ratón (el táctil está en touch.js, el mando en gamepad.js) ============ */
 G.Input = (() => {
   const down = new Set();
   const pressed = new Set();   // se limpia cada frame
@@ -27,6 +27,8 @@ G.Input = (() => {
   return {
     /** Vector de movimiento del jugador (teclado o joystick táctil). */
     axis() {
+      const pad = G.Pad && G.Pad.vector();
+      if (pad) return pad;
       const t = G.Touch && G.Touch.vector();
       if (t && (t[0] || t[1])) return t;
       let x = 0, y = 0;

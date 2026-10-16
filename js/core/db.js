@@ -697,6 +697,9 @@ G.DB = (() => {
 
   async function loginWithGoogle() {
     if (mode !== 'cloud') return { ok: false, error: 'Entrar con Google necesita la versión publicada del juego.' };
+    // Dentro de la app Android (WebView) Google no deja iniciar sesión: la
+    // ventana acaba en el navegador y no puede volver al juego.
+    if (window.PSNativo) return { ok: false, error: G.T('Entrar con Google no funciona dentro de la app: Google no lo permite. Usa una cuenta con nombre y contraseña o juega como invitado.') };
     try {
       const cred = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
       await openCloud(cred.user, { name: displayNameOf(cred.user) });

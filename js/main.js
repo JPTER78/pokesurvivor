@@ -45,8 +45,9 @@
   if (document.readyState === 'loading') addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  // Instalable como app (PWA). Sólo con http(s): abierto con doble clic (file://) no hace falta.
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  // Instalable como app (PWA). Sólo con http(s): abierto con doble clic (file://) no hace falta,
+  // ni dentro de la app Android (window.PSNativo), que ya lleva todo dentro.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !window.PSNativo) {
     addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.warn('[PWA]', e.message)));
   }
 })();

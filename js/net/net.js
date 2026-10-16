@@ -72,13 +72,19 @@ G.Net = (() => {
     roomId = null; isHost = false; hostUid = null;
   }
 
-  /** El anfitrión llama a esto cuando cambian los miembros de la sala. */
+  /**
+   * El anfitrión llama a esto cuando cambian los miembros de la sala.
+   * En plena partida no se corta a quien siga conectado en directo aunque
+   * falte en la sala: puede ser un corte breve con la base de datos (ver
+   * social.js); si de verdad se ha ido, se cierra su canal y se nota igual.
+   */
   function syncMembers(uids) {
     if (!roomId) return;
+    const sigue = u => { const p = peers.get(u); return !!p && p.mode === 'direct' && !!(G.Coop && G.Coop.active); };
     if (isHost) {
       for (const u of uids) if (u !== uid && !peers.has(u)) connect(u);
-      for (const u of [...peers.keys()]) if (!uids.includes(u)) drop(u);
-    } else if (!uids.includes(hostUid)) {
+      for (const u of [...peers.keys()]) if (!uids.includes(u) && !sigue(u)) drop(u);
+    } else if (!uids.includes(hostUid) && !sigue(hostUid)) {
       drop(hostUid);
     }
   }
