@@ -17,6 +17,10 @@ for m in re.finditer(r'^\s*(\d+): (\{.*\}),?\s*$', open(os.path.join(ROOT, 'js/d
     try: META[int(m.group(1))] = json.loads(m.group(2))
     except Exception: pass
 esc = html.escape
+
+def page_language(pid, lang):
+    return 'zh-Hant' if pid == 'home' and lang == 'es' else lang
+
 N = len(DEX)
 
 # ---------------- traducción con el diccionario del juego ----------------
@@ -69,7 +73,7 @@ def page(pid, lang, title, desc, body, ld=None):
     me = PATH[lang][pid]
     other = 'en' if lang == 'es' else 'es'
     up = '../' * me.count('/')
-    alts = ''.join(f'<link rel="alternate" hreflang="{l}" href="{SITE}{PATH[l][pid]}">\n' for l in ('es', 'en'))
+    alts = ''.join(f'<link rel="alternate" hreflang="{page_language(pid, l)}" href="{SITE}{PATH[l][pid]}">\n' for l in ('es', 'en'))
     alts += f'<link rel="alternate" hreflang="x-default" href="{SITE}{PATH["es"][pid]}">\n'
     nav = ''.join(f'<a href="{rel(me, PATH[lang][p])}">{esc(t)}</a>' for p, t in NAV[lang])
     foot = ' · '.join(f'<a href="{rel(me, PATH[lang][p])}">{esc(t)}</a>' for p, t in FOOT[lang])
@@ -574,20 +578,21 @@ def game_en():
     src = re.sub(r'<!-- seo:(begin|end) -->\n?', '', src)
     src = re.sub(r'<meta name="robots" content="noindex">\s*', '', src)
     src = re.sub(r'<!-- dev\.html: página fuente[^>]*-->\n?', '', src)
-    s = src.replace('<html lang="es">', '<html lang="en">')
+    s = src.replace('<html lang="zh-Hant">', '<html lang="en">')
     s = s.replace('<head>\n<meta charset="utf-8">', '<head>\n<meta charset="utf-8">\n<base href="../">', 1)
     rep = [
-        ('<title>PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io</title>', '<title>PokéSurvivor – Free online Pokémon survival game (Survivor.io style)</title>'),
-        ('content="Sobrevive a hordas de Pokémon con tu compañero en este fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo con amigos. Sin descargas ni anuncios."',
+        ('<title>PokéSurvivor — 免費寶可夢生存遊戲</title>', '<title>PokéSurvivor – Free online Pokémon survival game (Survivor.io style)</title>'),
+        ('content="與寶可夢夥伴抵禦敵群！免費瀏覽器與手機同人遊戲，收錄 966 隻寶可夢、閃光、傳說與好友合作模式，免下載、無廣告。"',
          f'content="Survive hordes of Pokémon with your partner in this free fan game for browser and mobile: {N} Pokémon, shinies, legendaries and online co-op with friends. No downloads, no ads."'),
         ('<link rel="canonical" href="https://pokesurvivor.com/">', '<link rel="canonical" href="https://pokesurvivor.com/en/">'),
-        ('<meta property="og:locale" content="es_ES">', '<meta property="og:locale" content="en_US">'),
+        ('<meta property="og:locale" content="zh_TW">', '<meta property="og:locale" content="en_US">'),
+        ('content="PokéSurvivor：像素地圖中被敵群包圍的寶可夢"', 'content="PokéSurvivor: a Pokémon surrounded by hordes on a pixel art map"'),
         ('<meta property="og:url" content="https://pokesurvivor.com/">', '<meta property="og:url" content="https://pokesurvivor.com/en/">'),
-        ('<meta property="og:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">', '<meta property="og:title" content="PokéSurvivor – Survive the Pokémon hordes">'),
-        ('<meta property="og:description" content="Fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo hasta 4 amigos. Sin descargas ni anuncios.">',
+        ('<meta property="og:title" content="PokéSurvivor — 與寶可夢一起迎戰敵群">', '<meta property="og:title" content="PokéSurvivor – Survive the Pokémon hordes">'),
+        ('<meta property="og:description" content="免費瀏覽器與手機同人遊戲：966 隻寶可夢、閃光、傳說與最多 4 人合作。免下載、無廣告。">',
          f'<meta property="og:description" content="A free fan game for browser and mobile: {N} Pokémon, shinies, legendaries and co-op with up to 4 friends. No downloads, no ads.">'),
-        ('<meta name="twitter:title" content="PokéSurvivor – Sobrevive a las hordas Pokémon">', '<meta name="twitter:title" content="PokéSurvivor – Survive the Pokémon hordes">'),
-        ('<meta name="twitter:description" content="Fan game gratis para navegador y móvil, con cooperativo hasta 4. Sin descargas ni anuncios.">',
+        ('<meta name="twitter:title" content="PokéSurvivor — 與寶可夢一起迎戰敵群">', '<meta name="twitter:title" content="PokéSurvivor – Survive the Pokémon hordes">'),
+        ('<meta name="twitter:description" content="免費瀏覽器與手機同人遊戲，支援最多 4 人合作。免下載、無廣告。">',
          '<meta name="twitter:description" content="A free fan game for browser and mobile, with co-op for up to 4. No downloads, no ads.">'),
         ('<p>Juego de supervivencia con Pokémon, gratis en el navegador y en el móvil.</p>', '<p>A Pokémon survival game, free in your browser and on mobile.</p>'),
         ('<p class="boot-ld">Cargando…</p>', '<p class="boot-ld">Loading…</p>'),
@@ -597,20 +602,20 @@ def game_en():
         s = s.replace(a, b)
     # Enlaces a las páginas: las de inglés.
     s = s.replace('href="guia/"', 'href="en/guide/"').replace('href="pokedex/"', 'href="en/pokedex/"')
-    s = s.replace('"description": "Fan game gratuito de supervivencia (bullet heaven, estilo Survivor.io) con Pokémon: elige compañero, sobrevive a hordas, sube de nivel, evoluciona tus ataques, enfréntate a legendarios en grietas y juega en cooperativo con hasta 4 amigos."',
+    s = s.replace('"description": "免費寶可夢生存同人遊戲：選擇夥伴、抵禦敵群、升級並進化招式、挑戰裂隙中的傳說寶可夢，支援最多 4 人合作。"',
                   '"description": "A free Pokémon survival fan game (bullet heaven, Survivor.io style): pick a partner, survive the hordes, level up, evolve your moves, fight legendaries in rifts and play co-op with up to 4 friends."')
-    s = s.replace('"inLanguage": "es"', '"inLanguage": ["es", "en"]')
+    s = s.replace('"inLanguage": "zh-Hant"', '"inLanguage": ["es", "en", "zh-Hant"]')
     os.makedirs(os.path.join(ROOT, 'en'), exist_ok=True)
     open(os.path.join(ROOT, 'en', 'index.html'), 'w', encoding='utf-8').write(s)
 
 # ================= 404, robots y sitemap =================
 def extra():
-    nf = '''<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    nf = '''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><title>404 · PokéSurvivor</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/icon-48.png"><link rel="stylesheet" href="/css/pages.css"></head>
-<body><header class="top"><a class="brand" href="/">PokéSurvivor</a><nav><a href="/guia/">Guía</a><a href="/en/">English</a><a class="play" href="/">Jugar gratis</a></nav></header>
-<main><article class="doc center"><h1>404 · Te has perdido en la mazmorra</h1><p class="lead">Esta página no existe. Pero las hordas siguen esperando…</p>
+<body><header class="top"><a class="brand" href="/">PokéSurvivor</a><nav><a href="/guia/">遊戲指南</a><a href="/en/">English</a><a class="play" href="/">免費遊玩</a></nav></header>
+<main><article class="doc center"><h1>404 · 你在迷宮中迷路了</h1><p class="lead">此頁面不存在，但敵群仍在等著你…</p>
 <p class="lead" lang="en">This page doesn't exist. But the hordes are still waiting…</p>
-<p class="cta"><a class="btn" href="/">Volver al juego</a> <a class="btn ghost" href="/en/">Play in English</a></p></article></main></body></html>
+<p class="cta"><a class="btn" href="/">返回遊戲</a> <a class="btn ghost" href="/en/">Play in English</a></p></article></main></body></html>
 '''
     open(os.path.join(ROOT, '404.html'), 'w', encoding='utf-8').write(nf)
     open(os.path.join(ROOT, 'robots.txt'), 'w', encoding='utf-8').write(f'# PokéSurvivor\nUser-agent: *\nAllow: /\nDisallow: /tools/\nDisallow: /docs/\nDisallow: /dev.html\n\nSitemap: {SITE}sitemap.xml\n')
@@ -618,7 +623,7 @@ def extra():
     urls = []
     for pid in PAGES:
         for lang in ('es', 'en'):
-            alts = ''.join(f'<xhtml:link rel="alternate" hreflang="{l}" href="{SITE}{PATH[l][pid]}"/>' for l in ('es', 'en'))
+            alts = ''.join(f'<xhtml:link rel="alternate" hreflang="{page_language(pid, l)}" href="{SITE}{PATH[l][pid]}"/>' for l in ('es', 'en'))
             alts += f'<xhtml:link rel="alternate" hreflang="x-default" href="{SITE}{PATH["es"][pid]}"/>'
             urls.append(f'  <url><loc>{SITE}{PATH[lang][pid]}</loc><lastmod>{TODAY}</lastmod><priority>{PRI[pid]}</priority>{alts}</url>\n')
     open(os.path.join(ROOT, 'sitemap.xml'), 'w', encoding='utf-8').write(

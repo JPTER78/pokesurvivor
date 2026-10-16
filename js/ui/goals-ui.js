@@ -65,7 +65,7 @@
           el.innerHTML = `
             <div class="m-txt"><b>${esc(G.Progress.text(m))}</b>
               <div class="bar"><i style="width:${pct}%"></i></div>
-              <small>${Math.min(m.prog, m.goal).toLocaleString('es')} / ${m.goal.toLocaleString('es')}</small></div>
+              <small>${Math.min(m.prog, m.goal).toLocaleString(G.I18n.locale)} / ${m.goal.toLocaleString(G.I18n.locale)}</small></div>
             <div class="m-rw">${G.Progress.rewardText(d.reward)}</div>`;
           const btn = document.createElement('button');
           if (m.claimed) { btn.className = 'btn small'; btn.disabled = true; btn.textContent = 'Recogido'; }
@@ -139,7 +139,7 @@
       el.innerHTML = `${G.Icons.html(ok ? 'medal' + a.tier : 'medalOff', 36)}
         <div class="a-txt"><b>${esc(a.name)}</b><small>${esc(a.desc)}</small>
           ${ok ? '' : `<div class="bar"><i style="width:${v / a.goal * 100}%"></i></div>`}
-          <div class="a-rw">${ok ? '¡Conseguido!' : v.toLocaleString('es') + ' / ' + a.goal.toLocaleString('es')} · ${G.Progress.rewardText(a.reward)}
+          <div class="a-rw">${ok ? '¡Conseguido!' : v.toLocaleString(G.I18n.locale) + ' / ' + a.goal.toLocaleString(G.I18n.locale)} · ${G.Progress.rewardText(a.reward)}
           ${a.title ? ` · <span class="gold">Título: ${esc(a.title)}</span>` : ''}</div></div>`;
       return el;
     }
@@ -196,7 +196,7 @@
       const fill = q => {
         const g = $('fav-grid');
         g.innerHTML = '';
-        const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d] && (!q || G.DEX_BY[d].name.toLowerCase().includes(q)));
+        const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d] && (!q || (G.DEX_BY[d].name.toLowerCase().includes(q) || G.T(G.DEX_BY[d].name).toLowerCase().includes(q))));
         for (const d of mons.slice(0, 120)) {
           for (const shiny of G.DB.ownsShiny(d) ? [false, true] : [false]) {
             const c = document.createElement('div');
@@ -256,9 +256,9 @@
           <div><span>Mejor tiempo</span><b>${fmt(b.solo || 0)}</b></div>
           <div><span>En grupo</span><b>${fmt(b.group || 0)}</b></div>
           <div><span>Nivel máximo</span><b>${b.level || 0}</b></div>
-          <div><span>Jefes</span><b>${(b.bosses || 0).toLocaleString('es')}</b></div>
+          <div><span>Jefes</span><b>${(b.bosses || 0).toLocaleString(G.I18n.locale)}</b></div>
           <div><span>Legendarios</span><b>${b.legends || 0}</b></div>
-          <div><span>Derrotados</span><b>${(b.kills || 0).toLocaleString('es')}</b></div>
+          <div><span>Derrotados</span><b>${(b.kills || 0).toLocaleString(G.I18n.locale)}</b></div>
         </div>
         <h3>Medallas <span class="sub">${b.medals || 0}</span></h3>
         <div class="prof-medals" id="prof-medals"></div>`;

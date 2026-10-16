@@ -25,6 +25,10 @@
     const en = typeof G === 'object' && G.I18n ? G.I18n.lang === 'en' : !/^es/i.test(navigator.language || '');
     const el = document.getElementById('boot');
     el.setAttribute('translate', 'no');
+    if (typeof G === 'object' && G.I18n && G.I18n.lang === 'zh-Hant') {
+      el.innerHTML = '<div class="boot-in"><h1>PokéSurvivor</h1><p><b>系統維護中。</b></p><p>遊戲正在搬移至新的伺服器。你的帳號、存檔與寶可夢都很安全，請幾個小時後再回來！</p><button class="btn gold" onclick="location.reload()">再試一次</button></div>';
+      return true;
+    }
     el.innerHTML = '<div class="boot-in"><h1>PokéSurvivor</h1>' + (en
       ? '<p><b>We are under maintenance.</b></p><p>We are moving the game to new servers so it can stay free for everyone. ' +
         'Your account, your save and your Pokémon are safe. Please come back in a few hours!</p>'
