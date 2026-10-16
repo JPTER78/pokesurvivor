@@ -52,6 +52,8 @@
       this.slow = 0; this.slowT = 0;
       this.burn = 0; this.burnT = 0; this.burnTick = 0;
       this.poison = 0; this.poisonT = 0; this.poisonTick = 0;
+      this.burnBy = null; this.burnMid = null;      // quién quema y con qué movimiento (medidor)
+      this.poisonBy = null; this.poisonMid = null;
       this.lavaTick = 0;
       this.kx = 0; this.ky = 0;
       this.touchCd = 0;
@@ -143,13 +145,15 @@
       this.slow = Math.max(this.slow, factor);
       this.slowT = Math.max(this.slowT, dur);
     }
-    applyBurn(stacks = 1) {
-      if (this.remote) { G.Coop.status(this, 'b', stacks); return; }
+    applyBurn(stacks = 1, mid = null, by = null) {
+      if (this.remote) { G.Coop.status(this, 'b', stacks, mid); return; }
       this.burn = Math.min(8, this.burn + stacks); this.burnT = 3;
+      this.burnBy = by; this.burnMid = mid;
     }
-    applyPoison(stacks = 1) {
-      if (this.remote) { G.Coop.status(this, 'p', stacks); return; }
+    applyPoison(stacks = 1, mid = null, by = null) {
+      if (this.remote) { G.Coop.status(this, 'p', stacks, mid); return; }
       this.poison = Math.min(8, this.poison + stacks); this.poisonT = 4;
+      this.poisonBy = by; this.poisonMid = mid;
     }
 
     die() {
@@ -254,12 +258,22 @@
       if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.slow = 0; }
       if (this.burn > 0) {
         this.burnT -= dt; this.burnTick -= dt;
-        if (this.burnTick <= 0) { this.burnTick = 0.5; this.hurt(1.6 * this.burn * (1 + pl.level * 0.06), '#ff9a4d'); }
+        if (this.burnTick <= 0) {
+          this.burnTick = 0.5;
+          const d = 1.6 * this.burn * (1 + pl.level * 0.06);
+          this.hurt(d, '#ff9a4d');
+          G.Recount.dot(this.burnBy, this.burnMid, d);
+        }
         if (this.burnT <= 0) this.burn = 0;
       }
       if (this.poison > 0) {
         this.poisonT -= dt; this.poisonTick -= dt;
-        if (this.poisonTick <= 0) { this.poisonTick = 0.6; this.hurt(this.maxHp * 0.012 * this.poison + 1, '#d47cf0'); }
+        if (this.poisonTick <= 0) {
+          this.poisonTick = 0.6;
+          const d = this.maxHp * 0.012 * this.poison + 1;
+          this.hurt(d, '#d47cf0');
+          G.Recount.dot(this.poisonBy, this.poisonMid, d);
+        }
         if (this.poisonT <= 0) this.poison = 0;
       }
       if (this.dead) return;

@@ -99,6 +99,11 @@ G.HUD = (() => {
       ctx.fillText(txt, x0 + 32, y0 + 17);
     }
 
+    // ---------- medidor de daño (debajo del clima) ----------
+    // En pantallas estrechas (móvil apaisado), más abajo: si no, lo pisan la
+    // barra del jefe (y 70) y la línea de bioma y derrotados.
+    if (G.Settings.get('recount')) drawRecount(ctx, w - RW - 16 - (touch ? 56 : 0), w < 1000 ? 92 : wx ? 46 : 14, pl, st.time);
+
     // ---------- barra del jefe ----------
     const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
     if (boss) {
@@ -387,6 +392,63 @@ G.HUD = (() => {
     }
 
     ctx.restore();
+  }
+
+  // ---------- medidor de daño (tecla R) ----------
+  // Se pinta en un canvas aparte cada 0,5 s (1 s en calidad baja) y cada
+  // fotograma sólo se copia. Apagado, ni se calcula ni se dibuja.
+  const RW = 200, RHEAD = 22, RROW = 16, RMAX = 6, RFULL = RHEAD + RROW * RMAX + 6;
+  const rc = { cv: null, c: null, dpr: 0, t: 0, h: 0, pl: null };
+
+  function drawRecount(ctx, x, y, pl, time) {
+    const dpr = G.Camera.dpr;
+    if (rc.dpr !== dpr) {
+      rc.cv = document.createElement('canvas');
+      rc.cv.width = Math.ceil(RW * dpr); rc.cv.height = Math.ceil(RFULL * dpr);
+      rc.c = rc.cv.getContext('2d'); rc.dpr = dpr; rc.t = 0;
+    }
+    const now = performance.now();
+    if (now >= rc.t || rc.pl !== pl) {
+      rc.t = now + (G.Settings.fx === 0 ? 1000 : 500);
+      rc.pl = pl;
+      paintRecount(rc.c, dpr, time);
+    }
+    ctx.drawImage(rc.cv, 0, 0, rc.cv.width, Math.ceil(rc.h * dpr), x, y, RW, rc.h);
+  }
+
+  function paintRecount(c, dpr, time) {
+    const team = G.Coop.active ? G.Recount.team() : null;
+    const rows = team || G.Recount.rows();
+    const n = Math.min(RMAX, rows.length);
+    const top = n ? rows[0].dealt : 0;
+    rc.h = RHEAD + RROW * n + (n ? 4 : 0);
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, RW, RFULL);
+    c.imageSmoothingEnabled = false;
+    c.textBaseline = 'alphabetic';
+    roundRect(c, 0, 0, RW, rc.h, 9);
+    c.fillStyle = 'rgba(0,0,0,.55)'; c.fill();
+
+    // Cabecera: DAÑO  12,3k · 85/s   (en grupo: DAÑO DEL GRUPO  48,1k)
+    c.font = F(800, 10);
+    c.textAlign = 'left'; c.fillStyle = '#8fa3c4';
+    c.fillText(team ? 'DAÑO DEL GRUPO' : 'DAÑO', 8, 15);
+    const total = team ? rows.reduce((s, r) => s + r.dealt, 0) : G.Recount.myTotal();
+    c.textAlign = 'right'; c.fillStyle = '#fff';
+    c.fillText(G.Recount.fmt(total) + (team ? '' : '  ·  ' + G.Recount.fmt(G.Recount.dps(time)) + '/s'), RW - 8, 15);
+
+    for (let i = 0; i < n; i++) {
+      const r = rows[i], y = RHEAD + i * RROW;
+      const lx = team ? 8 : 26;
+      if (!team && r.id) G.Icons.draw(c, 'move:' + r.id, 7, y, 14);
+      const col = team ? r.color : r.type ? G.U.TYPE_COLOR[r.type] : '#9aa6b5';
+      c.font = F(800, 10);
+      c.textAlign = 'left'; c.fillStyle = team ? r.color : '#fff';
+      c.fillText(r.name, lx, y + 8, RW - lx - 76);   // sin pisar la cifra de la derecha
+      c.textAlign = 'right'; c.fillStyle = '#fff';
+      c.fillText(G.Recount.fmt(r.dealt) + '  ' + Math.round(r.pct * 100) + '%', RW - 8, y + 8);
+      bar(c, lx, y + 10, RW - lx - 8, 3, top ? r.dealt / top : 0, col);
+    }
   }
 
   // ---------------- cooperativo ----------------

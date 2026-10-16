@@ -77,7 +77,7 @@ G.Combat = (() => {
   }
 
   function payload(m) {
-    return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type };
+    return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type, src: m };
   }
 
   /** Tabla de tipos × clima para un ataque de tipo `type` contra `e`. */
@@ -479,7 +479,7 @@ G.Combat = (() => {
 
     for (let i = orbs.length; i < want; i++) {
       G.Projectiles.spawnOrb({
-        owner: pl, ghost: isGhost, mid: m.id,
+        owner: pl, ghost: isGhost, mid: m.id, src: m,
         x: pl.x, y: pl.y, r: m.size, color: col, vis: G.VFX.forMove(m),
         dmg: m.dmg * pl.atk,
         oa: (i / want) * 6.2832, orad: m.radius, ospeed: m.speed,
@@ -533,8 +533,9 @@ G.Combat = (() => {
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
-    if (m.burn) e.applyBurn(m.burn);
-    if (m.poison) e.applyPoison(m.poison);
+    if (!ghost) m.dealt += dmg;
+    if (m.burn) e.applyBurn(m.burn, m.id);
+    if (m.poison) e.applyPoison(m.poison, m.id);
     if (m.slow) e.applySlow(m.slow);
   }
 
@@ -641,9 +642,10 @@ G.Combat = (() => {
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
         pl.dmgDealt += p.dmg * k;
+        if (p.src) p.src.dealt += p.dmg * k;
         pl.onDealt(p.dmg * k);
-        if (p.burn) e.applyBurn(p.burn);
-        if (p.poison) e.applyPoison(p.poison);
+        if (p.burn) e.applyBurn(p.burn, p.src && p.src.id);
+        if (p.poison) e.applyPoison(p.poison, p.src && p.src.id);
         if (p.slow) e.applySlow(p.slow);
 
         if (!p.orb) {
@@ -665,7 +667,7 @@ G.Combat = (() => {
       e.touchCd = 0.55;
       e.strike(pl);
       pl.hurt(e.dmg, e.atkType);
-      if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
+      if (pl.hasItem('rockyhelmet')) { const d = 15 + pl.level * 4; e.hurt(d, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80); pl.dealtOther += d; }
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;
     }

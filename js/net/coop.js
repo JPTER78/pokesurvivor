@@ -86,6 +86,7 @@ G.Coop = (() => {
   }
 
   function end() {
+    if (active) G.Recount.freeze();          // la tabla del medidor, antes de vaciar mates
     active = false; host = false; local = null;
     mates.clear(); outEv = []; waiting = new Set(); holds = new Set();
   }
@@ -134,12 +135,12 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq];
+            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq, r1(G.Recount.myTotal())];
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], ch: a[13], ld: a[14] };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], ch: a[13], ld: a[14], dm: a[15] || 0 };
   }
 
   // ---------------- envío ----------------
@@ -186,6 +187,8 @@ G.Coop = (() => {
     // Siempre: quién está eligiendo y, si hay cartas de nivel, cuáles (ver arriba).
     f.ho = holdNames();
     if (waiting.size) f.lu = [levelSeq, levelNow];
+    const dd = G.Recount.takePending(m.uid);    // quemadura/veneno suyos (medidor)
+    if (dd) f.dd = dd;
     return f;
   }
 
@@ -264,8 +267,8 @@ G.Coop = (() => {
         case 's': {
           const e = G.EnemyMgr.get(ev[1]);
           if (!e || e.dead) break;
-          if (ev[2] === 'b') e.applyBurn(ev[3]);
-          else if (ev[2] === 'p') e.applyPoison(ev[3]);
+          if (ev[2] === 'b') e.applyBurn(ev[3], ev[4], from);
+          else if (ev[2] === 'p') e.applyPoison(ev[3], ev[4], from);
           else if (ev[2] === 's') e.applySlow(ev[3]);
           break;
         }
@@ -310,6 +313,7 @@ G.Coop = (() => {
   function onHostFrame(msg) {
     lastHostAt = performance.now();
     if (stalled) { stalled = false; updateAway(); }
+    if (msg.dd) G.Recount.addDot(msg.dd);    // antes de los eventos: con 'ov' se hace la foto final
     for (const ev of msg.ev || []) applyHostEvent(ev);
     if (msg.ja) G.Judgment.netApply(msg.ja);
     // Quién elige y las cartas de nivel, aunque se haya perdido algún aviso.
@@ -393,7 +397,7 @@ G.Coop = (() => {
 
   // invitado
   function hit(e, d, color, dx, dy, knock) { outEv.push(['h', e.id, d, color, r1(dx), r1(dy), knock || 0]); }
-  function status(e, kind, val) { outEv.push(['s', e.id, kind, val]); }
+  function status(e, kind, val, mid) { outEv.push(mid ? ['s', e.id, kind, val, mid] : ['s', e.id, kind, val]); }
 
   // anfitrión
   function hurtShown(e, d, color) { emitNear(['hn', e.id, d, color], e.x, e.y, hitFrom); }

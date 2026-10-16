@@ -3,6 +3,24 @@ G.RunUI = (() => {
   const $ = G.UI.$;
   let offers = null, offerCb = null, coopMode = false;
 
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /** Medidor de daño de la pantalla final: por jugador (en grupo) y por movimiento. */
+  function dmgBlock(d) {
+    if (!d || !d.total && !(d.team && d.team.some(r => r.dealt))) return '';
+    const line = (name, nameCol, barCol, r, top, icon) => `<div class="dmg-row">
+        <span${nameCol ? ` style="color:${nameCol}"` : ''}>${icon || ''}${name}</span>
+        <span class="dmg-bar"><i style="width:${top ? Math.round(r.dealt / top * 100) : 0}%;background:${barCol}"></i></span>
+        <b>${G.Recount.fmt(r.dealt)}</b><small>${Math.round(r.pct * 100)}%</small></div>`;
+    const moves = d.rows.map(r => line(r.name, null, r.type ? G.U.TYPE_COLOR[r.type] : '#9aa6b5', r, d.rows[0].dealt,
+                                       r.id ? G.Icons.html('move:' + r.id, 16) + ' ' : ''));
+    const teamHtml = d.team ? d.team.map(r => line(`<span translate="no">${esc(r.name)}</span>`, r.color, r.color, r, d.team[0].dealt)).join('') : '';
+    return `<div style="grid-column:1/-1"><span>Daño</span>
+      <b>${G.Recount.fmt(d.total)}</b> <small class="dmg-dps">${G.Recount.fmt(d.dps)}/s</small>
+      ${teamHtml ? `<div class="dmg-sub">Grupo</div>${teamHtml}<div class="dmg-sub">Tus movimientos</div>` : ''}
+      ${moves.join('')}</div>`;
+  }
+
   /** @param coop  en grupo: tras elegir, se queda esperando a los demás */
   function showLevelUp(level, list, cb, coop = false) {
     offerCb = cb; coopMode = coop;
@@ -117,6 +135,7 @@ G.RunUI = (() => {
         ${r.t1 ? G.Icons.html('ticket', 22) + ' +' + r.t1 + ' ' : ''}${r.t10 ? G.Icons.html('ticket10', 22) + ' +' + r.t10 + ' ×10' : ''}</b></div>` : ''}
       <div style="grid-column:1/-1"><span>Movimientos</span><b style="font-size:15px">
         ${r.moves.map(m => `${G.Icons.html('move:' + m.id, 16)} ${m.name} Nv.${m.lvl}`).join(' · ') || '—'}</b></div>
+      ${dmgBlock(r.dmg)}
       ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
         <div class="caught-row" id="over-caught"></div></div>` : ''}
       ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">¡Nuevo récord de tiempo!</div>' : ''}
