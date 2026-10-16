@@ -1,7 +1,7 @@
 /* ============ settings-ui.js — pantalla de Ajustes (PC y móvil) ============
  * Se abre por encima de lo que haya (menú o pausa) y al cerrar vuelve ahí.
  * Pestañas: Sonido · Gráficos · Controles · Cuenta · Acerca de.
- * Los ajustes son de este dispositivo (G.Settings / G.Audio en el navegador).
+ * Los ajustes son de este dispositivo (G.Settings / G.Audio / G.Gamepad en el navegador).
  */
 G.SettingsUI = (() => {
   const $ = G.UI.$;
@@ -16,6 +16,8 @@ G.SettingsUI = (() => {
     $('btn-settings').innerHTML = G.Icons.html('gear', 20);
     $('btn-settings').onclick = () => open();
     $('btn-pause-settings').onclick = () => open('sound');
+    // Mando conectado, desconectado o botón cambiado: se redibuja sin perder el sitio.
+    G.Gamepad.on(() => { if (isOpen() && tab === 'ctl') refresh(); });
     // Pantalla completa (si el navegador la permite; en iPhone, cómo conseguirla).
     if (canFull() || iosTip()) {
       $('btn-full').classList.remove('hidden');
@@ -30,6 +32,7 @@ G.SettingsUI = (() => {
     render();
   }
   function close() { $('scr-settings').classList.add('hidden'); }
+  function refresh() { const y = $('set-body').scrollTop; render(); $('set-body').scrollTop = y; }
   const isOpen = () => !$('scr-settings').classList.contains('hidden');
 
   // ---------------- pantalla completa ----------------
@@ -100,7 +103,8 @@ G.SettingsUI = (() => {
              <div><kbd>Q</kbd> / <kbd>E</kbd></div><span>ataque anterior / siguiente</span>
              <div><kbd>Esc</kbd> o <kbd>P</kbd></div><span>pausa</span>
              <div><kbd>1</kbd>–<kbd>3</kbd></div><span>elegir carta al subir de nivel</span>
-           </div>`;
+           </div>`
+        + padSection();
     } else if (tab === 'acc') {
       renderAccount(box);
     } else {
@@ -122,6 +126,15 @@ G.SettingsUI = (() => {
            </div>`;
     }
     wire(box);
+  }
+
+  function padSection() {
+    const P = G.Gamepad, map = P.map;
+    return section('Con mando', P.name ? 'Conectado: ' + esc(P.name) : 'Conecta un mando (USB o Bluetooth) y pulsa cualquier botón.')
+      + `<p class="sub">Stick izquierdo o cruceta para moverte. En los menús, cruceta o stick para elegir, el botón de abajo para aceptar y el de la derecha para volver.</p>`
+      + P.ACTIONS.map(([a, label]) => `<div class="set-row"><div class="grow"><b>${esc(label)}</b></div>
+          <button class="btn small ${P.capturing === a ? 'gold' : ''}" data-pad="${a}">${P.capturing === a ? 'Pulsa un botón…' : esc(P.label(map[a]))}</button></div>`).join('')
+      + `<div class="row" style="margin-top:10px"><button class="btn small" id="set-pad-reset">Restablecer botones</button></div>`;
   }
 
   function renderAccount(box) {
@@ -150,6 +163,8 @@ G.SettingsUI = (() => {
     box.querySelectorAll('.chip[data-k]').forEach(b => {
       b.onclick = () => { const v = b.dataset.v; G.Settings.set(b.dataset.k, isNaN(+v) ? v : +v); render(); };
     });
+    box.querySelectorAll('[data-pad]').forEach(b => { b.onclick = () => G.Gamepad.rebind(b.dataset.pad); });
+    const padReset = $('set-pad-reset'); if (padReset) padReset.onclick = () => G.Gamepad.reset();
     const full = $('set-full'); if (full) full.onclick = toggleFull;
     const lay = $('set-layout'); if (lay) lay.onclick = () => G.LayoutUI.open();
     box.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); }; });

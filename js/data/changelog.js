@@ -11,6 +11,8 @@ G.CHANGELOG = [
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
   ] },
   { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
+    ['Se puede jugar con mando (Xbox, PlayStation, Switch Pro…): stick o cruceta para moverte, botones para los ataques, las cartas y la pausa, y en los menús se elige con la cruceta. Los botones se cambian en Ajustes > Controles.',
+     'You can play with a controller (Xbox, PlayStation, Switch Pro…): stick or D-pad to move, buttons for moves, cards and pause, and in menus you choose with the D-pad. Buttons can be changed in Settings > Controls.'],
     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
      'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.'],
     ['Móvil: ya puedes colocar los botones donde quieras. En Ajustes > Controles > Colocar los botones arrastras los ataques (con el objeto), la pausa y el joystick, que ahora también puede ser fijo en vez de aparecer donde pones el dedo.',
