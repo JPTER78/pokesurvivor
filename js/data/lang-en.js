@@ -283,6 +283,12 @@ G.I18n.add({
   'Salir': 'Log out', 'Eres invitado: se perderá todo el progreso. ¿Salir?': 'You\'re a guest: all your progress will be lost. Log out?',
   'Proyecto de fan sin ánimo de lucro · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK ·': 'Non-profit fan project · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK ·',
   'Aviso legal': 'Legal notice',
+  // búsqueda y selectores
+  'Buscar Pokémon por nombre…': 'Search Pokémon by name…',
+  'Buscar Pokémon por nombre': 'Search Pokémon by name',
+  'Elegir Pokémon para mejorar': 'Choose a Pokémon to upgrade',
+  'No hay Pokémon con ese nombre.': 'No Pokémon with that name.',
+  'Todas': 'All',
   // colección
   'Volver': 'Back', 'Todos': 'All', 'Tengo': 'Owned', 'Me faltan': 'Missing', 'Legendaria': 'Legendary', 'Épica': 'Epic', 'Rara': 'Rare',
   'Poco común': 'Uncommon', 'Común': 'Common', 'Ninguno con este filtro.': 'None with this filter.', 'Ataque': 'Attack', 'Vida': 'HP', 'Velocidad': 'Speed',
