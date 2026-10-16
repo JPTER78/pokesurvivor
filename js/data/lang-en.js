@@ -291,6 +291,9 @@ G.I18n.add({
   '{x} es ahora tu compañero': '{x} is now your partner', '{x} shiny es ahora tu compañero': 'Shiny {x} is now your partner',
   '· {x} shiny': '· {x} shiny', '{x} · {x}: nivel {x}': '{x} · {x}: level {x}',
   // gacha
+  'Todas las regiones': 'All regions',
+  'Los {x} Pokémon de todas las generaciones. ¡Los legendarios esperan!': 'The {x} Pokémon from all generations. The legendaries await!',
+  '· Cada banner tiene su propio contador de garantía.': '· Each banner has its own pity counter.',
   'Gacha': 'Gacha', 'Misterioso': 'Mystery', 'Los {x} Pokémon de la generación {x}. ¡Los legendarios esperan!': 'The {x} Pokémon of generation {x}. The legendaries await!',
   'Tienes {x} de {x}': 'You have {x} of {x}', 'Tienes {x}': 'You have {x}', 'Gen {x}': 'Gen {x}', 'Probabilidades': 'Odds',
   'Tiradas sin legendaria en {x}: {x} / {x}': 'Pulls without a legendary in {x}: {x} / {x}',

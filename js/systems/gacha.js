@@ -1,7 +1,7 @@
-/* ============ gacha.js — un banner por generación ============
+/* ============ gacha.js — banners por generación y uno de todas las regiones ============
  * Lógica pura: no toca la interfaz. La pantalla está en ui/gacha-ui.js.
  *
- * 9 banners (Kanto ... Paldea). Cada uno con su propio pity.
+ * 9 banners (Kanto ... Paldea) y Todas (gen 0). Cada uno con su propio pity.
  * Probabilidades por tirada:  1★ 45% · 2★ 30% · 3★ 17% · 4★ 6.5% · 5★ 1.5%
  * Garantías:
  *   - la tirada ×10 trae al menos un 4★ o superior
@@ -39,10 +39,11 @@ G.Gacha = (() => {
     { gen: 6, name: 'Kalos',   color: ['#4a1a3a', '#2a3a7a', '#1a5a7a'] },
     { gen: 7, name: 'Alola',   color: ['#7a3a1a', '#1a6a6a', '#2a4a8a'] },
     { gen: 8, name: 'Galar',   color: ['#4a1a5a', '#1a3a6a', '#6a1a3a'] },
-    { gen: 9, name: 'Paldea',  color: ['#6a2a1a', '#4a1a5a', '#1a4a6a'] }
+    { gen: 9, name: 'Paldea',  color: ['#6a2a1a', '#4a1a5a', '#1a4a6a'] },
+    { gen: 0, name: 'Todas las regiones', color: ['#3a1d6e', '#1b6a5a', '#2a4a8a'] }
   ];
 
-  function inBanner(p, gen) { return p.gen === gen && !!G.SPRITE_META[p.dex]; }
+  function inBanner(p, gen) { return (gen === 0 || p.gen === gen) && !!G.SPRITE_META[p.dex]; }
 
   /** Pokémon de una rareza en un banner. */
   function pool(rarity, gen) { return G.DEX.filter(p => inBanner(p, gen) && p.rarity === rarity); }
@@ -66,7 +67,7 @@ G.Gacha = (() => {
     return rates[rates.length - 1][0];
   }
 
-  /** Los 3 más fuertes de la generación, para el cartel del banner. */
+  /** Los 3 más fuertes del banner, para el cartel del banner. */
   function featured(gen) {
     return G.DEX.filter(p => inBanner(p, gen) && p.rarity === 5)
       .sort((a, b) => b.bst - a.bst).slice(0, 3).map(p => p.dex);
