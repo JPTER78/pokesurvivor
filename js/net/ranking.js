@@ -367,11 +367,14 @@ G.Ranking = (() => {
     kb[mk] = mine ? mine.t : 0;
     saveBests(kb);
     let res = null;
-    if (mine) res = { pos: (await countAbove(b, mine.t)) + 1, t: mine.t, row: mine };
+    if (mine) { const above = await countAbove(b, mine.t); res = { pos: above + 1, capped: above >= RANK_CAP, t: mine.t, row: mine }; }
     cacheSet(ck, res);
     return res;
   }
 
+  // Tope del recuento: un count() cobra 1 lectura por cada 1.000 marcas que cuenta
+  // (en el histórico eran ~40 por consulta). Pasado el tope se enseña "#1000+".
+  const RANK_CAP = 1000;
   /**
    * Cuántas entradas tienen más tiempo. La versión "compat" del SDK no trae
    * count(), así que se usa la API REST de agregación (1 lectura por cada
@@ -386,7 +389,7 @@ G.Ranking = (() => {
     const body = { structuredAggregationQuery: {
       structuredQuery: { from: [{ collectionId: 'e' }],
         where: { fieldFilter: { field: { fieldPath: 't' }, op: 'GREATER_THAN', value: { integerValue: String(t) } } } },
-      aggregations: [{ alias: 'n', count: {} }] } };
+      aggregations: [{ alias: 'n', count: { upTo: String(RANK_CAP) } }] } };
     try {
       const r = await fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json();

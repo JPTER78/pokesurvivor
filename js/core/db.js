@@ -399,7 +399,11 @@ G.DB = (() => {
   // como mucho cada 30 min:
   // con 2 h, quien abría el juego en otro aparato (o en el navegador de otra
   // app) veía la copia vieja de la nube y creía que lo había perdido.
-  const PUSH_GAP = 2 * 3600 * 1000, PUSH_GAP_URGENT = 15 * 1000, PUSH_GAP_RUN = 30 * 60 * 1000, HIDE_GAP = 30 * 60 * 1000;
+  // Desde el 16-10-2026, lo urgente como mucho cada 10 min (era 15 s, y con el
+  // mínimo de 65 s entre subidas quien hacía tiradas o mejoras guardaba casi
+  // cada minuto). Al cerrar la pestaña se intenta subir lo pendiente,
+  // sujeto a MIN_GAP y a que la petición termine antes de salir.
+  const PUSH_GAP = 2 * 3600 * 1000, PUSH_GAP_URGENT = 10 * 60 * 1000, PUSH_GAP_RUN = 30 * 60 * 1000, HIDE_GAP = 30 * 60 * 1000;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
 
@@ -721,7 +725,7 @@ G.DB = (() => {
   /**
    * Guarda la partida actual (no hace nada en modo invitado). En el navegador,
    * al momento; en la nube:
-   * @param urgent  true: lo que vale algo (tiradas, compras, Pokémon, premios): enseguida
+   * @param urgent  true: lo que vale algo (tiradas, compras, Pokémon, premios): cada 10 min
    *                'run': al acabar una partida (como mucho cada 30 min) · false: cada 2 h
    */
   function commit(urgent = false) {
