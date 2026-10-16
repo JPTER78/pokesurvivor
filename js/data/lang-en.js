@@ -3,7 +3,7 @@
  * número...). Ver js/core/i18n.js. Los nombres de movimientos, objetos y tipos
  * son los oficiales en inglés.
  */
-G.I18n.add({
+if (G.I18n.lang === 'en') G.I18n.add({
   // ---------------- tipos y regiones ----------------
   'Acero': 'Steel', 'Agua': 'Water', 'Bicho': 'Bug', 'Dragón': 'Dragon', 'Eléctrico': 'Electric', 'Fantasma': 'Ghost',
   'Fuego': 'Fire', 'Hada': 'Fairy', 'Hielo': 'Ice', 'Lucha': 'Fighting', 'Planta': 'Grass', 'Psíquico': 'Psychic',

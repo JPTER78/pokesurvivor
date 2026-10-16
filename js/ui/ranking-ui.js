@@ -89,17 +89,23 @@ G.RankingUI = (() => {
 
     // La frase se monta en cada idioma (traducirla por trozos sale rara).
     const en = G.I18n.lang === 'en';
+    const zh = G.I18n.lang === 'zh';
     const pn = en ? { d: 'today', w: 'this week', m: 'this month', y: 'this year', a: 'of all time' }[period]
+               : zh ? { d: '今天', w: '本週', m: '本月', y: '今年', a: '歷來' }[period]
                   : { d: 'de hoy', w: 'de esta semana', m: 'de este mes', y: 'de este año', a: 'de siempre' }[period];
     const mon = dex ? G.DEX_BY[dex].name : '';
     const where = en ? (mode === 's' ? 'solo' : 'group') + (dex ? ' with ' + mon : '')
+               : zh ? (mode === 's' ? '單人' : '組隊') + (dex ? '・' + G.I18n.t(mon) : '')
                      : (mode === 's' ? 'en solitario' : 'en grupo') + (dex ? ' con ' + mon : '');
     $('rk-me').innerHTML = !G.Social.me ? 'Elige un apodo (en Amigos) para salir en el ranking.'
       : me && me.out ? (en ? `<span translate="no">You're not in the top 50 ${where} ${pn} yet. Your exact rank is in All-time.</span>`
+                           : zh ? `<span translate="no">你還沒進入${pn}前 50 名（${where}）。你的確切名次在「歷來」裡。</span>`
                            : `Aún no estás en el top 50 ${pn} ${where}. Tu puesto exacto está en Histórico.`)
       : me ? (en ? `<span translate="no">Your best ${where} rank ${pn}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
+                 : zh ? `<span translate="no">你在${pn}（${where}）的最佳名次：<b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
                  : `Tu mejor puesto ${pn} ${where}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}`)
-      : (en ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>` : `Aún no tienes marca ${pn} ${where}.`);
+      : (en ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>`
+         : zh ? `<span translate="no">你在${pn}（${where}）還沒有紀錄。</span>` : `Aún no tienes marca ${pn} ${where}.`);
   }
 
   function rowEl(r, pos, mine, b, done) {

@@ -20,9 +20,9 @@ G.I18n = (() => {
   const KEY = 'ps.lang';
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
-  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
+  const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : (/\/zh(\/|$)/.test(location.pathname) ? 'zh' : null);
   const nav = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-  const lang = saved === 'es' || saved === 'en' ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const lang = (saved === 'es' || saved === 'en' || saved === 'zh') ? saved : byPath || (nav.startsWith('es') ? 'es' : nav.startsWith('zh') ? 'zh' : 'en');
   document.documentElement.lang = lang;
 
   const exact = new Map(), exactLow = new Map();
@@ -127,9 +127,12 @@ G.I18n = (() => {
 
   function startDom() {
     if (lang === 'es') return;
-    // Los enlaces a las páginas de la web, a su versión en inglés.
-    const EN_LINKS = { 'guia/': 'en/guide/', 'pokedex/': 'en/pokedex/' };
-    document.querySelectorAll('a[href]').forEach(a => { const h = a.getAttribute('href'); if (EN_LINKS[h]) a.setAttribute('href', EN_LINKS[h]); });
+    // Los enlaces a las páginas de la web, a su versión en inglés (sólo en inglés;
+    // en chino tradicional se quedan las páginas en español, que son las que hay).
+    if (lang === 'en') {
+      const EN_LINKS = { 'guia/': 'en/guide/', 'pokedex/': 'en/pokedex/' };
+      document.querySelectorAll('a[href]').forEach(a => { const h = a.getAttribute('href'); if (EN_LINKS[h]) a.setAttribute('href', EN_LINKS[h]); });
+    }
     walk(document.body);
     new MutationObserver(ms => {
       for (const m of ms) {

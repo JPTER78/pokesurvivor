@@ -6,33 +6,46 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Nuevo idioma: chino tradicional', 'New language: Traditional Chinese', '新語言：繁體中文'], new: [
+    ['El juego ya se puede jugar en chino tradicional (Taiwán): menús, combates, misiones, la Pokédex con los 966 nombres oficiales y estas novedades. Se cambia en Ajustes > Gráficos, junto al español y el inglés.',
+     'The game can now be played in Traditional Chinese (Taiwan): menus, battles, missions, the Pokédex with all 966 official names, and this news panel. Switch language in Settings > Graphics, next to Spanish and English.',
+     '遊戲現在可以繁體中文（台灣）遊玩：選單、戰鬥、任務、圖鑑的 966 個官方名稱，以及這份更新公告都已中文化。在「設定 > 圖形」中與西班牙文、英文並列切換。'] ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
   ] },
-  { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
+  { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail', '用 Gmail 找回你的帳號'], new: [
     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
-     'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.'],
+     'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.',
+     '若你用名稱與密碼遊玩，可以連結你的 Gmail：哪天忘記密碼，用 Google 登入即可，那還是同一個帳號。登入時我們會主動詢問你。'],
     ['Móvil: ya puedes colocar los botones donde quieras. En Ajustes > Controles > Colocar los botones arrastras los ataques (con el objeto), la pausa y el joystick, que ahora también puede ser fijo en vez de aparecer donde pones el dedo.',
-     'Mobile: you can now place the buttons wherever you want. In Settings > Controls > Place the buttons, drag the attacks (with the item), the pause button and the joystick, which can now also be fixed instead of appearing where you put your finger.']
+     'Mobile: you can now place the buttons wherever you want. In Settings > Controls > Place the buttons, drag the attacks (with the item), the pause button and the joystick, which can now also be fixed instead of appearing where you put your finger.',
+     '手機：現在可以把按鈕放在你想要的位置。在「設定 > 操作 > 擺放按鈕」中，拖曳攻擊（連同道具）、暫停與搖桿；搖桿現在也可以固定顯示，不必再出現在你手指落下的位置。']
   ], chg: [
     ['Las tablas de la semana y del mes del ranking empiezan de cero, como el histórico: ahora sólo cuentan partidas con la Sentencia de Arceus y todas las tablas cuadran entre sí.',
-     'The weekly and monthly leaderboards start from scratch, like the all-time one: now only runs with the Judgment of Arceus count, and all boards match each other.'],
+     'The weekly and monthly leaderboards start from scratch, like the all-time one: now only runs with the Judgment of Arceus count, and all boards match each other.',
+     '排行榜的週榜與月榜和歷來榜一樣重新計算：現在只計入有「阿爾宙斯審判」的對局，所有榜單彼此一致。'],
     ['Aviso importante: la única web oficial de PokéSurvivor es pokesurvivor.com. El juego es y será gratis: si alguna otra web te pide pagar (por tickets, monedas o lo que sea), no somos nosotros. Lo verás también al entrar y en el Aviso legal.',
-     'Important: the only official PokéSurvivor website is pokesurvivor.com. The game is and always will be free: if any other website asks you to pay (for tickets, coins or anything else), it isn’t us. You will also see this when signing in and in the Legal notice.'],
+     'Important: the only official PokéSurvivor website is pokesurvivor.com. The game is and always will be free: if any other website asks you to pay (for tickets, coins or anything else), it isn’t us. You will also see this when signing in and in the Legal notice.',
+     '重要公告：PokéSurvivor 唯一的官方網站是 pokesurvivor.com。本遊戲現在與將來都免費：若有其他網站向你收費（門票、金幣或其他），那不是我們。登入時與法律聲明中也會看到此公告。'],
     ['El código del juego pasa a una licencia no comercial (PolyForm Noncommercial 1.0.0): se puede seguir estudiando y modificando, pero nadie puede cobrar por él.',
-     'The game’s code moves to a non-commercial license (PolyForm Noncommercial 1.0.0): you can still study and modify it, but nobody may charge for it.']
+     'The game’s code moves to a non-commercial license (PolyForm Noncommercial 1.0.0): you can still study and modify it, but nobody may charge for it.',
+     '遊戲程式碼改採非商業授權（PolyForm Noncommercial 1.0.0）：仍可研究與修改，但任何人不得據此收費。']
   ], fix: [
     ['Cooperativo: la partida ya no se queda parada con cada uno esperando a que el otro elija. Un objeto y las cartas de nivel ya no se tapan, y si la conexión pierde un aviso se arregla solo.',
-     'Co-op: the game no longer freezes with each player waiting for the other to choose. An item and the level-up cards no longer cover each other, and if the connection drops a message it fixes itself.'],
+     'Co-op: the game no longer freezes with each player waiting for the other to choose. An item and the level-up cards no longer cover each other, and if the connection drops a message it fixes itself.',
+     '合作模式：對局不再因彼此等待選擇而卡住。道具與升級卡片不再互相遮擋，連線若漏掉訊息會自動修復。'],
     ['Cooperativo: al volver de una grieta, quien no era el anfitrión ya ve a todos los enemigos (antes algunos eran invisibles y sólo se veían sus ataques).',
-     'Co-op: after coming back from a rift, players who are not the host can see every enemy again (some used to be invisible, with only their attacks showing).'],
+     'Co-op: after coming back from a rift, players who are not the host can see every enemy again (some used to be invisible, with only their attacks showing).',
+     '合作模式：從裂縫返回後，非主持人也能再次看到所有敵人（之前有些敵人會隱形，只看得見牠們的攻擊）。'],
     ['Amigos: si tu móvil u ordenador tiene la hora (o la zona horaria) mal puesta, tus amigos ya no salen siempre desconectados y sus invitaciones te llegan.',
-     'Friends: if your phone or computer has the wrong time (or time zone), your friends no longer always show as offline and their invitations reach you.'],
+     'Friends: if your phone or computer has the wrong time (or time zone), your friends no longer always show as offline and their invitations reach you.',
+     '好友：若你的手機或電腦時間（或時區）設定錯誤，好友不再總是顯示離線，邀請也能送達你這裡。'],
     ['Jugar en dos aparatos (PC y móvil) ya no hace perder monedas ni tickets: antes, si uno tenía la partida abierta con datos viejos y guardaba, borraba lo ganado en el otro. Ahora se suma lo de los dos. Y al volver al juego tras un rato fuera, se trae lo conseguido en el otro aparato (Pokémon, shinies...) sin recargar.',
      'Playing on two devices (PC and phone) no longer loses coins or tickets: before, if one had the game open with old data and saved, it erased what you earned on the other. Now both are added up. And when you come back to the game after a while away, it brings in what you got on the other device (Pokémon, shinies...) without reloading.'],
     ['Los avisos grandes de la partida (un Gholdengo cerca, una marea...) ya salen siempre centrados.',
-     'Big in-game announcements (a nearby Gholdengo, a swarm...) are always centered now.']
+     'Big in-game announcements (a nearby Gholdengo, a swarm...) are always centered now.',
+     '對局中的大型公告（附近有索財靈、寶可夢群來襲……）現在一律置中顯示。']
   ] },
   { d: '2026-10-13', title: ['La Sentencia de Arceus', 'The Judgment of Arceus'], new: [
     ['La Sentencia de Arceus: al llegar al minuto 30, Arceus baja del cielo y te lleva a las Ruinas del Juicio. Es invencible, te persigue cada vez más deprisa y lanza pilares de luz, rayos y ondas; si te toca, te quita casi media vida. Cada 5 segundos acude un legendario con el doble de vida y de daño que el anterior. ¿Cuánto aguantarás?',

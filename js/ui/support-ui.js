@@ -7,7 +7,7 @@ G.SupportUI = (() => {
   const $ = G.UI.$;
   const F = G.Funding;
   const val = v => typeof v === 'number'
-    ? (Math.round(v * 100) / 100).toLocaleString(G.I18n.lang === 'en' ? 'en' : 'es', { style: 'currency', currency: 'EUR' }) + ' / mes'
+    ? (Math.round(v * 100) / 100).toLocaleString(G.I18n.lang === 'en' ? 'en' : G.I18n.lang === 'zh' ? 'zh-TW' : 'es', { style: 'currency', currency: 'EUR' }) + ' / mes'
     : v;
 
   function init() {
