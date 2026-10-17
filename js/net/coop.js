@@ -278,6 +278,10 @@ G.Coop = (() => {
           emit(['pb', ev[1], ev[2]], from);
           break;
         case 'lp': picked(from); break;
+        case 'pe':                                  // un compañero ha evolucionado
+          applyRemoteEvo(m.pl, ev[1]);
+          emit(['pe', from, ev[1]], from);
+          break;
         case 'hs': holdOn(from); break;
         case 'he': holdOff(from); break;
         case 're': G.Rift.enterRequest(); break;
@@ -372,6 +376,7 @@ G.Coop = (() => {
       case 'hp': lastHo = (ev[1] || []).join('|'); api.hold && api.hold(ev[1]); break;
       case 'ha': hostAway = !!ev[1]; updateAway(); break;
       case 'sh': api.shiny(ev[1]); break;
+      case 'pe': { const m = mates.get(ev[1]); if (m) applyRemoteEvo(m.pl, ev[2]); break; }
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
       case 'jd': case 'jk': G.Judgment.onEvent(ev); break;
@@ -423,6 +428,25 @@ G.Coop = (() => {
   }
 
   function shinyCaught(e) { emit(['sh', e.dex]); }
+
+  /**
+   * Un compañero ha evolucionado: aquí sólo cambiamos su sprite (el suyo manda
+   * sobre sus stats, que ya llegan en el estado de cada fotograma).
+   */
+  function applyRemoteEvo(p, dex) {
+    const mon = G.DEX_BY[dex];
+    if (!p || !mon || p.dex === dex) return;
+    G.Sprites.preload([dex], 8000, p.shiny);
+    p.evolveTo(mon);
+    G.FX.ring(p.x, p.y, 8, 150, '#ffd23f', 0.9, 7);
+  }
+
+  /** Tú has evolucionado: avisa para que te vean con la forma nueva. */
+  function evolved(dex) {
+    if (!active) return;
+    if (host) emit(['pe', me, dex]);
+    else outEv.push(['pe', dex]);
+  }
 
   // ---------------- subida de nivel compartida ----------------
 
@@ -493,7 +517,7 @@ G.Coop = (() => {
   return {
     ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
-    propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,
+    propBroken, collected, shinyCaught, evolved, levelStart, localPicked, over, holdStart, holdEnd,
     /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */
     broadcast(ev) { emit(ev); },
     toHost(ev) { if (active && !host) { outEv.push(ev); flushClient(true); } },

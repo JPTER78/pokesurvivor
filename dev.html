@@ -512,6 +512,7 @@
     <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
     <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
     <div id="cards" class="cards"></div>
+    <p id="lvl-evo-note" class="note hidden"></p>
     <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
     <p id="lvl-wait" class="note hidden"></p>
   </div>
@@ -532,6 +533,15 @@
     <h2>¡Un objeto!</h2>
     <p class="sub">Sólo puedes llevar uno · <kbd>1</kbd> <kbd>2</kbd></p>
     <div id="item-cards" class="cards"></div>
+  </div>
+</section>
+
+<section id="scr-evolve" class="scr dim hidden">
+  <div class="box center evo-box">
+    <h2 id="evo-title" class="evo-title">¡Está evolucionando!</h2>
+    <div id="evo-sprite" class="evo-stage"></div>
+    <div id="evo-gain" class="evo-gain"></div>
+    <button id="btn-evo" class="btn gold hidden" data-sfx="none">Continuar</button>
   </div>
 </section>
 
@@ -566,6 +576,7 @@
 <script defer src="js/core/settings.js"></script>
 <script defer src="js/data/music.js"></script>
 <script defer src="js/data/pokedex.js"></script>
+<script defer src="js/data/evolutions.js"></script>
 <script defer src="js/data/sprites-meta.js"></script>
 <!-- núcleo -->
 <script defer src="js/core/firebase-config.js"></script>
@@ -599,6 +610,7 @@
 <!-- sistemas -->
 <script defer src="js/systems/combat.js"></script>
 <script defer src="js/systems/spawner.js"></script>
+<script defer src="js/systems/evo.js"></script>
 <script defer src="js/systems/levelup.js"></script>
 <script defer src="js/systems/gacha.js"></script>
 <script defer src="js/systems/interact.js"></script>

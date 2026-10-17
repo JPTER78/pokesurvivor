@@ -4,11 +4,13 @@ G.RunUI = (() => {
   let offers = null, offerCb = null, coopMode = false;
 
   /** @param coop  en grupo: tras elegir, se queda esperando a los demás */
-  function showLevelUp(level, list, cb, coop = false) {
+  function showLevelUp(level, list, cb, coop = false, note = '') {
     offerCb = cb; coopMode = coop;
     $('lvl-num').textContent = level;
     $('lvl-wait').textContent = '';
     $('lvl-wait').classList.toggle('hidden', !coop);
+    $('lvl-evo-note').textContent = note;          // "puede evolucionar, pero te falta X"
+    $('lvl-evo-note').classList.toggle('hidden', !note);
     $('cards').classList.remove('done');
     renderCards(list);
     $('lvl-reroll').onclick = reroll;
@@ -45,14 +47,17 @@ G.RunUI = (() => {
       el.className = 'card';
       const tag = c.type === 'new'
         ? `<span class="tag-chip" style="background:${c.color}">Nuevo · ${c.tag}</span>`
-        : c.type === 'up' || c.type === 'evo'
+        : c.type === 'up' || c.type === 'evo' || c.type === 'pevo'
           ? `<span class="tag-chip" style="background:${c.color}">${c.tag}</span>`
           : `<span class="tag-chip" style="background:${c.color === '#ffd23f' ? '#ffd23f' : '#9fb1c9'}">${c.tag}</span>`;
-      if (c.type === 'evo') el.classList.add('evo');
+      if (c.type === 'evo' || c.type === 'pevo') el.classList.add('evo');
       el.innerHTML =
-        `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
+        `<div class="ico" style="background:${c.color}33">${c.dex ? '' : G.Icons.html(c.icon, 32)}</div>
          <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
          <div class="key">${i + 1}</div>`;
+      // La evolución de un Pokémon enseña su sprite (como en la colección),
+      // no un icono: es la carta más especial de la subida de nivel.
+      if (c.dex) el.querySelector('.ico').appendChild(G.UI.spriteCanvas(c.dex, 46, 46, { scale: 2, lively: true, dir: 1 }));
       el.dataset.sfx = 'none';             // el juego pone su propio sonido al elegir
       el.onclick = () => pick(i);
       box.appendChild(el);
@@ -87,6 +92,75 @@ G.RunUI = (() => {
     offers = null; offerCb = null;
     $('cards').classList.remove('done');
     G.UI.hide('scr-levelup');
+  }
+
+  // ---------------- evolución del Pokémon ----------------
+
+  let evoTs = [], evoDone = null;
+
+  function stopEvolve() {
+    evoTs.forEach(clearTimeout);
+    evoTs = [];
+    evoDone = null;
+    $('btn-evo').classList.add('hidden');          // la próxima animación lo vuelve a enseñar
+    G.UI.hide('scr-evolve');
+  }
+
+  /**
+   * Termina la animación ya (botón, Esc, Intro...) y ahí es cuando el juego
+   * cambia la forma. Antes de que salga la forma nueva no hace nada.
+   */
+  function finishEvolve() {
+    if ($('btn-evo').classList.contains('hidden')) return;
+    const cb = evoDone;
+    stopEvolve();                  // quita los relojes, oculta y suelta el callback
+    if (cb) cb();
+  }
+
+  /**
+   * La animación de evolución. El juego está parado mientras dura.
+   * Fase 1: la forma vieja tiembla y se pone blanca (como en los juegos).
+   * Fase 2: aparece la nueva, con su nombre y lo que ha ganado.
+   * @param pl    jugador en curso (de qué forma sale)
+   * @param to    dex de la forma nueva
+   * @param done  se llama al cerrar; ahí es donde el juego cambia la forma
+   */
+  function showEvolve(pl, to, done) {
+    const target = G.DEX_BY[to] || {};
+    const fromMon = pl.mon || {};
+    const shiny = !!(pl.shiny && G.Sprites.hasShiny(to));
+    G.Sprites.preload([pl.dex, to], 8000, shiny);
+
+    const host = $('evo-sprite');
+    host.innerHTML = '';
+    host.classList.remove('pop');
+    host.classList.add('flash');
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    host.appendChild(cv);
+    G.UI.sprite(cv, pl.dex, { scale: 2, hero: true, spin: true, shiny: !!pl.shiny });
+    $('evo-title').textContent = '¿Qué? ¡' + (fromMon.name || '') + ' está evolucionando!';
+    $('evo-gain').innerHTML = '';
+    $('btn-evo').classList.add('hidden');
+    G.Audio.sfx('levelup');
+    G.UI.show('scr-evolve');
+
+    evoDone = done;                  // el juego cambia la forma al cerrar la animación
+    $('btn-evo').onclick = finishEvolve;
+
+    evoTs.push(setTimeout(() => {
+      host.classList.remove('flash');
+      host.classList.add('pop');
+      G.UI.sprite(cv, to, { scale: 2, hero: true, lively: true, shiny });
+      $('evo-title').textContent = '¡' + (target.name || '') + ' ha evolucionado!';
+      $('evo-gain').innerHTML =
+        `<span>Vida <b>${fromMon.hp} → ${target.hp}</b></span>` +
+        `<span>Velocidad <b>${fromMon.spd} → ${target.spd}</b></span>` +
+        `<span>Ataque <b>×${fromMon.atk} → ×${target.atk}</b></span>`;
+      G.Audio.sfx('legend');
+      $('btn-evo').classList.remove('hidden');
+      evoTs.push(setTimeout(finishEvolve, 5000));      // por si no toca el botón
+    }, 1600));
   }
 
   /**
@@ -233,5 +307,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showEvolve, finishEvolve, showOver, wirePause, showPause };
 })();

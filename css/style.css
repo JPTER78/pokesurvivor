@@ -629,6 +629,34 @@ a.plink:hover { color: var(--gold); }
 .bond-title { color: #ff8ad8; }
 .card.bond { border-color: #ff8ad8; background: linear-gradient(90deg, rgba(255,138,216,.18), rgba(255,138,216,.04)); }
 .card.bond .nm { color: #ff8ad8; }
+
+/* ============ evolución de un Pokémon (run-ui.js) ============ */
+.evo-box { width: min(420px, 100%); }
+.evo-title { margin: 0 0 6px; color: var(--gold); }
+.evo-stage { position: relative; display: grid; place-items: center; height: 168px; margin: 2px 0 8px; }
+/* Aro de luz detrás del sprite. */
+.evo-stage::before {
+  content: ''; position: absolute; width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,210,63,.35), rgba(255,210,63,0) 70%);
+}
+.evo-stage canvas { position: relative; display: block; image-rendering: pixelated; }
+/* Mientras evoluciona: tiembla y se pone en blanco. */
+.evo-stage.flash canvas { animation: evo-flash .3s steps(2, end) infinite; }
+@keyframes evo-flash {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  50%      { filter: brightness(6) saturate(0); transform: scale(1.05) rotate(-1deg); }
+}
+/* Y sale la forma nueva de golpe. */
+.evo-stage.pop canvas { animation: evo-pop .55s cubic-bezier(.2,1.7,.5,1) both; }
+@keyframes evo-pop {
+  0%   { transform: scale(.5); filter: brightness(5); }
+  60%  { transform: scale(1.14); filter: brightness(1.5); }
+  100% { transform: scale(1); filter: none; }
+}
+.evo-gain { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; min-height: 20px; font-size: 14px; color: var(--muted); }
+.evo-gain b { color: var(--ink); }
+.evo-gain span { white-space: nowrap; }
+#btn-evo { margin-top: 10px; }
 @media (max-height: 520px) {
   #scr-bond .bond-hint { display: none; }
   #scr-bond .box { width: min(820px, 100%); }

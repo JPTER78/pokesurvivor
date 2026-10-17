@@ -6,6 +6,14 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Tu Pokémon evoluciona en plena partida', 'Your Pokémon evolves mid-run'], new: [
+    ['Ya puedes evolucionar dentro de la partida: al llegar al nivel que le toca a cada Pokémon (Charmander, al 16; su forma siguiente, al 36), entre las cartas de subida sale una dorada con la forma siguiente. Si la coges, ves la animación y evoluciona para el resto de la partida: mejores stats y, si cambia de tipo, también cambian los movimientos que te pueden salir.',
+     'You can now evolve during the run: when you reach the level each Pokémon needs (Charmander at 16, its next form at 36), a golden card with the next form shows up among the level-up cards. Pick it and you will see the animation and it evolves for the rest of the run: better stats and, if its type changes, the moves you can get change too.'],
+    ['Para evolucionar hay que tener desbloqueada la forma siguiente (Charmeleon, para poder llegar a Charizard). Si no la tienes, te avisamos de por qué y te quedas igual. Las que en los juegos no son por nivel (piedras, amistad, intercambio...) se piden al nivel 20. Solo evolucionan las cadenas de una sola vía: las que se ramifican (Eevee y compañía) no lo hacen. No desbloquea nada en la colección.',
+     'To evolve you need the next form unlocked (Charmeleon, to be able to reach Charizard). If you don’t have it, we tell you why and you stay as you were. The ones that aren’t level-based in the games (stones, friendship, trade...) ask for level 20. Only single-path lines evolve: branching ones (Eevee and friends) don’t. It doesn’t unlock anything in the collection.'],
+    ['En cooperativo, los demás te ven evolucionar.',
+     'In co-op, the others see you evolve.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
