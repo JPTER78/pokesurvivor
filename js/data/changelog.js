@@ -6,6 +6,16 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Tu Pokémon evoluciona en plena partida', 'Your Pokémon evolves mid-run'], new: [
+    ['Ya puedes evolucionar dentro de la partida: al alcanzar el nivel correspondiente de cada Pokémon (por ejemplo, Charmander evoluciona al nivel 16 y Charmeleon al 36), aparecerá una carta dorada entre las opciones de subida de nivel con su siguiente evolución. Si la eliges, se reproducirá la animación y tu Pokémon evolucionará para el resto de la partida, obteniendo mejores estadísticas y, si cambia de tipo, también cambiarán los movimientos que pueden aparecer.',
+     'You can now evolve during the run: when you reach the level each Pokémon needs (for example, Charmander evolves at level 16 and Charmeleon at 36), a golden card with its next evolution will show up among the level-up options. Pick it and the animation will play, and your Pokémon will evolve for the rest of the run, getting better stats and, if its type changes, the moves that can appear will change too.'],
+    ['Los Pokémon que normalmente no evolucionan por nivel (piedras evolutivas, amistad, intercambio, etc.) podrán evolucionar al alcanzar el nivel 36.',
+     'Pokémon that normally do not evolve by level (evolution stones, friendship, trade, etc.) will be able to evolve when they reach level 36.'],
+    ['Nota: Las evoluciones ramificadas, como las de Eevee, todavía no están disponibles. Esta funcionalidad se implementará próximamente.',
+     'Note: Branching evolutions, like Eevee\'s, are not available yet. This feature will be added soon.'],
+    ['Durante la partida, en la esquina inferior derecha, tendrás un panel con la vida, el ataque y la velocidad base del Pokémon que estés utilizando (los valores originales de la Pokédex, sin contar cartas, mejoras ni objetos). Estas estadísticas se actualizarán automáticamente cuando evolucione.',
+     'During the run, at the bottom right, you will have a panel with the base HP, attack and speed of the Pokémon you are using (the original Pokédex values, not counting cards, upgrades or items). These stats will update automatically when it evolves.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']

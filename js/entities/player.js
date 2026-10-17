@@ -268,6 +268,29 @@ G.Player = class Player {
 
   addMaxHp(amount) { this.maxHp += amount; this.hp += amount; }
 
+  /**
+   * Evoluciona a otra forma (entrada de G.DEX) en medio de la partida.
+   * Cambia lo que depende de la especie: nombre, sprite, tamaño, tipos (que
+   * tiran de `mon.types` en cada cálculo), vida y stats base. Lo que te has
+   * ganado en la run (niveles, cartas, movimientos, objeto) se mantiene, y la
+   * vida sube lo mismo que suba la vida máxima, para no perder nada.
+   */
+  evolveTo(mon) {
+    if (!mon || mon.dex === this.dex) return false;
+    const dHp = mon.hp - this.mon.hp;
+    this.mon = mon;
+    this.dex = mon.dex;
+    this.shiny = this.shiny && G.Sprites.hasShiny(mon.dex);   // si la forma nueva no tiene shiny, se pierde
+    this.anim = new G.Sprites.Animator(mon.dex, 1, this.shiny);
+    this.r = G.Sprites.bodyRadius(mon.dex);
+    this.bodyH = G.Sprites.bodyHeight(mon.dex);
+    this.baseSpd = mon.spd;
+    this.baseAtk = mon.atk;
+    this.maxHp += dHp;
+    this.hp = G.U.clamp(this.hp + dHp, 1, this.maxHp);
+    return true;
+  }
+
   /** Devuelve cuántos niveles ha subido (pueden ser varios de golpe). */
   gainXp(amount) {
     this.xp += amount * this.xpMul;

@@ -70,6 +70,16 @@ G.LevelUp = (() => {
       });
     }
 
+    // --- evolución del Pokémon: nivel alcanzado y forma desbloqueada ---
+    // (La regulación de cuándo toca y si está desbloqueada vive en evo.js.)
+    const pv = G.Evo.info(pl);
+    if (pv && pv.ready) out.push({
+      w: 40, type: 'pevo', key: 'pevo:' + pv.to, dex: pv.to,
+      icon: 'star', color: '#ffd23f', tag: 'EVOLUCIÓN',
+      title: pv.fromName + ' → ' + pv.name,
+      desc: 'Evoluciona para el resto de la partida: mejores stats y, si cambia de tipo, movimientos nuevos.'
+    });
+
     // --- mejoras de movimientos que ya tienes ---
     for (const m of pl.moves) {
       const txt = G.Moves.nextUpText(m);
@@ -104,14 +114,31 @@ G.LevelUp = (() => {
     return out;
   }
 
+  /**
+   * Aviso para la pantalla de cartas: tienes nivel para evolucionar, pero te
+   * falta desbloquear la forma siguiente. Sin aviso, parecería roto.
+   */
+  function note(pl) {
+    const pv = G.Evo.info(pl);
+    return pv && pv.locked
+      ? pv.fromName + ' puede evolucionar, pero te falta desbloquear a ' + pv.name + '.'
+      : '';
+  }
+
   /** Devuelve 3 cartas distintas, elegidas por peso. */
   function offer(pl, n = 3) {
     const pool = candidates(pl);
     const picked = [];
     const used = new Set();
-    // Si hay una evolución lista, su carta dorada sale siempre.
-    const evo = pool.findIndex(c => c.type === 'evo');
-    if (evo >= 0) { const c = pool.splice(evo, 1)[0]; used.add(c.key); picked.push(c); }
+    // Las evoluciones (de movimiento o del propio Pokémon) salen siempre, y
+    // doradas: son las cartas que el jugador está esperando.
+    for (let i = pool.findIndex(c => c.type === 'evo' || c.type === 'pevo');
+         i >= 0 && picked.length < n;
+         i = pool.findIndex(c => c.type === 'evo' || c.type === 'pevo')) {
+      const c = pool.splice(i, 1)[0];
+      used.add(c.key);
+      picked.push(c);
+    }
 
     while (picked.length < n && pool.length) {
       const total = pool.reduce((a, c) => a + c.w, 0);
@@ -125,5 +152,5 @@ G.LevelUp = (() => {
     return picked;
   }
 
-  return { offer, STATS };
+  return { offer, note, STATS };
 })();

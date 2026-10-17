@@ -116,6 +116,11 @@ G.I18n.add({
   'Baya Zidra': 'Sitrus Berry', 'Recupera el 45% de tu vida ahora mismo.': 'Restores 45% of your HP right now.',
   '¡Nivel': 'Level', '¡Nivel {x}!': 'Level {x}!', 'Elige una recompensa ·': 'Choose a reward ·', 'Elige tu carta': 'Choose your card',
   'Faltan por elegir: {x}': 'Still choosing: {x}', 'Esperando a {x}…': 'Waiting for {x}…', 'tú': 'you',
+  // Evolución del Pokémon en la run (carta dorada + pantalla con animación).
+  'Evoluciona para el resto de la partida: mejores stats y, si cambia de tipo, movimientos nuevos.':
+    'Evolves for the rest of the run: better stats and, if its type changes, new moves.',
+  '{x} puede evolucionar, pero te falta desbloquear a {x}.': '{x} can evolve, but you still need to unlock {x}.',
+  '¿Qué? ¡{x} está evolucionando!': 'What? {x} is evolving!', '¡{x} ha evolucionado!': '{x} has evolved!',
 
   // ---------------- objetos ----------------
   'Restos': 'Leftovers', 'Cinta Elección': 'Choice Band', 'Garra Rápida': 'Quick Claw', 'Banda Focus': 'Focus Sash',

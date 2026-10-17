@@ -205,9 +205,10 @@ G.Game = (() => {
       G.Audio.sfx('levelup');
       G.RunUI.showLevelUp(level, G.LevelUp.offer(pl), card => {
         G.Audio.sfx('confirm');
+        if (card.dex) { G.Coop.localPicked(); startEvolve(card.dex); return; }
         card.apply(pl);
         G.Coop.localPicked();
-      }, true);
+      }, true, G.LevelUp.note(pl));
     },
     waiting(names) { G.RunUI.setWaiting(names); },
     resume() {
@@ -372,8 +373,28 @@ G.Game = (() => {
     G.Audio.sfx('levelup');
     G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
       G.Audio.sfx('confirm');
+      if (card.dex) { startEvolve(card.dex); return; }      // evolución: la carta sólo avisa
       card.apply(pl);
       state = 'playing';
+    }, false, G.LevelUp.note(pl));
+  }
+
+  /**
+   * Evolucionar en medio de la partida: se para todo, sale la animación y al
+   * terminar cambia la forma. En grupo los demás esperan, como con los objetos.
+   * @param to  dex de la forma nueva
+   */
+  function startEvolve(to) {
+    if (!pl || !G.DEX_BY[to]) { state = 'playing'; return; }
+    state = 'choice';
+    if (G.Coop.active) G.Coop.holdStart();
+    G.RunUI.showEvolve(pl, to, () => {
+      pl.evolveTo(G.DEX_BY[to]);
+      G.FX.ring(pl.x, pl.y, 8, 150, '#ffd23f', 0.9, 7);
+      G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffe14d', 40, 240);
+      if (state === 'choice') state = holdBy.length ? 'held' : 'playing';
+      if (G.Coop.active) { G.Coop.evolved(to); G.Coop.holdEnd(); }
+      afterLevelUp();
     });
   }
 
@@ -546,6 +567,11 @@ G.Game = (() => {
       // Esc en una subpantalla del menú vuelve al menú.
       if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-dex', 'scr-upgrades', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
+      return;
+    }
+    if (G.UI.isOpen('scr-evolve')) {
+      // La evolución: Espacio, Intro o Esc la saltan (cuando ya se puede).
+      if (['space', 'enter', 'escape'].some(k => G.Input.tap(k))) G.RunUI.finishEvolve();
       return;
     }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
