@@ -318,7 +318,7 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 - [ ] Efectividades de tipo en el daño
 - [ ] Gráficos propios para los proyectiles (ahora son orbes de color)
 - [ ] Movimientos propios por Pokémon (ahora salen de sus tipos)
-- [ ] Controles táctiles / mando
+- [x] Controles táctiles / mando (Gamepad API: `js/core/input.js` lee, `js/ui/padnav.js` traduce y navega los menús)
 - [ ] 59 Pokémon sin sprite en SpriteCollab (sobre todo gen 5, 8 y 9)
 
 ---

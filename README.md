@@ -33,6 +33,11 @@ de personalidad y a la mazmorra.
 | `Q` / `E` | Ciclar movimientos |
 | `Esc` / `P` | Pausa |
 
+**Con mando** (Xbox, PlayStation o compatible): stick o cruceta para moverse,
+`A` `B` `X` `Y` = ataque 1-4, `LB` / `RB` para ciclar y `Start` para pausar. En
+los menús un recuadro dorado marca lo elegido: `A` acepta, `B` vuelve e `Y`
+cambia las cartas al subir de nivel.
+
 **En móvil o tablet** (en horizontal): pon el dedo en cualquier sitio y arrastra
 para moverte (el joystick aparece donde tocas), toca un ataque de abajo para
 cambiarlo y el botón de arriba a la derecha para pausar. Se puede instalar como

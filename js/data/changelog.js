@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-17', title: ['Juega con mando', 'Play with a controller'], new: [
+    ['Ya se puede jugar con mando (Xbox, PlayStation o compatible): el stick o la cruceta mueven (el stick a medias, más despacio), A/B/X/Y eligen el ataque 1 a 4, LB/RB pasan al anterior o al siguiente y Start pausa. En los menús, las cartas y la pausa, un recuadro dorado marca lo elegido: A acepta, B vuelve e Y cambia las cartas. Lo tienes en Ajustes > Controles.',
+     'You can now play with a controller (Xbox, PlayStation or compatible): the stick or D-pad moves you (half-tilting the stick moves slower), A/B/X/Y pick move 1 to 4, LB/RB switch to the previous or next one and Start pauses. In menus, cards and the pause screen, a golden frame shows what is selected: A confirms, B goes back and Y rerolls the cards. See Settings > Controls.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']

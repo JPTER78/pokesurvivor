@@ -129,6 +129,10 @@ input { font: inherit; }
 }
 .menu-item:hover, .menu-item:focus-visible { background: rgba(255,255,255,.08); outline: none; }
 .menu-item:hover::before, .menu-item:focus-visible::before { opacity: 1; transform: none; }
+/* Mando: el recuadro dorado de lo elegido (js/ui/padnav.js). */
+.pad-focus { outline: 3px solid var(--gold) !important; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(11,24,56,.7), 0 0 14px var(--gold) !important; }
+.menu-item.pad-focus { background: rgba(255,255,255,.08); }
+.menu-item.pad-focus::before { opacity: 1; transform: none; }
 .menu-item.play { font-size: 30px; color: var(--gold); }
 .menu-item { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: center; }
 .menu-item small { grid-column: 2; }
