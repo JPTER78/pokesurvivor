@@ -126,6 +126,7 @@ t('el nivel es el canónico de los juegos, tal cual', () => {
 });
 
 t('las que no son por nivel usan la reserva', () => {
+  eq(E.RESERVA, 36, 'la reserva es el 36 (decisión del dueño, como Charmeleon)');
   eq(E.levelFor({ how: 'use-item', lvl: null }), E.RESERVA, 'piedra');
   eq(E.levelFor({ how: 'trade', lvl: null }), E.RESERVA, 'intercambio');
   eq(E.levelFor({ how: 'level', lvl: null }), E.RESERVA, 'nivel por amistad (sin número)');

@@ -381,7 +381,11 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 @keyframes legend { to { box-shadow: 0 0 40px var(--rc), 0 0 80px var(--rc); } }
 
 /* ---------- cartas de nivel ---------- */
-.cards { display: flex; flex-direction: column; gap: 10px; width: min(560px, 100%); }
+/* Ancho fijo (no min(…, 100%)): con el porcentaje dentro, el navegador calcula
+ * el ancho del recuadro por su contenido, y una descripción larga (la carta de
+ * evolución, o un movimiento) estiraba la caja y dejaba un hueco a la derecha.
+ * El max-width sí deja que se encoja en pantallas pequeñas. */
+.cards { display: flex; flex-direction: column; gap: 10px; width: 560px; max-width: 100%; }
 .card {
   display: flex; align-items: center; gap: 14px; text-align: left; cursor: pointer;
   background: rgba(0,0,0,.2); border: 2px solid rgba(244,248,255,.3); border-radius: 12px;

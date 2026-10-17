@@ -16,7 +16,8 @@ G.Evo = (() => {
 
   // Las evoluciones que no son por nivel (piedras, amistad, intercambio...) no
   // traen número: se les pone una reserva, para que también se puedan hacer.
-  const RESERVA = 20;
+  // Decisión del dueño (17-10-2026): al 36, como Charmeleon.
+  const RESERVA = 36;
 
   /** Nivel de la run al que toca evolucionar (el canónico, o la reserva). */
   function levelFor(e) {
