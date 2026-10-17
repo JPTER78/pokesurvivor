@@ -183,6 +183,15 @@ t('sin evolución no hay carta ni aviso', () => {
   eq(G.LevelUp.note(fake(4, 15)), '', 'sin nivel, sin aviso');
 });
 
+t('el desbloqueo se pregunta al guardado del jugador (no a la pantalla)', () => {
+  owns = d => d !== 5;                       // el guardado: Charmeleon sin desbloquear
+  const v = E.info(fake(4, 16));             // sin inyectar nada: usa G.DB.owns
+  eq(v.locked, true, 'lo que diga el guardado manda');
+  eq(v.ready, false, 'y si no lo tienes, no hay carta');
+  owns = () => true;
+  eq(E.info(fake(4, 16)).ready, true, 'con el guardado al día, sí');
+});
+
 t('la carta sale forzada en la oferta (y lleva su sprite)', () => {
   const pl = fake(4, 16);
   const cards = G.LevelUp.offer(pl);
@@ -260,6 +269,22 @@ t('mantiene lo ganado en la run: nivel, movimientos y cartas', () => {
   eq(pl.maxHp, DEX[5].hp + 60, 'las cartas de vida siguen contando');
   eq(pl.hp, 20 + (DEX[5].hp - DEX[4].hp), 'y la vida sube lo mismo que suba la máxima (sin curar de más)');
   eq(pl.atkMul, 1.5, 'las mejoras de daño siguen');
+});
+
+t('evolucionar dentro de la run no desbloquea nada en la colección', () => {
+  // El guardado del jugador: en la colección sólo tiene a Charmander.
+  const pedidos = [], guardado = new Set([4]);
+  const o = G.DB.owns;
+  G.DB.grant = d => { pedidos.push(d); guardado.add(d); };
+  G.DB.owns = d => guardado.has(d);
+  const pl = new G.Player(DEX[4], {}, false);
+  pl.evolveTo(DEX[5]);
+  pl.evolveTo(DEX[6]);
+  eq(pedidos, [], 'la evolución de la run no pide desbloquear nada');
+  eq(G.DB.owns(5), false, 'y en la colección sigues sin tener a Charmeleon');
+  eq(G.DB.owns(6), false, 'ni a Charizard');
+  G.DB.owns = o;
+  delete G.DB.grant;
 });
 
 t('la vida nunca se queda en 0 al evolucionar', () => {
@@ -397,6 +422,35 @@ t('cada etapa de la línea tiene sus propios valores (y se ven al empezar con el
   eq(v[2], { hp: DEX[6].hp, atk: DEX[6].atk, spd: DEX[6].spd }, 'Charizard (empezando con él)');
   is(v[1].hp > v[0].hp && v[2].hp > v[1].hp, 'en la línea sube la vida: ' + v.map(x => x.hp).join(' → '));
   is(v[1].atk > v[0].atk && v[2].atk > v[1].atk, 'y el ataque: ' + v.map(x => x.atk).join(' → '));
+});
+
+t('el panel va cambiando con la evolución de la run, y no con lo ganado', () => {
+  const H = G.HUD;
+  const base = d => ({ hp: DEX[d].hp, atk: DEX[d].atk, spd: DEX[d].spd });
+  const pl = new G.Player(DEX[4], {}, false);
+  eq(H.baseStats(pl.mon), base(4), 'de salida, Charmander');
+  pl.addMaxHp(60); pl.atkMul = 2; pl.spdMul = 1.5;      // cartas de la run
+  pl.level = 30;
+  eq(H.baseStats(pl.mon), base(4), 'las cartas y el nivel no tocan el panel');
+  pl.evolveTo(DEX[5]);
+  eq(H.baseStats(pl.mon), base(5), 'al evolucionar, los de Charmeleon');
+  pl.evolveTo(DEX[6]);
+  eq(H.baseStats(pl.mon), base(6), 'y al final, los de Charizard');
+});
+
+t('los números del panel se calculan una vez por forma, no en cada frame', () => {
+  const H = G.HUD;
+  const pl = new G.Player(DEX[4], {}, false);
+  const a = H.statsText(pl.mon);
+  is(a === H.statsText(pl.mon), 'la misma forma devuelve lo ya calculado');
+  eq(a[0], String(DEX[4].hp), 'vida base de Charmander');
+  eq(a[1], '×' + DEX[4].atk.toFixed(2), 'ataque base');
+  eq(a[2], String(DEX[4].spd), 'velocidad base');
+  pl.evolveTo(DEX[5]);
+  const b = H.statsText(pl.mon);
+  is(b !== a, 'al cambiar de forma sí se recalcula');
+  eq(b[0], String(DEX[5].hp), 'y sale la vida base de la forma nueva');
+  eq(H.statsText(null), null, 'sin Pokémon, nada que pintar');
 });
 
 t('la caja va abajo a la derecha y no se sale de la pantalla', () => {

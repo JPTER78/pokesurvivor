@@ -34,15 +34,30 @@ G.HUD = (() => {
     return { x, y, w: bw, h: bh };
   }
 
+  /**
+   * Textos del panel (los tres valores ya formateados). Se calculan UNA vez por
+   * forma y se guardan: mientras no cambies de Pokémon, en cada frame se
+   * reutilizan tal cual (sólo se repinta la caja, que es lo que toca en canvas).
+   * @return [hp, atk, spd] en texto, o null si no hay Pokémon
+   */
+  let txtDe = null, txt = null;
+  function statsText(mon) {
+    if (mon !== txtDe) {
+      const s = baseStats(mon);
+      txtDe = mon;
+      txt = s ? [String(Math.round(s.hp)), '×' + s.atk.toFixed(2), String(Math.round(s.spd))] : null;
+    }
+    return txt;
+  }
+
   /** Pinta el panel: sólo vida, ataque y velocidad base de la forma actual. */
   function drawStats(ctx, box, mon) {
-    const s = baseStats(mon);
-    if (!s) return;
+    const VAL = statsText(mon);
+    if (!VAL) return;
     roundRect(ctx, box.x, box.y, box.w, box.h, 9);
     ctx.fillStyle = 'rgba(8,14,26,.62)'; ctx.fill();
     ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(140,170,210,.28)'; ctx.stroke();
     const LBL = ['HP', 'ATK', 'SPD'];
-    const VAL = [String(Math.round(s.hp)), '×' + s.atk.toFixed(2), String(Math.round(s.spd))];
     const COL = ['#ff8a96', '#ffb066', '#7fe0ff'];
     for (let i = 0; i < 3; i++) {
       const y = box.y + 16 + i * 14;
@@ -535,5 +550,5 @@ G.HUD = (() => {
     }
   }
 
-  return { draw, roundRect, bar, baseStats, statsBox };
+  return { draw, roundRect, bar, baseStats, statsText, statsBox };
 })();
