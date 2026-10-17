@@ -290,6 +290,9 @@ G.I18n.add({
   'Aún no lo tienes.': 'You don\'t have it yet.', 'Consíguelo en el banner de': 'Get it from the banner of', 'o derrotándolo cuando salga shiny.': 'or by defeating it when it shows up shiny.',
   '{x} es ahora tu compañero': '{x} is now your partner', '{x} shiny es ahora tu compañero': 'Shiny {x} is now your partner',
   '· {x} shiny': '· {x} shiny', '{x} · {x}: nivel {x}': '{x} · {x}: level {x}',
+  'Buscar por nombre': 'Search by name', 'Ordenar': 'Sort', 'Número': 'Number', 'Recién conseguidos': 'Recently obtained', 'Rareza': 'Rarity',
+  '1 resultado': '1 result', '{x} resultados': '{x} results', 'Más usados': 'Most used',
+  'Favoritos': 'Favorites', 'Favorito': 'Favorite', 'Tipos': 'Types', 'Limpiar': 'Clear', 'Limpiar tipos': 'Clear types', 'Estado': 'Status',
   // gacha
   'Gacha': 'Gacha', 'Misterioso': 'Mystery', 'Los {x} Pokémon de la generación {x}. ¡Los legendarios esperan!': 'The {x} Pokémon of generation {x}. The legendaries await!',
   'Tienes {x} de {x}': 'You have {x} of {x}', 'Tienes {x}': 'You have {x}', 'Gen {x}': 'Gen {x}', 'Probabilidades': 'Odds',

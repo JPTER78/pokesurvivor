@@ -232,6 +232,24 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 }
 .chip.on { border-color: var(--gold); color: var(--gold); }
 
+/* Buscador y orden de la colección */
+.dex-tools { margin: 6px 0 8px; }
+.dex-tools .dex-search { flex: 1 1 220px; width: auto; max-width: 340px; }
+.dex-tools .dex-sort { flex: 0 0 auto; width: auto; min-width: 140px; }
+.dex-tools #dex-count { margin-left: auto; color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+/* Filtros de la colección: facetas independientes */
+.dex-frow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
+.dex-flab { font-size: 12px; color: var(--muted); margin-right: 2px; }
+.ty-chip { border-color: var(--ty, #666); }
+.ty-chip.on { border-color: var(--gold); background: rgba(255,210,63,.14); }
+.dex-clear { border-color: #ff5f6d; color: #ffb0b8; }
+#dex-detail { position: relative; }
+.dex-fav-btn { position: absolute; top: 8px; right: 8px; padding: 4px; background: none; border: none; cursor: pointer; opacity: .45; filter: grayscale(1); }
+.dex-fav-btn:hover { opacity: .8; }
+.dex-fav-btn.on { opacity: 1; filter: none; }
+.cell .badge-fav { position: absolute; bottom: 4px; right: 5px; }
+
 /* ---------- menú principal ---------- */
 #scr-menu { justify-content: space-between; align-items: stretch; padding: 0; }
 .menu-left {

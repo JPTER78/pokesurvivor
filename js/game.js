@@ -304,6 +304,8 @@ G.Game = (() => {
     save.coins += coins;
     bankTickets(false);
     save.stats.runs++;
+    save.pused = save.pused || {};
+    save.pused[pl.dex] = (save.pused[pl.dex] || 0) + 1;   // para el orden "más usados"
     save.stats.totalKills += pl.kills;
     save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
     if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
