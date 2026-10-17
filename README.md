@@ -35,6 +35,10 @@ El idioma también se cambia en Ajustes → Gráficos → Idioma. Se admiten esp
 inglés y chino tradicional; los navegadores en chino usan chino tradicional
 si no hay una preferencia guardada. `?lang=` tiene prioridad sobre esa preferencia.
 Las páginas de la guía y las noticias antiguas conservan sus idiomas originales.
+Los nombres de Pokémon y movimientos se contrastan con una versión fija de
+PokéAPI; el registro, las excepciones y las instrucciones para regenerarlos
+están en [docs/ZH_TW_NAMES.md](docs/ZH_TW_NAMES.md). Es una fuente comunitaria,
+no una revisión oficial de todas las traducciones.
 
 Tras editar, `node tools/build.js` regenera la entrada principal `index.html` y
 su paquete. La comprobación de traducciones se ejecuta con `node tools/test_i18n.js`.
