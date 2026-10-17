@@ -511,6 +511,7 @@
     <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
     <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
     <div id="cards" class="cards"></div>
+    <p id="lvl-evo-note" class="note hidden"></p>
     <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
     <p id="lvl-wait" class="note hidden"></p>
   </div>
@@ -531,6 +532,15 @@
     <h2>¡Un objeto!</h2>
     <p class="sub">Sólo puedes llevar uno · <kbd>1</kbd> <kbd>2</kbd></p>
     <div id="item-cards" class="cards"></div>
+  </div>
+</section>
+
+<section id="scr-evolve" class="scr dim hidden">
+  <div class="box center evo-box">
+    <h2 id="evo-title" class="evo-title">¡Está evolucionando!</h2>
+    <div id="evo-sprite" class="evo-stage"></div>
+    <div id="evo-gain" class="evo-gain"></div>
+    <button id="btn-evo" class="btn gold hidden" data-sfx="none">Continuar</button>
   </div>
 </section>
 
@@ -558,6 +568,8 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=919c6711dd"></script>
+<script defer src="js/app.min.js?v=028eed0bab"></script>
+
+
 </body>
 </html>
