@@ -83,6 +83,27 @@ t('los finales de cadena no evolucionan', () => {
   eq(E.next(99999), null, 'un dex que no existe');
 });
 
+t('no se salta etapas: cada forma pide la siguiente, y la final no pide nada', () => {
+  // La etapa con la que empiezas manda: da igual si es la primera o la segunda.
+  eq(E.next(1).to, 2, 'Bulbasaur → Ivysaur');
+  eq(E.next(2).to, 3, 'Ivysaur → Venusaur');
+  eq(E.next(3), null, 'Venusaur ya no evoluciona');
+  eq(E.next(4).to, 5, 'Charmander → Charmeleon');
+  eq(E.next(5).to, 6, 'Charmeleon → Charizard');
+  eq(E.next(6), null, 'Charizard ya no evoluciona');
+});
+
+t('la línea evolutiva entera, para el panel de dev', () => {
+  eq(E.line(4), [4, 5, 6], 'Charmander');
+  eq(E.line(5), [4, 5, 6], 'da igual por qué etapa entres');
+  eq(E.line(6), [4, 5, 6], 'Charizard');
+  eq(E.line(1), [1, 2, 3], 'Bulbasaur');
+  eq(E.line(129), [129, 130], 'Magikarp → Gyarados (de dos etapas)');
+  eq(E.line(25), [172, 25, 26], 'Pichu → Pikachu → Raichu (la de por piedra también)');
+  eq(E.line(133), null, 'Eevee ramifica: no hay línea');
+  eq(E.line(99999), null, 'un dex que no existe');
+});
+
 t('las ramificadas no se ofrecen (decisión del dueño)', () => {
   eq(E.next(133), null, 'Eevee (8 ramas)');
   eq(E.next(412), null, 'Burmy (2 ramas)');
@@ -181,6 +202,32 @@ t('sin la forma desbloqueada no hay carta, pero sí aviso en la pantalla', () =>
   owns = () => true;
 });
 
+t('empezando con Charmeleon: al 36 va a Charizard (si lo tienes)', () => {
+  eq(E.info(fake(5, 35), () => true).ready, false, 'al 35 todavía no toca');
+  const v = E.info(fake(5, 36), () => true);
+  eq(v.ready, true, 'al 36 sí');
+  eq([v.fromName, v.name], ['Charmeleon', 'Charizard']);
+  const l = E.info(fake(5, 36), d => d !== 6);
+  eq(l.ready, false, 'sin Charizard desbloqueado, bloqueada');
+  eq(l.locked, true, 'y con aviso');
+});
+
+t('no se puede saltar una etapa aunque tengas la última', () => {
+  const soloCharizard = d => d === 6;
+  const v = E.info(fake(4, 40), soloCharizard);
+  eq(v.ready, false, 'Charmander no puede saltar directo a Charizard');
+  eq(v.locked, true, 'sale el aviso de que falta alguien');
+  eq(v.to, 5, 'y falta Charmeleon, la siguiente de la línea');
+  eq(v.name, 'Charmeleon');
+  // En otra línea de tres etapas, igual: Bulbasaur → Ivysaur → Venusaur.
+  const b = E.info(fake(1, 40), d => d === 3);
+  eq(b.ready, false, 'Bulbasaur tampoco salta a Venusaur');
+  eq(b.name, 'Ivysaur');
+  // Y con la segunda desbloqueada pero no la tercera, la segunda no pasa.
+  const i = E.info(fake(2, 40), d => d !== 3);
+  eq(i.ready, false, 'Ivysaur necesita Venusaur');
+});
+
 console.log('\n=== el cambio de forma (Player.evolveTo) ===');
 
 t('cambia forma, vida, stats y sprite', () => {
@@ -248,7 +295,7 @@ console.log('\n=== la animación (G.RunUI.showEvolve) ===');
 const dom = {};
 function el(id) {
   const e = {
-    id, textContent: '', children: [], style: {}, dataset: {}, onclick: null, _cls: new Set(),
+    id, textContent: '', value: '', children: [], style: {}, dataset: {}, onclick: null, _cls: new Set(),
     appendChild: c => { e.children.push(c); return c; },
     querySelector: () => null, querySelectorAll: () => []
   };
@@ -325,6 +372,160 @@ t('si no la tocas, a los 5 s se cierra sola y también cambia', () => {
   relojes();                                      // se cierra sola
   eq(cambiado, 1, 'el reloj también llama al juego');
   is(dom['scr-evolve'].classList.contains('hidden'), 'pantalla cerrada');
+});
+
+// ---------------- panel de estadísticas base (js/ui/hud.js) ----------------
+
+console.log('\n=== panel de estadísticas base (G.HUD) ===');
+
+load('js/ui/hud.js');                              // G.HUD
+
+t('el panel enseña los valores base de la forma, no los de la run', () => {
+  const H = G.HUD;
+  eq(H.baseStats(DEX[4]), { hp: DEX[4].hp, atk: DEX[4].atk, spd: DEX[4].spd }, 'Charmander: los de la Pokédex');
+  // Un jugador cargado de cartas y mejoras: el panel no mira nada de eso.
+  const pl = fake(4, 30, { maxHp: 999, hp: 500, atk: 9, spd: 999 });
+  eq(H.baseStats(pl.mon), { hp: DEX[4].hp, atk: DEX[4].atk, spd: DEX[4].spd }, 'con la partida mejorada, igual');
+  eq(H.baseStats(null), null, 'sin Pokémon no hay panel');
+});
+
+t('cada etapa de la línea tiene sus propios valores (y se ven al empezar con ella)', () => {
+  const H = G.HUD;
+  const v = [4, 5, 6].map(d => H.baseStats(DEX[d]));
+  eq(v[0], { hp: DEX[4].hp, atk: DEX[4].atk, spd: DEX[4].spd }, 'Charmander');
+  eq(v[1], { hp: DEX[5].hp, atk: DEX[5].atk, spd: DEX[5].spd }, 'Charmeleon (empezando con él)');
+  eq(v[2], { hp: DEX[6].hp, atk: DEX[6].atk, spd: DEX[6].spd }, 'Charizard (empezando con él)');
+  is(v[1].hp > v[0].hp && v[2].hp > v[1].hp, 'en la línea sube la vida: ' + v.map(x => x.hp).join(' → '));
+  is(v[1].atk > v[0].atk && v[2].atk > v[1].atk, 'y el ataque: ' + v.map(x => x.atk).join(' → '));
+});
+
+t('la caja va abajo a la derecha y no se sale de la pantalla', () => {
+  const b = G.HUD.statsBox(1280, 720);
+  is(b.x > 1280 / 2 && b.y > 720 / 2, 'esquina inferior derecha: ' + JSON.stringify(b));
+  is(b.x + b.w <= 1280 && b.y + b.h <= 720, 'dentro de la pantalla');
+  const chico = G.HUD.statsBox(320, 480);
+  is(chico.x >= 6 && chico.y >= 64 && chico.x + chico.w <= 320 && chico.y + chico.h <= 480,
+     'y en una pantalla pequeña también: ' + JSON.stringify(chico));
+});
+
+t('si la barra de movimientos está ahí, el panel se aparta', () => {
+  const tapa = { x: 600, y: 620, w: 680, h: 100 };           // barra pegada al borde derecho
+  const b = G.HUD.statsBox(1280, 720, tapa);
+  const choca = b.x < tapa.x + tapa.w && tapa.x < b.x + b.w && b.y < tapa.y + tapa.h && tapa.y < b.y + b.h;
+  is(!choca, 'no puede tapar la barra: ' + JSON.stringify(b));
+  is(b.y + b.h <= 720 && b.x + b.w <= 1280, 'y sigue dentro: ' + JSON.stringify(b));
+  // En un móvil la barra va centrada al pie: se sube por encima.
+  const movil = G.HUD.statsBox(375, 667, { x: 66, y: 590, w: 243, h: 72 }, { right: 0, bottom: 20 });
+  is(movil.y + movil.h <= 590, 'en móvil se sube por encima de la barra: ' + JSON.stringify(movil));
+});
+
+// ---------------- barra de dev (js/ui/dev-ui.js) ----------------
+// Es una herramienta (sólo con ?dev), pero también tiene sus reglas: buscar por
+// número o nombre, dar o quitar un Pokémon y pintar la línea entera.
+
+console.log('\n=== barra de dev (G.DevUI) ===');
+
+global.location = { search: '?dev' };
+global.setInterval = () => 0;                      // que no deje el proceso vivo
+G.DB.grant = d => { G.DB.save.owned[d] = { at: 1, from: 'dev' }; };
+G.DB.commit = () => true;
+G.DB.save = { owned: {}, shiny: {}, partner: 0, partnerShiny: false };
+G.Game = { state: 'playing', player: { dex: 4, level: 1 } };  // jugando con Charmander
+let subidas = 0;                                   // veces que se ha mandado subir de nivel
+G.Game.debugLevelUp = () => { subidas++; G.Game.player.level++; };
+load('js/ui/dev-ui.js');                           // G.DevUI
+
+t('busca un Pokémon por número o por nombre', () => {
+  const D = G.DevUI;
+  eq(D.find('4'), 4, 'por número');
+  eq(D.find('006'), 6, 'con ceros delante');
+  eq(D.find('charmander'), 4, 'por nombre entero');
+  eq(D.find('char'), 4, 'por el principio del nombre');
+  eq(D.find('meleon'), 5, 'también si está dentro');
+  eq(D.find('  pika '), 25, 'y quitando espacios de los lados');
+  eq(D.find(''), 0, 'sin escribir nada, nada');
+  eq(D.find('zzz'), 0, 'lo que no existe, nada');
+  eq(D.find('99999'), 0, 'un número que no es de nadie, nada');
+});
+
+t('dar y quitar un Pokémon (el shiny se va con él)', () => {
+  const D = G.DevUI;
+  eq(D.owns(4), false, 'de salida no lo tienes');
+  is(D.toggle(4), 'se da');
+  eq(D.owns(4), true, 'ahora sí');
+  eq(G.DB.save.owned[4].from, 'dev', 'y queda claro que fue la herramienta de dev');
+  G.DB.save.shiny[4] = { at: 2, from: 'wild' };
+  is(D.toggle(4), 'se quita');
+  eq(D.owns(4), false, 'ya no');
+  eq(G.DB.save.shiny[4], undefined, 'y el shiny no se queda huérfano');
+  eq(D.toggle(99999), false, 'un dex que no existe no se toca');
+});
+
+t('pinta la línea entera y el estado de cada etapa', () => {
+  const D = G.DevUI;
+  D.toggle(4);                                     // Charmander sí, el resto no
+  dom['dev-q'].value = '4';
+  D.paint();
+  const chips = dom['dev-line'].children;
+  eq(chips.length, 3, 'la línea de Charmander son tres');
+  eq(chips[0].textContent, 'Charmander ✓');
+  eq(chips[1].textContent, 'Charmeleon ✗');
+  eq(chips[2].textContent, 'Charizard ✗');
+  eq(dom['dev-toggle'].textContent, 'Quitar', 'el botón dice qué hará');
+  eq(dom['dev-who'].textContent, 'Charmander');
+  chips[1].onclick();                              // dar Charmeleon desde su chip
+  eq(D.owns(5), true, 'el chip también da/quita');
+  eq(dom['dev-line'].children[1].textContent, 'Charmeleon ✓', 'y se repinta');
+});
+
+t('si lo que escribes no existe, no le toca el turno a nadie', () => {
+  const D = G.DevUI;
+  const antes = JSON.stringify(G.DB.save.owned);
+  dom['dev-q'].value = 'zzz';
+  D.paint();
+  eq(dom['dev-who'].textContent, '—', 'no hay Pokémon que mirar');
+  eq(dom['dev-line'].children.length, 0, 'ni línea que dar');
+  eq(dom['dev-toggle'].disabled, true, 'y el botón queda apagado');
+  dom['dev-toggle'].onclick();                     // por si acaso, se pulsa
+  eq(JSON.stringify(G.DB.save.owned), antes, 'no se le da ni se le quita nada a nadie');
+  eq(D.owns(5), true, 'y por medio no se ha tocado a Charmeleon');
+  dom['dev-q'].value = '';
+  D.paint();
+  eq(dom['dev-toggle'].disabled, false, 'al borrar la búsqueda vuelve a estar vivo');
+  eq(dom['dev-who'].textContent, 'Charmander', 'y se vuelve a mirar al que juegas');
+});
+
+t('el botón de subir de nivel, y que no valga fuera de la partida', () => {
+  const D = G.DevUI;
+  const antes = subidas;
+  is(D.subir(1), 'dentro de la partida sí');
+  eq(subidas - antes, 1, 'un nivel por clic');
+  is(D.subir(5), 'y de cinco en cinco');
+  eq(subidas - antes, 6, 'seis en total');
+  eq(G.Game.player.level, 7, 'el nivel ha subido con ellos');
+
+  G.Game.state = 'ui';
+  eq(D.subir(1), false, 'en el menú no vale');
+  G.Game.state = 'over';
+  eq(D.subir(1), false, 'y con la partida terminada tampoco');
+  eq(subidas - antes, 6, 'no se ha subido nada de más');
+
+  G.Game.state = 'ui';
+  dom['dev-q'].value = '';
+  D.paint();
+  eq(dom['dev-level'].disabled, true, 'el botón queda apagado en el menú');
+  eq(dom['dev-level5'].disabled, true, 'los dos');
+  G.Game.state = 'playing';
+  D.paint();
+  eq(dom['dev-level'].disabled, false, 'y encendido en cuanto juegas');
+  is(dom['dev-level'].title.includes('nivel 7'), 'y dice por qué nivel vas: ' + dom['dev-level'].title);
+});
+
+t('al arrancar, la barra mira al que juegas (no a lo último buscado)', () => {
+  dom['dev-q'].value = 'bulba';                    // el navegador recuerda lo escrito
+  G.DevUI.init();
+  eq(dom['dev-q'].value, '', 'se borra la búsqueda de la sesión anterior');
+  eq(dom['dev-who'].textContent, 'Charmander', 'y se mira al Pokémon de la partida');
 });
 
 console.log('\n' + (fail ? 'FALLOS: ' + fail + ' · ' : '') + ok + ' ok · ' + fail + ' fallos\n');

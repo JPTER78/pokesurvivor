@@ -37,6 +37,32 @@ G.Evo = (() => {
   }
 
   /**
+   * La línea evolutiva lineal a la que pertenece una forma, de la primera a la
+   * última: [4, 5, 6] para Charmander, [1, 2, 3] para Bulbasaur.
+   * null si no evoluciona, si no existe o si por el camino ramifica (Eevee).
+   * Sirve para pintar la línea entera (ajustes de dev, guías...).
+   */
+  function line(dex) {
+    if (!G.DEX_BY[dex]) return null;
+    let first = dex;
+    for (let i = 0; i < 6; i++) {                      // hacia atrás: quién evoluciona a esta
+      const padres = Object.keys(G.EVO || {}).filter(k => {
+        const l = G.EVO[k];
+        return l.length === 1 && l[0].to === first;
+      });
+      if (padres.length !== 1) break;
+      first = +padres[0];
+    }
+    const out = [first];
+    for (let i = 0; i < 6; i++) {                      // y hacia delante por las lineales
+      const n = next(out[out.length - 1]);
+      if (!n) break;
+      out.push(n.to);
+    }
+    return out.length > 1 ? out : null;
+  }
+
+  /**
    * Qué le pasa a este jugador con la evolución.
    * @param pl    jugador en curso
    * @param owns  (dex) => ¿desbloqueado? Por defecto G.DB.owns (se inyecta en
@@ -64,5 +90,5 @@ G.Evo = (() => {
     };
   }
 
-  return { next, levelFor, info, RESERVA };
+  return { next, line, levelFor, info, RESERVA };
 })();

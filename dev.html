@@ -649,5 +649,46 @@
 <script defer src="js/game.js"></script>
 <script defer src="js/main.js"></script>
 <!-- scripts:end -->
+
+<!-- dev:begin -->
+<!-- Herramientas de desarrollo: NO se publican (tools/build.js quita este bloque). -->
+<div id="dev-bar" class="dev-bar">
+  <span class="dev-tag" id="dev-tag" title="Herramientas de desarrollo (sólo con ?dev)">DEV</span>
+  <button id="dev-level" class="dev-btn">+1 nivel</button>
+  <button id="dev-level5" class="dev-btn">+5 niveles</button>
+  <span class="dev-sep"></span>
+  <input id="dev-q" type="text" placeholder="nº o nombre" autocomplete="off" spellcheck="false" aria-label="Buscar Pokémon">
+  <span class="dev-who" id="dev-who"></span>
+  <button id="dev-toggle" class="dev-btn">Tener</button>
+  <span class="dev-line" id="dev-line"></span>
+</div>
+<style>
+  /* Sólo dev: estas reglas no entran en la versión publicada. */
+  /* Arriba a la izquierda, justo debajo de la vida del jugador: abajo choca
+     con la barra de movimientos/objeto y con la ayuda de teclas. */
+  .dev-bar { position: fixed; left: 10px; top: 76px; z-index: 58;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    max-width: min(600px, calc(100% - 20px)); padding: 6px 8px; border-radius: 10px;
+    background: rgba(6,12,24,.85); border: 1px solid rgba(140,170,210,.35);
+    color: #b9cbf0; font: 600 11px 'Pixelify', system-ui, sans-serif; touch-action: manipulation; }
+  .dev-bar.cerrado > :not(.dev-tag) { display: none; }
+  .dev-tag { cursor: pointer; color: #ffd23f; font-weight: 800; letter-spacing: .5px; }
+  .dev-bar input { width: 92px; padding: 3px 6px; border-radius: 7px; font: inherit;
+    border: 1px solid rgba(140,170,210,.35); background: rgba(0,0,0,.35); color: #fff; }
+  .dev-who { color: #fff; min-width: 74px; }
+  .dev-sep { width: 1px; height: 16px; background: rgba(140,170,210,.35); }
+  .dev-btn { padding: 3px 8px; border-radius: 7px; font: inherit; cursor: pointer;
+    border: 1px solid rgba(140,170,210,.4); background: rgba(30,50,90,.7); color: #fff; }
+  .dev-btn.on { background: #2b6a3d; border-color: #5fe08a; }
+  .dev-btn.off { background: #6a2b33; border-color: #ff5f6d; }
+  .dev-btn:disabled { opacity: .45; cursor: default; }
+  .dev-line { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .dev-chip { padding: 2px 7px; border-radius: 999px; font: inherit; cursor: pointer;
+    border: 1px solid rgba(140,170,210,.4); background: rgba(10,20,40,.8); color: #cfe0ff; }
+  .dev-chip.si { border-color: #5fe08a; color: #d6ffe4; }
+  .dev-chip.no { opacity: .5; }
+</style>
+<script defer src="js/ui/dev-ui.js"></script>
+<!-- dev:end -->
 </body>
 </html>

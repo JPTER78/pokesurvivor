@@ -11,14 +11,21 @@ G.Input = (() => {
 
   function code(e) { return (e.code || e.key).toLowerCase(); }
 
+  /** Al escribir en un campo (nombre, buscador...) el juego no debe moverse. */
+  function typing(e) {
+    const t = e.target;
+    return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+  }
+
   addEventListener('keydown', e => {
+    if (typing(e)) return;
     const c = code(e);
     if (!down.has(c)) pressed.add(c);
     down.add(c);
     // Evita que el navegador haga scroll con flechas/espacio durante el juego.
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'space', 'tab'].includes(c)) e.preventDefault();
   });
-  addEventListener('keyup', e => down.delete(code(e)));
+  addEventListener('keyup', e => { if (!typing(e)) down.delete(code(e)); });
   addEventListener('blur', () => { down.clear(); });
   addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
   addEventListener('mousedown', () => mdown = true);

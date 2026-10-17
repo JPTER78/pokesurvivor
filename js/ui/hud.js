@@ -4,6 +4,60 @@
 G.HUD = (() => {
   const F = (w, s) => `${w} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`;
 
+  /**
+   * Estadísticas BASE de una forma: las de la Pokédex, tal cual. Nada de lo
+   * ganado en la run (cartas, mejoras, objetos, buffs ni multiplicadores).
+   */
+  function baseStats(mon) {
+    if (!mon) return null;
+    return { hp: mon.hp, atk: mon.atk, spd: mon.spd };
+  }
+
+  /**
+   * Caja del panel de estadísticas: esquina inferior derecha. Si ahí choca con
+   * otro cacharro del HUD (la barra de movimientos, que en móvil se puede
+   * mover), se sube justo por encima para no tapar nada.
+   * @param avoid  caja que hay que esquivar (opcional)
+   * @param safe   márgenes del móvil (G.Touch.safeArea), opcional
+   */
+  function statsBox(w, h, avoid, safe) {
+    const bw = 76, bh = 54;
+    const sr = safe ? Math.min(16, safe.right || 0) : 0;
+    const sb = safe ? Math.min(30, safe.bottom || 0) : 0;
+    let x = w - 14 - bw - sr;
+    let y = h - 14 - bh - sb;
+    if (avoid && x < avoid.x + avoid.w && avoid.x < x + bw && y < avoid.y + avoid.h && avoid.y < y + bh) {
+      y = avoid.y - bh - 8;
+    }
+    x = G.U.clamp(x, 6, Math.max(6, w - bw - 6));
+    y = G.U.clamp(y, 64, Math.max(64, h - bh - 6));
+    return { x, y, w: bw, h: bh };
+  }
+
+  /** Pinta el panel: sólo vida, ataque y velocidad base de la forma actual. */
+  function drawStats(ctx, box, mon) {
+    const s = baseStats(mon);
+    if (!s) return;
+    roundRect(ctx, box.x, box.y, box.w, box.h, 9);
+    ctx.fillStyle = 'rgba(8,14,26,.62)'; ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(140,170,210,.28)'; ctx.stroke();
+    const LBL = ['HP', 'ATK', 'SPD'];
+    const VAL = [String(Math.round(s.hp)), '×' + s.atk.toFixed(2), String(Math.round(s.spd))];
+    const COL = ['#ff8a96', '#ffb066', '#7fe0ff'];
+    for (let i = 0; i < 3; i++) {
+      const y = box.y + 16 + i * 14;
+      ctx.font = F(700, 9);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(170,190,220,.8)';
+      ctx.fillText(LBL[i], box.x + 9, y);
+      ctx.font = F(800, 11);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = COL[i];
+      ctx.fillText(VAL[i], box.x + box.w - 9, y);
+    }
+    ctx.textAlign = 'left';
+  }
+
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -363,6 +417,14 @@ G.HUD = (() => {
       }
     }
 
+    // ---------- estadísticas base de la forma que llevas ----------
+    // Abajo a la derecha, los valores de la Pokédex y nada más. Al evolucionar
+    // (o cambiar de forma) se actualiza solo: se leen del Pokémon actual.
+    {
+      const avoid = { x: sx - S - 18, y: sy - 10, w: totalW + S + 58, h: S + 18 };
+      drawStats(ctx, statsBox(w, h, avoid, touch ? G.Touch.safeArea() : null), pl.mon);
+    }
+
     // ---------- botón de pausa (táctil) ----------
     if (touch) {
       const sa = G.Touch.safeArea();
@@ -473,5 +535,5 @@ G.HUD = (() => {
     }
   }
 
-  return { draw, roundRect, bar };
+  return { draw, roundRect, bar, baseStats, statsBox };
 })();

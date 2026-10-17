@@ -12,7 +12,9 @@ G.CHANGELOG = [
     ['Para evolucionar hay que tener desbloqueada la forma siguiente (Charmeleon, para poder llegar a Charizard). Si no la tienes, te avisamos de por qué y te quedas igual. Las que en los juegos no son por nivel (piedras, amistad, intercambio...) se piden al nivel 20. Solo evolucionan las cadenas de una sola vía: las que se ramifican (Eevee y compañía) no lo hacen. No desbloquea nada en la colección.',
      'To evolve you need the next form unlocked (Charmeleon, to be able to reach Charizard). If you don’t have it, we tell you why and you stay as you were. The ones that aren’t level-based in the games (stones, friendship, trade...) ask for level 20. Only single-path lines evolve: branching ones (Eevee and friends) don’t. It doesn’t unlock anything in the collection.'],
     ['En cooperativo, los demás te ven evolucionar.',
-     'In co-op, the others see you evolve.']
+     'In co-op, the others see you evolve.'],
+    ['Durante la partida, abajo a la derecha, tienes un panel con la vida, el ataque y la velocidad BASE de la forma que llevas (los números de la Pokédex, sin contar cartas, mejoras ni objetos). Se actualiza solo al evolucionar.',
+     'During the run, at the bottom right, you have a panel with the BASE HP, attack and speed of the form you are using (the Pokédex numbers, not counting cards, upgrades or items). It updates by itself when you evolve.']
   ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',

@@ -56,6 +56,13 @@ const hash = crypto.createHash('sha1').update(min).digest('hex').slice(0, 10);
 
 let html = dev.slice(0, i) + `<script defer src="js/app.min.js?v=${hash}"></script>` + dev.slice(j + END.length);
 html = html.replace(/<meta name="robots" content="noindex">\s*/, '');
+// Herramientas de desarrollo: el bloque <!-- dev:begin --> ... <!-- dev:end -->
+// de dev.html (la barra de dev y js/ui/dev-ui.js) no se publica nunca: desde
+// ahí se pueden dar Pokémon y sería un coladero.
+html = html.replace(/<!-- dev:begin -->[\s\S]*?<!-- dev:end -->\n?/g, '');
+if (html.includes('dev:begin') || html.includes('dev-ui.js')) {
+  throw new Error('las herramientas de dev no se han quitado de dev.html: revisa las marcas dev:begin / dev:end');
+}
 // --sin-seo: sin canonical/redes/datos estructurados ni enlaces a las páginas
 // (para publicar antes de tener el dominio pokesurvivor.com).
 const SIN_SEO = process.argv.includes('--sin-seo');
