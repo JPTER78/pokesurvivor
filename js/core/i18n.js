@@ -1,4 +1,4 @@
-/* ============ i18n.js — idiomas (español / inglés) ============
+/* ============ i18n.js — idiomas (español / inglés / chino tradicional) ============
  * El juego está escrito en español. Si el idioma es inglés, todo texto que
  * se enseña se traduce con el diccionario de js/data/lang-en.js, sin tener que
  * tocar cada pantalla:
@@ -14,15 +14,19 @@
  * Lo que escriben los jugadores (apodos) va marcado con translate="no".
  *
  * Idioma: el elegido en Ajustes; si no, /en/ en la dirección o el del navegador
- * (español si el navegador está en español, inglés en cualquier otro caso).
+ * (?lang= permite abrir un idioma directamente; zh usa chino tradicional).
  */
 G.I18n = (() => {
   const KEY = 'ps.lang';
+  const languages = [['es', 'Español'], ['en', 'English'], ['zh-TW', '繁體中文']];
+  const supported = l => languages.some(([code]) => code === l);
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* nada */ }
+  const requested = new URLSearchParams(location.search).get('lang');
   const byPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : null;
   const nav = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-  const lang = saved === 'es' || saved === 'en' ? saved : byPath || (nav.startsWith('es') ? 'es' : 'en');
+  const lang = supported(requested) ? requested : supported(saved) ? saved
+    : byPath || (nav.startsWith('zh') ? 'zh-TW' : nav.startsWith('es') ? 'es' : 'en');
   document.documentElement.lang = lang;
 
   const exact = new Map(), exactLow = new Map();
@@ -32,7 +36,8 @@ G.I18n = (() => {
   const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   /** Añade traducciones { 'texto en español': 'English text' }. */
-  function add(dict) {
+  function add(dict, locale = 'en') {
+    if (locale !== lang) return;
     const fr = [];
     for (const [es, en] of Object.entries(dict)) {
       if (!en || es === en) continue;
@@ -154,10 +159,19 @@ G.I18n = (() => {
   }
 
   function set(l) {
+    if (!supported(l)) return;
     try { localStorage.setItem(KEY, l); } catch (e) { /* nada */ }
+    // An explicit URL language must not override the choice made in Settings.
+    const url = new URL(location.href);
+    url.searchParams.delete('lang');
+    if (url.href !== location.href) {
+      url.searchParams.set('lang', l);
+      location.replace(url.href);
+      return;
+    }
     location.reload();
   }
 
-  return { lang, add, t, f, set, startDom, walk };
+  return { lang, languages, add, t, f, set, startDom, walk };
 })();
 G.T = G.I18n.t;

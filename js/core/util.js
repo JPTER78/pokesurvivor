@@ -56,7 +56,10 @@ G.U = {
   TYPE_NAME: {
     normal: 'Normal', fire: 'Fuego', water: 'Agua', grass: 'Planta',
     electric: 'Eléctrico', ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno',
-    ground: 'Tierra', flying: 'Volador', psychic: 'Psíquico', bug: 'Bicho',
+    ground: 'Tierra', flying: 'Volador',
+    // Spanish shares this label with the move Psychic; Chinese uses different names.
+    get psychic() { return G.I18n?.lang === 'zh-TW' ? '超能力' : 'Psíquico'; },
+    bug: 'Bicho',
     rock: 'Roca', ghost: 'Fantasma', dragon: 'Dragón', dark: 'Siniestro',
     steel: 'Acero', fairy: 'Hada'
   }
