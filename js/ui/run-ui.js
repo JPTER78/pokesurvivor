@@ -221,16 +221,139 @@ G.RunUI = (() => {
     renderBond();
   }
 
+  // ---------------- panel "Tu partida" (pausa) ----------------
+
+  let buildTimer = 0;
+  let legendOpen = false;   // ayuda del panel (se cierra al volver a pausar)
+
+  /** Deja de refrescar el panel de la pausa. */
+  function stopBuildTimer() {
+    if (buildTimer) { clearInterval(buildTimer); buildTimer = 0; }
+  }
+
+  /** Pinta el resumen de la run: movimientos, objeto, mejoras activas y números. */
+  function renderRunBuild() {
+    const box = $('pause-build');
+    const r = G.RunSummary.build(G.Game.player, G.Game.st.time);
+    if (!r) { box.innerHTML = ''; return; }
+
+    // Valor de una mejora: porcentaje (ataque, velocidad, defensa) o vida/s.
+    const val = b => b.pct ? `+${b.pct}%${b.unit ? ' ' + b.unit : ''}` : `+${b.rate} ${b.unit}`;
+    // Lo que le queda a una mejora activa, bien dicho.
+    const left = s => s <= 1 ? 'queda 1 s' : `quedan ${s} s`;
+
+    const moveHtml = m => {
+      const name = `${G.Icons.html('move:' + m.id, 18)} <b>${m.name}</b> <em>Nv.${m.lvl}</em>`;
+      // Todo en una sola línea que envuelve sola: los movimientos cortos ocupan
+      // una línea y los que tienen muchos números pasan a dos.
+      const d = [];
+      if (m.buff) {
+        d.push(`Efecto <b>${val(m.buff)}</b>`);
+        // Cuánto se puede acumular: si no, no se entiende que en la lista de
+        // mejoras activas salga un número mayor (4 × 1.6 = 6.4).
+        if (m.buff.stacks > 1) d.push(`hasta ×${m.buff.stacks}`);
+        if (m.buff.dur) d.push(`<b>dura ${m.buff.dur} s</b>`);
+      } else {
+        d.push(`Daño <b>${m.dmg}</b>`);
+        if (m.hits > 1) d.push(`Golpes <b>×${m.hits}</b>`);
+        if (m.cd) d.push(`Recarga <b>${m.cd}s</b>`);
+        if (m.dps) d.push(`DPS <b>${m.dps}</b>`);
+        if (m.pierce > 1) d.push(`Perfora <b>×${m.pierce}</b>`);
+        if (m.dur) d.push(`Duración <b>${m.dur}s</b>`);
+      }
+      const tags = m.buff ? ''
+        : [m.burn && 'Quema', m.poison && 'Veneno', m.slow && 'Ralentiza', m.drain && 'Drena']
+          .filter(Boolean).map(t => `<span class="pb-tag">${t}</span>`).join('');
+      const stats = d.map(x => `<span class="pb-st">${x}</span>`).join('<span class="pb-sep">·</span>');
+      return `<div class="pb-mv"><span class="pb-mv-n">${name}</span>${stats}${tags}</div>`;
+    };
+
+    const moves = r.slots.map(s =>
+      `<div class="pb-slot${s.active ? ' on' : ''}">
+         <span class="pb-key">${s.n}</span>
+         <span class="pb-slot-body">${s.moves.map(moveHtml).join('') || '—'}</span>
+       </div>`).join('');
+
+    const item = r.item
+      ? `<div class="pb-line">${G.Icons.html(r.item.id, 24)} <b>${r.item.name}</b> <small>${r.item.desc}</small></div>`
+      : `<div class="pb-line off">${G.Icons.html('ban', 24)} <span>Sin objeto</span></div>`;
+
+    const buffs = r.buffs.map(b =>
+      `<span class="pb-buff">${G.Icons.html(b.icon, 15)} ${b.label} <em>${val(b)}</em>${b.n > 1 ? ` <span class="pb-n">×${b.n}</span>` : ''}${b.t > 0 ? ` <span class="pb-time">${G.Icons.html('clock', 12)} ${left(Math.ceil(b.t))}</span>` : ''}</span>`).join('');
+
+    // Poder de altar: como las mejoras, es temporal, así que va con ellas.
+    // Sólo lleva reloj si le queda tiempo (como las mejoras activas).
+    const power = r.power
+      ? `<span class="pb-buff pw">${G.Icons.html(r.power.icon, 15)} <b>${r.power.name}</b> <em>${r.power.desc}</em>${r.power.t > 0 ? ` <span class="pb-time">${G.Icons.html('clock', 12)} ${left(Math.ceil(r.power.t))}</span>` : ''}</span>`
+      : '';
+
+    // Cartas de nivel cogidas: lo que has ido eligiendo (Potencia, Vigor...).
+    const upgrades = r.upgrades.map(u =>
+      `<span class="pb-upg">${G.Icons.html(u.icon, 14)} ${u.name} <b>×${u.n}</b> <em>${u.effect}</em></span>`).join('');
+
+    const tickets = r.stats.t1 || r.stats.t10
+      ? `<div style="grid-column:1/-1"><span>Tickets</span><b>${G.Icons.html('ticket', 20)} +${r.stats.t1}${r.stats.t10 ? ' · ' + G.Icons.html('ticket10', 20) + ' +' + r.stats.t10 : ''}</b></div>`
+      : '';
+
+    const atkPct = `${r.stats.atkPct > 0 ? '+' : ''}${r.stats.atkPct}% de daño`;
+
+    box.innerHTML =
+      `<h3 class="pb-h">Tu partida</h3>
+       <div class="pb-head">
+         <span class="pb-sprite"></span>
+         <span class="pb-title"><b>${r.name}</b> <span class="pb-lv">Nv.${r.level}</span>${r.bonds ? ` <span class="pb-bond">${G.Icons.html('bond', 14)} ${r.bonds}</span>` : ''}
+           <span class="pb-hp"><i style="width:${Math.round(r.hpFrac * 100)}%"></i></span></span>
+       </div>
+       <div class="pb-moves">${moves}</div>
+       ${item}
+       ${buffs || power ? `<div class="pb-buffs">${buffs}${power}</div>` : ''}
+       ${upgrades ? `<div class="pb-upgs"><span class="pb-sub">Mejoras de la run</span>${upgrades}</div>` : ''}
+       <div class="stats pb-stats">
+         <div class="pb-atk"><span>Ataque</span><b>×${r.stats.atk}</b> <small>${atkPct}</small></div>
+         <div><span>Crítico</span><b>${r.stats.crit}%</b></div>
+         <div><span>Tiempo</span><b>${G.U.mmss(r.stats.time)}</b></div>
+         <div><span>Derrotados</span><b>${r.stats.kills}</b></div>
+         <div><span>Jefes</span><b>${r.stats.bosses}</b></div>
+         <div><span>Daño total</span><b>${r.stats.damage}</b></div>
+         <div><span>Pokémonedas</span><b class="gold">${r.stats.coins}</b></div>
+         ${tickets}
+       </div>
+       <button type="button" class="pb-help" aria-expanded="${legendOpen ? 'true' : 'false'}">${legendOpen ? 'Ocultar la ayuda' : '¿Qué es cada número?'}</button>
+       <div class="pb-legend${legendOpen ? '' : ' hidden'}">
+         <p>Daño: lo que quita cada golpe. Ya lleva tu ataque y el nivel del movimiento; no cuenta el tipo del enemigo.</p>
+         <p>Golpes: cuántas balas u orbes lanza de una vez. Recarga: segundos entre un lanzamiento y el siguiente.</p>
+         <p>DPS: daño por segundo aproximado (daño × golpes ÷ recarga).</p>
+         <p>Las mejoras activas (Ataque, Defensa...) se van acumulando mientras su movimiento siga lanzándose; el ×N son las veces que se han acumulado y el reloj, el tiempo que les queda.</p>
+         <p>Mejoras de la run: las cartas de nivel que has ido eligiendo (Potencia, Vigor, Reflejos...). El ×N es cuántas veces has cogido cada una y el +X lo que te da en total; valen para toda la partida.</p>
+       </div>`;
+
+    const help = box.querySelector('.pb-help');
+    if (help) help.onclick = () => { legendOpen = !legendOpen; renderRunBuild(); };
+
+    const sp = box.querySelector('.pb-sprite');
+    if (sp) sp.appendChild(G.UI.spriteCanvas(r.dex, 52, 46, { shiny: r.shiny, scale: 2 }));
+  }
+
   function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
+    legendOpen = false;
+    renderRunBuild();
+    // En solitario la pausa congela el juego, así que no hace falta refrescar.
+    // En grupo el juego sigue: el panel se pone al día cada segundo y, si la
+    // pantalla se cierra por cualquier vía, el propio tic se detiene.
+    stopBuildTimer();
+    if (coop) buildTimer = setInterval(() => {
+      if (!G.UI.isOpen('scr-pause')) { stopBuildTimer(); return; }
+      renderRunBuild();
+    }, 1000);
     G.UI.show('scr-pause');
   }
 
   function wirePause(onResume, onQuit) {
-    $('btn-resume').onclick = onResume;
-    $('btn-quit').onclick = onQuit;
+    $('btn-resume').onclick = () => { stopBuildTimer(); onResume(); };
+    $('btn-quit').onclick = () => { stopBuildTimer(); onQuit(); };
   }
 
   return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
