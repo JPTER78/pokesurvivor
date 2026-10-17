@@ -81,6 +81,7 @@ G.DB = (() => {
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+      pused: {},              // dex -> nº de partidas jugadas con él (orden "más usados")
       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
       pity: {},               // generación del banner -> tiradas sin ★5
       legends: {},            // dex -> fecha: legendarios vencidos en grietas
@@ -136,7 +137,7 @@ G.DB = (() => {
         }
       }
     } else delete s.led;
-    if (G.DEX_BY) for (const coll of ['owned', 'shiny']) {
+    if (G.DEX_BY) for (const coll of ['owned', 'shiny', 'pused']) {
       for (const d of Object.keys(s[coll] || {})) if (!G.DEX_BY[d]) delete s[coll][d];
     }
     // Atajos: 4 huecos con un movimiento que exista (o null), sin repetir.
@@ -258,6 +259,9 @@ G.DB = (() => {
       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
+    // Cuántas veces se ha jugado con cada Pokémon: se queda el mayor de los dos.
+    r.pused = r.pused || {};
+    for (const k in older.pused || {}) r.pused[k] = Math.max(r.pused[k] || 0, older.pused[k] || 0);
     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
       r[coll] = r[coll] || {};

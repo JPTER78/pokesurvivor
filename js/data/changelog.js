@@ -6,6 +6,12 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Filtros en la colección', 'Collection filters'], new: [
+    ['La pantalla Pokémon estrena buscador por nombre y orden por número, nombre, rareza, recién conseguidos o más usados. Además, los filtros ahora se combinan: puedes cruzar generación, tipo, rareza, tengo/me faltan, shiny y favoritos a la vez, con un contador de resultados y un botón para limpiarlos.',
+     'The Pokémon screen now has a search by name and sorting by number, name, rarity, recently obtained or most used. On top of that, filters now combine: you can cross generation, type, rarity, owned/missing, shiny and favourites at once, with a result counter and a button to clear them.'],
+    ['Marca tus Pokémon favoritos con la estrella (en su ficha) y fíltralos cuando quieras. Se guardan en este aparato.',
+     'Star your favourite Pokémon (on their card) and filter by them anytime. They are saved on this device.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
