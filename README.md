@@ -23,6 +23,22 @@ HTML + CSS + JavaScript vanilla sobre Canvas 2D. Sin build, sin dependencias y
 
 ## Jugar
 
+Para desarrollo local, desde la raíz del repositorio:
+
+```sh
+python -m http.server 8000 --bind 127.0.0.1
+```
+
+Abre `http://127.0.0.1:8000/dev.html` (fuentes sin empaquetar).
+Para probar en chino tradicional (繁體中文): `http://127.0.0.1:8000/dev.html?lang=zh-TW`.
+El idioma también se cambia en Ajustes → Gráficos → Idioma. Se admiten español,
+inglés y chino tradicional; los navegadores en chino usan chino tradicional
+si no hay una preferencia guardada. `?lang=` tiene prioridad sobre esa preferencia.
+Las páginas de la guía y las noticias antiguas conservan sus idiomas originales.
+
+Tras editar, `node tools/build.js` regenera la entrada principal `index.html` y
+su paquete. La comprobación de traducciones se ejecuta con `node tools/test_i18n.js`.
+
 Doble clic en `index.html`. Crea una cuenta o entra como invitado, haz el test
 de personalidad y a la mazmorra.
 

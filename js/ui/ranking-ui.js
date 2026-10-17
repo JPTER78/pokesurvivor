@@ -100,6 +100,14 @@ G.RankingUI = (() => {
       : me ? (en ? `<span translate="no">Your best ${where} rank ${pn}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
                  : `Tu mejor puesto ${pn} ${where}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}`)
       : (en ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>` : `Aún no tienes marca ${pn} ${where}.`);
+    if (G.I18n.lang === 'zh-TW' && G.Social.me) {
+      const periodName = { d: '今日', w: '本週', m: '本月', y: '今年', a: '歷史' }[period];
+      const modeName = mode === 's' ? '單人' : '團隊';
+      const label = periodName + modeName + (dex ? '（' + mon + '）' : '');
+      $('rk-me').innerHTML = me && me.out ? `${label}尚未進入前 50 名，確切名次請查看歷史排行。`
+        : me ? `${label}最佳名次：<b class="gold">#${me.pos}</b> · ${fmt(me.t)}`
+        : `尚無${label}紀錄。`;
+    }
   }
 
   function rowEl(r, pos, mine, b, done) {
