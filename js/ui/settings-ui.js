@@ -100,6 +100,16 @@ G.SettingsUI = (() => {
              <div><kbd>Q</kbd> / <kbd>E</kbd></div><span>ataque anterior / siguiente</span>
              <div><kbd>Esc</kbd> o <kbd>P</kbd></div><span>pausa</span>
              <div><kbd>1</kbd>–<kbd>3</kbd></div><span>elegir carta al subir de nivel</span>
+           </div>`
+        + section('Con mando')
+        + `<p class="sub">Conecta un mando de Xbox, PlayStation o compatible (por cable o Bluetooth) y pulsa cualquier botón.</p>`
+        + `<div class="keys">
+             <div><kbd>Stick</kbd> / <kbd>Cruceta</kbd></div><span>moverse (en los menús, elegir)</span>
+             <div><kbd>A</kbd> <kbd>B</kbd> <kbd>X</kbd> <kbd>Y</kbd></div><span>ataque 1 a 4</span>
+             <div><kbd>LB</kbd> / <kbd>RB</kbd></div><span>ataque anterior / siguiente</span>
+             <div><kbd>Start</kbd></div><span>pausa</span>
+             <div>En los menús: <kbd>A</kbd> / <kbd>B</kbd></div><span>aceptar / volver</span>
+             <div>Al subir de nivel: <kbd>Y</kbd></div><span>cambiar las cartas</span>
            </div>`;
     } else if (tab === 'acc') {
       renderAccount(box);

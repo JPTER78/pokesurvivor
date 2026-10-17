@@ -595,6 +595,10 @@ G.Game = (() => {
     if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
     frameDt = state === 'playing' ? dt : 0;
 
+    // Mando: en partida se traduce a teclas; con cualquier ventana abierta, navega por ella.
+    G.Input.poll();
+    G.PadNav.update(real, (state !== 'playing' && state !== 'held') || G.SettingsUI.isOpen
+      || ['scr-pause', 'scr-bond', 'scr-item'].some(G.UI.isOpen));
     handleKeys();
 
     if (state === 'playing') update(dt);
