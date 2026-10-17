@@ -400,6 +400,56 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .stats > div > span:first-child { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .stats b { font-size: 22px; }
 
+/* Panel "Tu partida" de la pausa (ver ui/run-summary.js y ui/run-ui.js) */
+.pause-build { text-align: left; margin: 0 0 8px; }
+.pause-build:empty { display: none; }
+.pb-h { margin: 0 0 6px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.pb-head { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+.pb-sprite { display: block; width: 52px; height: 46px; flex: 0 0 auto; }
+.pb-sprite canvas { display: block; }
+.pb-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 19px; }
+.pb-title .pb-lv { color: var(--muted); font-size: 14px; }
+.pb-bond { display: inline-flex; align-items: center; gap: 3px; color: var(--gold); font-size: 14px; }
+.pb-hp { flex-basis: 100%; height: 8px; border-radius: 5px; background: rgba(0,0,0,.45); overflow: hidden; }
+.pb-hp i { display: block; height: 100%; background: linear-gradient(90deg, #64e06a, #a4f06a); }
+.pb-moves { display: grid; gap: 3px; margin-bottom: 6px; }
+.pb-slot { display: flex; align-items: flex-start; gap: 7px; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,.22); font-size: 15px; }
+.pb-slot.on { background: rgba(255,210,63,.16); box-shadow: inset 0 0 0 2px rgba(255,210,63,.45); }
+.pb-slot-body { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.pb-key { flex: 0 0 auto; width: 20px; height: 20px; line-height: 18px; text-align: center; font-size: 12px; border: 2px solid rgba(244,248,255,.3); border-radius: 5px; }
+.pb-mv { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.pb-mv-n { display: inline-flex; align-items: center; gap: 4px; }
+.pb-st { color: var(--muted); font-size: 12.5px; }
+.pb-st b { color: #f4f8ff; font-size: 12.5px; }
+.pb-sep { color: var(--muted); opacity: .55; font-size: 12.5px; }
+.pb-tag { font-size: 11.5px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.12); }
+.pb-mv em, .pb-buff em { color: var(--muted); font-style: normal; font-size: 13px; }
+.pb-line { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(0,0,0,.22); font-size: 14px; margin-bottom: 6px; }
+.pb-line small { color: var(--muted); font-size: 13px; }
+.pb-line.off { color: var(--muted); }
+.pb-buffs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
+.pb-buff { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; background: rgba(79,180,255,.16); font-size: 13px; }
+.pb-buff.pw { background: rgba(255,138,216,.18); }
+.pb-n { color: var(--muted); font-size: 12px; }
+.pb-upgs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.pb-upg { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 20px; background: rgba(255,210,63,.15); font-size: 12.5px; }
+.pb-upg b { color: var(--gold); }
+.pb-upg em { color: var(--muted); font-style: normal; font-size: 12px; }
+.pb-sub { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.pb-stats { grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.pb-stats > div { padding: 5px 9px; }
+.pb-stats > div > span:first-child { font-size: 11px; }
+.pb-stats b { font-size: 16px; }
+.pb-atk { grid-column: span 2; }
+.pb-atk small { color: var(--muted); font-size: 11px; }
+.pb-time { display: inline-flex; align-items: center; gap: 2px; color: var(--muted); font-size: 12px; }
+.pb-help { margin: 0 0 8px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.pb-legend { margin: 0 0 10px; }
+.pb-legend p { margin: 0 0 5px; color: var(--muted); font-size: 12px; line-height: 1.35; }
+/* Con la caja a ancho completo (460px) caben cuatro columnas y el panel se
+   queda corto de alto; en móvil se mantienen tres. */
+@media (min-width: 520px) { .pb-stats { grid-template-columns: repeat(4, 1fr); } }
+
 kbd {
   display: inline-block; padding: 0 6px; border: 2px solid rgba(244,248,255,.4); border-bottom-width: 3px;
   border-radius: 5px; font: inherit; font-size: 13px; text-shadow: none;
