@@ -34,6 +34,13 @@ G.Game = (() => {
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
+    // Recargar o cerrar la pestaña en plena partida la pierde entera: el navegador
+    // pregunta antes (#61). Las actualizaciones nunca recargan en partida (updater.js).
+    addEventListener('beforeunload', e => {
+      if (state === 'ui' || state === 'over') return;
+      e.preventDefault();
+      e.returnValue = '';           // navegadores antiguos
+    });
     G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
     Backdrop.init();
     last = performance.now();
