@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-18', title: ['Listos para jugar en grupo', 'Ready check in co-op'], new: [
+    ['Cooperativo: en la sala, cada invitado pulsa «¡Estoy listo!» y el anfitrión no puede empezar hasta que lo estén todos. Si te vas al menú (gacha, mejoras...) dejas de estar listo, así nadie entra en la partida sin darse cuenta.',
+     'Co-op: in the room, each guest presses "I\'m ready!" and the host can\'t start until everyone is. If you go to the menu (gacha, upgrades...) you are no longer ready, so nobody gets dropped into a game by surprise.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
