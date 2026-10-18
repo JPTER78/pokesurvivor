@@ -73,6 +73,7 @@ G.Player = class Player {
     this.sashT = -999;         // última vez que salvó la Banda Focus
     this.bellHeal = 0;         // curación pendiente del Cascabel Concha
     this.statsTaken = {};      // mejoras de stat cogidas (condición de evolución)
+    this.typeBonus = {};       // tipo -> multiplicador de daño (habilidad pasiva de evolución)
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -267,6 +268,36 @@ G.Player = class Player {
   }
 
   addMaxHp(amount) { this.maxHp += amount; this.hp += amount; }
+
+  // ---------------- evolución ----------------
+  /**
+   * Cambia la especie del Pokémon a la forma evolucionada.
+   * Se actualizan stats base, sprite, tipos y tamaño. Las mejoras de la run
+   * (atkMul, spdMul, buffs, movimientos) se conservan.
+   * @param newMon  entrada de G.DEX de la forma evolucionada
+   * @param bonus   { type, dmg, regen, spd } habilidad pasiva única (opcional)
+   */
+  evolve(newMon, bonus) {
+    const oldMon = this.mon;
+    this.mon = newMon;
+    this.dex = newMon.dex;
+    // Stats base de la nueva forma.
+    this.baseAtk = newMon.atk;
+    this.baseSpd = newMon.spd;
+    // La vida máxima cambia según la nueva base; la vida actual se escala igual.
+    this.addMaxHp(newMon.hp - oldMon.hp);
+    // Sprite y tamaño nuevos.
+    this.anim = new G.Sprites.Animator(newMon.dex, 1, this.shiny);
+    this.r = G.Sprites.bodyRadius(newMon.dex);
+    this.bodyH = G.Sprites.bodyHeight(newMon.dex);
+    G.Sprites.preload([newMon.dex]);
+    // Habilidad pasiva única de esta evolución.
+    if (bonus) {
+      if (bonus.type) this.typeBonus[bonus.type] = (this.typeBonus[bonus.type] || 1) * (1 + (bonus.dmg || 0));
+      if (bonus.regen) this.regenFlat += bonus.regen;
+      if (bonus.spd) this.spdMul *= 1 + bonus.spd;
+    }
+  }
 
   /** Devuelve cuántos niveles ha subido (pueden ser varios de golpe). */
   gainXp(amount) {
