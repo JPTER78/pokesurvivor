@@ -296,7 +296,7 @@ G.Social = (() => {
 
   function memberInfo() {
     const s = G.DB.save;
-    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts() };
+    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts(), ready: false };
   }
 
   /**
@@ -406,6 +406,11 @@ G.Social = (() => {
   function refreshMember() {
     if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update(
       { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner) }).catch(() => {});
+  }
+
+  /** Invitado: listo o no para empezar (el anfitrión no empieza hasta que lo estén todos). */
+  function setReady(on) {
+    if (room && !room.isHost && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update({ ready: !!on }).catch(() => {});
   }
 
   // ---------------- invitaciones ----------------
@@ -521,7 +526,7 @@ G.Social = (() => {
 
   return {
     start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, setReady, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

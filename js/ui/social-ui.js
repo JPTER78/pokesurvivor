@@ -150,7 +150,9 @@
         G.Net.close();
         G.MenuUI.open();
       };
-      $('lobby-menu').onclick = () => G.MenuUI.open();
+      // Quien se va al menú (gacha, mejoras...) deja de estar listo.
+      $('lobby-menu').onclick = () => { G.Social.setReady(false); G.MenuUI.open(); };
+      $('lobby-ready').onclick = () => G.Social.setReady(!(me() || {}).ready);
       $('lobby-start').onclick = start;
       $('lobby-start').dataset.sfx = 'confirm';
       // Conecta / desconecta la red al entrar o salir de una sala.
@@ -172,19 +174,27 @@
     function open() {
       if (!G.Social.room) { G.MenuUI.open(); return; }
       G.Social.refreshMember();
+      G.Social.setReady(false);       // al entrar (o volver de una partida) se empieza sin estar listo
       G.Social.refreshPresence();
       G.UI.show('scr-lobby', true);
       membersKey = '';
       render();
     }
 
-    function close() { G.UI.hide('scr-lobby'); }
+    // Empieza la partida: tras ella, cada uno vuelve a marcarse listo.
+    function close() { G.UI.hide('scr-lobby'); G.Social.setReady(false); }
 
+    function me() { const r = G.Social.room; return r && r.members.find(m => m.uid === G.Social.uid); }
+
+    /** Lo que sale bajo cada jugador; `ok` = conectado y listo (verde). */
     function connText(m, room) {
-      if (m.uid === room.host) return 'Anfitrión';
-      if (!room.isHost) return m.uid === G.Social.uid ? 'Tú' : 'En la sala';
-      const mode = G.Net.mode(m.uid);
-      return mode === 'direct' ? 'Conectado' : mode === 'relay' ? 'Conectado (por servidor)' : mode === 'failed' ? 'No se pudo conectar (reintentando…)' : 'Conectando…';
+      if (m.uid === room.host) return { t: 'Anfitrión', ok: true };
+      if (room.isHost) {
+        const mode = G.Net.mode(m.uid);
+        if (mode === 'failed') return { t: 'No se pudo conectar (reintentando…)', ok: false };
+        if (mode !== 'direct' && mode !== 'relay') return { t: 'Conectando…', ok: false };
+      }
+      return m.ready ? { t: '¡Listo!', ok: true } : { t: 'No está listo', ok: false };
     }
 
     function render() {
@@ -216,9 +226,9 @@
       box.querySelectorAll('.conn').forEach(el => {
         const m = ms.find(x => x.uid === el.dataset.u);
         if (!m) return;
-        const t = connText(m, room);
-        el.textContent = t;
-        el.className = 'conn' + (t === 'Conectando…' ? ' wait' : '');
+        const c = connText(m, room);
+        el.textContent = c.t;
+        el.className = 'conn' + (c.ok ? '' : ' wait');
       });
 
       // Invitar (sólo el anfitrión y si queda sitio).
@@ -242,21 +252,34 @@
         }
       }
 
+      const ready = !!(me() || {}).ready;
+      const rbtn = $('lobby-ready');
+      rbtn.classList.toggle('hidden', room.isHost);
+      rbtn.classList.toggle('gold', !ready);
+      rbtn.classList.toggle('ghost', ready);
+      rbtn.textContent = ready ? 'Ya no estoy listo' : '¡Estoy listo!';
+
       const btn = $('lobby-start');
       btn.classList.toggle('hidden', !room.isHost);
-      const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
-      const failed = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'failed');
-      btn.disabled = !room.isHost || ms.length < 2 || connecting || failed;
+      const guests = ms.filter(m => m.uid !== room.host);
+      const connecting = guests.some(m => G.Net.mode(m.uid) === 'connecting');
+      const failed = guests.some(m => G.Net.mode(m.uid) === 'failed');
+      const nReady = guests.filter(m => m.ready).length;
+      btn.disabled = !room.isHost || ms.length < 2 || connecting || failed || nReady < guests.length;
       btn.textContent = 'Empezar partida (' + ms.length + '/' + G.Social.MAX_PLAYERS + ')';
-      $('lobby-note').textContent = !room.isHost ? 'Cuando el anfitrión empiece, entraréis todos a la vez.'
+      $('lobby-note').textContent = !room.isHost
+        ? (ready ? 'Cuando el anfitrión empiece, entraréis todos a la vez.' : 'Pulsa «¡Estoy listo!» cuando quieras empezar.')
         : ms.length < 2 ? 'Necesitas al menos un amigo en la sala.'
         : failed ? 'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.'
-        : connecting ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.';
+        : connecting ? 'Conectando con tus amigos…'
+        : nReady < guests.length ? 'Esperando a que estén todos listos (' + nReady + '/' + guests.length + ').'
+        : 'La partida empieza para todos a la vez.';
     }
 
     function start() {
       const room = G.Social.room;
       if (!room || !room.isHost || room.members.length < 2) return;
+      if (room.members.some(m => m.uid !== room.host && !m.ready)) return;
       const cfg = {
         k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host,
         members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny }))
