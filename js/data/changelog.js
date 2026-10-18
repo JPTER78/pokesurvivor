@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-18', title: ['Aviso antes de cerrar', 'Warning before closing'], new: [
+    ['En el ordenador, si recargas (F5) o cierras la pestaña en plena partida, el navegador te pregunta antes: ya no se pierde una run por pulsar una tecla sin querer.',
+     'On desktop, if you reload (F5) or close the tab mid-run, the browser asks you first: no more losing a run to an accidental key press.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']
