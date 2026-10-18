@@ -3,6 +3,21 @@ G.RunUI = (() => {
   const $ = G.UI.$;
   let offers = null, offerCb = null, coopMode = false;
 
+  /*
+   * Al abrirse unas cartas (nivel, vínculo, objeto) no se pueden elegir durante
+   * un momento: en pleno combate se pulsan 1-4 para cambiar de movimiento y esa
+   * misma tecla (o un toque) elegía una carta sin querer (#50, #165).
+   */
+  const ARM_MS = 600;
+  let armedAt = 0, armTimer = 0;
+  function arm(box) {
+    armedAt = performance.now();
+    box.classList.add('arming');
+    clearTimeout(armTimer);
+    armTimer = setTimeout(() => box.classList.remove('arming'), ARM_MS);
+  }
+  const armed = () => performance.now() - armedAt >= ARM_MS;
+
   /** @param coop  en grupo: tras elegir, se queda esperando a los demás */
   function showLevelUp(level, list, cb, coop = false) {
     offerCb = cb; coopMode = coop;
@@ -13,6 +28,7 @@ G.RunUI = (() => {
     renderCards(list);
     $('lvl-reroll').onclick = reroll;
     G.UI.show('scr-levelup');
+    arm($('cards'));
   }
 
   /**
@@ -60,7 +76,7 @@ G.RunUI = (() => {
   }
 
   function pick(i) {
-    if (!offers || !offers[i]) return;
+    if (!offers || !offers[i] || !armed()) return;
     const c = offers[i], cb = offerCb;
     offers = null; offerCb = null;
     $('lvl-reroll').classList.add('hidden');
@@ -151,10 +167,11 @@ G.RunUI = (() => {
       el.innerHTML = `<div class="ico">${G.Icons.html(id, 36)}</div>
         <div class="txt"><div class="nm">${verb} ${it.name}</div><div class="ds">${it.desc}</div></div>
         <div class="key">${i + 1}</div>`;
-      el.onclick = () => { G.UI.hide('scr-item'); cb(id); };
+      el.onclick = () => { if (!armed()) return; G.UI.hide('scr-item'); cb(id); };
       box.appendChild(el);
     });
     G.UI.show('scr-item');
+    arm(box);
   }
 
   // ---------------- vínculo: qué movimientos se fusionan ----------------
@@ -170,6 +187,7 @@ G.RunUI = (() => {
     $('bond-back').onclick = bondBack;
     renderBond();
     G.UI.show('scr-bond');
+    arm($('bond-cards'));
   }
 
   function renderBond() {
@@ -200,7 +218,7 @@ G.RunUI = (() => {
   }
 
   function pickBond(i) {
-    if (!bond || !bond.list[i]) return;
+    if (!bond || !bond.list[i] || !armed()) return;
     const m = bond.list[i];
     if (bond.opt.mode === 'pair' && !bond.first) {
       bond.first = m;

@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-18', title: ['Cartas sin elegir sin querer', 'No more accidental card picks'], fix: [
+    ['Las cartas de nivel, de vínculo y de objeto no se pueden elegir durante 0,6 s al aparecer (se ven apagadas): pulsar 1-4 para cambiar de movimiento en pleno combate ya no elige una carta sin querer.',
+     'Level-up, bond and item cards can\'t be picked for 0.6 s after they appear (they look dimmed): pressing 1-4 to switch moves mid-fight no longer picks a card by accident.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']

@@ -385,7 +385,7 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .card {
   display: flex; align-items: center; gap: 14px; text-align: left; cursor: pointer;
   background: rgba(0,0,0,.2); border: 2px solid rgba(244,248,255,.3); border-radius: 12px;
-  padding: 12px 14px; transition: transform .08s, background .12s, border-color .12s;
+  padding: 12px 14px; transition: transform .08s, background .12s, border-color .12s, opacity .2s;
 }
 .card:hover { background: rgba(255,255,255,.1); border-color: var(--edge); transform: translateX(4px); }
 .card .ico { flex: 0 0 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; font-size: 24px; }
@@ -550,6 +550,8 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .rk-me { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(0,0,0,.25); font-size: 15px; min-height: 20px; }
 
 .cards.done .card { pointer-events: none; opacity: .45; }
+/* Recién abiertas: aún no se pueden elegir (ver arm() en run-ui.js). */
+.cards.arming .card { pointer-events: none; opacity: .5; }
 .cards.done .card.picked { opacity: 1; border-color: var(--gold); }
 #lvl-wait { color: var(--gold); font-size: 15px; }
 
