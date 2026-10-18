@@ -14,6 +14,9 @@ G.CHANGELOG = [
      'Your game is saved to the cloud automatically every 10 minutes.'],
     ['Ranking histórico: si estás por debajo del puesto 1.000, sale «#1000+» en vez del número exacto.',
      'All-time leaderboard: if you are below rank 1,000, it shows “#1000+” instead of the exact number.']
+  ], fix: [
+    ['Ranking y perfiles: el nivel, los derrotados y las demás marcas de otros jugadores se muestran siempre como números.',
+     'Leaderboard and profiles: other players’ level, defeated count and other records always show as numbers.']
   ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',

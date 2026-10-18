@@ -66,6 +66,15 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.uid == me();
     }
 
+    // Mejores marcas del perfil (las de profileData()): sólo números, se pintan como HTML.
+    function validBest(b) {
+      return b is map
+        && b.keys().hasOnly(['solo', 'group', 'level', 'bosses', 'legends', 'kills', 'medals'])
+        && b.get('solo', 0) is int && b.get('group', 0) is int && b.get('level', 0) is int
+        && b.get('bosses', 0) is int && b.get('legends', 0) is int && b.get('kills', 0) is int
+        && b.get('medals', 0) is int;
+    }
+
     // Perfil público: apodo, 3 favoritos, título, mejores marcas y medallas.
     match /profiles/{uid} {
       allow read: if signedIn();
@@ -77,7 +86,7 @@ service cloud.firestore {
         && request.resource.data.at == request.time
         && (!('favs' in request.resource.data) || (request.resource.data.favs is list && request.resource.data.favs.size() <= 3))
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
-        && (!('best' in request.resource.data) || request.resource.data.best is map)
+        && (!('best' in request.resource.data) || validBest(request.resource.data.best))
         && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
         && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
       allow delete: if signedIn() && me() == uid;
@@ -176,7 +185,10 @@ service cloud.firestore {
       let row = d.top[d.me];
       return me() in e.uids
         && changed.hasOnly([d.me, d.ev])
+        && row.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills'])
         && row.t == e.t && row.uids == e.uids && row.names == e.names && row.dex == e.dex
+        && row.lv == e.lv && row.kills == e.kills
+        && row.get('shiny', e.shiny) == e.shiny     // sin "shiny" si no hay ninguno
         && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t));
     }
     function removeMine(d, old, changed) {

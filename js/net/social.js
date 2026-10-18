@@ -512,6 +512,8 @@ G.Social = (() => {
     if (c && Date.now() - c.at < 10 * 60 * 1000) return c.v;     // lo leído vale 10 min
     const d = await fb.fs.collection('profiles').doc(other).get().catch(() => null);
     const v = d && d.exists ? d.data() : null;
+    // Las marcas se pintan como HTML: siempre números (como las escribe profileData()).
+    if (v) v.best = Object.fromEntries(Object.entries(v.best || {}).map(([k, n]) => [k, n | 0]));
     profCache.set(other, { at: Date.now(), v });
     return v;
   }
