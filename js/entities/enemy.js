@@ -844,7 +844,8 @@
     function key(cx, cy) { return cx * 73856093 ^ cy * 19349663; }
 
     function rebuildGrid() {
-      grid.clear();
+      if (grid.size > 250) grid.clear();
+      else for (const b of grid.values()) b.length = 0;
       for (const e of list) {
         if (e.dead) continue;
         const k = key(Math.floor(e.x / CELL), Math.floor(e.y / CELL));

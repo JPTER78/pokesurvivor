@@ -37,7 +37,7 @@ de personalidad y a la mazmorra.
 para moverte (el joystick aparece donde tocas), toca un ataque de abajo para
 cambiarlo y el botón de arriba a la derecha para pausar. Se puede instalar como
 app ("Añadir a pantalla de inicio"). En **Ajustes** hay sonido, calidad gráfica
-(con modo automático), números de daño, menos sacudidas, FPS y la cuenta.
+(con modo automático), rendimiento y batería (DPR 1× / 1,5×, límite FPS), números de daño, menos sacudidas, FPS y la cuenta.
 
 El Pokémon ataca solo con el movimiento activo (o con todos los de un
 **vínculo**: cada legendario vencido deja fusionar movimientos para lanzarlos a
@@ -93,6 +93,15 @@ jefe, la captura de un shiny salvaje y un shiny en el gacha.
   shiny), mejoras y estadísticas se quedan con el máximo, y monedas y
   compañero con la versión más reciente. Los cambios de otro ordenador llegan
   en directo.
+
+## Rendimiento y eficiencia térmica
+
+El juego incluye optimizaciones específicas para ahorrar batería y evitar sobrecalentamiento en portátiles con pantallas de alta densidad (Retina/4K) y refrigeración pasiva:
+
+- **Resolución automática adaptativa**: Detecta el tamaño y tipo de pantalla para ajustar el DPR óptimo sin saturar la GPU, con opciones en *Ajustes → Gráficos* (`Auto`, `1× Bajo consumo` o `1,5× Retina`).
+- **Límite de fotogramas (60 / 30 FPS Eco)**: Configurable en Ajustes para evitar consumos excesivos en pantallas de alta tasa de refresco (120/144 Hz).
+- **Reposo en menús y pausas**: El bucle baja a 30 FPS en menús/pausa y se pausa por completo si la pestaña pasa a segundo plano.
+- **Optimizaciones de motor**: Viñeta radial cacheada, zero-allocation en ordenación de entidades (`drawScene`), rejilla espacial reciclada y convolución de audio aligerada.
 
 ## Licencia
 
@@ -151,9 +160,7 @@ python tools/fetch_credits.py    # CREDITS.md
   elevados con su sombra debajo.
 - **Mundo.** Chunks de 16×16 tiles: los *datos* (terreno, objetos) son baratos y
   se generan siempre; la *imagen* se hornea a resolución de arte escribiendo en un
-  `ImageData` (~4 ms por chunk en Chrome) y sólo para los visibles.
-- **Rendimiento.** Rejilla espacial de enemigos reconstruida cada frame. Con 420
-  enemigos, simulación + render completo ≈ 3 ms por frame en Chrome.
+- **Rendimiento y eficiencia térmica.** Rejilla espacial de enemigos reciclada cada frame, gradiente de viñeta cacheado y ordenación de entidades sin asignaciones de memoria (`zero-allocation`). Detección automática del DPR según presupuesto térmico y tamaño de pantalla para evitar fill-rate excesivo en pantallas de alta densidad (Retina/4K).
 - **Metadatos en `.js`, no `.json`**, porque `fetch()` está bloqueado en `file://`.
 - **Shiny.** Los shiny de SpriteCollab son el mismo dibujo con otra paleta; están
   en `s/` y sólo 30 tienen geometría distinta (campo `sa` en los metadatos).

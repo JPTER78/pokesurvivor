@@ -81,6 +81,9 @@ G.SettingsUI = (() => {
              `<button class="chip ${G.I18n.lang === v ? 'on' : ''}" data-lang="${v}">${l}</button>`).join('')}</div>`
         + section('Calidad', 'Cuántos efectos y partículas se dibujan. <b>Auto</b> la baja sola si el juego va a tirones (ahora: ' + auto + ').')
         + choice('quality', [['auto', 'Auto'], ['high', 'Alta'], ['mid', 'Media'], ['low', 'Baja']])
+        + section('Resolución y Rendimiento', 'Lienzo activo: <b>' + (G.Game ? G.Game.dpr : 1) + '×</b>. <b>Auto</b> detecta pantallas grandes y portátiles para evitar calentamiento.')
+        + choice('res', [['auto', 'Auto (Recomendado)'], ['1', 'Bajo consumo (1×)'], ['native', 'Nativa Retina (1,5×)']])
+        + choice('fpsLimit', [['60', '60 FPS'], ['30', '30 FPS (Eco)'], ['max', 'Sin límite']])
         + section('Pantalla')
         + toggle('dmgNumbers', 'Números de daño', 'Los números que salen al golpear y al recibir daño.')
         + toggle('calm', 'Menos sacudidas y destellos', 'La cámara tiembla menos y los fogonazos son suaves.')

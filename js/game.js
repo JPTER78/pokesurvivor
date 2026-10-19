@@ -39,6 +39,7 @@ G.Game = (() => {
     if (window.visualViewport) visualViewport.addEventListener('resize', resizeSoon);
     if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(cv);
     G.Touch.init(cv);
+    G.Settings.on(k => { if (k === 'res') resize(); });
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
     G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
@@ -47,12 +48,46 @@ G.Game = (() => {
     requestAnimationFrame(loop);
   }
 
+  /**
+   * Detección automática del DPR según presupuesto térmico y tamaño de pantalla.
+   * Evita fill-rates masivos en pantallas Retina de alta densidad y monitores 4K:
+   * En pantallas grandes (>= 850k px lógicos), 1.0x ya ofrece nitidez nativa completa sin
+   * sobrecargar la GPU. En móviles/pantallas compactas escala hasta 1.5x manteniendo el
+   * total de píxeles por debajo del presupuesto térmico (~1.3M px).
+   */
+  function computeDpr(cw, ch) {
+    const raw = window.devicePixelRatio || 1;
+    if (raw <= 1) return 1;
+
+    const mode = G.Settings.get('res') || 'auto';
+    if (mode === 'native') return Math.min(1.5, raw);
+    if (mode === '1' || mode === 'eco') return 1;
+
+    // Modo 'auto' (Detección automática de pantalla y fill-rate):
+    const logical = (cw || innerWidth) * (ch || innerHeight);
+
+    // 1) Pantallas de escritorio o portátil de alta densidad:
+    // >= 850.000 px lógicos (p. ej. pantallas 1440x900, 1080p o superiores).
+    // Con 1.0x ya hay > 1,4M píxeles reales; 1.5x dispararía a > 3M píxeles/frame.
+    if (logical >= 850000) return 1;
+
+    // 2) Dispositivos con ratón / trackpad (no táctiles) en ventanas medianas:
+    const isTouch = matchMedia('(pointer: coarse)').matches;
+    if (!isTouch && ((cw || innerWidth) >= 960 || (ch || innerHeight) >= 600)) return 1;
+
+    // 3) Móviles / pantallas pequeñas (teléfonos en horizontal ~300k px lógicos):
+    // Se permite hasta 1.5x para mantener nítidas las fuentes, asegurando un presupuesto
+    // térmico seguro de 1.300.000 píxeles físicos totales.
+    const safePixelBudget = 1300000;
+    const budgetDpr = Math.sqrt(safePixelBudget / Math.max(1, logical));
+    const target = Math.min(raw, Math.min(1.5, Math.max(1, budgetDpr)));
+    return Math.round(target * 100) / 100;
+  }
+
   function resize() {
-    // Resolución interna como mucho ×1,5: en pantallas ×2 dibujar el doble de
-    // píxeles era de lo que más costaba, y con el pixel art no se nota.
-    const d = Math.min(1.5, window.devicePixelRatio || 1);
     const cw = cv.clientWidth, ch = cv.clientHeight;
     if (!cw || !ch) return;
+    const d = computeDpr(cw, ch);
     G.Touch.resetSafe();
     if (cw === w && ch === h && d === dpr && cv.width === Math.round(cw * d) && cv.height === Math.round(ch * d)) { checkOrientation(); return; }
     dpr = d; w = cw; h = ch;
@@ -588,9 +623,21 @@ G.Game = (() => {
   // Si falla fotograma tras fotograma (el juego ya no avanza ni se ve), la
   // partida se da por terminada a los ~3 s y se guarda: tiempo, derrotados,
   // récords y ranking. Mejor eso que una pantalla negra y perderlo todo.
-  let loopErrs = 0, errRun = 0;
+  let loopErrs = 0, errRun = 0, lastFrameTs = 0;
   function loop(ts) {
     requestAnimationFrame(loop);
+    if (document.hidden) return; // Si la pestaña está oculta, reposo total
+
+    const limit = G.Settings.get('fpsLimit') || '60';
+    const inMenu = state === 'ui' || state === 'paused';
+    // En menús/pausa limitamos a 30 FPS para que el portátil no se caliente en reposo
+    const targetFps = inMenu ? 30 : (limit === '30' ? 30 : limit === '60' ? 60 : 0);
+    if (targetFps > 0) {
+      const minInterval = 1000 / targetFps - 1.5;
+      if (ts - lastFrameTs < minInterval) return;
+    }
+    lastFrameTs = ts;
+
     try { frame(ts); errRun = 0; }
     catch (e) {
       if (loopErrs++ < 5) console.error('[Game] fallo en un fotograma:', e);
@@ -714,7 +761,15 @@ G.Game = (() => {
     }
   }
 
-  // ---------------- dibujo ----------------
+  // Reutilización de objetos en drawScene (Zero Garbage Collection)
+  const scenePool = [];
+  let scenePoolLen = 0;
+  function addSceneItem(y, prop, ent) {
+    let it = scenePool[scenePoolLen];
+    if (!it) { it = { y: 0, prop: null, ent: null }; scenePool.push(it); }
+    scenePoolLen++;
+    it.y = y; it.prop = prop; it.ent = ent;
+  }
 
   function drawScene(cam, extra) {
     const t = performance.now() / 1000;
@@ -725,18 +780,21 @@ G.Game = (() => {
     G.Pickups.draw(ctx);
 
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
-    const items = [];
+    scenePoolLen = 0;
     // Los planos (manantiales, trampas) siempre debajo de todo lo demás.
-    for (const p of G.World.visibleProps(cam)) items.push({ y: p.flat ? p.y - 4000 : p.y, prop: p });
-    for (const e of G.EnemyMgr.drawables(cam)) items.push({ y: e.y, ent: e });
-    for (const e of extra) items.push({ y: e.y, ent: e });
+    for (const p of G.World.visibleProps(cam)) addSceneItem(p.flat ? p.y - 4000 : p.y, p, null);
+    for (const e of G.EnemyMgr.drawables(cam)) addSceneItem(e.y, null, e);
+    for (const e of extra) addSceneItem(e.y, null, e);
     const rift = G.Rift.drawable();
-    if (rift) items.push({ y: rift.y, ent: rift });
+    if (rift) addSceneItem(rift.y, null, rift);
     const arceus = pl && state !== 'ui' ? G.Judgment.drawable() : null;
-    if (arceus) items.push({ y: arceus.y, ent: arceus });
-    if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
-    items.sort((a, b) => a.y - b.y);
-    for (const it of items) {
+    if (arceus) addSceneItem(arceus.y, null, arceus);
+    if (pl && state !== 'ui') for (const d of G.Events.drawables()) addSceneItem(d.y, null, d);
+
+    scenePool.length = scenePoolLen;
+    scenePool.sort((a, b) => a.y - b.y);
+    for (let i = 0; i < scenePoolLen; i++) {
+      const it = scenePool[i];
       if (it.prop) G.World.drawProp(ctx, it.prop, t);
       else it.ent.draw(ctx);
     }
@@ -922,7 +980,7 @@ G.Game = (() => {
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
     debugLevelUp() { tampered = true; pl.level++; pendingLevels++; },
     toUI() { state = 'ui'; if (cv) cv.style.cursor = ''; Backdrop.restore(); },
-    get state() { return state; }, get player() { return pl; }, st
+    get state() { return state; }, get player() { return pl; }, get dpr() { return dpr; }, st
   };
 })();
 
