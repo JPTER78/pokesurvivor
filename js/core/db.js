@@ -81,6 +81,8 @@ G.DB = (() => {
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+      dfav: {},               // dex -> fecha: favorito de la colección (negativa = quitado entonces)
+      pused: {},              // dex -> partidas jugadas con él (orden "más usados")
       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
       pity: {},               // generación del banner -> tiradas sin ★5
       legends: {},            // dex -> fecha: legendarios vencidos en grietas
@@ -136,8 +138,12 @@ G.DB = (() => {
         }
       }
     } else delete s.led;
-    if (G.DEX_BY) for (const coll of ['owned', 'shiny']) {
+    if (G.DEX_BY) for (const coll of ['owned', 'shiny', 'dfav', 'pused']) {
       for (const d of Object.keys(s[coll] || {})) if (!G.DEX_BY[d]) delete s[coll][d];
+    }
+    for (const coll of ['dfav', 'pused']) {
+      if (!isObj(s[coll])) { s[coll] = {}; continue; }
+      for (const d of Object.keys(s[coll])) if (!Number.isFinite(+s[coll][d])) delete s[coll][d];
     }
     // Atajos: 4 huecos con un movimiento que exista (o null), sin repetir.
     if (s.pbind && typeof s.pbind === 'object') {
@@ -258,6 +264,12 @@ G.DB = (() => {
       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
+    // Favoritos: gana lo último que se hizo con cada uno (poner o quitar), en
+    // cualquier aparato. Partidas con cada Pokémon: el mayor de los dos.
+    r.dfav = r.dfav || {};
+    for (const d in older.dfav || {}) if (Math.abs(+older.dfav[d] || 0) > Math.abs(+r.dfav[d] || 0)) r.dfav[d] = older.dfav[d];
+    r.pused = r.pused || {};
+    for (const d in older.pused || {}) r.pused[d] = Math.max(+r.pused[d] || 0, +older.pused[d] || 0);
     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
       r[coll] = r[coll] || {};
@@ -399,7 +411,18 @@ G.DB = (() => {
   // como mucho cada 30 min:
   // con 2 h, quien abría el juego en otro aparato (o en el navegador de otra
   // app) veía la copia vieja de la nube y creía que lo había perdido.
-  const PUSH_GAP = 2 * 3600 * 1000, PUSH_GAP_URGENT = 15 * 1000, PUSH_GAP_RUN = 30 * 60 * 1000, HIDE_GAP = 30 * 60 * 1000;
+  // Desde el 18-10-2026, lo urgente como mucho cada 30 min (era 15 s, y con el
+  // mínimo de 65 s entre subidas quien hacía tiradas o mejoras guardaba casi
+  // cada minuto). Al cerrar la pestaña se intenta subir lo pendiente, y para
+  // no depender de eso está el botón Guardar de la barra de arriba (saveNow).
+  // Desde el 19-10-2026 (para gastar aún menos), a la nube SÓLO se sube:
+  //   - cada 30 min, si hay algo sin subir (30 min después del primer cambio)
+  //   - con el botón Guardar
+  //   - al entrar, si lo de este aparato es más nuevo que lo de la nube
+  //   - al cerrar o recargar la pestaña, y antes de recargar por una actualización
+  // Nada más: ni al hacer gacha, ni al acabar una partida, ni al cambiar de
+  // pestaña. Todo se guarda al momento en este navegador igualmente.
+  const PUSH_EVERY = 30 * 60 * 1000;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
 
@@ -449,16 +472,12 @@ G.DB = (() => {
     }
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     auth.languageCode = 'es';
-    addEventListener('online', () => { if (pending) pushNow(); });
-    // Al salir de la pestaña o cerrarla se sube lo pendiente, pero no más de una
-    // vez cada 10 min: la gente cambia de pestaña a menudo y cada partida se
-    // subía cada ~9 min en vez de cada 30 (12-10-2026, el mayor gasto de
-    // Firebase). Lo que no se sube sigue en la copia de este navegador y se
-    // sube al volver a entrar.
-    const hideFlush = () => { if (pending && Date.now() - lastPush > HIDE_GAP) pushNow(); };
+    // Al volver al juego tras un rato fuera, se trae lo del otro aparato (pullSoon).
+    // (Al salir de la pestaña ya no se sube nada: ver PUSH_EVERY. Sin conexión,
+    // los reintentos de scheduleRetry lo suben al volver.)
     let hiddenAt = 0;
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); hideFlush(); }
+      if (document.visibilityState === 'hidden') hiddenAt = Date.now();
       else if (hiddenAt && Date.now() - hiddenAt > PULL_GAP) pullSoon();
     });
     // Al cerrar o recargar la página, lo pendiente se sube siempre.
@@ -598,9 +617,29 @@ G.DB = (() => {
     }).finally(() => {
       pushing = null;
       // (Si ha fallado, el reintento ya está programado con su espera creciente.)
-      if (!failed && pending && syncState === 'pending') schedulePush(Math.max(1500, PUSH_GAP - (Date.now() - lastPush)));
+      if (!failed && pending && syncState === 'pending') schedulePush(PUSH_EVERY);
     });
     return pushing;
+  }
+
+  /**
+   * Botón Guardar: sube ya lo pendiente. Si no hay nada pendiente no gasta
+   * nada, y si se acaba de subir hace menos de 65 s (MIN_GAP) se sube en
+   * cuanto se pueda. → { ok, why?: 'local'|'guest'|'done'|'wait'|'offline'|'fail', secs? }
+   */
+  async function saveNow() {
+    if (guest || !save) return { ok: false, why: 'guest' };
+    if (mode !== 'cloud') return { ok: true, why: 'local' };
+    if (!pending && !pushing && syncState === 'ok') return { ok: true, why: 'done' };
+    if (navigator.onLine === false) { pushNow(); return { ok: false, why: 'offline' }; }
+    const wait = MIN_GAP - sinceOk();
+    if (!pushing && wait > 0) { pending = true; setSync('pending'); schedulePush(wait + 500); return { ok: true, why: 'wait', secs: Math.ceil(wait / 1000) + 1 }; }
+    await pushNow();
+    if (pushing) await pushing;          // (si había otra subida en marcha, también la que va detrás)
+    if (syncState === 'ok') return { ok: true };
+    // Lo cambiado mientras subía va en la siguiente, que espera los 65 s.
+    if (syncState === 'pending' && pushT) return { ok: true, why: 'wait', secs: Math.max(1, Math.ceil((pushDue - Date.now()) / 1000)) };
+    return { ok: false, why: syncState === 'offline' ? 'offline' : 'fail' };
   }
 
   // Si ya había una subida programada antes, se respeta (una compra no espera a la siguiente partida).
@@ -720,9 +759,8 @@ G.DB = (() => {
 
   /**
    * Guarda la partida actual (no hace nada en modo invitado). En el navegador,
-   * al momento; en la nube:
-   * @param urgent  true: lo que vale algo (tiradas, compras, Pokémon, premios): enseguida
-   *                'run': al acabar una partida (como mucho cada 30 min) · false: cada 2 h
+   * al momento; en la nube, 30 min después del primer cambio sin subir (ver
+   * PUSH_EVERY). urgent ya no cambia nada (se queda por si vuelve a hacer falta).
    */
   function commit(urgent = false) {
     if (guest || !key || !save) return false;
@@ -732,8 +770,7 @@ G.DB = (() => {
     write(K_CLOUD + uid, save);
     pending = true;
     setSync('pending');
-    const gap = urgent === 'run' ? PUSH_GAP_RUN : urgent ? PUSH_GAP_URGENT : PUSH_GAP;
-    schedulePush(Math.max(1200, gap - (Date.now() - lastPush)));
+    schedulePush(PUSH_EVERY);          // si ya había una subida programada, se queda la de antes
     return true;
   }
 
@@ -829,6 +866,15 @@ G.DB = (() => {
 
   function ownsShiny(dex) { return !!(save && save.shiny && save.shiny[dex]); }
 
+  /** Favoritos de la colección. */
+  function isFav(dex) { return !!(save && save.dfav && +save.dfav[dex] > 0); }
+  function setFav(dex, on) {
+    if (!save) return;
+    save.dfav = save.dfav || {};
+    save.dfav[dex] = on ? Date.now() : -Date.now();
+    commit();
+  }
+
   /** Mejoras compradas para un Pokémon: { id -> nivel }. */
   function upgradesOf(dex) {
     if (!save) return {};
@@ -845,8 +891,8 @@ G.DB = (() => {
   }
 
   return {
-    ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
-    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
+    ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow, saveNow,
+    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, isFav, setFav,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */

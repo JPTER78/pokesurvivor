@@ -173,6 +173,9 @@ G.Icons = (() => {
     friends: { pal: { b: '#4fb4ff', d: '#2a6fb0', g: '#5fe08a', h: '#2f9a52' }, rows: [
       '............', '..kkk..kkk..', '.kbbbkkgggk.', '.kbbbkkgggk.', '..kkk..kkk..', '............',
       '.kkkkkkkkkk.', 'kbbbbkkggggk', 'kbbbbkkggggk', 'kddddkkhhhhk', 'kkkkkkkkkkkk', '............'] },
+    save: { pal: { b: '#4f7bd6', d: '#2a4590', w: '#e8eefc', s: '#8a96b8', l: '#f4f4ff', g: '#9fb0d8' }, rows: [
+      'kkkkkkkkkkk.', 'kbkwwwwwkbkk', 'kbkwwswwkbbk', 'kbkwwswwkbbk', 'kbbkkkkkbbbk', 'kbbbbbbbbbbk',
+      'kbkkkkkkkkbk', 'kbkllllllkbk', 'kbklgggglkbk', 'kbkllllllkbk', 'kdkllllllkdk', 'kkkkkkkkkkkk'] },
     ball: { pal: { r: '#ff4d4d', w: '#f4f4f4', s: '#c23a3a' }, rows: [
       '....kkkk....', '..kkrrrrkk..', '.krwrrrrrrk.', '.krwrrrrrsk.', 'krrrrkkrrssk', 'kkkkkwwkkkkk',
       'kwwwkwwkwwwk', 'kwwwwkkwwwwk', '.kwwwwwwwwk.', '.kwwwwwwwwk.', '..kkwwwwkk..', '....kkkk....'] }

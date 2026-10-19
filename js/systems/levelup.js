@@ -27,6 +27,17 @@ G.LevelUp = (() => {
       apply: pl => pl.heal(pl.maxHp * 0.45) }
   ];
 
+  /** n elementos distintos de list, cada uno con probabilidad según weight(x). */
+  function pickWeighted(list, n, weight) {
+    const rest = list.map(x => [x, weight(x)]), out = [];
+    while (out.length < n && rest.length) {
+      let r = Math.random() * rest.reduce((a, [, w]) => a + w, 0), i = 0;
+      while (i < rest.length - 1 && (r -= rest[i][1]) > 0) i++;
+      out.push(rest.splice(i, 1)[0][0]);
+    }
+    return out;
+  }
+
   /** Construye el conjunto de cartas candidatas, con pesos. */
   function candidates(pl) {
     const out = [];
@@ -36,15 +47,22 @@ G.LevelUp = (() => {
       // Con 2 potenciadores ya no se ofrecen más: los buff no hacen daño y
       // llenar los 4 huecos con ellos deja la run sin salida.
       const buffs = pl.moves.filter(m => m.kind === 'buff').length;
+      // Si es de su lado flojo, cuánto rinde (Machamp con Bola Sombra...).
+      const fitNote = (mon, cat) => {
+        const f = G.Stats.fit(mon, cat);
+        return f < 0.95 ? ` <span class="fit-low">Con ${mon.name} rinde un ${Math.round(f * 100)} %: pega mejor con ataques ${G.Stats.sideOf(mon) === 'special' ? 'especiales' : 'físicos'}.</span>` : '';
+      };
       const pool = G.Moves.poolFor(pl.mon).filter(id =>
         !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)) && !(buffs >= 2 && G.Moves.BY_ID[id].kind === 'buff'));
-      for (const id of G.U.pickN(pool, 6)) {
+      // Los de su lado bueno (y los empatados y mejoras) salen el doble.
+      const weight = id => { const d = G.Moves.BY_ID[id]; return G.Stats.fit(pl.mon, d.cat) >= 0.999 ? 2 : 1; };
+      for (const id of pickWeighted(pool, 6, weight)) {
         const d = G.Moves.BY_ID[id];
         out.push({
           w: 10, type: 'new', key: 'new:' + id,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: G.U.TYPE_NAME[d.type],
-          title: d.name, desc: d.desc,
+          tag: G.U.TYPE_NAME[d.type] + (d.cat ? ' · ' + G.Stats.NAME[d.cat] : ''),
+          title: d.name, desc: d.desc + fitNote(pl.mon, d.cat),
           apply: p => p.addMove(id)
         });
       }

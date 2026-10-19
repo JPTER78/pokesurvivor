@@ -3,6 +3,23 @@ G.RunUI = (() => {
   const $ = G.UI.$;
   let offers = null, offerCb = null, coopMode = false;
 
+  /*
+   * Al aparecer unas cartas (nivel, vínculo, objeto) no se pueden elegir
+   * durante GUARD s y se ven apagadas: en plena pelea se pulsa 1-4 (o se toca
+   * la pantalla) para cambiar de ataque y se elegía una carta sin querer.
+   * Cambiar las cartas o el 2.º paso del vínculo no lo vuelven a poner: ahí ya
+   * estás eligiendo a propósito.
+   */
+  const GUARD = 0.6;
+  let guardUntil = 0, guardT = 0;
+  function guard(box) {
+    guardUntil = performance.now() + GUARD * 1000;
+    box.classList.add('guard');
+    clearTimeout(guardT);
+    guardT = setTimeout(() => document.querySelectorAll('.cards.guard').forEach(b => b.classList.remove('guard')), GUARD * 1000);
+  }
+  const guarded = () => performance.now() < guardUntil;
+
   /** @param coop  en grupo: tras elegir, se queda esperando a los demás */
   function showLevelUp(level, list, cb, coop = false) {
     offerCb = cb; coopMode = coop;
@@ -13,6 +30,7 @@ G.RunUI = (() => {
     renderCards(list);
     $('lvl-reroll').onclick = reroll;
     G.UI.show('scr-levelup');
+    guard($('cards'));
   }
 
   /**
@@ -60,7 +78,7 @@ G.RunUI = (() => {
   }
 
   function pick(i) {
-    if (!offers || !offers[i]) return;
+    if (!offers || !offers[i] || guarded()) return;
     const c = offers[i], cb = offerCb;
     offers = null; offerCb = null;
     $('lvl-reroll').classList.add('hidden');
@@ -151,10 +169,11 @@ G.RunUI = (() => {
       el.innerHTML = `<div class="ico">${G.Icons.html(id, 36)}</div>
         <div class="txt"><div class="nm">${verb} ${it.name}</div><div class="ds">${it.desc}</div></div>
         <div class="key">${i + 1}</div>`;
-      el.onclick = () => { G.UI.hide('scr-item'); cb(id); };
+      el.onclick = () => { if (guarded()) return; G.UI.hide('scr-item'); cb(id); };
       box.appendChild(el);
     });
     G.UI.show('scr-item');
+    guard(box);
   }
 
   // ---------------- vínculo: qué movimientos se fusionan ----------------
@@ -170,6 +189,7 @@ G.RunUI = (() => {
     $('bond-back').onclick = bondBack;
     renderBond();
     G.UI.show('scr-bond');
+    guard($('bond-cards'));
   }
 
   function renderBond() {
@@ -200,7 +220,7 @@ G.RunUI = (() => {
   }
 
   function pickBond(i) {
-    if (!bond || !bond.list[i]) return;
+    if (!bond || !bond.list[i] || guarded()) return;
     const m = bond.list[i];
     if (bond.opt.mode === 'pair' && !bond.first) {
       bond.first = m;
@@ -221,7 +241,52 @@ G.RunUI = (() => {
     renderBond();
   }
 
+  /*
+   * Resumen de la partida en la pausa: tus ataques (categoría, daño hecho y
+   * daño por segundo), tus estadísticas con todo lo subido y el objeto y las
+   * cartas de mejora que llevas.
+   */
+  function pauseSummary() {
+    const pl = G.Game.player;
+    if (!pl) return '';
+    const t = G.Game.st.time, n = v => Math.round(v).toLocaleString('es');
+    const k2 = v => '×' + v.toFixed(2).replace('.', ',');
+    const pct = v => Math.round(v * 100) + ' %';
+    const moves = pl.moves.map(m => {
+      const secs = Math.max(5, t - (m.since || 0)), col = G.U.TYPE_COLOR[m.type];
+      const cat = m.cat ? `<span class="tag-chip" style="background:${col}">${G.Stats.NAME[m.cat]}</span>` : '<span class="sub">Mejora</span>';
+      return `<tr><td>${G.Icons.html('move:' + m.id, 18)} ${m.name} <small>Nv.${m.lvl}</small></td><td>${cat}</td>
+        <td class="num">${m.cat ? n(m.dealt || 0) : '—'}</td><td class="num">${m.cat ? n((m.dealt || 0) / secs) + '/s' : '—'}</td></tr>`;
+    }).join('');
+    const mon = pl.mon, fis = 1 - G.Stats.taken(mon, 'physical'), esp = 1 - G.Stats.taken(mon, 'special');
+    const guard = v => (v >= 0 ? '−' : '+') + Math.round(Math.abs(v) * 100) + ' %';
+    const st = [
+      ['Vida', n(pl.hp) + ' / ' + n(pl.maxHp)],
+      ['Ataque', k2(pl.atkFor({ cat: 'physical' }))],
+      ['At. Esp.', k2(pl.atkFor({ cat: 'special' }))],
+      ['Defensa', mon.df + ' <small>' + guard(fis) + ' físico</small>'],
+      ['Def. Esp.', mon.sd + ' <small>' + guard(esp) + ' especial</small>'],
+      ['Velocidad', n(pl.spd)],
+      ['Crítico', pct(pl.critChance || 0)],
+      ['Reducción de daño', pct(pl.reduction)],
+      ['Recarga', pl.cdMul < 0.995 ? '−' + pct(1 - pl.cdMul) : '0 %'],
+      ['Regeneración', pl.regen.toFixed(1).replace('.', ',') + ' /s']
+    ].map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
+    const it = pl.item && G.Items.BY[pl.item];
+    const cards = Object.entries(pl.statsTaken || {}).map(([id, c]) => {
+      const s = G.LevelUp.STATS.find(x => x.id === id);
+      return s ? `<span class="chip">${G.Icons.html(s.icon, 12)} ${s.title} ×${c}</span>` : '';
+    }).join('');
+    return `<h3>Tus ataques</h3>
+      <table class="sum-moves"><tr><th></th><th></th><th class="num">Daño</th><th class="num">Por segundo</th></tr>${moves}</table>
+      <h3>Tus estadísticas</h3><div class="sum-stats">${st}</div>
+      <h3>Objeto y cartas</h3>
+      <p class="sub">${it ? G.Icons.html(pl.item, 18) + ' <b>' + it.name + '</b>: ' + it.desc : 'Sin objeto.'}</p>
+      <div class="chips">${cards || '<span class="sub">Aún no has cogido cartas de mejora.</span>'}</div>`;
+  }
+
   function showPause(coop = false) {
+    $('pause-sum').innerHTML = pauseSummary();
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';

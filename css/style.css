@@ -45,7 +45,10 @@ body {
   -webkit-font-smoothing: none;
 }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
-#game { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; }
+/* position: fixed + inset: 0 en vez de 100vw / 100vh: en iPhone (sobre todo
+   abierto desde la pantalla de inicio) los vh no cuadraban con la ventana y el
+   juego se veía estirado. */
+#game { display: block; position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
 button { font: inherit; color: inherit; }
 input { font: inherit; }
 
@@ -225,6 +228,27 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
   color: #10131a; text-shadow: none; margin-right: 4px;
 }
 .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.dex-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.dex-tools input, .dex-tools select { background: rgba(0,0,0,.3); color: inherit; border: 2px solid rgba(244,248,255,.3); border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 14px; }
+.dex-tools input { flex: 1 1 180px; min-width: 0; }
+.dex-tools select option { background: #14204a; }
+.dex-sort { align-items: center; margin-top: -4px; }
+.dex-more { grid-column: 1 / -1; height: 1px; }
+.fit-low { display: block; color: #ffb37a; font-size: 12px; margin-top: 2px; }
+/* Pausa con el resumen de la partida (run-ui.js, pauseSummary). */
+.pause-box { width: min(720px, 100%); max-height: calc(100dvh - 24px); overflow-y: auto; }
+.pause-sum { text-align: left; margin: 4px 0 10px; }
+.pause-sum h3 { color: var(--gold); font-size: 16px; margin: 10px 0 6px; }
+.sum-moves { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sum-moves td, .sum-moves th { padding: 3px 4px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sum-moves th { font-size: 12px; color: var(--muted); font-weight: 400; }
+.sum-moves .num { text-align: right; white-space: nowrap; }
+.sum-moves img { vertical-align: -4px; }
+.sum-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 14px; font-size: 14px; }
+.sum-stats div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.08); padding: 2px 0; }
+.sum-stats span { color: var(--muted); }
+.sum-stats small { color: var(--muted); font-weight: 400; }
+.dex-sort .sub { margin: 0 2px 0 0; font-size: 13px; }
 .chip {
   appearance: none; cursor: pointer; padding: 4px 10px; border-radius: 20px;
   background: rgba(0,0,0,.25); border: 2px solid rgba(244,248,255,.25); font-size: 13px;
@@ -550,6 +574,9 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .rk-me { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(0,0,0,.25); font-size: 15px; min-height: 20px; }
 
 .cards.done .card { pointer-events: none; opacity: .45; }
+/* Recién aparecidas: un momento sin poder elegirlas (ver guard() en run-ui.js). */
+.cards.guard .card { opacity: .5; filter: saturate(.6); }
+.cards .card { transition: transform .08s, background .12s, border-color .12s, opacity .2s, filter .2s; }
 .cards.done .card.picked { opacity: 1; border-color: var(--gold); }
 #lvl-wait { color: var(--gold); font-size: 15px; }
 
@@ -695,6 +722,9 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 .set-chips { margin: 6px 0 10px; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; font-size: 14px; }
 .keys span { color: var(--muted); }
+.padkey { display: inline-block; padding: 0 7px; border: 2px solid rgba(244,248,255,.4); border-radius: 9px; font-size: 13px; color: var(--text, #f4f8ff) !important; text-shadow: none; }
+/* Lo seleccionado con el mando (gamepad.js). */
+.pad-focus { outline: 3px solid #ffd23f !important; outline-offset: 3px; box-shadow: 0 0 0 6px rgba(255,210,63,.25) !important; }
 .credits { margin: 4px 0 12px; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; }
 .credits b { color: var(--ink); }
 .about-logo { text-align: center; font-size: 34px; font-weight: 700; color: var(--gold); text-shadow: 2px 2px 0 #a55f00, 4px 4px 0 var(--shadow); margin-top: 6px; }
@@ -810,6 +840,9 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .news-day ul { margin: 0; padding-left: 20px; }
 .news-day li { margin: 4px 0; line-height: 1.35; font-size: 15px; }
 @media (max-width: 760px) { .news-btn span { display: none; } }
+/* Botón Guardar (barra de arriba). */
+.save-btn { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+#savenote-body p { line-height: 1.4; }
 .sup-tab { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 15px; }
 .sup-tab td { padding: 5px 4px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .sup-tab td.num { text-align: right; white-space: nowrap; }
@@ -828,6 +861,12 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #scr-dex .gen-tabs, #scr-dex .filters { scrollbar-width: none; }
   #scr-dex .gen-tabs::-webkit-scrollbar, #scr-dex .filters::-webkit-scrollbar { display: none; }
   #scr-dex .filters { flex-wrap: nowrap; overflow-x: auto; margin-bottom: 4px; flex: 0 0 auto; }
+  #scr-dex .dex-tools { margin-bottom: 4px; gap: 6px; }
+  /* Ajustes: las pestañas en una fila que se desliza de lado. */
+  #set-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  #set-tabs::-webkit-scrollbar { display: none; }
+  #set-tabs .gen-tab { flex: 0 0 auto; }
+  #scr-dex .dex-tools input, #scr-dex .dex-tools select { padding: 2px 8px; font-size: 12px; }
   #scr-dex .chip { flex: 0 0 auto; padding: 2px 8px; font-size: 12px; }
   #scr-dex .grid { max-height: none; flex: 1; min-height: 0; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 5px; }
   #scr-dex .cell canvas { width: 69px; height: 60px; }

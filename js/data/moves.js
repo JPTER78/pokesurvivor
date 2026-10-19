@@ -132,8 +132,13 @@
       cd: 0.75, dmg: 20, radius: 110, width: 34, knock: 40 },
 
     { id: 'swords-dance', name: 'Danza Espada', type: 'normal', kind: 'buff',
-      desc: 'No hace daño: acumula ATAQUE mientras esté activo.',
-      cd: 0.85, stat: 'atk', amount: 0.13, dur: 7, stacks: 5 },
+      desc: 'No hace daño: acumula ATAQUE (físico) mientras esté activo.',
+      cd: 0.85, stat: 'patk', amount: 0.13, dur: 7, stacks: 5 },
+    // Como Danza Espada, para los especiales (en los juegos es Siniestro; aquí
+    // va en el grupo Normal para que la pueda aprender cualquiera).
+    { id: 'nasty-plot', name: 'Maquinación', type: 'normal', kind: 'buff',
+      desc: 'No hace daño: acumula ATAQUE ESPECIAL mientras esté activo.',
+      cd: 0.85, stat: 'satk', amount: 0.13, dur: 7, stacks: 5 },
 
     { id: 'agility', name: 'Agilidad', type: 'normal', kind: 'buff',
       desc: 'No hace daño: acumula VELOCIDAD mientras esté activo.',
@@ -317,8 +322,8 @@
       cd: 1.0, dmg: 24, radius: 230, width: 34 },
 
     { id: 'dragon-dance', name: 'Danza Dragón', type: 'dragon', kind: 'buff',
-      desc: 'No hace daño: acumula ATAQUE más rápido que Danza Espada.',
-      cd: 0.7, stat: 'atk', amount: 0.11, dur: 7, stacks: 5 },
+      desc: 'No hace daño: acumula ATAQUE (físico) más rápido que Danza Espada.',
+      cd: 0.7, stat: 'patk', amount: 0.11, dur: 7, stacks: 5 },
 
     // ---------------- HADA ----------------
     { id: 'fairy-wind', name: 'Viento Feérico', type: 'fairy', kind: 'nova',
@@ -415,8 +420,19 @@
   const POOL = {};
   for (const m of RAW) (POOL[m.type] = POOL[m.type] || []).push(m.id);
 
+  /*
+   * Físico o especial (G.Stats), como en los juegos. Los de estado que aquí sí
+   * hacen daño van por lo que hacen: trampas y golpes, físicos (Púas, Disparo
+   * Demora, Sustituto); efectos y energía, especiales (Tóxico, Granizo, Fuego
+   * Fatuo). Los potenciadores (buff) no tienen: no hacen daño.
+   */
+  const PHYSICAL = new Set(['tackle', 'quick-attack', 'vine-whip', 'razor-leaf', 'wing-attack', 'body-slam', 'poison-sting',
+    'bulldoze', 'bug-bite', 'string-shot', 'rock-throw', 'rock-slide', 'karate-chop', 'lick', 'metal-claw', 'bite',
+    'bonemerang', 'psycho-cut', 'spikes', 'toxic-spikes', 'meteor-mash', 'substitute', 'aerial-ace', 'flame-wheel']);
+
   const BY_ID = {};
   for (const m of RAW) {
+    m.cat = m.kind === 'buff' ? null : PHYSICAL.has(m.id) ? 'physical' : 'special';
     m.ups = LADDERS[m.kind];
     m.maxLvl = m.ups.length + 1;
     BY_ID[m.id] = m;

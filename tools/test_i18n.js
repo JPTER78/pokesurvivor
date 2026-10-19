@@ -25,6 +25,18 @@ function boot(saved = null, pathname = '/', blockedStorage = false) {
   return { ...sandbox, calls, writes };
 }
 const zh = boot();
+for (const [saved, pathname, expected] of [
+  [null, '/', 'zh-Hant'], ['zh-Hant', '/en/', 'zh-Hant'],
+  ['en', '/', 'en'], ['es', '/', 'es'], [null, '/en/', 'en'], ['obsolete', '/', 'zh-Hant']
+]) {
+  const paragraphs = [{ textContent: 'Juego' }, { textContent: 'Cargando…' }];
+  const document = { documentElement: {}, querySelector: () => null, querySelectorAll: () => paragraphs };
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'js/boot.js'), 'utf8'), {
+    window: {}, document, location: { pathname }, localStorage: { getItem: () => saved }
+  });
+  assert.equal(document.documentElement.lang, expected);
+  if (expected === 'zh-Hant') assert.equal(paragraphs[1].textContent, '載入中…');
+}
 assert.equal(zh.G.I18n.lang, 'zh-Hant');
 assert.equal(zh.document.documentElement.lang, 'zh-Hant');
 assert.equal(zh.G.I18n.locale, 'zh-TW');
@@ -36,6 +48,8 @@ for (const [src, expected] of [
   ['¡Poder Furia! daño ×2 durante 10 s', '狂怒之力！傷害 ×2，持續 10 秒'],
   ['Los 151 Pokémon de la generación 1. ¡Los legendarios esperan!', '共 151 隻第 1 世代寶可夢，傳說寶可夢等著你！'],
   ['Vida', '體力'], ['Gacha', '扭蛋'], ['Vínculo', '羈絆'],
+  ['Maquinación', '詭計'], ['Accesibilidad', '無障礙'], ['At. Esp.', '特攻'],
+  ['Con Pikachu rinde un 75 %: pega mejor con ataques especiales.', '使用 皮卡丘 時可發揮 75% 威力：更擅長特殊招式。'],
   ['La Sentencia de Arceus', '阿爾宙斯的審判'],
   ['Actualización obligatoria: tu partida se guarda y el juego se recarga en 10 s…', '必要更新：本局進度將儲存，遊戲將於 10 秒後重新載入…'],
   ['Derrota a 20 Pokémon de tipo Agua', '擊敗 20 隻 水系寶可夢'],

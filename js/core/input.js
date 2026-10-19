@@ -1,4 +1,4 @@
-/* ============ input.js — teclado y ratón (el táctil está en touch.js) ============ */
+/* ============ input.js — teclado y ratón (el táctil está en touch.js y el mando en gamepad.js) ============ */
 G.Input = (() => {
   const down = new Set();
   const pressed = new Set();   // se limpia cada frame
@@ -20,15 +20,18 @@ G.Input = (() => {
   });
   addEventListener('keyup', e => down.delete(code(e)));
   addEventListener('blur', () => { down.clear(); });
-  addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  let movedAt = 0;               // última vez que se movió el ratón (apuntado a mano)
+  addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; movedAt = performance.now(); });
   addEventListener('mousedown', () => mdown = true);
   addEventListener('mouseup', () => mdown = false);
 
   return {
-    /** Vector de movimiento del jugador (teclado o joystick táctil). */
+    /** Vector de movimiento del jugador (teclado, joystick táctil o mando). */
     axis() {
       const t = G.Touch && G.Touch.vector();
       if (t && (t[0] || t[1])) return t;
+      const g = G.Pad && G.Pad.vector();
+      if (g && (g[0] || g[1])) return g;
       let x = 0, y = 0;
       if (MOVE_KEYS.left.some(k => down.has(k))) x -= 1;
       if (MOVE_KEYS.right.some(k => down.has(k))) x += 1;
@@ -39,7 +42,13 @@ G.Input = (() => {
     held(c) { return down.has(c); },
     /** true sólo en el frame en que se pulsó. */
     tap(c) { return pressed.has(c); },
+    /** Una pulsación que no viene del teclado (el mando): cuenta como tecla en este fotograma. */
+    virtual(c) { pressed.add(c); },
     mouse() { return { x: mx, y: my, down: mdown }; },
+    /** Cuándo se movió el ratón por última vez (performance.now). */
+    get mouseMovedAt() { return movedAt; },
+    /** Dónde apunta el ratón en el mundo (el lienzo ocupa toda la ventana). */
+    mouseWorld() { return { x: G.Camera.left() + mx / G.Camera.scale, y: G.Camera.top() + my / G.Camera.scale }; },
     endFrame() { pressed.clear(); }
   };
 })();

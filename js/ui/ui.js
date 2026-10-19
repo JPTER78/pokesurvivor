@@ -40,6 +40,9 @@ G.UI = (() => {
     $('user-pill').innerHTML = G.Icons.html(G.DB.guest ? 'user' : 'crown', 18) + ' <span translate="no">' + (G.DB.guest ? G.T('Invitado') : (G.DB.user || '')) + '</span>' +
       `<i class="sync ${st}" title="${TIP[st] || ''}"></i>`;
     $('user-pill').title = TIP[st] || '';
+    // Botón Guardar: sólo con cuenta en la nube (en local ya se guarda al momento).
+    const sb = $('btn-save');
+    sb.classList.toggle('hidden', G.DB.guest || G.DB.mode !== 'cloud');
   }
 
   let toastEl = null, toastT = 0;
@@ -171,6 +174,17 @@ G.UI = (() => {
     G.Icons.installCss();
     wireLegal();
     G.DB.onSync(() => { if (!$('topbar').classList.contains('hidden')) refreshCoins(); });
+    const sb = $('btn-save');
+    sb.innerHTML = G.Icons.html('save', 18) + ' <span>Guardar</span>';
+    sb.onclick = async () => {
+      sb.disabled = true;
+      const r = await G.DB.saveNow();
+      sb.disabled = false;
+      const MSG = { local: 'Tu partida se guarda en este navegador.', guest: 'Como invitado la partida no se guarda.',
+                    done: 'Ya está todo guardado en la nube.', offline: 'Sin conexión: se guardará en cuanto vuelva.',
+                    fail: 'No se pudo guardar. Vuelve a probar en un momento.' };
+      toast(r.why === 'wait' ? `Se guarda en la nube en ${r.secs} s.` : r.why ? MSG[r.why] : '¡Partida guardada en la nube!', 3000);
+    };
     wireSounds();
     refreshSoundIcon();
     $('btn-sound').onclick = () => {
@@ -183,6 +197,7 @@ G.UI = (() => {
   // ---------------- sprites en canvas del DOM ----------------
 
   const live = new Set();
+  const byCanvas = new WeakMap();      // canvas -> su animación (para no recorrer todas)
   // Sólo se animan los canvas que están a la vista (la colección tiene cientos).
   const seen = new WeakMap();
   const io = 'IntersectionObserver' in window
@@ -200,12 +215,14 @@ G.UI = (() => {
    *                   que quepa, porque ahí no se compara con nada }
    */
   function sprite(cv, dex, opts = {}) {
-    for (const s of live) if (s.cv === cv) live.delete(s);
+    const prev = byCanvas.get(cv);
+    if (prev) live.delete(prev);
     const a = new G.Sprites.Animator(dex, 1, !!opts.shiny);
     a.dir = opts.dir || 0;
     a.loop(opts.anim || 'Idle');
     const s = { cv, ctx: cv.getContext('2d'), a, dex, opts, t: Math.random() * 3, spinT: 0, sparkT: 0 };
     live.add(s);
+    byCanvas.set(cv, s);
     if (io) io.observe(cv);
     return s;
   }

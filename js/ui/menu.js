@@ -2,7 +2,12 @@
 G.MenuUI = (() => {
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
-  let dexFilter = 'all', dexGen = 1, dexSel = null;
+  let dexGen = 1, dexSel = null;
+  // Filtros de la colección (se combinan): tengo / me faltan, rarezas (varias),
+  // shiny, favoritos, tipo y búsqueda; y el orden. Duran mientras no recargas.
+  const DEX0 = () => ({ status: 'all', rar: new Set(), shiny: false, fav: false, type: '', q: '', sort: 'num' });
+  let dexF = DEX0();
+  const SORTS = [['num', 'Nº'], ['name', 'Nombre'], ['rar', 'Rareza'], ['new', 'Recién conseguidos'], ['used', 'Más usados']];
 
   function init() {
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
@@ -108,65 +113,157 @@ G.MenuUI = (() => {
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
     $('dex-total').textContent = `${owned} / ${G.DEX.length}`;
 
-    // Pestañas de generación, con cuántos tienes de cada una.
+    // Pestañas de generación (y "Todas"), con cuántos tienes de cada una.
     const tabs = $('dex-gens');
     tabs.innerHTML = '';
-    GEN_NAMES.forEach((name, i) => {
-      const g = i + 1;
-      const total = G.DEX.filter(p => p.gen === g).length;
-      const have = G.DEX.filter(p => p.gen === g && s.owned[p.dex]).length;
+    ['Todas', ...GEN_NAMES].forEach((name, g) => {
+      const list = g ? G.DEX.filter(p => p.gen === g) : G.DEX;
+      const have = list.filter(p => s.owned[p.dex]).length;
       const b = document.createElement('button');
-      b.className = 'gen-tab' + (g === dexGen ? ' on' : '');
-      b.innerHTML = `<b>${name}</b><small>${have}/${total}</small>`;
+      b.className = 'gen-tab' + (g === dexGen && !dexF.q ? ' on' : '');
+      b.innerHTML = `<b>${name}</b><small>${have}/${list.length}</small>`;
       b.onclick = () => { dexGen = g; openDex(); };
       tabs.appendChild(b);
     });
 
-    const F = [['all', 'Todos'], ['own', 'Tengo'], ['miss', 'Me faltan'], ['shiny', 'Shiny'],
-               ['5', 5], ['4', 4], ['3', 3], ['2', 2], ['1', 1]];
+    // Tengo / me faltan (uno), rarezas (las que quieras), shiny y favoritos.
     const fb = $('dex-filters');
     fb.innerHTML = '';
-    for (const [k, label] of F) {
+    const chip = (html, on, fn) => {
       const c = document.createElement('button');
-      c.className = 'chip' + (k === dexFilter ? ' on' : '');
-      c.innerHTML = k === 'shiny' ? G.Icons.html('shiny', 12) + ' Shiny'
-                  : typeof label === 'number' ? G.Icons.rarity(label, 12) + ' ' + G.Gacha.RARITY_NAME[label] : label;
-      c.onclick = () => { dexFilter = k; openDex(); };
+      c.className = 'chip' + (on ? ' on' : '');
+      c.innerHTML = html;
+      c.onclick = () => { fn(); openDex(); };
       fb.appendChild(c);
+    };
+    for (const [k, label] of [['all', 'Todos'], ['own', 'Tengo'], ['miss', 'Me faltan']]) chip(label, dexF.status === k, () => { dexF.status = k; });
+    chip(G.Icons.html('shiny', 12) + ' Shiny', dexF.shiny, () => { dexF.shiny = !dexF.shiny; });
+    chip(G.Icons.html('star', 12) + ' Favoritos', dexF.fav, () => { dexF.fav = !dexF.fav; });
+    for (const r of [5, 4, 3, 2, 1]) {
+      chip(G.Icons.rarity(r, 12) + ' ' + G.Gacha.RARITY_NAME[r], dexF.rar.has(r), () => { dexF.rar.has(r) ? dexF.rar.delete(r) : dexF.rar.add(r); });
     }
+
+    // Orden.
+    const sb = $('dex-sort');
+    sb.innerHTML = '<span class="sub">Orden:</span>';
+    for (const [k, label] of SORTS) {
+      const c = document.createElement('button');
+      c.className = 'chip' + (dexF.sort === k ? ' on' : '');
+      c.textContent = label;
+      c.onclick = () => { dexF.sort = k; openDex(); };
+      sb.appendChild(c);
+    }
+
+    // Tipo y búsqueda (la búsqueda mira en todas las generaciones).
+    const ts = $('dex-type');
+    ts.innerHTML = `<option value="">Todos los tipos</option>` +
+      Object.keys(G.U.TYPE_NAME).map(t => `<option value="${t}">${G.U.TYPE_NAME[t]}</option>`).join('');
+    ts.value = dexF.type;
+    ts.onchange = () => { dexF.type = ts.value; openDex(); };
+    const q = $('dex-q');
+    if (q.value !== dexF.q) q.value = dexF.q;
+    q.oninput = () => {
+      clearTimeout(qT);
+      qT = setTimeout(() => {
+        dexF.q = q.value; renderGrid();
+        $('dex-gens').querySelectorAll('.gen-tab').forEach((b, g) => b.classList.toggle('on', g === dexGen && !dexF.q));
+      }, 150);
+    };
+    q.onkeydown = e => { if (e.key === 'Escape') { e.stopPropagation(); q.blur(); } };
+    $('dex-clear').onclick = () => { dexF = DEX0(); openDex(); };
     renderGrid();
     showDetail(dexSel);
   }
 
-  function renderGrid() {
-    const s = G.DB.save;
-    const grid = $('dex-grid');
-    grid.innerHTML = '';
-    for (const p of G.DEX) {
-      if (p.gen !== dexGen) continue;
-      const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
-      if (dexFilter === 'own' && !own) continue;
-      if (dexFilter === 'miss' && own) continue;
-      if (dexFilter === 'shiny' && !sh) continue;
-      if (/^\d$/.test(dexFilter) && p.rarity !== +dexFilter) continue;
+  /** Lo que se ve con la generación, los filtros y el orden de ahora. */
+  function dexList() {
+    const s = G.DB.save, f = dexF;
+    const q = f.q.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const num = /^#?\d+$/.test(q) ? +q.replace('#', '') : null;
+    const list = G.DEX.filter(p => {
+      const own = !!s.owned[p.dex];
+      if (q) {
+        // Por número, o por nombre (sin tildes); de los que no tienes no se busca el nombre.
+        if (num != null ? p.dex !== num : !(own && [p.name, G.T(p.name)].some(name => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q)))) return false;
+      } else if (dexGen && p.gen !== dexGen) return false;
+      if (f.status === 'own' && !own) return false;
+      if (f.status === 'miss' && own) return false;
+      if (f.shiny && !(s.shiny && s.shiny[p.dex])) return false;
+      if (f.fav && !G.DB.isFav(p.dex)) return false;
+      if (f.rar.size && !f.rar.has(p.rarity)) return false;
+      if (f.type && !(own && p.types.includes(f.type))) return false;
+      return true;
+    });
+    const at = p => (s.owned[p.dex] && s.owned[p.dex].at) || 0, used = p => +(s.pused || {})[p.dex] || 0;
+    const by = { num: (a, b) => a.dex - b.dex, name: (a, b) => G.T(a.name).localeCompare(G.T(b.name), G.I18n.locale),
+                 rar: (a, b) => b.rarity - a.rarity || a.dex - b.dex, new: (a, b) => at(b) - at(a) || a.dex - b.dex,
+                 used: (a, b) => used(b) - used(a) || a.dex - b.dex }[f.sort];
+    // Los que no tienes no tienen nombre a la vista: al ordenar por nombre van al final.
+    if (f.sort === 'name') list.sort((a, b) => (!s.owned[a.dex]) - (!s.owned[b.dex]) || by(a, b)); else list.sort(by);
+    return list;
+  }
 
-      const cell = document.createElement('div');
-      cell.className = 'cell' + (own ? '' : ' locked') + (p.dex === dexSel ? ' on' : '');
-      cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}</span>`);
-      if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
-      else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
-      const useShiny = sh && p.dex === s.partner && s.partnerShiny;
-      cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
-      cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
-      cell.onclick = () => {
-        dexSel = p.dex;
-        grid.querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
-        cell.classList.add('on');
-        showDetail(p.dex);
-      };
-      grid.appendChild(cell);
-    }
-    if (!grid.children.length) grid.innerHTML = '<p class="sub" style="grid-column:1/-1">Ninguno con este filtro.</p>';
+  /*
+   * La rejilla se pinta por tandas de PAGE: con "Todas" son 966 Pokémon, cada
+   * uno con su animación y su hoja de sprites, y pintarlos de golpe paraba el
+   * juego (y la música) un segundo al borrar la búsqueda o cambiar el orden.
+   * Al acercarse al final de la lista se pinta la siguiente tanda.
+   * keep: volver a pintar los mismos que había (marcar un favorito no te
+   * devuelve arriba).
+   */
+  const PAGE = 48;
+  let qT = 0, gridList = [], gridShown = 0, gridIO = null;
+  function renderGrid(keep = false) {
+    const grid = $('dex-grid');
+    const want = keep ? Math.max(PAGE, gridShown) : PAGE;
+    const top = grid.scrollTop;
+    grid.innerHTML = '';
+    gridList = dexList();
+    gridShown = 0;
+    const f = dexF, busy = f.q || f.status !== 'all' || f.shiny || f.fav || f.rar.size || f.type || f.sort !== 'num';
+    $('dex-count').textContent = gridList.length === 1 ? '1 Pokémon' : gridList.length + ' Pokémon';
+    $('dex-clear').classList.toggle('hidden', !busy);
+    if (!gridList.length) { grid.innerHTML = '<p class="sub" style="grid-column:1/-1">Ninguno con estos filtros.</p>'; return; }
+    moreCells(want);
+    if (keep) grid.scrollTop = top;
+  }
+
+  function moreCells(n = PAGE) {
+    const grid = $('dex-grid');
+    const old = grid.querySelector('.dex-more');
+    if (old) { if (gridIO) gridIO.unobserve(old); old.remove(); }
+    const end = Math.min(gridList.length, gridShown + n);
+    for (let i = gridShown; i < end; i++) grid.appendChild(dexCell(gridList[i]));
+    gridShown = end;
+    if (gridShown >= gridList.length) return;
+    // Marca al final: cuando se acerca a la vista, la siguiente tanda.
+    const more = document.createElement('div');
+    more.className = 'dex-more';
+    grid.appendChild(more);
+    if (!('IntersectionObserver' in window)) { moreCells(gridList.length); return; }
+    gridIO = gridIO || new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) moreCells(); }, { rootMargin: '300px' });
+    gridIO.observe(more);
+  }
+
+  function dexCell(p) {
+    const s = G.DB.save;
+    const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (own ? '' : ' locked') + (p.dex === dexSel ? ' on' : '');
+    cell.dataset.pad = '1';
+    cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}${G.DB.isFav(p.dex) ? ' ' + G.Icons.html('star', 10) : ''}</span>`);
+    if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
+    else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
+    const useShiny = sh && p.dex === s.partner && s.partnerShiny;
+    cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
+    cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
+    cell.onclick = () => {
+      dexSel = p.dex;
+      $('dex-grid').querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
+      cell.classList.add('on');
+      showDetail(p.dex);
+    };
+    return cell;
   }
 
   // Variante que se está viendo en la ficha (normal o shiny).
@@ -182,7 +279,7 @@ G.MenuUI = (() => {
     else if (isPartner && dex !== showDetail.last) viewShiny = !!s.partnerShiny;
     showDetail.last = dex;
 
-    const max = { hp: 183, atk: 1.55, spd: 137 };
+    const max = { hp: 183, atk: 1.55, spd: 137, def: 160 };
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
     const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
@@ -196,13 +293,18 @@ G.MenuUI = (() => {
       <div class="center">
         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
+        ${own ? `<button id="dex-fav" class="chip${G.DB.isFav(dex) ? ' on' : ''}" type="button">${G.Icons.html(G.DB.isFav(dex) ? 'star' : 'starDim', 12)} ${G.DB.isFav(dex) ? 'Favorito' : 'Marcar como favorito'}</button>` : ''}
         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div>
       ${own ? `
         ${bar('Vida', p.hp, max.hp, p.hp)}
-        ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
+        ${bar('Ataque', p.pa, max.atk, '×' + p.pa.toFixed(2))}
+        ${bar('At. Esp.', p.sa, max.atk, '×' + p.sa.toFixed(2))}
+        ${bar('Defensa', p.df, max.def, p.df)}
+        ${bar('Def. Esp.', p.sd, max.def, p.sd)}
         ${bar('Velocidad', p.spd, max.spd, p.spd)}
+        <p class="sub center" style="margin:6px 0 0">Pega mejor con ataques <b class="gold">${G.Stats.sideOf(p) === 'special' ? 'especiales' : 'físicos'}</b></p>
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
@@ -218,13 +320,15 @@ G.MenuUI = (() => {
     box.querySelectorAll('.seg button').forEach(b => {
       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
     });
+    const fav = $('dex-fav');
+    if (fav) fav.onclick = () => { G.DB.setFav(dex, !G.DB.isFav(dex)); renderGrid(true); showDetail(dex); };
     const pick = $('dex-pick');
     if (pick) pick.onclick = () => {
       s.partner = dex;
       s.partnerShiny = hasSh && viewShiny;
       G.DB.commit();
       G.UI.toast(p.name + (s.partnerShiny ? ' shiny' : '') + ' es ahora tu compañero');
-      renderGrid(); showDetail(dex);
+      renderGrid(true); showDetail(dex);
     };
   }
 
