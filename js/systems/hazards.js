@@ -48,6 +48,12 @@ G.Hazards = (() => {
           pl.invuln = 0;
           pl.hurt(h.pct ? Math.max(h.dmg, pl.maxHp * h.pct) : h.dmg, h.type, !!h.pure, h.cat);
         }
+        // También a tus aliados (el Guardián atrae explosiones, saltos y rayos: ver allies.js).
+        for (const a of G.Allies.list) {
+          if (a.dead || !inside(h, a.x, a.y, a.r)) continue;
+          a.invuln = 0;
+          a.hurt(h.pct ? Math.max(h.dmg, a.maxHp * h.pct) : h.dmg, h.type, !!h.pure, h.cat);
+        }
       }
       if (h.hit && h.t >= h.delay + h.end) list.splice(i, 1);
     }

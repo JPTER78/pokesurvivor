@@ -119,6 +119,7 @@ G.Game = (() => {
     G.Rift.reset();
     G.Judgment.reset();
     G.Events.reset();
+    G.Allies.reset();
     G.Weather.reset();
     G.Path.clear();
     G.Hazards.clear();
@@ -428,6 +429,24 @@ G.Game = (() => {
     });
   }
 
+  // ---------------- postura de un aliado ----------------
+
+  /**
+   * Un aliado se ha unido: eliges su postura (ver systems/allies.js). Como el
+   * vínculo, se mira en cada fotograma: si otra pantalla la tapa, sale al cerrarla.
+   */
+  function offerStance(a) {
+    if (!pl || pl.dead || state !== 'playing' || G.Judgment.cinematic) return;
+    if (['scr-stance', 'scr-bond', 'scr-pause', 'scr-item', 'scr-levelup'].some(G.UI.isOpen)) return;
+    state = 'choice';                                   // (ya suena la llegada del aliado: allies.js join)
+    G.RunUI.showStance(a, G.Allies.STANCES, id => {
+      a.setStance(id);
+      G.Audio.sfx('confirm');
+      if (state === 'choice') state = 'playing';
+      afterLevelUp();
+    });
+  }
+
   // ---------------- recogida ----------------
 
   const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend' };
@@ -561,6 +580,13 @@ G.Game = (() => {
       }
       return;
     }
+    if (G.UI.isOpen('scr-stance')) {
+      const cards = document.querySelectorAll('#stance-cards .card');
+      for (let i = 0; i < cards.length; i++) {
+        if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) cards[i].click();
+      }
+      return;
+    }
     if (state === 'ui') {
       // Esc en una subpantalla del menú vuelve al menú.
       if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-dex', 'scr-upgrades', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
@@ -675,9 +701,11 @@ G.Game = (() => {
     const all = everyone();
     if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time); }
     else G.Spawner.tickBanner(dt);
-    G.EnemyMgr.update(dt, all);
+    // Los aliados Guardián también son blanco de los enemigos (tú sigues siendo el primero: las bajas son tuyas).
+    G.EnemyMgr.update(dt, all.concat(G.Allies.taunts()));
     G.EnemyMgr.rebuildGrid();
     G.Combat.tick(dt, pl, time);
+    G.Allies.update(dt, pl, time);
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
     G.Combat.resolve(dt, pl, time);
     G.Combat.updateFields(dt);
@@ -693,6 +721,8 @@ G.Game = (() => {
     G.Audio.music(G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (pl.bonds > 0) offerBond(true);
+    const newAlly = G.Allies.pendingStance();
+    if (newAlly) offerStance(newAlly);
     if (G.Coop.isHost) checkAllDown(dt);
   }
 
@@ -735,6 +765,7 @@ G.Game = (() => {
     const arceus = pl && state !== 'ui' ? G.Judgment.drawable() : null;
     if (arceus) items.push({ y: arceus.y, ent: arceus });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
+    if (pl && state !== 'ui') for (const d of G.Allies.drawables()) items.push({ y: d.y, ent: d });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
       if (it.prop) G.World.drawProp(ctx, it.prop, t);

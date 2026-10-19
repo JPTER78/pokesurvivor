@@ -772,6 +772,14 @@ G.Combat = (() => {
           pl.hurt(p.dmg, p.mtype, false, p.cat);
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 7, 110);
           projectiles.splice(i, 1);
+          continue;
+        }
+        // También les dan a tus aliados (ver allies.js).
+        const ally = G.Allies.hitBy(p);
+        if (ally) {
+          ally.hurt(p.dmg, p.mtype, false, p.cat);
+          G.FX.burst(p.x, p.y - G.LIFT, p.color, 7, 110);
+          projectiles.splice(i, 1);
         }
         continue;
       }
@@ -842,18 +850,20 @@ G.Combat = (() => {
           break;
         }
 
-        const crit = isCrit(pl);
+        // Los disparos de un aliado cuentan para él (crítico, daño hecho, Beso Drenaje).
+        const own = p.owner && p.owner.ally ? p.owner : pl;
+        const crit = isCrit(own);
         const k = (p.mtype ? typeK(p.mtype, e) : 1) * G.Stats.taken(e.mon, p.mcat) * (crit ? CRIT_MUL : 1);
-        e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
+        e.hurt(p.dmg * k, p.color, p.vx || (e.x - own.x), p.vy || (e.y - own.y), p.knock,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
-        pl.dmgDealt += p.dmg * k;
+        own.dmgDealt += p.dmg * k;
         if (p.src) p.src.dealt = (p.src.dealt || 0) + p.dmg * k;
-        pl.onDealt(p.dmg * k);
+        own.onDealt(p.dmg * k);
         if (p.burn) e.applyBurn(p.burn);
         if (p.poison) e.applyPoison(p.poison);
         if (p.slow) e.applySlow(p.slow);
-        if (p.drain) pl.heal(p.drain);                    // Beso Drenaje
+        if (p.drain) own.heal(p.drain);                   // Beso Drenaje
 
         if (!p.orb && rebound(p, e)) break;
         if (!p.orb) {

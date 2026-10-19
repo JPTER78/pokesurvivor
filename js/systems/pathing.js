@@ -69,7 +69,8 @@ G.Path = (() => {
    * obstáculos, o null si no hace falta (cerca, fuera del campo o sin camino).
    */
   function dirFor(e, pl) {
-    const f = fields.get(pl);
+    // Un aliado Guardián (allies.js) va siempre pegado a ti: sirve el camino hasta ti.
+    const f = fields.get(pl) || (pl.owner && fields.get(pl.owner));
     if (!f) return null;
     const TS = G.World.TS;
     const tx = Math.floor(e.x / TS) - f.ox, ty = Math.floor(e.y / TS) - f.oy;

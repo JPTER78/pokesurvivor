@@ -212,6 +212,13 @@ G.Player = class Player {
 
   activeMove() { return this.activeGroup()[0]; }
 
+  /** Animación de PMD de cada familia de movimiento (también la usan los aliados). */
+  static get CAST_ANIM() {
+    return { melee: 'Attack', beam: 'Shoot', projectile: 'Shoot', nova: 'Attack',
+             aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
+             mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot' };
+  }
+
   /**
    * Lo llama combat.js al lanzar un movimiento. Elige la animación de PMD y la
    * acelera si la recarga es más corta que la animación, para que encadene.
@@ -221,9 +228,7 @@ G.Player = class Player {
     if (this.hasItem('lifeorb') && m.kind !== 'orbit' && m.kind !== 'trail' && !this.remote) {
       this.hp = Math.max(1, this.hp - Math.max(1, this.maxHp * 0.01));
     }
-    const anim = { melee: 'Attack', beam: 'Shoot', projectile: 'Shoot', nova: 'Attack',
-                   aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
-                   mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot' }[m.kind] || 'Attack';
+    const anim = Player.CAST_ANIM[m.kind] || 'Attack';
     // Las familias nuevas suenan como la parecida de las de siempre.
     const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile' };
     // El rastro no suena a cada charco (sería un zumbido constante).
