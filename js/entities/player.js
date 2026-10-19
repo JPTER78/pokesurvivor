@@ -12,10 +12,12 @@ G.Player = class Player {
     this.mon = mon;
     this.dex = mon.dex;
     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
-    this.anim = new G.Sprites.Animator(mon.dex, 1, this.shiny);
+    // Los grandes, algo más pequeños y con el choque de uno normal (ver sprites.js).
+    this.scale = G.Sprites.playerScale(mon.dex);
+    this.anim = new G.Sprites.Animator(mon.dex, this.scale, this.shiny);
     this.x = 0; this.y = 0;
-    this.r = G.Sprites.bodyRadius(mon.dex);
-    this.bodyH = G.Sprites.bodyHeight(mon.dex);
+    this.r = G.Sprites.playerRadius(mon.dex);
+    this.bodyH = G.Sprites.bodyHeight(mon.dex, this.scale);
 
     this.atkMul = perks.atkMul || 1;
     this.spdMul = perks.spdMul || 1;
@@ -37,8 +39,11 @@ G.Player = class Player {
     this.maxMoves = 4;         // huecos
     this.bonds = 0;            // vínculos por usar (premio de los legendarios)
 
+    // patk / satk: Danza Espada y Danza Dragón (físico) y Maquinación (especial).
     this.buffs = {
       atk: { n: 0, t: 0, amount: 0 },
+      patk: { n: 0, t: 0, amount: 0 },
+      satk: { n: 0, t: 0, amount: 0 },
       spd: { n: 0, t: 0, amount: 0 },
       def: { n: 0, t: 0, amount: 0 },
       regen: { n: 0, t: 0, amount: 0 }
@@ -87,11 +92,22 @@ G.Player = class Player {
 
   // ---------------- stats efectivos ----------------
   get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount); }
+  /**
+   * Ataque con un movimiento: el físico o el especial de tu Pokémon (ver
+   * G.Stats), con las danzas que sean de su lado (las de mejora, sin ninguna).
+   */
+  atkFor(m) {
+    const cat = m && m.cat, b = cat === 'physical' ? this.buffs.patk : cat === 'special' ? this.buffs.satk : null;
+    return this.atk * G.Stats.fit(this.mon, cat) * (b ? 1 + b.n * b.amount : 1) * (m && this.monoType(m.type) ? Player.MONO_K : 1);
+  }
+  /** Monotipo (19-10-2026): los de un solo tipo pegan un +20 % con los ataques de su tipo (tienen menos variedad). */
+  static get MONO_K() { return 1.2; }
+  monoType(type) { return this.mon.types.length === 1 && type === this.mon.types[0]; }
   get spd() {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
     const w = G.Weather.speedFor(this.mon.types);
     const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
-    return s * slow * w;
+    return G.Judgment && G.Judgment.active ? G.Judgment.capSpd(s * slow * w) : s * slow * w;
   }
   get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
@@ -100,12 +116,14 @@ G.Player = class Player {
   addMove(id) {
     if (this.slots.length >= this.maxMoves || this.hasMove(id)) return false;
     const m = G.Moves.instance(id, 1);
+    m.since = G.Game.st.time;          // desde cuándo lo tienes (daño por segundo en el resumen)
     this.moves.push(m);
     const group = [m];
     this.slots.push(group);
     this.arrange();
-    // Se cambia al nuevo, salvo si estás usando un vínculo (no te quita el grupo).
-    if (!(this.slots[this.active] && this.slots[this.active].length > 1)) this.setActive(this.slots.indexOf(group));
+    // Te quedas con el que llevabas (18-10-2026: antes se cambiaba solo al nuevo
+    // y te quitaba el ataque que estabas usando). Sólo si no tenías ninguno, el nuevo.
+    if (!this.slots[this.active]) this.active = this.slots.indexOf(group);
     return true;
   }
 
@@ -225,8 +243,10 @@ G.Player = class Player {
    * @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual
    * @param pure  daño que no baja con la defensa ni el cuerpo a cuerpo (Arceus)
    */
-  hurt(amount, type = null, pure = false) {
+  /** @param cat  'physical' | 'special': con qué defensa tuya se para (la del enemigo que pega). */
+  hurt(amount, type = null, pure = false, cat = null) {
     if (this.invuln > 0 || this.dead) return;
+    if (!pure) amount *= G.Stats.taken(this.mon, cat);
     let eff = null;
     if (type) {
       const k = G.Types.mult(type, this.mon.types);
@@ -242,6 +262,7 @@ G.Player = class Player {
     this.flash = 0.14;
     G.Audio.sfx('hurt');
     G.Camera.kick(0.28);
+    if (!this.remote) G.Pad.rumble(0.25 + Math.min(0.75, d / this.maxHp * 3), 140);
     G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), eff === 'super' ? '#ff3048' : eff === 'weak' ? '#c9a0a8' : '#ff6b7a', eff === 'super');
     G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ff5f6d', 6, 90);
     // Banda Focus: aguanta el golpe con 1 de vida (una vez cada 60 s).
@@ -373,14 +394,53 @@ G.Player = class Player {
     const tg = (ranged ? boss || threat : threat || boss)
             || G.Projectiles.nearest(all, this.x, this.y, 520)
             || G.World.nearestBreakable(this.x, this.y, 200);
-    this.target = tg;
-    if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
-    else if (this.walking) this.aim = this.moveAngle;
+    // Apuntar a mano (Ajustes > Accesibilidad): hacia el ratón o el stick derecho.
+    // El blanco (para la cadena) es el enemigo que hay en esa dirección; si no
+    // hay ninguno, el de siempre.
+    const hand = this.handAim();
+    this.manualAim = hand != null;
+    if (hand != null) {
+      this.aim = hand;
+      this.target = this.enemyAlong(all, hand) || tg;
+    } else {
+      this.target = tg;
+      if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
+      else if (this.walking) this.aim = this.moveAngle;
+    }
 
     // --- animación: mira al objetivo al atacar, si no a donde camina ---
     const face = this.attackFace > 0 || !this.walking ? this.aim : this.moveAngle;
     this.anim.dir = G.Sprites.dirFromAngle(face);
     this.anim.loop(this.walking ? 'Walk' : 'Idle', this.walking ? s / 110 : 1);
+  }
+
+  /**
+   * Ángulo de "Apuntar a mano", o null si toca apuntar solo. Manda lo último
+   * que se haya usado: el stick derecho mientras se empuja; si no, el ratón si
+   * se ha movido después (en PC). Soltar el stick sin tocar el ratón = solo.
+   */
+  handAim() {
+    if (this.remote || !G.Settings.get('aimManual')) return null;
+    const st = G.Pad.aim();
+    if (st) return Math.atan2(st[1], st[0]);
+    if (G.Touch.active || !G.Input.mouseMovedAt || G.Input.mouseMovedAt < G.Pad.aimAt) return null;
+    const w = G.Input.mouseWorld();
+    const dx = w.x - this.x, dy = w.y - (this.y - G.LIFT * 0.5);
+    return Math.hypot(dx, dy) < 4 ? null : Math.atan2(dy, dx);
+  }
+
+  /** El enemigo más cercano dentro de ±25° de la dirección a (a menos de 520). */
+  enemyAlong(all, a) {
+    let best = null, bd = 520 * 520;
+    const ca = Math.cos(a), sa = Math.sin(a), cosMax = Math.cos(0.44);
+    for (const e of all) {
+      if (e.dead) continue;
+      const dx = e.x - this.x, dy = e.y - this.y, d2 = dx * dx + dy * dy;
+      if (d2 >= bd || d2 < 1) continue;
+      if ((dx * ca + dy * sa) / Math.sqrt(d2) < cosMax) continue;
+      bd = d2; best = e;
+    }
+    return best;
   }
 
   /** Vuelve a levantarse (lo revive un compañero en cooperativo). */
@@ -443,7 +503,7 @@ G.Player = class Player {
       ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.5, this.r * 0.6, 0, 0, 6.2832); ctx.stroke();
       ctx.restore();
     }
-    G.Sprites.drawShadow(ctx, this.dex, this.x, this.y);
+    G.Sprites.drawShadow(ctx, this.dex, this.x, this.y, this.scale);
     // Poder de altar: aro de su color latiendo bajo los pies.
     if (this.power && !this.dead) {
       ctx.save();
@@ -457,7 +517,7 @@ G.Player = class Player {
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
 
     // Arcos de buff alrededor de los pies.
-    const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
+    const COL = { atk: '#ff6b4d', patk: '#ff6b4d', satk: '#c47bff', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     let i = 0;
     for (const k in this.buffs) {
       const b = this.buffs[k];
@@ -489,9 +549,9 @@ G.Player = class Player {
       ctx.textAlign = 'center';
       const y = this.y - this.bodyH - 8;
       ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
-      ctx.strokeText(this.tag, this.x, y);
+      G.I18n.rawCanvas(ctx, 'strokeText', this.tag, this.x, y);
       ctx.fillStyle = this.dead ? '#ff8a96' : this.tagColor || '#fff';
-      ctx.fillText(this.tag, this.x, y);
+      G.I18n.rawCanvas(ctx, 'fillText', this.tag, this.x, y);
       if (this.dead) {
         ctx.font = '700 6px Pixelify,"Segoe UI",sans-serif';
         ctx.strokeText(this.revLabel || '', this.x, y - 8);

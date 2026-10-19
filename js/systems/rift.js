@@ -26,11 +26,22 @@ G.Rift = (() => {
   const ARENA_R = 11, ARENA_TIME = 120, FROM = 75;
   let rift = null;          // { x, y, ttl, t }
   let arena = null;         // { tx, ty, r, dex, shiny, x, y, back, biome, t, phase, endT, bossId }
+  let zone = null;          // dónde estaba la última arena { x, y, r } (ver leftBehind)
   let checkT = CHECK, asked = false, downT = 0, misses = 0;
   const authority = () => !G.Coop.active || G.Coop.isHost;
   const TS = () => G.Tiles.T * G.Sprites.PX;
 
-  function reset() { rift = null; arena = null; checkT = CHECK; asked = false; downT = 0; misses = 0; }
+  function reset() { rift = null; arena = null; zone = null; checkT = CHECK; asked = false; downT = 0; misses = 0; }
+
+  /**
+   * ¿Sigue este jugador en la arena aunque aquí ya se haya vuelto al mapa?
+   * En grupo, el anfitrión vuelve unas décimas antes que los invitados (el aviso
+   * tarda en llegar) y en ese rato los ve aún allí: el jefe que esperaba salía a su
+   * lado, a miles de metros, y ya no se le encontraba (ni salían más grietas).
+   */
+  function leftBehind(p) {
+    return !arena && !!zone && G.U.dist2(p.x, p.y, zone.x, zone.y) < zone.r * zone.r;
+  }
 
   // ---------------- grieta en el mapa ----------------
 
@@ -116,6 +127,7 @@ G.Rift = (() => {
       x: cfg.tx * ts + ts / 2, y: cfg.ty * ts + ts / 2,
       back: { x: pl.x, y: pl.y }, biome: G.World.biome, t: 0, phase: 'fight', endT: 0, bossId: 0
     });
+    zone = { x: arena.x, y: arena.y, r: (cfg.r + 10) * ts };
     rift = null; asked = false; downT = 0;
     if (authority()) G.EnemyMgr.stash(); else G.EnemyMgr.clearRemote();
     G.Projectiles.clear();
@@ -269,7 +281,7 @@ G.Rift = (() => {
   }
 
   return {
-    reset, update, drawable, onEvent, enterRequest() { if (!arena) start(); },
+    reset, update, drawable, onEvent, leftBehind, enterRequest() { if (!arena) start(); },
     get rift() { return rift; }, get arena() { return arena; },
     get inArena() { return !!arena; },
     get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },

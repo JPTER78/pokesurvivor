@@ -6,6 +6,16 @@ G.LIFT = 18;
 
 G.U = {
   clamp(v, a, b) { return v < a ? a : v > b ? b : v; },
+  /*
+   * Lo que llega de OTROS jugadores (ranking, perfiles, reportes) se limpia
+   * con esto al leerlo, antes de usarlo en ningún sitio (18-10-2026: alguien
+   * metió código en el "nivel" de su fila del ranking y se ejecutaba en el
+   * navegador de quien lo abría). Un número es siempre un número y un texto,
+   * siempre texto (y se escapa al pintarlo).
+   */
+  int(v, max = 1e12) { return Number.isFinite(+v) && +v > 0 ? Math.min(max, Math.floor(+v)) : 0; },
+  str(v, max = 64) { return typeof v === 'string' ? v.slice(0, max) : ''; },
+  list(v, max = 50) { return Array.isArray(v) ? v.slice(0, max) : []; },
   lerp(a, b, t) { return a + (b - a) * t; },
   rand(a, b) { return a + Math.random() * (b - a); },
   randInt(a, b) { return Math.floor(a + Math.random() * (b - a + 1)); },

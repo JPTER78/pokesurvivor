@@ -91,6 +91,9 @@ def one(dex):
     hp = round(70 + base['hp'] * 0.45)
     spd = round(78 + base['speed'] * 0.42)
     atk = round(0.70 + max(base['attack'], base['special-attack']) / 100 * 0.55, 2)
+    # Físico / especial por separado (atk es el mayor de los dos) y las defensas tal cual.
+    pa = round(0.70 + base['attack'] / 100 * 0.55, 2)
+    sa = round(0.70 + base['special-attack'] / 100 * 0.55, 2)
 
     return {
         'dex': dex,
@@ -100,6 +103,7 @@ def one(dex):
         'hp': hp,
         'spd': spd,
         'atk': atk,
+        'pa': pa, 'sa': sa, 'df': base['defense'], 'sd': base['special-defense'],
         'bst': bst,
         'height': p['height'],
         'rarity': rarity(bst, dex, s.get('is_legendary'), s.get('is_mythical')),
@@ -128,6 +132,7 @@ def main():
         ' * PokeAPI y viven aqui: el juego no hace ninguna peticion a internet.',
         ' *',
         ' * hp/spd/atk son stats de juego derivados de los stats base.',
+        ' * pa/sa: daño de sus ataques físicos/especiales (atk = el mayor) · df/sd: Defensa y Defensa Especial base.',
         ' * rarity 1-5 para el gacha · gen = generación (banner) · starter = test',
         ' * leg = legendario o singular (sólo salen en las grietas)',
         ' */',
@@ -137,6 +142,7 @@ def main():
         o = {
             'dex': r['dex'], 'name': r['name'], 'types': r['types'],
             'hp': r['hp'], 'spd': r['spd'], 'atk': r['atk'],
+            'pa': r['pa'], 'sa': r['sa'], 'df': r['df'], 'sd': r['sd'],
             'rarity': r['rarity'], 'bst': r['bst'],
             'starter': r['starter'], 'gen': r['gen'],
         }
