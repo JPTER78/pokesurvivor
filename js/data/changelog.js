@@ -6,6 +6,14 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-20', title: ['20 ataques populares, objetos de apoyo y Pulsera Z', '20 popular moves, support items and Z-Ring'], new: [
+    ['20 ataques muy usados en los juegos que aún no estaban: Puño Fuego, Puño Trueno, Puño Hielo, Cascada, Acua Jet, Hoja Aguda, Voltiocambio, Placaje Eléctrico, Excavar, Cola Férrea, Recuperación, Paz Mental... cada uno con su evolución.',
+     '20 moves that are very common in the games and were still missing: Fire Punch, Thunder Punch, Ice Punch, Waterfall, Aqua Jet, Leaf Blade, Volt Switch, Volt Tackle, Dig, Iron Tail, Recover, Calm Mind... each with its evolution.'],
+    ['Objetos de apoyo: salen en las cartas de subir de nivel y se pueden llevar hasta 6 a la vez, cada uno con hasta 5 niveles: Cinta Experto, Polvo Veloz, Hierba Única, Periscopio, Mineral Evolutivo, Más PS, Miel, Raíz Grande, Refleluz, Revivir, Repartir Experiencia, Pepita, Lodo Negro y Lupa. Se ven arriba a la izquierda y en el resumen de la pausa.',
+     'Support items: they show up in the level-up cards and you can carry up to 6 at once, each with up to 5 levels: Expert Belt, Quick Powder, Power Herb, Scope Lens, Eviolite, HP Up, Honey, Big Root, Light Clay, Revive, Exp. Share, Nugget, Black Sludge and Wide Lens. They show at the top left and in the pause summary.'],
+    ['Objeto nuevo, Pulsera Z: todos tus movimientos se lanzan a la vez.',
+     'New item, Z-Ring: all your moves fire at once.']
+  ] },
   { d: '2026-10-19', title: ['38 ataques nuevos', '38 new moves'], new: [
     ['38 ataques nuevos: ahora todos los tipos tienen 5 o más (Roca, Lucha, Dragón y Hada tenían sólo 2). Entre ellos Hiperrayo, Rayo Solar, Magnitud, Torbellino, Onda Trueno, Enfado, Carantoña, Golpe Bajo... cada uno con su evolución.',
      '38 new moves: every type now has 5 or more (Rock, Fighting, Dragon and Fairy had only 2). Among them Hyper Beam, Solar Beam, Magnitude, Whirlpool, Thunder Wave, Outrage, Play Rough, Sucker Punch... each with its evolution.'],

@@ -418,7 +418,28 @@ G.VFX = (() => {
     'mirror-shot':   { proj: 'shard', trail: 'spark' },
     'gyro-ball':     { melee: 'impact' },
     'sucker-punch':  { proj: 'crescent' },
-    'night-slash':   { melee: 'claw' }
+    'night-slash':   { melee: 'claw' },
+    // populares
+    'recover':       { buff: 'heart' },
+    'fire-punch':    { melee: 'impact', aura: 'fire' },
+    'waterfall':     { melee: 'impact', pal: 'water' },
+    'aqua-jet':      { proj: 'drop', trail: 'drip' },
+    'water-pulse':   { proj: 'ring', trail: 'drip' },
+    'leaf-blade':    { melee: 'claw' },
+    'thunder-punch': { melee: 'impact' },
+    'volt-tackle':   { proj: 'bolt', trail: 'spark' },
+    'volt-switch':   { proj: 'bolt', trail: 'spark' },
+    'ice-punch':     { melee: 'impact' },
+    'mach-punch':    { melee: 'impact' },
+    'drain-punch':   { aura: 'heart', inward: true },
+    'cross-poison':  { melee: 'claw' },
+    'dig':           { proj: 'rock' },
+    'roost':         { buff: 'arrow', pal: 'flying' },
+    'zen-headbutt':  { melee: 'impact' },
+    'calm-mind':     { buff: 'arrow', pal: 'psychic' },
+    'bullet-punch':  { proj: 'shard' },
+    'iron-tail':     { melee: 'claw' },
+    'iron-defense':  { buff: 'arrow', pal: 'steel' }
   };
 
   const TYPE_SHAPE = {

@@ -76,6 +76,34 @@ G.HUD = (() => {
       bx += tw + 5;
     }
 
+    // objetos de apoyo (data/passives.js): icono con su nivel, y las barreras de Refleluz
+    const pas = Object.entries(pl.passives || {});
+    const passY = py + (bx > px ? 56 : 40);
+    if (pas.length) {
+      const PS = 20;
+      pas.forEach(([id, lv], i) => {
+        const x = px + i * (PS + 6), y = passY;
+        roundRect(ctx, x - 2, y - 2, PS + 4, PS + 4, 5);
+        ctx.fillStyle = 'rgba(8,12,24,.75)'; ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffb84d'; ctx.stroke();
+        G.Icons.draw(ctx, id, x + 2, y + 2, PS - 4);
+        ctx.font = F(800, 9);
+        ctx.textAlign = 'right';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+        ctx.strokeText(String(lv), x + PS + 1, y + PS + 1);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(String(lv), x + PS + 1, y + PS + 1);
+      });
+      if (pl.barriers > 0) {
+        const x = px + pas.length * (PS + 6) + 2;
+        ctx.globalAlpha = 0.6 + 0.4 * Math.sin(performance.now() / 200);
+        G.Icons.draw(ctx, 'shield', x, passY, PS);
+        ctx.globalAlpha = 1;
+        if (pl.barriers > 1) { ctx.textAlign = 'left'; ctx.fillStyle = '#9fd8ff'; ctx.fillText('×' + pl.barriers, x + PS + 2, passY + PS - 2); }
+      }
+      ctx.textAlign = 'left';
+    }
+
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
     ctx.font = F(800, 26);
@@ -146,7 +174,7 @@ G.HUD = (() => {
       bx += tw + 5;
     }
 
-    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (bx > px ? 56 : 40));
+    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, passY + (pas.length ? 28 : 0));
 
     // Grieta: flecha grande que late en el borde si no se ve, y si se ve, una
     // flecha que bota encima; en la arena, cuenta atrás.

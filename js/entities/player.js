@@ -78,6 +78,15 @@ G.Player = class Player {
     this.sashT = -999;         // última vez que salvó la Banda Focus
     this.bellHeal = 0;         // curación pendiente del Cascabel Concha
     this.statsTaken = {};      // mejoras de stat cogidas (condición de evolución)
+    // Objetos de apoyo (data/passives.js): id -> nivel, y lo que llevan dentro.
+    this.passives = {};
+    this.areaMul = 1;          // Lupa: alcance y tamaño de los movimientos
+    this.lifesteal = 0;        // Raíz Grande: parte del daño hecho que cura...
+    this.lsBudget = 0;         // ...con un tope por segundo
+    this.barrierLv = 0;        // Refleluz: nivel, barreras listas y tiempo para la siguiente
+    this.barriers = 0;
+    this.barrierT = 0;
+    this.revives = 0;          // Revivir: veces que vuelves al debilitarte
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -116,6 +125,7 @@ G.Player = class Player {
   addMove(id) {
     if (this.slots.length >= this.maxMoves || this.hasMove(id)) return false;
     const m = G.Moves.instance(id, 1);
+    if (this.areaMul !== 1) G.Passives.area(m, this.areaMul);   // Lupa
     m.since = G.Game.st.time;          // desde cuándo lo tienes (daño por segundo en el resumen)
     this.moves.push(m);
     const group = [m];
@@ -208,7 +218,11 @@ G.Player = class Player {
   }
 
   /** Movimientos que se lanzan ahora (el grupo del hueco activo). */
-  activeGroup() { return this.slots[this.active] || []; }
+  activeGroup() {
+    // Pulsera Z: se lanzan todos los movimientos, no sólo los del hueco activo.
+    if (this.item === 'zring') return this.slots.flat();
+    return this.slots[this.active] || [];
+  }
 
   activeMove() { return this.activeGroup()[0]; }
 
@@ -246,6 +260,14 @@ G.Player = class Player {
   /** @param cat  'physical' | 'special': con qué defensa tuya se para (la del enemigo que pega). */
   hurt(amount, type = null, pure = false, cat = null) {
     if (this.invuln > 0 || this.dead) return;
+    // Refleluz: la barrera se come el golpe (no el toque de Arceus).
+    if (this.barriers > 0 && !pure) {
+      this.barriers--;
+      this.invuln = 0.35;
+      G.FX.ring(this.x, this.y, 6, this.r * 3, '#9fd8ff', 0.35, 4);
+      G.FX.dmgText(this.x, this.y - this.bodyH - 6, '¡Barrera!', '#9fd8ff');
+      return;
+    }
     if (!pure) amount *= G.Stats.taken(this.mon, cat);
     let eff = null;
     if (type) {
@@ -271,6 +293,15 @@ G.Player = class Player {
       this.hp = 1; this.invuln = 1.2;
       G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Banda Focus!', '#ff9a3d', true);
       G.FX.ring(this.x, this.y, 6, 70, '#ff9a3d', 0.5, 4);
+    }
+    // Revivir: vuelve una vez con la mitad de la vida.
+    if (this.hp <= 0 && this.revives > 0) {
+      this.revives--;
+      this.hp = this.maxHp * 0.5; this.invuln = 2;
+      G.FX.ring(this.x, this.y, 8, 160, '#ffe14d', 0.6, 6);
+      G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#fff6c8', 40, 240);
+      G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Revivir!', '#ffe14d', true);
+      G.Audio.sfx('legend');
     }
     if (this.hp <= 0) {
       this.hp = 0; this.dead = true;
@@ -315,6 +346,12 @@ G.Player = class Player {
   /** Cascabel Concha: un poco de vida por el daño que haces (tope 4/s). */
   onDealt(dmg) {
     if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
+    // Raíz Grande (objeto de apoyo): con su tope por segundo (ver G.Passives.tick).
+    if (this.lifesteal > 0 && this.lsBudget > 0) {
+      const h = Math.min(dmg * this.lifesteal, this.lsBudget);
+      this.lsBudget -= h;
+      this.hp = Math.min(this.maxHp, this.hp + h);
+    }
   }
 
   /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
@@ -348,6 +385,7 @@ G.Player = class Player {
     if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
+    if (this.barrierLv || this.lifesteal) G.Passives.tick(this, dt);
 
     // --- movimiento con colisiones ---
     // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
