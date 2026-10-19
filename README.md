@@ -68,7 +68,9 @@ en una tragaperras pixel art.
 Cada enemigo tiene 1/4096 de salir **shiny**: brilla, una flecha en el borde de
 la pantalla te dice dónde está, y si lo derrotas te lo quedas. En el gacha sale
 shiny 1 de cada 100 tiradas. En la colección eliges tu compañero en versión
-normal o shiny.
+normal o shiny. Los 59 Pokémon con dibujo de hembra en SpriteCollab pueden
+salir hembra (en el gacha y los shiny salvajes, con la proporción oficial de
+cada especie); sólo cambia el aspecto, y también se elige ♂ o ♀.
 
 La música suena tras el primer clic (los navegadores no dejan reproducir sonido
 antes). Volumen y silencio: botón del altavoz arriba a la derecha, o en la pausa.
@@ -114,6 +116,7 @@ index.html              pantallas + orden de carga
 css/style.css           interfaz estilo Mundo Misterioso
 assets/pokemon/{dex}/   hojas de sprites PMD (Idle, Walk, Attack, Shoot, Charge, Hurt, Faint)
 assets/pokemon/{dex}/s/ las mismas en versión shiny
+assets/pokemon/{dex}/f/ hembra (y fs/ hembra shiny), sólo en los que la tienen
 assets/fonts/           Pixelify Sans (OFL) y su versión con números redibujados (tools/make_font.py)
 js/
   net/      social (apodo, amigos, salas), net (WebRTC + relé),
@@ -134,8 +137,9 @@ tools/      scripts que regeneran los ficheros marcados con *
 `*` = generado. Para rehacerlos (necesita Python 3 + Pillow e internet, sólo esa vez):
 
 ```
-python tools/fetch_sprites.py    # sprites normal y shiny + js/data/sprites-meta.js
+python tools/fetch_sprites.py    # sprites normal, shiny y hembra + js/data/sprites-meta.js
                                  # (~20 min; se puede cortar y relanzar: usa tools/cache/)
+python tools/fetch_sprites.py --hembras   # sólo añade las hembras a lo que ya hay
 python tools/fetch_pokedex.py    # js/data/pokedex.js
 python tools/fetch_credits.py    # CREDITS.md
 ```
