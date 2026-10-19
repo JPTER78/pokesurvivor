@@ -50,6 +50,8 @@ G.CHANGELOG = [
     ['Una frase de broma en el título del menú principal, como las de Minecraft.',
      'A joke line on the main menu title, like the ones in Minecraft.']
   ], chg: [
+    ['Movimiento inicial y Veto ahora muestran una ficha por ataque: tipo, si es físico o especial, daño, recarga, alcance o duración, cuánto rinde con ese Pokémon y qué hace, igual que en las cartas de nivel. Así se elige sin ir a ciegas, y los vetados se quedan marcados en rojo.',
+     'Starting move and Veto now show a card for each move: type, whether it is physical or special, damage, cooldown, range or duration, how well it works with that Pokémon and what it does, just like level-up cards. Now you can pick without guessing, and banned moves stay marked in red.'],
     ['Los Pokémon de un solo tipo pegan un 20 % más con los ataques de su tipo, para compensar que tienen menos variedad.',
      'Single-type Pokémon deal 20% more damage with moves of their type, to make up for having less variety.'],
     ['Al aprender un ataque nuevo ya no se cambia solo a él: sigues con el que estabas usando y cambias cuando tú quieras.',

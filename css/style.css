@@ -901,3 +901,32 @@ html:lang(zh-Hant) { --font: 'Pixelify', 'PingFang TC', 'Microsoft JhengHei', 'N
 html:lang(zh-Hans) { --font: 'Pixelify', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif; }
 html:lang(zh) body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
 html:lang(zh) .btn, html:lang(zh) .chip { letter-spacing: 0; }
+/* Fichas de movimiento (Mejoras → Movimiento inicial y Veto): antes sólo había
+   chips con el nombre, sin tipo, números ni descripción. */
+.move-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(248px, 100%), 1fr)); gap: 8px; }
+.move-card {
+  display: flex; align-items: flex-start; gap: 10px; text-align: left; cursor: pointer;
+  font: inherit; color: inherit; text-shadow: inherit;
+  background: rgba(0,0,0,.22); border: 2px solid rgba(244,248,255,.22); border-radius: 10px;
+  padding: 8px 10px; min-width: 0; transition: border-color .12s, background .12s, transform .08s;
+}
+.move-card:hover { border-color: var(--edge); background: rgba(255,255,255,.08); transform: translateY(-1px); }
+.move-card .mc-ico { flex: 0 0 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; }
+.move-card .mc-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.move-card .mc-top { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 15px; line-height: 1.15; }
+.move-card .mc-facts { display: flex; flex-wrap: wrap; font-size: 12px; color: var(--gold); }
+.move-card .mc-facts span { white-space: nowrap; }
+.move-card .mc-facts span + span::before { content: '·'; margin: 0 5px; opacity: .6; }
+.move-card:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.move-card .mc-desc { font-size: 13px; color: var(--muted); line-height: 1.25; }
+.move-card .mc-mark { margin-left: auto; color: var(--gold); font-weight: 700; display: flex; align-items: center; }
+.move-card.on { border-color: var(--gold); background: rgba(255,210,63,.12); }
+.move-card.bad { border-color: var(--red); background: rgba(255,95,109,.14); }
+.move-card.bad .mc-top b { text-decoration: line-through; }
+.move-card.bad .mc-facts { color: #ffb3ba; }
+.move-card.bad .mc-mark { color: #ff5f6d; }
+.move-card.full { opacity: .45; }
+.tag-chip.mc-cat { background: var(--r1); color: #10131a; }
+.tag-chip.mc-fit { background: var(--red); color: #fff; }
+.mc-serie { font-size: 11px; color: var(--muted); border: 1px dashed rgba(244,248,255,.35); border-radius: 4px; padding: 0 5px; }
+@media (max-width: 560px) { .move-list { grid-template-columns: 1fr; } }
