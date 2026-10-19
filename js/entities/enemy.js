@@ -52,6 +52,8 @@
       this.slow = 0; this.slowT = 0;
       this.burn = 0; this.burnT = 0; this.burnTick = 0;
       this.poison = 0; this.poisonT = 0; this.poisonTick = 0;
+      this.weak = 0; this.weakT = 0;       // pega menos (Gruñido, Encanto...)
+      this.armor = 0; this.armorT = 0;     // recibe más daño (Malicioso, Chirrido...)
       this.lavaTick = 0;
       this.kx = 0; this.ky = 0;
       this.touchCd = 0;
@@ -80,6 +82,14 @@
 
     cy() { return this.y; }
 
+    /** Daño de sus golpes y disparos (menos si está debilitado). */
+    get dmg() {
+      // (Las copias de un invitado: lo debilitado llega del anfitrión.)
+      const w = this.remote ? (this.net && this.net.weak) || 0 : this.weakT > 0 ? this.weak : 0;
+      return this._dmg * (1 - w);
+    }
+    set dmg(v) { this._dmg = v; }
+
     /** Lo convierte en shiny: otro sprite, más aguante y mucha más XP. */
     makeShiny() {
       this.shiny = true;
@@ -87,6 +97,30 @@
       this.maxHp *= 2; this.hp = this.maxHp;
       this.xp *= 5;
       G.Sprites.preload([this.dex], 4000, true);
+    }
+
+    /**
+     * Jefe especial (20 % de los jefes sueltos y de los legendarios de grieta):
+     *   alpha  Alfa, como en Leyendas Arceus: enorme, ojos rojos, más vida y daño
+     *   totem  Dominante, como en Alola: aura y llama a ayudantes cada 14 s
+     * Los dos sueltan más premio al caer (ver die).
+     */
+    makeSpecial(kind) {
+      if (kind === 'alpha') {
+        this.alpha = true;
+        this.scale *= 1.3;
+        this.anim = new G.Sprites.Animator(this.dex, this.scale, this.shiny);
+        this.r = G.Sprites.bodyRadius(this.dex, this.scale);
+        this.bodyH = G.Sprites.bodyHeight(this.dex, this.scale);
+        this.maxHp = this.hp = Math.round(this.maxHp * 1.5);
+        this.dmg *= 1.25;
+        this.name += ' alfa';
+      } else {
+        this.totem = true; this.totemT = 6;
+        this.maxHp = this.hp = Math.round(this.maxHp * 1.3);
+        this.name += ' dominante';
+      }
+      this.xp = Math.round(this.xp * 1.5);
     }
 
     /** Hora dorada (events.js): doble de experiencia y a veces monedas. */
@@ -99,6 +133,7 @@
     /** @param eff  'super' | 'weak' | null (tabla de tipos, sólo para enseñarlo) */
     hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0, eff = null) {
       if (this.dead) return;
+      if (this.armorT > 0) amount *= 1 + this.armor;
       const d = Math.max(1, Math.round(amount));
       // Copia de un enemigo del anfitrión: el golpe se le manda a él, que es
       // quien decide si cae. Aquí sólo se ve (número, destello y animación).
@@ -116,7 +151,6 @@
         amount = d - a;
       }
       this.hp -= Math.max(1, Math.round(amount));
-      G.Judgment.noteDmg(amount, this);
       this.showHurt(d, color, dirX, dirY, eff);
       if (knock > 0 && !this.boss) {
         const [nx, ny] = G.U.norm(dirX, dirY);
@@ -139,7 +173,7 @@
     }
 
     applySlow(factor, dur = 1.2) {
-      if (this.remote) { G.Coop.status(this, 's', factor); return; }
+      if (this.remote) { G.Coop.status(this, 's', factor, dur); return; }
       this.slow = Math.max(this.slow, factor);
       this.slowT = Math.max(this.slowT, dur);
     }
@@ -150,6 +184,14 @@
     applyPoison(stacks = 1) {
       if (this.remote) { G.Coop.status(this, 'p', stacks); return; }
       this.poison = Math.min(8, this.poison + stacks); this.poisonT = 4;
+    }
+    applyWeak(amount, dur = 3) {
+      if (this.remote) { G.Coop.status(this, 'w', amount, dur); return; }
+      this.weak = Math.min(0.5, Math.max(this.weakT > 0 ? this.weak : 0, amount)); this.weakT = Math.max(this.weakT, dur);
+    }
+    applyArmor(amount, dur = 3) {
+      if (this.remote) { G.Coop.status(this, 'a', amount, dur); return; }
+      this.armor = Math.min(0.5, Math.max(this.armorT > 0 ? this.armor : 0, amount)); this.armorT = Math.max(this.armorT, dur);
     }
 
     die() {
@@ -168,14 +210,15 @@
         if (this.shiny) { G.FX.burst(this.x, cy, '#ffe9a0', 30, 220); G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5); }
         return;
       }
-      // (Los legendarios de la Sentencia de Arceus sólo dan experiencia.)
-      if (this.boss && !this.judge) {
+      if (this.boss) {
         G.Camera.kick(0.9);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
         // Los jefes siempre sueltan un objeto equipable.
         G.Pickups.drop('item', this.x - 26, this.y - 10, G.Items.roll());
+        // A veces, una MT (Tienda Kecleon / Mochila).
+        if (Math.random() < 0.2) G.Pickups.drop('tm', this.x + 26, this.y - 10, 0);
       }
-      G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend, !!this.judge);
+      G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend);
       if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
       // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.
       if (this.behavior === 'thief') {
@@ -183,6 +226,14 @@
         for (let i = 0; i < n; i++) G.Pickups.drop('coin', this.x + G.U.rand(-36, 36), this.y + G.U.rand(-26, 26), 5);
         if (this.def.loot === 'ticket10') G.Pickups.drop('ticket10', this.x, this.y - 12, 1);
         G.FX.ring(this.x, this.y, this.r, this.r * 5, '#ffd23f', 0.6, 4);
+      }
+      // Jefe Alfa o Dominante, guardián del altar de riesgo y Pokémon errante: premio grande.
+      if (this.alpha || this.totem || this.riskReward || this.def.loot === 'roamer') {
+        for (let i = 0; i < 8; i++) G.Pickups.drop('coin', this.x + G.U.rand(-44, 44), this.y + G.U.rand(-30, 30), 6);
+        G.Pickups.drop('item', this.x, this.y - 20, G.Items.roll());
+        G.Pickups.drop('ticket10', this.x + 20, this.y - 6, 1);
+        if (Math.random() < 0.6) G.Pickups.drop('tm', this.x - 20, this.y - 6, 0);
+        G.FX.ring(this.x, this.y, this.r, this.r * 7, this.alpha ? '#ff4a4a' : '#ffd23f', 0.7, 5);
       }
       if (this.legend) {
         // El legendario de la grieta: tickets sueltos y monedas (el ×10, como
@@ -252,6 +303,8 @@
 
       // --- estados ---
       if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.slow = 0; }
+      if (this.weakT > 0) this.weakT -= dt;
+      if (this.armorT > 0) this.armorT -= dt;
       if (this.burn > 0) {
         this.burnT -= dt; this.burnTick -= dt;
         if (this.burnTick <= 0) { this.burnTick = 0.5; this.hurt(1.6 * this.burn * (1 + pl.level * 0.06), '#ff9a4d'); }
@@ -263,11 +316,16 @@
         if (this.poisonT <= 0) this.poison = 0;
       }
       if (this.dead) return;
+      // Dominante: llama a ayudantes de vez en cuando.
+      if (this.totem && !this.remote && (this.totemT -= dt) <= 0) {
+        this.totemT = 14;
+        G.Spawner.helpers(this, 3);
+      }
 
       // --- terreno ---
       let terrainMul = 1;
       // (El legendario está en su casa: su arena no le afecta. Los de Arceus, tampoco.)
-      if (!this.flying && !this.legend && !this.judge && G.World.isLiquid(this.x, this.y)) {
+      if (!this.flying && !this.legend && G.World.isLiquid(this.x, this.y)) {
         const le = G.World.liquidEffect(this.types);
         if (le.dmg) {
           this.lavaTick -= dt;
@@ -456,7 +514,7 @@
     enrage() {
       this.ai.fury = true;
       this.spd *= 1.15;
-      if (!this.judge) G.Spawner.say('¡' + this.name + ' se ha enfurecido!', 2.4);
+      G.Spawner.say('¡' + this.name + ' se ha enfurecido!', 2.4);
       G.FX.ring(this.x, this.y, this.r, this.r * 5, '#ff4a4a', 0.6, 5);
       G.Camera.kick(0.5);
       G.Audio.sfx('boss');
@@ -638,7 +696,7 @@
 
     startFuse() {
       this.phase = 'fuse'; this.pt = 1.0;
-      G.Hazards.add({ kind: 'zone', x: this.x, y: this.y, r: 62, delay: 1.0, dmg: this.dmg * 1.4, type: this.atkType, color: '#ff7b3d' });
+      G.Hazards.add({ kind: 'zone', x: this.x, y: this.y, r: 62, delay: 1.0, dmg: this.dmg * 1.4, type: this.atkType, color: '#ff7b3d', boom: true });
     }
 
     startJump(pl) {
@@ -679,6 +737,15 @@
       if (alpha <= 0) return;
 
       const gold = this.golden || this.behavior === 'thief' || (this.remote && !this.boss && G.Events.golden);
+      // Alfa: aura roja; Dominante: aura dorada que late, más grande.
+      if ((this.alpha || this.totem) && !this.dead) {
+        const k = 0.5 + Math.sin(this.bob * 0.8) * 0.5;
+        ctx.save();
+        ctx.globalAlpha = 0.18 + k * 0.14;
+        ctx.fillStyle = this.alpha ? '#ff3030' : '#ffd23f';
+        ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * (2.2 + k * 0.3), this.r * 0.85, 0, 0, 6.2832); ctx.fill();
+        ctx.restore();
+      }
       if ((this.boss || this.shiny || gold) && !this.dead) {
         ctx.save();
         ctx.globalAlpha = (gold && !this.boss ? 0.32 : 0.22) + Math.sin(this.bob * 0.5) * 0.06;
@@ -695,6 +762,15 @@
       const lift = (this.flying && !this.boss ? 1 + Math.sin(this.bob) * 1.5 : 0) + (this.jumpLift || 0);
       this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha });
       ctx.restore();
+      // Alfa: ojos rojos brillando encima.
+      if (this.alpha && !this.dead) {
+        const ey = this.y - lift - this.bodyH * 0.72;
+        ctx.save();
+        ctx.globalAlpha = 0.75 + Math.sin(this.bob * 2) * 0.2;
+        ctx.fillStyle = '#ff2020';
+        ctx.fillRect(Math.round(this.x - 6), Math.round(ey), 3, 2); ctx.fillRect(Math.round(this.x + 3), Math.round(ey), 3, 2);
+        ctx.restore();
+      }
 
       if (this.dead) return;
 
@@ -761,7 +837,10 @@
       e.id = o.id;
       e.remote = true;
       if (o.shiny) e.makeShiny();
+      // Alfa / Dominante: sólo cómo se ve (la vida ya llega multiplicada).
+      if (o.sp === 'alpha' || o.sp === 'totem') e.makeSpecial(o.sp);
       e.maxHp = o.hp; e.hp = o.hp;
+      e._dmg = o.dmg;            // ya llega multiplicado (antes el Alfa se contaba dos veces)
       e.net = { x: o.x, y: o.y, vx: 0, vy: 0, age: 0, dir: 0, anim: 0, st: 0 };
       list.push(e);
       byId.set(e.id, e);
@@ -907,7 +986,9 @@
         if (e.remote) continue;
         if (e.dead) {
           pl.kills++;
-          if (e.boss && !e.judge) pl.bosses++;
+          if (e.killer && G.Coop.isHost) G.Coop.killedBy(e.killer);
+          else if (pl.afx && pl.afx.kill) pl.afx.kill(pl, e);
+          if (e.boss) pl.bosses++;
           G.Progress.kill(e);
           corpses.push(e);
           list.splice(i, 1);

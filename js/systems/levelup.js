@@ -16,7 +16,8 @@ G.LevelUp = (() => {
     { id: 'cd',   icon: 'clock', title: 'Reflejos',     desc: '-8% de recarga en todos los movimientos.',
       apply: pl => pl.cdMul *= 0.92, max: 10 },
     { id: 'def',  icon: 'shield', title: 'Coraza',       desc: '+6% de reducción de daño recibido.',
-      apply: pl => pl.dmgReduce = Math.min(0.7, pl.dmgReduce + 0.06), max: 12 },
+      // Tope de 0,7 sólo para las cartas (antes contaba el Chaleco Asalto y, al cambiarlo, se perdía lo de las cartas).
+      apply: pl => { const add = Math.min(0.06, 0.7 - (pl.cardRed || 0)); pl.cardRed = (pl.cardRed || 0) + add; pl.dmgReduce += add; }, max: 12 },
     { id: 'rgn',  icon: 'sprout', title: 'Síntesis',     desc: '+0.9 de vida regenerada por segundo.',
       apply: pl => pl.regenFlat += 0.9 },
     { id: 'mag',  icon: 'magnet', title: 'Imán',         desc: '+30% de radio de recogida de experiencia.',
@@ -24,24 +25,26 @@ G.LevelUp = (() => {
     { id: 'xp',   icon: 'book', title: 'Aprendizaje',  desc: '+12% de experiencia ganada.',
       apply: pl => pl.xpMul *= 1.12, max: 8 },
     { id: 'heal', icon: 'berry', title: 'Baya Zidra',   desc: 'Recupera el 45% de tu vida ahora mismo.',
-      apply: pl => pl.heal(pl.maxHp * 0.45) }
+      apply: pl => pl.heal(pl.maxHp * 0.45, true) }   // baya: Gula y Recogecosecha curan más
   ];
 
   /** Construye el conjunto de cartas candidatas, con pesos. */
   function candidates(pl) {
     const out = [];
 
-    // --- movimientos nuevos ---
+    // --- movimientos nuevos: los que ya sabe por su nivel (y sus MT) ---
     if (pl.slots.length < pl.maxMoves) {
-      // Con 2 potenciadores ya no se ofrecen más: los buff no hacen daño y
-      // llenar los 4 huecos con ellos deja la run sin salida.
-      const buffs = pl.moves.filter(m => m.kind === 'buff').length;
-      const pool = G.Moves.poolFor(pl.mon).filter(id =>
-        !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)) && !(buffs >= 2 && G.Moves.BY_ID[id].kind === 'buff'));
-      for (const id of G.U.pickN(pool, 6)) {
+      // Con 2 de estado ya no se ofrecen más: no hacen daño y llenar los 4
+      // huecos con ellos deja la run sin salida. Y salen menos que los de ataque
+      // (Pikachu sabe 9 al Nv. 1 y casi todos son de estado).
+      const status = pl.moves.filter(m => G.Moves.isStatus(m.id)).length;
+      const pool = G.Moves.poolFor(pl.mon, pl.monLevel).filter(id =>
+        !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)) && !(status >= 2 && G.Moves.isStatus(id)));
+      const atk = pool.filter(id => !G.Moves.isStatus(id)), st = pool.filter(id => G.Moves.isStatus(id));
+      for (const id of G.U.pickN(atk, 6).concat(G.U.pickN(st, 2))) {
         const d = G.Moves.BY_ID[id];
         out.push({
-          w: 10, type: 'new', key: 'new:' + id,
+          w: G.Moves.isStatus(id) ? 4 : 10, type: 'new', key: 'new:' + id,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
           tag: G.U.TYPE_NAME[d.type],
           title: d.name, desc: d.desc,

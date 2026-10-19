@@ -10,6 +10,15 @@
  *           Los enemigos le hacen daño; si cae (o tardas más de 2 min), se va.
  *           Premio: cura la mitad de la vida, monedas, un ticket y, 1 de cada
  *           5 veces, se une a tu colección.
+ *   ---- desde el 16-10-2026 (como mucho uno de estos por acto) ----
+ *   outbreak Brote masivo (como en Escarlata/Púrpura): 40 s en los que sólo sale
+ *           una especie, con 12 veces más probabilidad de que salga shiny
+ *   roamer  Pokémon errante: un legendario errante (Raikou, Suicune, Latias...)
+ *           que huye por el mapa; si lo alcanzas y lo vences antes de 45 s, premio grande
+ *   blackout Apagón (sólo en la Torre Lavanda): 30 s en los que sólo ves a tu
+ *           alrededor; lo que sale en la oscuridad da un 50 % más de experiencia
+ *   mirage  Espejismo (sólo en el desierto): un cofre que salta de sitio cada
+ *           pocos segundos; si lo tocas antes de 40 s, se abre con mucho botín
  *
  * Duendes del tesoro (1-2 por partida, ver Enemy behavior 'thief'): un
  * Meowth cargado de monedas (o, 1 de cada 4, un Gholdengo con un ticket ×10)
@@ -20,15 +29,19 @@
  */
 G.Events = (() => {
   const EVERY = [240, 300], DUR = 30, LOST_TIME = 120;
+  const DURS = { horde: DUR, gold: DUR, outbreak: 40, blackout: 30, mirage: 40, roamer: 45, lost: Infinity };
+  const NEW = new Set(['outbreak', 'roamer', 'blackout', 'mirage']);
+  const ROAMERS = [243, 244, 245, 380, 381, 480, 481, 482, 488, 641, 642, 645];
+  const HOP = 3.5;                      // el espejismo salta cada tantos segundos
   const THIEF_FIRST = [120, 240], THIEF_NEXT = [240, 360], THIEF_LIFE = 15;
   const authority = () => !G.Coop.active || G.Coop.isHost;
 
-  let nextT = 0, cur = null, last = null, thiefT = 0, thieves = 0;
+  let nextT = 0, cur = null, last = null, thiefT = 0, thieves = 0, newAct = -1;
   let lost = null;      // { dex, name, x, y, hp, maxHp, state, follow, tx, ty, t, anim, r, hitCd, netT, grant }
 
   function reset() {
     nextT = G.U.rand(EVERY[0], EVERY[1]);
-    cur = null; last = null; lost = null;
+    cur = null; last = null; lost = null; newAct = -1;
     thiefT = G.U.rand(THIEF_FIRST[0], THIEF_FIRST[1]); thieves = 0;
   }
 
@@ -37,10 +50,14 @@ G.Events = (() => {
   function update(dt, players, time) {
     if (cur) {
       cur.t += dt;
-      if (cur.id !== 'lost' && cur.t >= cur.dur && authority()) end();
+      if (cur && cur.id === 'mirage') mirageTick(dt, players);
+      if (cur && cur.id !== 'lost' && cur.t >= cur.dur && authority()) {
+        if (cur.id === 'mirage') say('El espejismo se ha desvanecido…', 2.6);
+        end();
+      }
     }
-    if (lost) lostTick(dt, players);
-    if (!authority() || G.Rift.inArena || G.Judgment.active) return;
+    if (lost && !G.Rift.inArena) lostTick(dt, players);   // (en la grieta se iba y se le acababa el tiempo)
+    if (!authority() || G.Rift.inArena || !G.Acts.eventsAllowed()) return;
 
     if (thieves < 2) {
       thiefT -= dt;
@@ -55,8 +72,17 @@ G.Events = (() => {
     if (nextT > 0) return;
     if (G.EnemyMgr.bossAlive()) { nextT = 10; return; }
     nextT = G.U.rand(EVERY[0], EVERY[1]);
-    const ids = ['horde', 'gold', 'lost'].filter(id => id !== last);
-    start(G.U.pick(ids), time, players);
+    let ids = ['horde', 'gold', 'lost'].filter(id => id !== last);
+    // Los nuevos, como mucho uno por acto (y los del bioma, más probables en el suyo).
+    if (newAct !== G.Acts.act) {
+      const fresh = ['outbreak', 'roamer'];
+      if (G.World.biomeKey === 'tower') fresh.push('blackout', 'blackout');
+      if (G.World.biomeKey === 'desert') fresh.push('mirage', 'mirage');
+      ids = ids.concat(fresh, fresh);
+    }
+    const id = G.U.pick(ids);
+    if (NEW.has(id)) newAct = G.Acts.act;
+    start(id, time, players);
   }
 
   function start(id, time, players) {
@@ -72,6 +98,21 @@ G.Events = (() => {
     } else if (id === 'gold') {
       cur = { id, t: 0, dur: DUR };
       for (const e of G.EnemyMgr.all()) if (!e.remote) e.makeGolden();
+    } else if (id === 'outbreak') {
+      const def = G.Enemies.outbreakDef(time);
+      if (!def) return start('gold', time, players);
+      G.Sprites.preload([def.dex]); G.Sprites.preload([def.dex], 8000, true);
+      cur = { id, t: 0, dur: DURS.outbreak, defs: [def], type: def.dex };
+      G.Spawner.burst(Math.round(8 * G.Coop.scaleRate(players.length)));
+    } else if (id === 'roamer') {
+      if (!spawnRoamer(players, time)) return start('gold', time, players);
+      cur = { id, t: 0, dur: DURS.roamer };
+    } else if (id === 'blackout') {
+      cur = { id, t: 0, dur: DURS.blackout };
+      G.Spawner.burst(Math.round(6 * G.Coop.scaleRate(players.length)));
+    } else if (id === 'mirage') {
+      cur = { id, t: 0, dur: DURS.mirage, chest: { x: 0, y: 0, hopT: 0, shown: 0 } };
+      if (!hopMirage(players)) { cur = null; return start('gold', time, players); }
     } else {
       if (!spawnLost(players)) return;
       cur = { id, t: 0, dur: Infinity };
@@ -84,11 +125,16 @@ G.Events = (() => {
     if (!cur) return;
     if (cur.id === 'horde') say('¡Horda de tipo ' + G.U.TYPE_NAME[cur.type] + '!', 3, G.U.TYPE_COLOR[cur.type]);
     else if (cur.id === 'gold') say('¡Hora dorada! Doble de experiencia', 3, '#ffd23f');
+    else if (cur.id === 'outbreak') say('¡Brote masivo de ' + nameOf(cur.type) + '! Más probabilidad de shiny', 3.4);
+    else if (cur.id === 'roamer') say('¡Un Pokémon errante! Atrápalo antes de que se escape', 3.4);
+    else if (cur.id === 'blackout') say('¡Apagón! Sólo ves a tu alrededor (y ganas más experiencia)', 3.4);
+    else if (cur.id === 'mirage') say('¡Un espejismo! Toca el cofre antes de que se desvanezca', 3.4);
     else if (lost) say('¡Un ' + lost.name + ' se ha perdido! Búscalo y llévalo a la marca', 3.4, '#7dffb0');
     G.Audio.sfx(cur.id === 'gold' ? 'shiny' : 'surge');
   }
 
   function say(text, secs) { G.Spawner.say(text, secs, true); }
+  const nameOf = dex => (G.DEX_BY[dex] || {}).name || '';
 
   function end() {
     if (!cur) return;
@@ -96,8 +142,81 @@ G.Events = (() => {
     if (G.Coop.isHost) G.Coop.broadcast(['ev', 'e']);
   }
 
-  /** Lo que sale durante una horda (lo usa G.Enemies.bagAt). */
-  function bag() { return cur && cur.id === 'horde' && cur.defs.length ? cur.defs : null; }
+  /** Lo que sale durante una horda o un brote masivo (lo usa G.Enemies.bagAt). */
+  function bag() { return cur && (cur.id === 'horde' || cur.id === 'outbreak') && cur.defs && cur.defs.length ? cur.defs : null; }
+
+  /** Brote masivo: su especie sale shiny 12 veces más (ver G.Spawner.rollShiny). */
+  function shinyBoost(dex) { return cur && cur.id === 'outbreak' && cur.type === dex ? 12 : 1; }
+
+  // ---------------- Pokémon errante ----------------
+
+  function spawnRoamer(players, time) {
+    const pool = ROAMERS.filter(d => G.DEX_BY[d] && G.SPRITE_META[d]);
+    if (!pool.length) return false;
+    const dex = G.U.pick(pool), mon = G.DEX_BY[dex];
+    const alive = players.filter(p => !p.dead);
+    const pl = G.U.pick(alive.length ? alive : players);
+    G.Sprites.preload([dex]);
+    const def = { dex, name: mon.name, behavior: 'thief', hp: Math.round(420 * (1 + time / 95) * G.Coop.scaleHp(players.length)),
+                  spd: 104, dmg: 0, xp: 400, loot: 'roamer' };
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * 6.2832, d = G.U.rand(260, 340);
+      const x = pl.x + Math.cos(a) * d, y = pl.y + Math.sin(a) * d * 0.8;
+      if (!G.World.isFree(x, y, 16)) continue;
+      const e = new G.Enemy(def, x, y, { hp: 1, spd: 1, dmg: 1 });
+      e.life = DURS.roamer;
+      e.legend = true;
+      G.EnemyMgr.add(e);
+      G.FX.ring(x, y, 4, 50, '#9ae6ff', 0.5, 4);
+      G.Audio.sfx('legend');
+      return true;
+    }
+    return false;
+  }
+
+  // ---------------- espejismo ----------------
+
+  /** El cofre salta a otro sitio cerca de alguien (quien manda; avisa a todos). */
+  function hopMirage(players) {
+    const alive = players.filter(p => !p.dead);
+    const pl = G.U.pick(alive.length ? alive : players);
+    for (let i = 0; i < 20; i++) {
+      const a = Math.random() * 6.2832, d = G.U.rand(200, 330);
+      const x = pl.x + Math.cos(a) * d, y = pl.y + Math.sin(a) * d * 0.8;
+      if (!G.World.isFree(x, y, 18)) continue;
+      Object.assign(cur.chest, { x, y, hopT: HOP, shown: 0 });
+      G.FX.burst(x, y - 10, '#ffe7a0', 12, 120);
+      if (G.Coop.isHost) G.Coop.broadcast(['ev', 'mp', Math.round(x), Math.round(y)]);
+      return true;
+    }
+    return false;
+  }
+
+  function mirageTick(dt, players) {
+    const c = cur.chest;
+    c.shown += dt;
+    if (!authority()) return;
+    if (players.some(p => !p.dead && G.U.dist2(p.x, p.y, c.x, c.y) < 36 * 36)) return openMirage();
+    if ((c.hopT -= dt) <= 0) hopMirage(players);
+  }
+
+  function openMirage() {
+    const c = cur.chest;
+    for (let i = 0; i < 14; i++) G.Pickups.drop('coin', c.x + G.U.rand(-30, 30), c.y + G.U.rand(-20, 20), 6);
+    G.Pickups.drop('ticket', c.x - 12, c.y - 8, 1); G.Pickups.drop('ticket', c.x + 12, c.y - 8, 1);
+    G.Pickups.drop('item', c.x, c.y - 16, G.Items.roll());
+    if (Math.random() < 0.4) G.Pickups.drop('tm', c.x, c.y + 12, 0);
+    G.Pickups.dropXp(c.x, c.y, G.Game.levelXp());
+    if (G.Coop.isHost) G.Coop.broadcast(['ev', 'mo']);
+    mirageOpened();
+    end();
+  }
+  function mirageOpened() {
+    const c = cur && cur.chest;
+    if (c) { G.FX.burst(c.x, c.y - 12, '#f2c443', 34, 220); G.FX.ring(c.x, c.y - 8, 6, 80, '#f2c443', 0.6, 5); }
+    G.Audio.sfx('legend');
+    say('¡Has alcanzado el espejismo! Era un cofre de verdad', 3);
+  }
 
   // ---------------- duende del tesoro ----------------
 
@@ -231,9 +350,35 @@ G.Events = (() => {
 
   // ---------------- red ----------------
 
+  /**
+   * El evento en curso va también en cada envío del anfitrión (f.es): si un
+   * aviso se pierde o llega desordenado (el espejismo mandaba dónde estaba el
+   * cofre antes de decir que empezaba), el siguiente envío lo arregla.
+   * El Pokémon perdido va aparte (sus 'lp').
+   */
+  function netState() {
+    if (!cur || cur.id === 'lost') return 0;
+    const c = cur.chest;
+    return [cur.id, cur.type || '', Math.round(cur.t), c ? Math.round(c.x) : 0, c ? Math.round(c.y) : 0];
+  }
+  function netApply(a) {
+    if (!Array.isArray(a)) { if (cur && cur.id !== 'lost') cur = null; return; }
+    if (typeof a[0] !== 'string' || !DURS[a[0]] || a[0] === 'lost') return;
+    if (!cur || cur.id !== a[0]) onNet(['ev', 's', a[0], a[1]]);
+    if (Math.abs(cur.t - a[2]) > 2) cur.t = +a[2] || 0;
+    const c = cur.chest;
+    if (c && (c.x !== a[3] || c.y !== a[4])) Object.assign(c, { x: +a[3] || 0, y: +a[4] || 0, shown: 0 });
+  }
+
   function onNet(ev) {
     switch (ev[1]) {
-      case 's': cur = { id: ev[2], t: 0, dur: ev[2] === 'lost' ? Infinity : DUR, type: ev[3] || null }; break;
+      case 's':
+        cur = { id: ev[2], t: 0, dur: DURS[ev[2]] || DUR, type: ev[2] === 'outbreak' ? +ev[3] : ev[3] || null };
+        if (ev[2] === 'mirage') cur.chest = { x: 0, y: 0, hopT: HOP, shown: 0 };
+        announce();
+        break;
+      case 'mp': if (cur && cur.chest) Object.assign(cur.chest, { x: ev[2], y: ev[3], shown: 0 }); break;
+      case 'mo': mirageOpened(); break;
       case 'e': cur = null; break;
       case 'lp': {
         const [, , dex, x, y, hp, follow, tx, ty, dir, moving] = ev;
@@ -251,7 +396,9 @@ G.Events = (() => {
 
   /** El Pokémon perdido y la marca, para ordenarlos por Y con el resto. */
   function drawables() {
-    if (!lost) return [];
+    const out = [];
+    if (cur && cur.id === 'mirage' && cur.chest.x) out.push(mirageDrawable());
+    if (!lost) return out;
     const L = lost;
     const now = performance.now() / 1000;
     const goal = {
@@ -294,7 +441,43 @@ G.Events = (() => {
         ctx.fillStyle = '#5fe08a'; ctx.fillRect(L.x - w / 2, y, w * Math.max(0, L.hp / L.maxHp), 3.4);
       }
     };
-    return [goal, mon];
+    return out.concat([goal, mon]);
+  }
+
+  /** El cofre del espejismo: tiembla como el aire caliente y aparece poco a poco. */
+  function mirageDrawable() {
+    const c = cur.chest, now = performance.now() / 1000;
+    return {
+      y: c.y,
+      draw(ctx) {
+        const P = G.Sprites.PX, img = G.Tiles.propSprite(G.World.biome, 'bigchest', 0);
+        const w = img.width * P, h = img.height * P;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, c.shown * 2) * (0.55 + Math.sin(now * 9) * 0.25);
+        const wob = Math.sin(now * 13 + c.x) * 2;
+        ctx.drawImage(img, Math.round(c.x - w / 2 + wob), Math.round(c.y - h + 2), w, h);
+        ctx.globalAlpha *= 0.5;
+        ctx.fillStyle = '#ffe7a0';
+        ctx.beginPath(); ctx.ellipse(c.x, c.y, 26, 9, 0, 0, 6.2832); ctx.fill();
+        ctx.restore();
+      }
+    };
+  }
+
+  /** Apagón: todo oscuro menos un círculo alrededor de tu Pokémon (con fundido). */
+  function drawOverlay(ctx, w, h, pl) {
+    if (!cur || cur.id !== 'blackout' || !pl) return;
+    const k = Math.max(0, Math.min(1, cur.t / 1.5, (cur.dur - cur.t) / 1.5));
+    const cam = G.Camera;
+    const sx = (pl.x - cam.left()) * cam.scale, sy = (pl.y - pl.bodyH * 0.5 - cam.top()) * cam.scale;
+    const R = 150 * cam.scale * ((pl.afx && pl.afx.seeFar) || 1);     // Iluminación: ve más
+    const g = ctx.createRadialGradient(sx, sy, R * 0.55, sx, sy, R);
+    g.addColorStop(0, 'rgba(6,4,14,0)');
+    g.addColorStop(1, `rgba(6,4,14,${0.94 * k})`);
+    ctx.save();
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
   }
 
   /** Flecha en el borde hacia el Pokémon perdido (o hacia la marca, si ya te sigue). */
@@ -308,14 +491,18 @@ G.Events = (() => {
     for (const e of G.EnemyMgr.all()) {
       if (e.behavior === 'thief' && !e.dead) edgeArrow(ctx, w, h, cam, e.x, e.y - 10, '#ffd23f', e.name, F);
     }
+    if (cur && cur.id === 'mirage' && cur.chest.x) edgeArrow(ctx, w, h, cam, cur.chest.x, cur.chest.y - 10, '#ffe7a0', 'Espejismo', F);
     if (cur && cur.id !== 'lost') {
       const left = Math.max(0, Math.ceil(cur.dur - cur.t));
-      const txt = (cur.id === 'gold' ? 'HORA DORADA' : 'HORDA ' + G.U.TYPE_NAME[cur.type].toUpperCase()) + ' · ' + left + ' s';
+      const LABEL = { gold: 'HORA DORADA', outbreak: 'BROTE MASIVO · ' + nameOf(cur.type).toUpperCase(), roamer: 'POKÉMON ERRANTE',
+                      blackout: 'APAGÓN', mirage: 'ESPEJISMO' };
+      const txt = (LABEL[cur.id] || 'HORDA ' + G.U.TYPE_NAME[cur.type].toUpperCase()) + ' · ' + left + ' s';
       ctx.save();
       ctx.font = F(800, 12); ctx.textAlign = 'center';
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.8)';
       ctx.strokeText(txt, w / 2, 112);
-      ctx.fillStyle = cur.id === 'gold' ? '#ffd23f' : G.U.TYPE_COLOR[cur.type] || '#fff';
+      ctx.fillStyle = cur.id === 'gold' ? '#ffd23f' : cur.id === 'horde' ? G.U.TYPE_COLOR[cur.type] || '#fff'
+        : cur.id === 'blackout' ? '#c9a6ff' : cur.id === 'mirage' ? '#ffe7a0' : '#9ae6ff';
       ctx.fillText(txt, w / 2, 112);
       ctx.restore();
     }
@@ -347,12 +534,13 @@ G.Events = (() => {
   }
 
   return {
-    reset, update, bag, onNet, drawables, drawHud,
+    reset, update, bag, shinyBoost, onNet, netState, netApply, drawables, drawHud, drawOverlay,
     get golden() { return !!cur && cur.id === 'gold'; },
     get current() { return cur ? cur.id : null; },
     /** Para pruebas. */
     debugStart(id) { start(id, G.Game.st.time, G.Game.everyone()); },
     debugThief() { spawnThief(G.Game.everyone(), G.Game.st.time); },
-    _dbg() { return lost && { x: lost.x, y: lost.y, tx: lost.tx, ty: lost.ty, state: lost.state, hp: lost.hp }; }
+    _dbg() { return lost && { x: lost.x, y: lost.y, tx: lost.tx, ty: lost.ty, state: lost.state, hp: lost.hp }; },
+    _mirage() { return cur && cur.chest ? Object.assign({}, cur.chest) : null; }
   };
 })();

@@ -37,10 +37,12 @@ G.AchDefs = (() => {
     { id: 'time20', cat: 'supervivencia', tier: 3, name: 'Superviviente', desc: 'Aguanta 20 minutos.', value: s => Math.floor(st('bestTime')(s) / 60), goal: 20, reward: { t10: 2 }, title: 'Superviviente' },
     { id: 'lvl20', cat: 'supervivencia', tier: 1, name: 'Creciendo', desc: 'Llega al nivel 15 en una run.', value: st('bestLevel'), goal: 15, reward: { t1: 2 } },
     { id: 'lvl40', cat: 'supervivencia', tier: 3, name: 'Imparable', desc: 'Llega al nivel 30 en una run.', value: st('bestLevel'), goal: 30, reward: { t10: 1 }, title: 'Imparable' },
-    // La Sentencia de Arceus (minuto 30, ver systems/judgment.js).
-    { id: 'judge', cat: 'supervivencia', tier: 2, name: 'La Sentencia', desc: 'Llega a la Sentencia de Arceus (minuto 30).', value: st('judged'), goal: 1, reward: { t10: 1 }, title: 'Juzgado' },
-    { id: 'judge60', cat: 'supervivencia', tier: 3, name: 'Ante el Creador', desc: 'Aguanta 1 minuto ante Arceus.', value: st('judgeTime'), goal: 60, reward: { t10: 2 }, title: 'Elegido de Arceus' },
-    { id: 'judgeBoss', cat: 'supervivencia', tier: 3, name: 'Desafío divino', desc: 'Derrota a 3 legendarios ante Arceus en una partida.', value: st('judgeBosses'), goal: 3, reward: { t10: 2 } },
+    // Victorias y modo infinito (systems/acts.js). Los ids son los de los logros de
+    // la Sentencia de Arceus (que ya no existe): quien los tenía, los conserva.
+    { id: 'judge', cat: 'supervivencia', tier: 2, name: 'Primera victoria', desc: 'Gana una partida: vence al jefe final y cruza el portal.', value: st('wins'), goal: 1, reward: { t10: 1 }, title: 'Vencedor' },
+    { id: 'judgeBoss', cat: 'supervivencia', tier: 3, name: 'Maestro', desc: 'Gana una partida en el rango Maestro.', value: st('masterWins'), goal: 1, reward: { t10: 2 }, title: 'Maestro' },
+    { id: 'judge60', cat: 'supervivencia', tier: 3, name: 'Sin final', desc: 'Aguanta 5 minutos en el modo infinito.', value: s => Math.floor(st('infTime')(s) / 60), goal: 5, reward: { t10: 2 }, title: 'Infinito' },
+    { id: 'zone3', cat: 'supervivencia', tier: 1, name: 'Guardián de zona', desc: 'Vence a 3 jefes de zona.', value: st('zoneBosses'), goal: 3, reward: { t1: 3 } },
     { id: 'runs50', cat: 'supervivencia', tier: 2, name: 'Explorador', desc: 'Juega 50 runs.', value: st('runs'), goal: 50, reward: { t10: 1 }, title: 'Explorador' },
 
     // ---------- combate ----------
@@ -83,8 +85,9 @@ G.AchDefs = (() => {
   for (const a of LIST) if (a.id === 'legAll') { a.goal = totalLegends; a.desc = `Vence a los ${totalLegends} legendarios.`; }
   // Metas que dependen de los datos del juego.
   for (const a of LIST) if (a.id === 'ownAll') { a.goal = G.DEX.length; a.desc = `Ten los ${G.DEX.length} Pokémon del juego.`; }
-  const evoTotal = Object.keys(G.Moves.EVO).length;
-  for (const a of LIST) if (a.id === 'evoAll') { a.goal = evoTotal; a.desc = `Evoluciona los ${evoTotal} movimientos distintos.`; }
+  const evoTotal = G.Moves.EVO_GOAL;
+  for (const a of LIST) if (a.id === 'itemsAll') { a.goal = G.Items.LIST.length; a.desc = `Encuentra los ${G.Items.LIST.length} objetos.`; }
+  for (const a of LIST) if (a.id === 'evoAll') { a.goal = evoTotal; a.desc = `Evoluciona ${evoTotal} movimientos distintos.`; }
 
   const BY = {};
   for (const a of LIST) BY[a.id] = a;

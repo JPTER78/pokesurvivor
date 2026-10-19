@@ -22,11 +22,11 @@ G.Spawner = (() => {
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
   const hpK = t => 3.3 + Math.min(1.7, t / 210);
   const SHINY_RATE = 1 / 4096;
-  let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
+  let acc = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
   function reset() {
-    acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
+    acc = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
   }
@@ -70,19 +70,25 @@ G.Spawner = (() => {
 
   function isFlyer(def) { return G.Sprites.hovers(def.dex); }
 
-  function rollShiny(dex) {
+  /** @param k  multiplicador (brote masivo: más probabilidad para su especie) */
+  function rollShiny(dex, k = 1) {
     if (!G.Sprites.hasShiny(dex)) return false;
     if (forceShiny > 0) { forceShiny--; return true; }
-    return Math.random() < SHINY_RATE;
+    return Math.random() < SHINY_RATE * k;
   }
 
   function spawnOne(pl, t, angle) {
     const def = G.U.pick(G.Enemies.bagAt(t));
     const pt = freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
-    const shiny = rollShiny(def.dex);
-    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
-    e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
+    const shiny = rollShiny(def.dex, G.Events.shinyBoost(def.dex));
+    // Rango de la partida y modo infinito (systems/acts.js): más vida y daño.
+    const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t) * G.Acts.hpMul()));
+    e.dmg *= DMG_K * G.Acts.dmgMul(); e.xp = Math.round(e.xp * XP_K);
+    // Torre Lavanda: los fantasmas atraviesan las paredes.
+    if (G.World.biomeKey === 'tower' && e.types.includes('ghost')) e.flying = true;
+    // Apagón (events.js): lo que sale en la oscuridad da más experiencia.
+    if (G.Events.current === 'blackout') e.xp = Math.round(e.xp * 1.5);
     if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
     if (shiny) e.makeShiny();
     if (G.Events.golden) e.makeGolden();
@@ -96,11 +102,57 @@ G.Spawner = (() => {
 
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
-    const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
+    const sc = G.Enemies.bossScale(t);
+    const e = new G.Enemy(b, x, y, Object.assign({}, sc, { hp: sc.hp * G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1) * G.Acts.hpMul(),
+                                                       dmg: sc.dmg * G.Acts.dmgMul() }), true);
     if (rollShiny(b.dex)) e.makeShiny();
+    // A veces, Alfa o Dominante (más fuerte y con más premio).
+    special(e);
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
     G.Camera.kick(1.1);
+    G.Audio.sfx('boss');
+    return e;
+  }
+
+  /** Jefes Alfa o Dominante: 1 de cada 5 jefes sueltos y legendarios de grieta. */
+  const SPECIAL_RATE = 0.2;
+  function special(e) {
+    if (Math.random() < SPECIAL_RATE) e.makeSpecial(Math.random() < 0.5 ? 'alpha' : 'totem');
+  }
+
+  /** Dominante: `n` ayudantes alrededor del jefe, de los que salen ahora. */
+  function helpers(boss, n) {
+    const t = G.Game.st.time;
+    for (let i = 0; i < n && G.EnemyMgr.count < CAP + 6; i++) {
+      const a = Math.random() * 6.2832, d = boss.r + G.U.rand(30, 70);
+      const x = boss.x + Math.cos(a) * d, y = boss.y + Math.sin(a) * d * 0.8;
+      if (!G.World.isFree(x, y, 12)) continue;
+      const def = G.U.pick(G.Enemies.bagAt(t));
+      const e = new G.Enemy(def, x, y, scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t) * G.Acts.hpMul()));
+      e.dmg *= DMG_K * G.Acts.dmgMul(); e.xp = Math.round(e.xp * XP_K);
+      G.EnemyMgr.add(e);
+      G.FX.ring(x, y, 4, 30, '#ffd23f', 0.4, 3);
+    }
+    say('¡' + boss.name + ' llama a sus ayudantes!', 2.2);
+  }
+
+  /** Jefe suelto número `i` de la partida (los manda acts.js: 2 por acto). */
+  function spawnLoose(i, t) {
+    const b = G.Enemies.BOSSES[i];
+    if (b && players.length) return spawnBoss(anchor(), t, b);
+    return null;
+  }
+
+  /** Jefe de zona o final (acts.js): su definición ya trae vida y daño. */
+  function spawnBossDef(def, msg) {
+    if (!players.length) players = G.Game.everyone();
+    const [x, y] = ringPoint(anchor(), Math.random() * 6.2832);
+    const e = new G.Enemy(def, x, y, { hp: 1, spd: 1, dmg: 1 }, true);
+    if (rollShiny(def.dex)) e.makeShiny();
+    G.EnemyMgr.add(e);
+    say(msg, 3.6);
+    G.Camera.kick(1.2);
     G.Audio.sfx('boss');
     return e;
   }
@@ -109,17 +161,13 @@ G.Spawner = (() => {
   function update(dt, who, t) {
     players = Array.isArray(who) ? who : [who];
     if (announceT > 0) announceT -= dt;
-    // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
-    // En la Sentencia de Arceus, sólo sus legendarios (systems/judgment.js).
-    if (G.Rift.inArena || G.Judgment.active) return;
+    // En la arena de la grieta no sale nada más; tras vencer al jefe final
+    // tampoco (salvo en el modo infinito). Los jefes los manda acts.js.
+    if (G.Rift.inArena || !G.Acts.spawning()) return;
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;
     if (preloadT <= 0) { preloadT = 10; G.Sprites.preload(G.Enemies.upcomingDex(t, 60)); }
-
-    // --- jefes ---
-    const b = G.Enemies.BOSSES[bossIdx];
-    if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el
     // jefe sea un momento propio y se le pueda apuntar entre la multitud.
@@ -127,7 +175,7 @@ G.Spawner = (() => {
 
     // --- goteo normal ---
     if (G.EnemyMgr.count < CAP) {
-      acc += rate(t) * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * dt;
+      acc += rate(t) * G.Coop.scaleRate(players.length) * G.Acts.rateMul() * (bossFight ? 0.25 : 1) * dt;
       let n = Math.floor(acc);
       acc -= n;
       while (n-- > 0 && G.EnemyMgr.count < CAP) spawnOne(anchor(), t);
@@ -179,6 +227,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  return { reset, update, ahead, burst, tickBanner, banner, say, rate, spawnLoose, spawnBossDef, special, helpers, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();

@@ -28,7 +28,10 @@
  *
  * Jefes: Pokémon fuertes NO legendarios (pseudolegendarios, Slaking...), al
  * azar por franjas de poder. Los legendarios sólo salen en las grietas
- * (systems/rift.js).
+ * (systems/rift.js) y como jefe final (systems/acts.js).
+ *
+ * Bioma (desde el 16-10-2026): el 65 % de los salvajes son de los tipos del
+ * bioma del acto (G.Tiles.BIOMES[b].types) y el 35 %, del elenco al azar.
  */
 G.Enemies = (() => {
   const TIERS = [
@@ -40,14 +43,16 @@ G.Enemies = (() => {
     { from: 500, bst: [530, 620], hp: 250, spd: 72, dmg: 28, xp: 38, cast: 7 }
   ];
 
-  // Franjas de jefe: minuto en que salen, PV base y franja de BST.
+  // Jefes sueltos (2 por acto, los manda systems/acts.js): PV base y franja de BST.
   const BOSS_SLOTS = [
-    { at: 180, hp: 1400,  dmg: 34, xp: 220,  bst: [490, 545] },
-    { at: 360, hp: 3200,  dmg: 42, xp: 420,  bst: [520, 580] },
-    { at: 540, hp: 5600,  dmg: 48, xp: 680,  bst: [540, 600] },
-    { at: 720, hp: 9000,  dmg: 56, xp: 1000, bst: [580, 700] },
-    { at: 900, hp: 16000, dmg: 68, xp: 1800, bst: [600, 700] }
+    { hp: 1400,  dmg: 34, xp: 220,  bst: [490, 545] },
+    { hp: 3200,  dmg: 42, xp: 420,  bst: [520, 580] },
+    { hp: 5600,  dmg: 48, xp: 680,  bst: [540, 600] },
+    { hp: 9000,  dmg: 56, xp: 1000, bst: [580, 700] },
+    { hp: 16000, dmg: 68, xp: 1800, bst: [600, 700] },
+    { hp: 24000, dmg: 76, xp: 2400, bst: [600, 720] }
   ];
+  const BIOME_SHARE = 0.65;              // salvajes de los tipos del bioma
 
   // Stats base aproximados a partir de los de juego (inverso de fetch_pokedex).
   const baseHp = p => (p.hp - 70) / 0.45;
@@ -160,7 +165,7 @@ G.Enemies = (() => {
       const p = G.U.pick(pool);
       used.add(p.dex);
       return {
-        at: slot.at, dex: p.dex, name: p.name,
+        dex: p.dex, name: p.name,
         // (Desde 2026-10-10 más duros: ×1,35 de vida y ×1,2 de daño.)
         hp: Math.round(slot.hp * 1.35), spd: Math.round(G.U.clamp(40 + baseSpd(p) * 0.5, 40, 100)),
         dmg: Math.round(slot.dmg * 1.2), xp: slot.xp,
@@ -168,11 +173,57 @@ G.Enemies = (() => {
         shotDmg: Math.round(slot.dmg * 0.55), shotCd: 1.1, range: 260
       };
     });
+    biomeCast = null;
     return { cast, bosses };
   }
 
-  // (El "tiempo extra" del minuto 60 se quitó al llegar la Sentencia de Arceus,
-  //  que acaba todas las partidas en el minuto 30: ver systems/judgment.js.)
+  // ---------------- bioma del acto ----------------
+
+  let biomeCast = null;     // [{ from, list }] como cast, sólo con los tipos del bioma
+  let biomeIdx = -1;
+
+  /** El acto cambia de bioma: elenco nuevo con sus tipos. */
+  function setBiome(b) {
+    biomeIdx = b;
+    const B = G.Tiles.BIOMES[b];
+    const types = (B && B.types) || [];
+    if (!types.length) { biomeCast = null; return; }
+    biomeCast = TIERS.map((tier, ti) => {
+      const pool = candidates(tier).filter(p => p.types.some(t => types.includes(t)) && !SUPPORT.includes(behaviorOf(p)));
+      return { from: tier.from, list: G.U.pickN(pool, 5).map(p => defFor(p, tier, ti)) };
+    });
+  }
+
+  /** Brote masivo (events.js): una especie del tramo actual, mejor de los tipos del bioma. */
+  function outbreakDef(t) {
+    const ti = tierAt(t), types = ((G.Tiles.BIOMES[biomeIdx] || {}).types) || [];
+    const all = candidates(TIERS[ti]).filter(p => !NO_HORDE.has(behaviorOf(p)) && G.Sprites.hasShiny(p.dex));
+    const mine = all.filter(p => p.types.some(x => types.includes(x)));
+    const p = G.U.pick(mine.length ? mine : all);
+    return p ? defFor(p, TIERS[ti], ti) : null;
+  }
+
+  /** Jefe de zona: un Pokémon fuerte (no legendario) de los tipos del bioma. */
+  function zoneBoss(b) {
+    const types = (G.Tiles.BIOMES[b] && G.Tiles.BIOMES[b].types) || [];
+    const ok = p => !p.leg && p.rarity < 5 && G.SPRITE_META[p.dex] && p.bst >= 500 && p.bst <= 640;
+    let pool = G.DEX.filter(p => ok(p) && p.types.some(t => types.includes(t)));
+    if (!pool.length) pool = G.DEX.filter(ok);
+    return G.U.pick(pool);
+  }
+
+  /** Jefe final: un legendario al azar (los que aún no has vencido, más a menudo). */
+  function finalBoss() {
+    const pool = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
+    const beaten = (G.DB.save && G.DB.save.legends) || {};
+    const ws = pool.map(p => (beaten[p.dex] ? 1 : 3));
+    let r = Math.random() * ws.reduce((a, b) => a + b, 0), i = 0;
+    while (i < pool.length - 1 && (r -= ws[i]) > 0) i++;
+    return pool[i];
+  }
+
+  // La partida dura 3 actos de 10 min (systems/acts.js); el modo infinito
+  // escala aparte (G.Acts.hpMul / dmgMul).
   function scale(t) {
     return { hp: 1 + t / 95, dmg: 1 + t / 420, spd: 1 + Math.min(0.35, t / 1400) };
   }
@@ -206,7 +257,8 @@ G.Enemies = (() => {
     if (horde) return horde;
     if (!cast) rollRun();
     const bag = [];
-    for (const tier of cast) {
+    const src = biomeCast && Math.random() < BIOME_SHARE ? biomeCast : cast;
+    for (const tier of src) {
       if (t < tier.from) continue;
       const w = t - tier.from > 260 ? 3 : 10;       // los tramos viejos pierden peso
       for (const e of tier.list) for (let i = 0; i < w; i++) bag.push(e);
@@ -218,13 +270,13 @@ G.Enemies = (() => {
   function upcomingDex(t, ahead = 60) {
     if (!cast) rollRun();
     const out = [];
-    for (const tier of cast) if (tier.from <= t + ahead) for (const e of tier.list) out.push(e.dex);
-    for (const b of bosses) if (b.at <= t + ahead) out.push(b.dex);
+    for (const tier of cast.concat(biomeCast || [])) if (tier.from <= t + ahead) for (const e of tier.list) out.push(e.dex);
     return out;
   }
 
   return {
     TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    setBiome, zoneBoss, finalBoss, outbreakDef,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

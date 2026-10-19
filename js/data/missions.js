@@ -8,10 +8,15 @@
  *   value   datos -> cuánto vale; con mode 'max' se queda el mayor, con
  *           'add' (por defecto) se suma (1 si no hay value)
  *   param   'type': sortea un tipo Pokémon para la misión
+ *   when    partida guardada -> ¿puede salir? (las de sistemas que aún no
+ *           tienes, como las MT o el modo infinito, no salen hasta que los tengas)
  */
 G.MissionDefs = (() => {
   const T = t => G.U.TYPE_NAME[t];
   const min = d => Math.floor(d.time / 60);
+  const lvls = d => Math.max(0, (d.to | 0) - (d.from | 0));
+  const runs = n => s => (s.stats.runs || 0) >= n;
+  const infinite = s => G.Acts.rankOf(s) >= G.Acts.MAX_RANK;
 
   const daily = [
     { id: 'kill', ev: 'kill', goals: [300, 500, 800], reward: { t1: 2, coins: 150 },
@@ -33,7 +38,16 @@ G.MissionDefs = (() => {
     { id: 'item', ev: 'item', goals: [1], reward: { t1: 2, coins: 150 },
       text: () => 'Encuentra un objeto equipable' },
     { id: 'evolve', ev: 'evolve', goals: [1], reward: { t1: 3, coins: 250 },
-      text: () => 'Evoluciona un movimiento' }
+      text: () => 'Evoluciona un movimiento' },
+    // Desde el 16-10-2026: actos, jefes de zona, nivel del Pokémon y MT.
+    { id: 'zone', ev: 'zoneBoss', goals: [1, 2], reward: { t1: 3, coins: 250 }, when: runs(1),
+      text: n => (n === 1 ? 'Vence a un jefe de zona' : `Vence a ${n} jefes de zona`) },
+    { id: 'act', ev: 'runEnd', mode: 'max', value: d => d.act || 1, goals: [2, 3], reward: { t1: 3, coins: 250 }, when: runs(1),
+      text: n => `Llega al acto ${n} en una partida` },
+    { id: 'monLv', ev: 'monLevel', value: lvls, goals: [2, 3, 4], reward: { t1: 2, coins: 150 },
+      text: n => `Sube ${n} niveles a tus Pokémon` },
+    { id: 'tm', ev: 'tmTaught', goals: [1], reward: { t1: 3, coins: 300 }, when: () => G.Shop.unlocked('tm'),
+      text: () => 'Enseña una MT a un Pokémon' }
   ];
 
   const weekly = [
@@ -48,7 +62,15 @@ G.MissionDefs = (() => {
     { id: 'wevolve', ev: 'evolve', goals: [3, 5], reward: { t10: 1, coins: 900 },
       text: n => `Evoluciona ${n} movimientos` },
     { id: 'wdaily', ev: 'missionDone', match: d => d.daily, goals: [8, 12], reward: { t10: 1, coins: 800 },
-      text: n => `Completa ${n} misiones diarias` }
+      text: n => `Completa ${n} misiones diarias` },
+    { id: 'wwin', ev: 'win', goals: [1, 2], reward: { t10: 1, coins: 1200 }, when: runs(5),
+      text: n => (n === 1 ? 'Gana una partida' : `Gana ${n} partidas`) },
+    { id: 'wzone', ev: 'zoneBoss', goals: [4, 6], reward: { t10: 1, coins: 900 }, when: runs(3),
+      text: n => `Vence a ${n} jefes de zona` },
+    { id: 'wmonLv', ev: 'monLevel', value: lvls, goals: [10, 15], reward: { t10: 1, coins: 800 },
+      text: n => `Sube ${n} niveles a tus Pokémon` },
+    { id: 'winf', ev: 'infEnd', mode: 'max', value: min, goals: [3, 5], reward: { t10: 2, coins: 1500 }, when: infinite,
+      text: n => `Aguanta ${n} minutos en el modo infinito` }
   ];
 
   const BY = {};

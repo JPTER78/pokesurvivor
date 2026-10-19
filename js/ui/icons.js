@@ -104,6 +104,37 @@ G.Icons = (() => {
     ticket10: { pal: { p: '#c47bff', q: '#8a3fd0', w: '#f0d8ff', y: '#ffd23f' }, rows: [
       '............', '............', 'kkkkkkkkkkkk', 'kwpppqppyypk', 'kppppqpyyypk', '.kpppqpyyyk.',
       '.kpppqppyyk.', 'kppppqpppppk', 'kqqqqqqqqqqk', 'kkkkkkkkkkkk', '............', '............'] },
+    // Fase 4 (Tienda Kecleon y Mochila): MT, caramelos, Menta, Cápsulas, Mochila y tienda.
+    tm: { pal: { b: '#7f93ff', d: '#4a5bc4', w: '#e6ecff' }, rows: [
+      '....kkkk....', '..kkbbbbkk..', '.kbbwwbbbbk.', '.kbwwbbbbbk.', 'kbbwbkkbbbbk', 'kbbbk..kbbbk',
+      'kbbbk..kbbbk', 'kbbbbkkbbbdk', '.kbbbbbbbdk.', '.kbbbbbbddk.', '..kkbbddkk..', '....kkkk....'] },
+    rarecandy: { pal: { b: '#4f8fff', d: '#2c519f', w: '#e6f4ff' }, rows: [
+      '............', '............', '............', 'kk..kkkk..kk', 'kwkkbwbbkkwk', 'kwwkbbbbkwwk',
+      'kwwkbbbbkwwk', 'kwkkbbbdkkwk', 'kk..kkkk..kk', '............', '............', '............'] },
+    expS: { pal: { b: '#8be0a0', d: '#3f9a5a', w: '#eaffef' }, rows: [
+      '............', '............', '............', 'kk..kkkk..kk', 'kwkkbwbbkkwk', 'kwwkbbbbkwwk',
+      'kwwkbbbbkwwk', 'kwkkbbbdkkwk', 'kk..kkkk..kk', '............', '............', '............'] },
+    expM: { pal: { b: '#ffd23f', d: '#c08a10', w: '#fff3b0' }, rows: [
+      '............', '............', '............', 'kk..kkkk..kk', 'kwkkbwbbkkwk', 'kwwkbbbbkwwk',
+      'kwwkbbbbkwwk', 'kwkkbbbdkkwk', 'kk..kkkk..kk', '............', '............', '............'] },
+    expL: { pal: { b: '#ff8a4d', d: '#b8481a', w: '#ffe0cc' }, rows: [
+      '............', '............', '............', 'kk..kkkk..kk', 'kwkkbwbbkkwk', 'kwwkbbbbkwwk',
+      'kwwkbbbbkwwk', 'kwkkbbbdkkwk', 'kk..kkkk..kk', '............', '............', '............'] },
+    mint: { pal: { g: '#5fe08a', w: '#d6ffe2' }, rows: [
+      '............', '.......kkk..', '.....kkgggk.', '....kgggwgk.', '...kgggwggk.', '..kgggwgggk.',
+      '..kggwgggk..', '.kggwgggk...', '.kgwgggk....', '.kwkkkk.....', 'kk..........', 'k...........'] },
+    capsule: { pal: { r: '#ff5f6d', w: '#f4f8ff' }, rows: [
+      '............', '.......kkk..', '......krrrk.', '.....krwrrk.', '....krwrrrk.', '...kkrrrrk..',
+      '..kwwkkrk...', '.kwwwwkk....', '.kwwwwk.....', '.kwwwk......', '..kkk.......', '............'] },
+    capsuleh: { pal: { r: '#ffd23f', w: '#c47bff' }, rows: [
+      '............', '.......kkk..', '......krrrk.', '.....krwrrk.', '....krrrrrk.', '...kkrrrrk..',
+      '..kwwkkrk...', '.kwwwwkk....', '.kwwwwk.....', '.kwwwk......', '..kkk.......', '............'] },
+    bag: { pal: { b: '#e0743d', d: '#9a4418', w: '#ffc59f', y: '#ffd23f' }, rows: [
+      '....kkkk....', '...k....k...', '..kkkkkkkk..', '.kbbbbbbbbk.', '.kbwbbbbbbk.', '.kkkkkkkkkk.',
+      '.kbbbyybbbk.', '.kbbbyybbbk.', '.kbbbbbbbbk.', '.kbbbbbbbdk.', '.kddddddddk.', '..kkkkkkkk..'] },
+    shop: { pal: { g: '#5fe08a', w: '#f4f8ff', b: '#b07a4a', y: '#ffd23f' }, rows: [
+      '............', 'kkkkkkkkkkkk', 'kgwgwgwgwgwk', 'kgwgwgwgwgwk', 'kkkkkkkkkkkk', '.kbbbbbbbbk.',
+      '.kbkkkbbbbk.', '.kbkwkbyybk.', '.kbkwkbyybk.', '.kbkwkbbbbk.', '.kbkwkbbbbk.', 'kkkkkkkkkkkk'] },
     wsun: { pal: { y: '#ffd23f', o: '#ff9a3d' }, rows: [
       '.....yy.....', '..y..yy..y..', '...y....y...', '....kkkk....', 'yy.kyyyyk.yy', 'yy.kyyoyk.yy',
       '...kyooyk...', '....kkkk....', '...y....y...', '..y..yy..y..', '.....yy.....', '............'] },
@@ -162,6 +193,31 @@ G.Icons = (() => {
     assaultvest: { pal: { g: '#4f8a3a', d: '#2f5a22', y: '#ffd23f' }, rows: [
       '............', '.kkk....kkk.', 'kggk....kggk', 'kgggkkkkgggk', 'kgggyggygggk', 'kgggggggggdk',
       'kggyggggygdk', 'kgggggggggdk', 'kgggggggggdk', 'kddddddddddk', 'kkkkkkkkkkkk', '............'] },
+    // Objetos de combate nuevos (16-10-2026).
+    scopelens: { pal: { b: '#9fd8ff', d: '#4a8fc4', w: '#ffffff', y: '#c08a10' }, rows: [
+      '............', '...kkkkk....', '..kwwbbbk...', '.kwbbbbbbk..', '.kbbbbbbbk..', '.kbbbbbbbk..',
+      '.kbbbbbbdk..', '..kbbbbdk...', '...kkkkkkk..', '.......kyyk.', '........kyyk', '.........kk.'] },
+    expertbelt: { pal: { b: '#5a5a70', r: '#ff5f6d' }, rows: [
+      '............', '............', '............', 'kkkkkkkkkkkk', 'kbbbbkkbbbbk', 'kbbbkrrkbbbk',
+      'kbbbkrrkbbbk', 'kbbbbkkbbbbk', 'kkkkkkkkkkkk', '....kbk.....', '....kbk.....', '....kkk.....'] },
+    muscleband: { pal: { p: '#ffb84d', q: '#c0701a', w: '#ffe6c0' }, rows: [
+      '............', '............', '...kkkkkk...', '.kkppwwppkk.', 'kpp......ppk', 'kq........qk',
+      'kq........qk', 'kpp......ppk', '.kkppppppkk.', '...kkkkkk...', '............', '............'] },
+    wiseglasses: { pal: { b: '#9fd8ff', d: '#4a8fc4', w: '#ffffff' }, rows: [
+      '............', '............', '............', 'kkkkk..kkkkk', 'kwbbbkkkwbbk', 'kbbbbk.kbbbk',
+      'kbbbdk.kbbdk', '.kkkk...kkk.', '............', '............', '............', '............'] },
+    weaknesspolicy: { pal: { w: '#f4f8ff', r: '#ff5f6d' }, rows: [
+      '..kkkkkkk...', '..kwwwwwkk..', '..kwkkkwwkk.', '..kwwwwwwwk.', '..kwkkkkkwk.', '..kwwwwwwwk.',
+      '..kwkkkkkwk.', '..kwwwwrrwk.', '..kwwwrrrrk.', '..kwwwwrrwk.', '..kwwwwwwwk.', '..kkkkkkkkk.'] },
+    airballoon: { pal: { p: '#ff8ad8', q: '#c04a98', w: '#ffe0f4' }, rows: [
+      '...kkkkk....', '..kppwppk...', '.kpwppppqk..', '.kppppppqk..', '.kppppppqk..', '..kppppqk...',
+      '...kpqqk....', '....kkk.....', '.....k......', '......k.....', '.....k......', '......k.....'] },
+    brightpowder: { pal: { y: '#fff4b0', o: '#ffd23f', w: '#ffffff' }, rows: [
+      '.....w......', '....wyw.....', '.....w...w..', '.........y..', '..w......w..', '............',
+      '....kkkk....', '..kkyyyykk..', '.kyywyyyyyk.', 'kyyyyyywyyok', 'kooooooooook', 'kkkkkkkkkkkk'] },
+    whiteherb: { pal: { w: '#f4f8ff', g: '#5fe08a' }, rows: [
+      '............', '....k.k.....', '...kwkwk....', '..kwwkwwk...', '..kwwkwwk...', '...kwkwk....',
+      '....kgk.....', '....kgk.....', '...kgggk....', '....kgk.....', '....kgk.....', '....kkk.....'] },
     // ---------- medallas de logros (bronce, plata, oro) ----------
     medal1: { pal: { r: '#ff5f6d', q: '#b8283a', m: '#d08a4a', n: '#8a5226', w: '#ffd0a0', s: '#ffe8c8' }, rows: MEDAL },
     medal2: { pal: { r: '#4fb4ff', q: '#2a6fb0', m: '#c9d2de', n: '#7d8899', w: '#ffffff', s: '#ffffff' }, rows: MEDAL },
@@ -218,7 +274,9 @@ G.Icons = (() => {
     turret:     ['.###.', '.#.#.', '.###.', '..#..', '#####'],
     dash:       ['#.#..', '.#.#.', '..#.#', '.#.#.', '#.#..'],
     trail:      ['#....', '.....', '..#..', '.....', '....#'],
-    cone:       ['....#', '..###', '#####', '..###', '....#']
+    cone:       ['....#', '..###', '#####', '..###', '....#'],
+    debuff:     ['..#..', '..#..', '#####', '.###.', '..#..'],
+    weather:    ['.##..', '####.', '.....', '#.#.#', '.#.#.']
   };
 
   // ---------------- render ----------------

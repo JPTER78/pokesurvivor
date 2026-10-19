@@ -388,8 +388,57 @@ G.VFX = (() => {
     ghost: 'shadow', dragon: 'fire', dark: 'crescent', steel: 'shard', fairy: 'star', normal: 'star'
   };
 
+  // Movimientos de los juegos (moves.js, `gen`): parten de cómo se ven los curados
+  // de su tipo (el de su misma forma manda), con la paleta de su tipo, y cada uno
+  // cambia su forma y su estela (17-10-2026; antes Salmuera se veía igual que
+  // Pistola Agua). Manda lo que es (sonido: notas; pulso: anillos; mordisco:
+  // fauces; puño o patada: impacto; garra o corte: zarpazo); si no, una forma de
+  // su tipo elegida por su nombre, nunca la de su plantilla.
+  const POOL = {
+    water: ['drop', 'bubble', 'ring', 'streak'], fire: ['fire', 'ball', 'streak', 'star'], grass: ['leaf', 'needle', 'star', 'ball'],
+    electric: ['bolt', 'ball', 'ring', 'streak'], psychic: ['ring', 'star', 'ball', 'crescent'], ice: ['shard', 'star', 'needle', 'ball'],
+    fighting: ['impact', 'ball', 'crescent', 'streak'], poison: ['blob', 'needle', 'bubble', 'ball'], ground: ['blob', 'rock', 'crescent', 'ball'],
+    flying: ['wind', 'crescent', 'streak', 'needle'], bug: ['needle', 'blob', 'web', 'star'], rock: ['rock', 'shard', 'ball', 'star'],
+    ghost: ['shadow', 'ball', 'crescent', 'ring'], dragon: ['fire', 'crescent', 'star', 'streak'], dark: ['crescent', 'shadow', 'streak', 'ball'],
+    steel: ['shard', 'star', 'ring', 'crescent'], fairy: ['star', 'heart', 'ring', 'bubble'], normal: ['star', 'ball', 'impact', 'ring']
+  };
+  const TRAIL = { fire: 'ember', water: 'drip', electric: 'spark', ice: 'spark', ground: 'dirt', rock: 'dirt', ghost: 'wisp', poison: 'bubbles',
+                  psychic: 'wisp', dragon: 'ember', fairy: 'spark', steel: 'spark', grass: 'drip', bug: 'drip', flying: 'wisp', dark: 'wisp',
+                  fighting: 'dirt', normal: 'spark' };
+  const MELEE = ['claw', 'impact', 'crescent', 'jaws'];
+  const nameHash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
+  const genBase = {}, genVis = {};
+  function visOfGen(m) {
+    if (genVis[m.id]) return genVis[m.id];
+    const key = m.type + ':' + m.kind;
+    if (!genBase[key]) {
+      const same = G.Moves.ALL.filter(c => !c.gen && c.type === m.type && MOVE[c.id]);
+      const exact = same.find(c => c.kind === m.kind);
+      const b = Object.assign({}, ...same.map(c => MOVE[c.id]).reverse(), exact ? MOVE[exact.id] : {});
+      delete b.pal; delete b.inward;
+      genBase[key] = b;
+    }
+    const v = Object.assign({}, genBase[key]);
+    const h = nameHash(m.id), fl = m.fl || '', id = m.id;
+    // La forma de su plantilla (o la del tipo), para no repetirla.
+    const tplVis = Object.assign({ proj: TYPE_SHAPE[m.type] || 'ball' }, (m.tpl && MOVE[m.tpl]) || {});
+    const pool = (POOL[m.type] || POOL.normal).filter(s => s !== tplVis.proj);
+    v.proj = fl.includes('s') ? 'note' : fl.includes('u') ? 'ring' : fl.includes('l') && m.type !== 'rock' ? 'ball'
+           : pool[h % pool.length];
+    if (m.kind === 'melee' || m.kind === 'dash') {
+      v.melee = fl.includes('b') ? 'jaws' : (fl.includes('p') || /kick|stomp|punch|slam/.test(id)) ? 'impact'
+              : /claw|slash|scratch|cut|blade|fang/.test(id) ? 'claw'
+              : MELEE.filter(s => s !== tplVis.melee)[h % 3];
+    }
+    // Rayos: lo que viaja por él, su misma forma (el rayo eléctrico sigue siendo rayo).
+    if (m.kind === 'beam' && v.beam !== 'lightning') v.beam = v.proj;
+    // Estela: la mitad de los que vuelan llevan una (los más fuertes, siempre).
+    if (!v.trail && ((h >> 3) % 2 === 0 || (m.dmg || 0) >= 24)) v.trail = TRAIL[m.type];
+    return (genVis[m.id] = v);
+  }
+
   function forMove(m) {
-    const v = MOVE[m.id] || {};
+    const v = MOVE[m.id] || (m.gen ? visOfGen(m) : {});
     return Object.assign({ pal: m.type, proj: TYPE_SHAPE[m.type] || 'ball' }, v, { pal: v.pal || m.type });
   }
   function forType(type) { return { proj: TYPE_SHAPE[type] || 'ball', pal: PAL[type] ? type : 'normal' }; }

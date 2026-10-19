@@ -1,27 +1,42 @@
-/* ============ interact.js — altares, manantiales, cofres con candado y trampas ============
+/* ============ interact.js — altares, manantiales, cofres, trampas, bayas y altares de riesgo ============
  * Los objetos los coloca world.js (raros, en el suelo libre); aquí está lo que
  * pasa al tocarlos. Todo se mira alrededor de TU Pokémon:
  *
- *   altar     da un poder de 25 s (Furia, Rayo, Imán o Prisa) y se apaga
  *   spring    cura mientras estás encima; se agota y se recarga sola
  *   bigchest  quédate a su lado CHEST_TIME segundos (mientras te atacan) y se
  *             abre: monedas, tickets y experiencia para subir un nivel
  *   trap      salta al pisarla (tú o un enemigo) y afecta a todo lo cercano:
  *             veneno, pegajosa (ralentiza) o explosiva
+ *   berrytree al pasar a su lado lo sacudes: cura un 30 % y da la baya de su
+ *             bioma, con un poder de 20 s (ver BERRIES). Vuelve a dar fruto a los 90 s.
+ *             Desde el 20-10-2026 sustituyen a los altares de poder (mismos efectos).
+ *   riskaltar quédate a su lado RISK_TIME s: despierta a un guardián fuerte y
+ *             a su séquito; si lo vences, botín grande (ver Enemy.die)
  *
- * Cooperativo: altares y manantiales son de cada uno (en cada ordenador); el
+ * Cooperativo: árboles y manantiales son de cada uno (en cada ordenador); el
  * cofre y las trampas se rompen como cualquier objeto y el anfitrión reparte
  * el botín y el daño a los enemigos (ver world.destroyProp y coop.propBroken).
  */
 G.Interact = (() => {
-  const CHEST_TIME = 3.5;
-  const POWER_TIME = 25;
-  const POWERS = [
-    { id: 'dmg', name: 'Furia', desc: 'daño ×2', color: '#ff5f6d', on: p => { p.atkMul *= 2; }, off: p => { p.atkMul /= 2; } },
-    { id: 'spd', name: 'Rayo', desc: '+45% velocidad', color: '#5fd4ff', on: p => { p.spdMul *= 1.45; }, off: p => { p.spdMul /= 1.45; } },
-    { id: 'mag', name: 'Imán', desc: 'atraes todo desde lejos', color: '#ff8ad8', on: p => { p.magnet *= 4; }, off: p => { p.magnet /= 4; } },
-    { id: 'cd', name: 'Prisa', desc: '-40% recarga', color: '#ffd23f', on: p => { p.cdMul *= 0.6; }, off: p => { p.cdMul /= 0.6; } }
-  ];
+  const CHEST_TIME = 3.5, RISK_TIME = 2.5, BERRY_REGROW = 90;
+  // Cada bioma, su baya (las de los juegos que suben un stat en apuros) y su poder:
+  // los mismos efectos que tenían los altares, que se han quitado.
+  const BERRY_TIME = 20;
+  const BERRIES = {
+    forest:  { id: 'liechi', name: 'Baya Lichi', desc: '+40% de daño', color: '#ff4f6a',
+               on: p => { p.atkMul *= 1.4; }, off: p => { p.atkMul /= 1.4; } },
+    desert:  { id: 'salac', name: 'Baya Aslac', desc: '+40% de velocidad', color: '#5fd4ff',
+               on: p => { p.spdMul *= 1.4; }, off: p => { p.spdMul /= 1.4; } },
+    volcano: { id: 'custap', name: 'Baya Chiri', desc: '-30% de recarga', color: '#ffd23f',
+               on: p => { p.cdMul *= 0.7; }, off: p => { p.cdMul /= 0.7; } },
+    cave:    { id: 'ganlon', name: 'Baya Gonlan', desc: '-25% de daño recibido', color: '#b0b8c8',
+               on: p => { p.dmgReduce += 0.25; }, off: p => { p.dmgReduce -= 0.25; } },
+    tower:   { id: 'starf', name: 'Baya Arabol', desc: 'un poder al azar', color: '#c98aff' }
+  };
+  const MAGNET = { id: 'magnet', name: 'Imán', desc: 'atraes todo desde lejos', color: '#ff8ad8',
+                   on: p => { p.magnet *= 4; }, off: p => { p.magnet /= 4; } };
+  // Baya Arabol (Torre Lavanda): uno de los poderes al azar, también el Imán.
+  const STARF = [BERRIES.forest, BERRIES.desert, BERRIES.volcano, BERRIES.cave, MAGNET];
   const TRAP_R = 74;
   const authority = () => !G.Coop.active || G.Coop.isHost;
   let healShown = 0, healAcc = 0;
@@ -32,11 +47,6 @@ G.Interact = (() => {
       const d2 = G.U.dist2(pl.x, pl.y, p.x, p.type === 'spring' || p.type === 'trap' ? p.y - 8 : p.y);
       switch (p.type) {
         case 'spring': spring(dt, pl, p, d2); break;
-        case 'altar':
-          // Contando el tamaño de tu Pokémon: uno grande (Reshiram, Zekrom...) choca
-          // con el altar antes de llegar a 30 y no lo podía activar.
-          if (!p.used && !pl.dead && d2 < Math.max(30, p.r + pl.r + 14) ** 2) usePower(pl, p);
-          break;
         case 'bigchest':
           if (!pl.dead && d2 < Math.max(46, p.r + pl.r + 24) ** 2) {
             if (p.open === 0) G.Audio.sfx('select');
@@ -44,8 +54,19 @@ G.Interact = (() => {
             if (p.open >= CHEST_TIME) { p.open = 0; G.World.breakProp(p); }
           } else if (p.open > 0) p.open = Math.max(0, p.open - dt * 1.5);
           break;
+        case 'berrytree':
+          if (p.charge < 1) p.charge = Math.min(1, p.charge + dt / BERRY_REGROW);
+          else if (!pl.dead && d2 < (p.r + pl.r + 18) ** 2) shakeTree(pl, p);
+          break;
+        case 'riskaltar':
+          if (!pl.dead && d2 < Math.max(46, p.r + pl.r + 24) ** 2) {
+            if (p.open === 0) { G.Audio.sfx('select'); G.Spawner.say('Altar de riesgo: quédate y despertará a su guardián…', 2.4, true); }
+            p.open += dt;
+            if (p.open >= RISK_TIME) { p.open = 0; G.World.breakProp(p); }
+          } else if (p.open > 0) p.open = Math.max(0, p.open - dt * 1.5);
+          break;
         case 'trap':
-          if (!pl.dead && d2 < 13 * 13) G.World.breakProp(p);
+          if (!pl.dead && !pl.levitate && d2 < 13 * 13) G.World.breakProp(p);
           else if (authority() && G.EnemyMgr.queryCircle(p.x, p.y - 8, 3).some(e => !e.flying && !e.remote)) G.World.breakProp(p);
           break;
       }
@@ -70,14 +91,40 @@ G.Interact = (() => {
     if (p.charge <= 0.02) G.Spawner.say('El manantial se ha secado (se recarga solo)', 2.2, true);
   }
 
-  function usePower(pl, p) {
-    p.used = true;
-    const pw = POWERS[p.kind];
-    pl.addPower(pw, POWER_TIME);
-    G.FX.ring(p.x, p.y - 20, 8, 90, pw.color, 0.6, 5);
-    G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, pw.color, 24, 200);
-    G.Audio.sfx('legend');
-    G.Spawner.say('¡Poder ' + pw.name + '! ' + pw.desc + ' durante ' + POWER_TIME + ' s', 3, true);
+  /** Árbol de bayas: cada uno el suyo. Cura y da el poder de la baya de su bioma. */
+  function shakeTree(pl, p) {
+    p.charge = 0;
+    const own = BERRIES[G.World.biomeKey] || BERRIES.forest;
+    const b = own.id === 'starf' ? G.U.pick(STARF) : own;
+    G.FX.burst(p.x, p.y - 30, own.color, 14, 120);
+    pl.heal(pl.maxHp * 0.3, true);
+    pl.addPower(b, BERRY_TIME);
+    G.FX.ring(pl.x, pl.y, 6, 70, b.color, 0.5, 4);
+    G.Audio.sfx('heal');
+    G.Spawner.say('¡' + own.name + '! Recuperas vida y ' + b.desc + ' durante ' + BERRY_TIME + ' s', 2.8, true);
+  }
+
+  /** Altar de riesgo (quien manda): el guardián y su séquito. */
+  function riskAwaken(p) {
+    G.FX.ring(p.x, p.y - 10, 6, 110, '#ff3a3a', 0.7, 6);
+    G.FX.burst(p.x, p.y - 14, '#ff5f5f', 30, 200);
+    G.Camera.kick(0.6);
+    G.Audio.sfx('boss');
+    if (G.Coop.active && !G.Coop.isHost) return;
+    const t = G.Game.st.time, R = G.Acts.RANKS[G.Acts.rank];
+    const mon = G.Enemies.zoneBoss(G.World.biome);
+    const n = G.Game.everyone().length;
+    const def = {
+      dex: mon.dex, name: mon.name,
+      hp: Math.round(4000 * (1 + t / 600) * R.hp * G.Coop.scaleHp(n)),
+      spd: Math.round(G.U.clamp(46 + (mon.spd - 78) * 0.5, 46, 95)),
+      dmg: Math.round(40 * (1 + t / 900) * R.dmg), xp: Math.round(600 + t * 0.6),
+      behavior: 'charger', shotDmg: Math.round(20 * R.dmg), shotCd: 1.1, range: 260
+    };
+    G.Sprites.preload([mon.dex], 3000);
+    const e = G.Spawner.spawnBossDef(def, '¡El altar despierta a ' + mon.name + '! Véncelo y tendrás su premio');
+    if (e) { e.x = p.x + G.U.rand(-60, 60); e.y = p.y - 80; e.riskReward = true; }
+    G.Spawner.burst(Math.round(10 * G.Coop.scaleRate(n)));
   }
 
   /**
@@ -109,12 +156,12 @@ G.Interact = (() => {
       }
     }
     if (pl && !pl.dead && G.U.dist2(x, y, pl.x, pl.y) < (TRAP_R * 0.7) ** 2) {
-      pl.invuln = 0;
-      if (k === 0) pl.hurt(pl.maxHp * 0.1);
-      else if (k === 1) { pl.slowT = 3.5; G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '¡Pegajoso!', '#8bd94a'); }
+      pl.breakShortInvuln();
+      if (k === 0) { if (!pl.guard && !pl.levitate) pl.hurt(pl.maxHp * 0.1); }
+      else if (k === 1) { if (pl.steady || pl.levitate) return; pl.slowT = 3.5; G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '¡Pegajoso!', '#8bd94a'); }
       else pl.hurt(pl.maxHp * 0.2);
     }
   }
 
-  return { update, trapEffect, POWERS, CHEST_TIME };
+  return { update, trapEffect, riskAwaken, BERRIES, CHEST_TIME };
 })();

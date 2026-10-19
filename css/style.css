@@ -130,6 +130,16 @@ input { font: inherit; }
 .menu-item:hover, .menu-item:focus-visible { background: rgba(255,255,255,.08); outline: none; }
 .menu-item:hover::before, .menu-item:focus-visible::before { opacity: 1; transform: none; }
 .menu-item.play { font-size: 30px; color: var(--gold); }
+/* Elegir rango (debajo de Jugar y en la sala): los desbloqueados se pueden pulsar. */
+.rank-pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px 50px; }
+.rank-pick.lobby { margin: 12px 0 0; align-items: center; }
+.rank-pick .lbl { font-size: 13px; color: var(--muted); margin-right: 2px; }
+.rank-pick button {
+  font: inherit; font-size: 13px; padding: 3px 10px; border-radius: 8px; cursor: pointer;
+  border: 2px solid rgba(244,248,255,.22); background: rgba(0,0,0,.25); color: var(--muted);
+}
+.rank-pick button.on { border-color: var(--gold); color: var(--gold); }
+.rank-pick button:disabled { opacity: .35; cursor: default; }
 .menu-item { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: center; }
 .menu-item small { grid-column: 2; }
 .mi-ico { grid-row: span 2; display: flex; }
@@ -220,6 +230,27 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .stat { display: grid; grid-template-columns: 90px 1fr 34px; gap: 8px; align-items: center; font-size: 14px; margin: 5px 0; }
 .stat .bar { height: 8px; background: rgba(0,0,0,.35); border-radius: 6px; overflow: hidden; }
 .stat .bar i { display: block; height: 100%; background: var(--gold); }
+.stat .up { color: #ff8a7a; font-size: 10px; } .stat .down { color: #7aa8ff; font-size: 10px; }
+/* Nivel permanente del Pokémon (systems/mons.js) */
+.mon-lv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; margin: 8px 0 6px; }
+.mon-lv > b { color: var(--gold); font-size: 18px; }
+.mon-lv .bar, .mon-xp .bar { height: 7px; background: rgba(0,0,0,.35); border-radius: 6px; overflow: hidden; }
+.mon-lv .bar i, .mon-xp .bar i { display: block; height: 100%; background: #7fe0ff; }
+.mon-lv small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+.mon-line { font-size: 14px; margin: 4px 0; }
+.mon-line > span { color: var(--muted); }
+.mon-line small { color: var(--muted); }
+.mon-xp .bar { margin-top: 4px; }
+.mon-xp b small { color: var(--muted); font-weight: normal; font-size: 12px; }
+.mon-moves { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 10px; max-height: 168px; overflow-y: auto; }
+.mon-moves .mv { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.07); }
+.mon-moves .mv small { color: var(--muted); font-size: 10px; margin-left: 2px; }
+.mon-moves .mv.locked { opacity: .45; }
+.nat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; margin-top: 8px; }
+.nat-grid .chip { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.nat-grid .chip small { color: var(--muted); font-size: 11px; }
+.mon-xp .learned { display: block; margin-top: 4px; font-size: 13px; color: #ffd23f; }
+#menu-partner-name .lv { color: var(--gold); font-size: .6em; }
 .type {
   display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;
   color: #10131a; text-shadow: none; margin-right: 4px;
@@ -403,6 +434,32 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 kbd {
   display: inline-block; padding: 0 6px; border: 2px solid rgba(244,248,255,.4); border-bottom-width: 3px;
   border-radius: 5px; font: inherit; font-size: 13px; text-shadow: none;
+}
+
+/* ---------- avisos de primera vez (ui/tips.js): caja de diálogo de Mundo Misterioso ---------- */
+.tip {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 70;
+  width: min(660px, calc(100% - 24px)); display: flex; align-items: center; gap: 14px;
+  padding: 12px 18px 12px 12px; cursor: pointer; overflow: visible; user-select: none;
+}
+.tip.run { bottom: 104px; }
+.tip-face {
+  flex: none; width: 72px; height: 72px; display: grid; place-items: center;
+  border: 2px solid var(--edge); border-radius: 10px; background: rgba(4,10,26,.55);
+}
+.tip-face canvas { width: 64px; height: 64px; image-rendering: pixelated; }
+.tip-body { flex: 1; min-width: 0; position: relative; }
+.tip-name { display: block; color: #ffd23f; font-size: 14px; margin-bottom: 4px; }
+.tip-text { margin: 0; font-size: 15px; line-height: 1.45; min-height: 2.9em; padding-right: 18px; }
+.tip-next { position: absolute; right: 0; bottom: 0; font-size: 12px; color: #ffd23f; opacity: 0; }
+.tip.done .tip-next { opacity: 1; animation: tipBlink .8s steps(2) infinite; }
+@keyframes tipBlink { 50% { opacity: 0; } }
+@media (max-height: 520px) {
+  .tip { bottom: 10px; padding: 8px 12px 8px 8px; gap: 10px; }
+  .tip.run { bottom: 84px; }
+  .tip-face { width: 56px; height: 56px; }
+  .tip-face canvas { width: 48px; height: 48px; }
+  .tip-text { font-size: 13px; }
 }
 
 .toast {
@@ -640,6 +697,8 @@ a.plink:hover { color: var(--gold); }
 /* ================= móvil y táctil ================= */
 html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 body { touch-action: manipulation; }
+/* La fuente pixelada convierte "fi" en un símbolo raro ("Modo inAnito"). */
+body, input, button, select, textarea { font-variant-ligatures: none; }
 /* iPhone: sin esto, mantener el dedo en el joystick sacaba "Copiar / Seleccionar
    todo" (Safari sólo hace caso a la versión -webkit- y no lo hereda bien). */
 body, body * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

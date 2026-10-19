@@ -8,7 +8,7 @@ const fakeCtx = new Proxy({}, { get: () => noop });
 const G = {};
 const sandbox = {
   G, window: {}, console, Math, JSON, Date, Map, Set, Object, Array, Number, String, RegExp, Promise, Symbol, Infinity, NaN, isFinite, parseInt, parseFloat,
-  location: { pathname: '/', protocol: 'file:' }, navigator: { language: 'es', languages: ['es'] }, localStorage: { getItem: () => 'es', setItem: noop },
+  location: { pathname: '/', protocol: 'file:' }, navigator: { language: 'es', languages: ['es'] }, localStorage: { getItem: () => 'en', setItem: noop },   // en inglés: así los datos registran sus traducciones (claves en español)
   document: { documentElement: {}, createElement: () => ({ getContext: () => fakeCtx, width: 0, height: 0 }), addEventListener: noop, querySelector: () => null, body: {} },
   addEventListener: noop, matchMedia: () => ({ matches: false }), CanvasRenderingContext2D: function () {}, Image: function () {}, performance: { now: () => 0 },
   setTimeout: noop, setInterval: noop, requestAnimationFrame: noop
@@ -21,14 +21,17 @@ for (const f of ['js/core/util.js', 'js/core/i18n.js']) load(f);
 // Captura el diccionario inglés (clave en español).
 const add = G.I18n.add;
 G.I18n.add = d => { Object.assign(EN, d); add(d); };
-for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js',
+for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/pokedex-ext.js', 'js/data/abilities.js', 'js/data/sprites-meta.js',
+                 'js/data/moves-gen.js', 'js/data/learnsets.js', 'js/data/moves.js', 'js/data/types.js',
                  'js/data/items.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
   try { load(f); } catch (e) { console.warn('aviso', f, e.message); }
 }
 const moves = Object.values(G.Moves.BY_ID).map(m => {
   const inst = G.Moves.instance(m.id, m.maxLvl || 5);
   const evo = G.Moves.evoInfo(inst, {});
-  return { id: m.id, name: m.name, type: m.type, kind: m.kind, desc: m.desc, maxLvl: m.maxLvl, evo: evo ? { name: evo.name, needs: evo.needName, text: evo.text } : null };
+  const g = (G.MOVES_GEN || {})[m.id] || {};
+  return { id: m.id, name: m.name, type: m.type, kind: m.kind, cls: m.cls || g.c || (G.Moves.isStatus(m.id) ? 'st' : ''), pw: g.pw || 0,
+           desc: m.desc, maxLvl: m.maxLvl, evo: evo ? { name: evo.name, needs: evo.needName, text: evo.text } : null };
 });
 const out = {
   dex: G.DEX,

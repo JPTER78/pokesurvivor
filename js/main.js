@@ -11,7 +11,8 @@
     const miss = NEED.filter(k => typeof G !== 'object' || !G[k]);
     if (!miss.length) return false;
     const el = document.getElementById('boot');
-    el.innerHTML = 'No se pudo cargar todo el juego (¿se cortó la conexión?).<br><button class="btn gold" style="margin-top:12px" onclick="location.reload()">Recargar</button>';
+    el.innerHTML = 'No se pudo cargar todo el juego (¿se cortó la conexión?).<br><button class="btn gold" style="margin-top:12px">Recargar</button>';
+    el.querySelector('button').addEventListener('click', () => location.reload());
     console.warn('[Arranque] faltan:', miss.join(', '));
     return true;
   }
@@ -30,7 +31,8 @@
         'Your account, your save and your Pokémon are safe. Please come back in a few hours!</p>'
       : '<p><b>Estamos en mantenimiento.</b></p><p>Estamos mudando el juego a servidores nuevos para que siga siendo gratis para todos. ' +
         'Tu cuenta, tu partida y tus Pokémon están a salvo. ¡Vuelve en unas horas!</p>') +
-      '<button class="btn gold" style="margin-top:12px" onclick="location.reload()">' + (en ? 'Try again' : 'Volver a intentarlo') + '</button></div>';
+      '<button class="btn gold" style="margin-top:12px">' + (en ? 'Try again' : 'Volver a intentarlo') + '</button></div>';
+    el.querySelector('button').addEventListener('click', () => location.reload());
     return true;
   }
 

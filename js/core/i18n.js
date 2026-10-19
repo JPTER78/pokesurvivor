@@ -38,13 +38,17 @@ G.I18n = (() => {
       if (!en || es === en) continue;
       if (es.includes('{x}')) {
         const parts = es.split('{x}').map(reEsc);
-        patterns.push({ re: new RegExp('^' + parts.join('(.+?)') + '$', 'u'), reI: new RegExp('^' + parts.join('(.+?)') + '$', 'iu'), en });
+        patterns.push({ re: new RegExp('^' + parts.join('(.+?)') + '$', 'u'), reI: new RegExp('^' + parts.join('(.+?)') + '$', 'iu'), en,
+                        fixed: es.replace(/\{x\}/g, '').length });
       } else {
         exact.set(es, en);
         exactLow.set(es.toLowerCase(), en);
         if (es.length >= 4 || /\s/.test(es)) { fr.push(es); fragMap.set(es.toLowerCase(), en); }
       }
     }
+    // Los patrones más concretos (más texto fijo) primero: 'Vence a {x} jefes de zona'
+    // antes que 'Vence a {x}', aunque se haya añadido después.
+    patterns.sort((a, b) => b.fixed - a.fixed);
     // Una sola expresión con todos los trozos (los más largos primero), sólo palabras enteras.
     const all = [...fragMap.keys()].sort((a, b) => b.length - a.length).map(reEsc).join('|');
     frag = all ? new RegExp(`(?<![${L}])(${all})(?![${L}])`, 'giu') : null;
@@ -56,9 +60,20 @@ G.I18n = (() => {
     return en;
   }
 
+  /*
+   * Lo que no se traduce (apodos de jugadores, textos ya traducidos): va detrás de
+   * una marca invisible (U+2060). Antes un jugador llamado "Fuego" salía como "Fire"
+   * y la línea del HUD se traducía a trozos ("ACTO 1/3 · SHADY FOREST").
+   */
+  const NOT = '⁠', RAW = '⁣';
+  const noT = s => NOT + s;                 // un apodo dentro de un texto
+  const raw = s => RAW + s;                 // un texto entero que ya va traducido
+  const unmark = s => s.replace(/[⁠⁣]/g, '');
+
   /** Traduce un texto (sin espacios de los lados) al idioma actual. */
   function t(s) {
     if (lang === 'es' || !s || typeof s !== 'string') return s;
+    if (s.charCodeAt(0) === 0x2063) return unmark(s);
     if (!/\p{L}/u.test(s)) return s;
     const c = cache.get(s);
     if (c !== undefined) return c;
@@ -82,15 +97,16 @@ G.I18n = (() => {
         const mm = (upper ? p.reI : p.re).exec(body);
         if (!mm) continue;
         let i = 1;
-        r = p.en.replace(/\{x\}/g, () => { const g = mm[i++]; return g === undefined ? '' : core(g); });
+        r = p.en.replace(/\{x\}/g, () => { const g = mm[i++]; return g === undefined ? '' : g.charCodeAt(0) === 0x2060 ? g : core(g); });
         r = keepCase(body, r);
         break;
       }
     }
     if (r === undefined && frag) {
-      r = body.replace(frag, w => keepCase(w, fragMap.get(w.toLowerCase()) || w));
+      // (Lo que va detrás de la marca, un apodo, se deja.)
+      r = body.replace(frag, (w, _g, off, str) => (str[off - 1] === NOT ? w : keepCase(w, fragMap.get(w.toLowerCase()) || w)));
     }
-    return lead + (r === undefined ? body : r) + tail;
+    return unmark(lead + (r === undefined ? body : r) + tail);
   }
 
   /** Texto con huecos para el código: T('Nivel {x}', 5). */
@@ -158,6 +174,6 @@ G.I18n = (() => {
     location.reload();
   }
 
-  return { lang, add, t, f, set, startDom, walk };
+  return { lang, add, t, f, set, startDom, walk, noT, raw };
 })();
 G.T = G.I18n.t;

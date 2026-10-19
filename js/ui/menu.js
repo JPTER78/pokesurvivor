@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -14,6 +14,8 @@ G.MenuUI = (() => {
         if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
         else if (go === 'dex') openDex();
         else if (go === 'upgrades') openUpgrades();
+        else if (go === 'shop') G.ShopUI.openShop();
+        else if (go === 'bag') G.ShopUI.openBag();
         else if (go === 'gacha') G.GachaUI.open();
         else if (go === 'goals') G.GoalsUI.open();
         else if (go === 'friends') G.FriendsUI.open();
@@ -41,7 +43,8 @@ G.MenuUI = (() => {
     G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
-    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
+    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '') +
+      ` <small class="lv">Nv. ${G.Mons.level(mon.dex)}</small>`;
     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
     // Normal / shiny a mano, aquí mismo (en el móvil no se encontraba en la ficha).
     const seg = $('menu-shiny');
@@ -68,6 +71,19 @@ G.MenuUI = (() => {
       `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString('es')}</b>` +
       (G.DB.guest ? '<br><span style="color:#ffb0b8">Modo invitado: no se guarda</span>' : '');
 
+    // Tienda Kecleon y Mochila: aparecen cuando toca (data/shop.js); el aviso de la primera vez lo da ui/tips.js.
+    const shopOn = G.Shop.unlocked('shop'), bagOn = G.Shop.unlocked('bag');
+    document.querySelector('#scr-menu [data-go=shop]').classList.toggle('hidden', !shopOn);
+    document.querySelector('#scr-menu [data-go=bag]').classList.toggle('hidden', !bagOn);
+    const nItems = Object.values(s.bag || {}).reduce((a, b) => a + b, 0) + Object.values(s.tms || {}).reduce((a, b) => a + b, 0);
+    $('menu-bag-sub').textContent = nItems ? nItems + (nItems === 1 ? ' objeto' : ' objetos') : 'Caramelos y MT';
+    if (s.refundMsg) {
+      G.Tips.say(['Las Mejoras ahora son de tu cuenta y valen para todos tus Pokémon. Las de stats ya no existen, porque eso lo da el nivel.',
+                  `Te devolvemos ${s.refundMsg.toLocaleString('es')} Pokémonedas por las que tenías.`]);
+      delete s.refundMsg;
+      G.DB.commit();
+    }
+
     socialLine();
     // Premios de misiones por recoger.
     G.Progress.checkAch();
@@ -84,11 +100,43 @@ G.MenuUI = (() => {
     G.InvitePop.refresh();
   }
 
+  /**
+   * Debajo de "Jugar": los rangos, para elegir con cuál juegas (de los que tienes).
+   * Elegir el último desbloqueado deja de fijarlo: así, al ganar, pasas solo al nuevo.
+   */
+  function rankPicker(s, room) {
+    const box = $('menu-rank');
+    const top = s ? G.Acts.rankOf(s) : 0;
+    box.classList.toggle('hidden', !s || top < 1 || !!room);
+    if (!s || top < 1 || room) return;
+    const cur = G.Acts.pickOf(s);
+    box.innerHTML = '';
+    G.Acts.RANKS.forEach((R, i) => {
+      const b = document.createElement('button');
+      b.textContent = R.name;
+      b.className = i === cur ? 'on' : '';
+      b.disabled = i > top;
+      b.title = i > top ? 'Gana en el rango anterior para desbloquearlo' : '';
+      b.onclick = () => {
+        if (i === cur) return;
+        if (i === top) delete s.rpick; else s.rpick = i;
+        G.DB.commit();
+        G.Audio.sfx('click');
+        socialLine();
+      };
+      box.appendChild(b);
+    });
+  }
+
   /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */
   function socialLine() {
     const room = G.Social.room;
     const play = document.querySelector('#scr-menu [data-go=play] small');
-    if (play) play.textContent = room ? 'Volver a tu sala (' + room.members.length + '/' + G.Social.MAX_PLAYERS + ')' : 'Entra en la mazmorra';
+    // El rango sale cuando ya has ganado alguna vez: el que vas a jugar, y debajo para elegir otro.
+    const s = G.DB.save;
+    const rk = s && ((s.rank | 0) > 0 || (s.stats.wins || 0) > 0) ? ' · Rango ' + G.Acts.RANKS[G.Acts.pickOf(s)].name : '';
+    rankPicker(s, room);
+    if (play) play.textContent = room ? 'Volver a tu sala (' + room.members.length + '/' + G.Social.MAX_PLAYERS + ')' : 'Entra en la mazmorra' + rk;
     const fr = G.Social.friends;
     const on = fr.filter(f => f.status === 'ok' && f.online).length;
     const req = fr.filter(f => f.status === 'in').length;
@@ -182,9 +230,15 @@ G.MenuUI = (() => {
     else if (isPartner && dex !== showDetail.last) viewShiny = !!s.partnerShiny;
     showDetail.last = dex;
 
-    const max = { hp: 183, atk: 1.55, spd: 137 };
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
+    // Nivel, naturaleza, habilidad y stats base (systems/mons.js). Las flechas: lo que cambia la naturaleza.
+    const pr = G.Mons.progress(dex), nat = G.Mons.nature(dex), b = G.Mons.base(dex);
+    const ab = G.Mons.ability(dex), abInfo = ab && G.ABILITIES[ab], fx = G.AbilityFX.of(ab, p);
+    const arrow = k => (nat.up === k ? ' <b class="up">▲</b>' : nat.down === k ? ' <b class="down">▼</b>' : '');
+    const statRows = [['Vida', 'hp'], ['Ataque', 'atk'], ['Defensa', 'def'], ['At. Esp.', 'spa'], ['Def. Esp.', 'spd'], ['Velocidad', 'spe']]
+      .map(([l, k]) => bar(l + arrow(k), b[k], 180, b[k])).join('');
+    const best = b.atk > b.spa * 1.15 ? 'Mejor con movimientos físicos' : b.spa > b.atk * 1.15 ? 'Mejor con movimientos especiales' : 'Igual de bien con físicos y especiales';
     const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
 
     const box = $('dex-detail');
@@ -200,12 +254,16 @@ G.MenuUI = (() => {
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div>
       ${own ? `
-        ${bar('Vida', p.hp, max.hp, p.hp)}
-        ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
-        ${bar('Velocidad', p.spd, max.spd, p.spd)}
+        <div class="mon-lv"><b>Nv. ${pr.level}</b>${pr.level < G.Mons.MAX ? `<div class="bar"><i style="width:${Math.round(pr.frac * 100)}%"></i></div>
+          <small>${(pr.need - pr.cur).toLocaleString('es')} exp. para el Nv. ${pr.level + 1}</small>` : '<small>Nivel máximo</small>'}</div>
+        <p class="mon-line"><span>Naturaleza</span> <b translate="no">${G.Mons.tx(nat.n)}</b> <small>(${G.Mons.natureText(nat)})</small></p>
+        ${abInfo ? `<p class="mon-line"><span>Habilidad</span> <b translate="no">${G.Mons.tx(abInfo.n)}</b>${G.Mons.abilitySlot(dex) === 2 ? ' <small class="gold">(oculta)</small>' : ''}<br>
+          <small translate="no">${G.Mons.tx(fx.d)}</small></p>` : ''}
+        ${statRows}
+        <p class="mon-line"><small>${best}</small></p>
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
-        <p class="move-icons" title="Movimientos que puede aprender">
-          ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
+        ${movesList(p, pr.level)}
+        ${G.Shop.unlocked('bag') ? `<button id="dex-bag" class="btn small" style="width:100%;margin-bottom:8px">${G.Icons.html('bag', 16)} Caramelos, MT, Menta y Cápsulas</button>` : ''}
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
@@ -218,6 +276,8 @@ G.MenuUI = (() => {
     box.querySelectorAll('.seg button').forEach(b => {
       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
     });
+    const bagBtn = $('dex-bag');
+    if (bagBtn) bagBtn.onclick = () => G.ShopUI.openBag(dex, 'dex');
     const pick = $('dex-pick');
     if (pick) pick.onclick = () => {
       s.partner = dex;
@@ -228,6 +288,27 @@ G.MenuUI = (() => {
     };
   }
 
+  /**
+   * Movimientos de su lista de aprendizaje: los que ya sabe por su nivel (salen
+   * en las cartas de la partida) y los que aprenderá, con su nivel. Al final, los de MT.
+   */
+  function movesList(p, level) {
+    const seen = new Set(), rows = [];
+    for (const [lv, id] of G.Moves.learnset(p.dex)) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      rows.push([lv, id]);
+    }
+    for (const id of G.Mons.taught(p.dex)) if (!seen.has(id) && G.Moves.BY_ID[id]) { seen.add(id); rows.push(['MT', id]); }
+    const known = rows.filter(([lv]) => lv === 'MT' || lv <= level).length;
+    const chip = ([lv, id]) => {
+      const d = G.Moves.BY_ID[id], on = lv === 'MT' || lv <= level;
+      return `<span class="mv${on ? '' : ' locked'}" title="${d.desc}">${G.Icons.html('move:' + id, 16)} ${d.name}<small>${lv === 'MT' ? 'MT' : 'Nv. ' + lv}</small></span>`;
+    };
+    return `<p class="mon-line" style="margin-top:8px"><span>Movimientos</span> <small>${known} de ${rows.length} aprendidos · salen en las cartas de la partida</small></p>
+      <div class="mon-moves">${rows.map(chip).join('')}</div>`;
+  }
+
   // ---------------- mejoras ----------------
 
   let upgDex = null;
@@ -236,12 +317,12 @@ G.MenuUI = (() => {
     G.UI.show('scr-upgrades', true);
     const s = G.DB.save;
     if (!upgDex || !s.owned[upgDex]) upgDex = s.partner;
-    // Selector con tus Pokémon: el compañero primero, luego los que ya tienen mejoras.
+    // Selector con tus Pokémon (para el Veto y los atajos): el compañero primero, luego por nivel.
     const sel = $('upg-mon');
-    const lv = d => Object.values(s.pupg[d] || {}).reduce((a, b) => a + b, 0);
+    const lv = d => G.Mons.level(d);
     const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d])
       .sort((a, b) => (b === s.partner) - (a === s.partner) || lv(b) - lv(a) || a - b);
-    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
+    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''} · Nv. ${lv(d)}</option>`).join('');
     sel.value = upgDex;
     sel.onchange = () => { upgDex = +sel.value; G.Audio.sfx('select'); renderUpgrades(); };
     renderUpgrades();
@@ -249,15 +330,17 @@ G.MenuUI = (() => {
 
   function renderUpgrades() {
     const s = G.DB.save;
-    const levels = G.DB.upgradesOf(upgDex);
     const mon = G.DEX_BY[upgDex];
     const shiny = upgDex === s.partner && !!s.partnerShiny && G.DB.ownsShiny(upgDex);
     G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny });
     $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
-    const box = $('upg-list');
-    box.innerHTML = '';
+    // Las de la cuenta arriba; el Veto (de cada Pokémon) abajo, con el selector.
+    const levelsOf = u => (u.per ? G.DB.upgradesOf(upgDex) : G.DB.accountUpgrades());
+    $('upg-list').innerHTML = '';
+    $('upg-mon-list').innerHTML = '';
     for (const u of G.Upgrades.LIST) {
-      const lvl = levels[u.id] || 0;
+      const box = $(u.per ? 'upg-mon-list' : 'upg-list');
+      const lvl = levelsOf(u)[u.id] || 0;
       const maxed = lvl >= u.max;
       const cost = maxed ? 0 : G.Upgrades.cost(u.id, lvl);
       const el = document.createElement('div');
@@ -275,7 +358,7 @@ G.MenuUI = (() => {
       if (u.id === 'ban' && lvl > 0) el.querySelector('[data-ban]').onclick = () => { banOpen = !banOpen; renderUpgrades(); };
       el.querySelector('[data-buy]').onclick = () => {
         // Se vuelve a leer todo al pulsar (la partida puede haber cambiado desde que se dibujó).
-        const sv = G.DB.save, lv = G.DB.upgradesOf(upgDex), now = lv[u.id] || 0;
+        const sv = G.DB.save, lv = levelsOf(u), now = lv[u.id] || 0;
         if (now >= u.max) { renderUpgrades(); return; }
         const price = G.Upgrades.cost(u.id, now);
         if (sv.coins < price) { renderUpgrades(); return; }
@@ -284,13 +367,13 @@ G.MenuUI = (() => {
         G.DB.commit(true);
         G.Audio.sfx('buy');
         G.UI.refreshCoins();
-        G.UI.toast(`${mon.name} · ${u.name}: nivel ${now + 1}`);
+        G.UI.toast(u.per ? `${mon.name} · ${u.name}: nivel ${now + 1}` : `${u.name}: nivel ${now + 1}`);
         renderUpgrades();
       };
       box.appendChild(el);
       if (u.id === 'ban' && lvl > 0 && banOpen) box.appendChild(banPicker(lvl));
     }
-    box.appendChild(bindPanel());
+    $('upg-mon-list').appendChild(bindPanel());
   }
 
   // ---------------- atajos: hueco fijo para cada movimiento ----------------
@@ -359,5 +442,5 @@ G.MenuUI = (() => {
     return el;
   }
 
-  return { init, open, GEN_NAMES };
+  return { init, open, openDex, GEN_NAMES };
 })();

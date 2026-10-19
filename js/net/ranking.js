@@ -1,4 +1,8 @@
-/* ============ ranking.js — clasificación de tiempo aguantado ============
+/* ============ ranking.js — clasificación del modo infinito ============
+ * Desde el 16-10-2026 sólo cuenta el MODO INFINITO (systems/acts.js): el tiempo
+ * aguantado en él tras ganar en el rango Maestro, con los derrotados de
+ * desempate. Todas las tablas empezaron de cero (las viejas se quedan en el
+ * servidor sin usarse).
  * Firestore (pensado para gastar lo mínimo del plan gratuito):
  *
  *   lbs/{tabla}        RESUMEN: el top 50 de la tabla en UN documento
@@ -39,10 +43,9 @@ G.Ranking = (() => {
   //  Pokémon y escribía; ahora también sólo el top 50.)
   const TOP_ONLY = new Set(['d', 'w', 'm', 'p']);
   const TOP = 50;
-  // Las runs de menos de 2 minutos no se suben (nunca entran en un top que
-  // importe y eran muchas lecturas y escrituras para nada: los que empiezan
-  // mueren a menudo en el primer minuto; era 1 min hasta el 14-10-2026).
-  const MIN_T = 120;
+  // Segundos mínimos en el modo infinito para subir la marca (llegar ya cuesta
+  // ganar en Maestro: no hace falta filtrar más). Antes: 2 min de partida.
+  const MIN_T = 5;
   const TTL = 30 * 60 * 1000;            // caché de lo leído (30 min: menos lecturas de Firestore)
 
   const fbx = () => G.DB.online ? G.DB.fb : null;
@@ -64,7 +67,7 @@ G.Ranking = (() => {
     return { year: t.getUTCFullYear(), week: Math.ceil(((t - y0) / 86400000 + 1) / 7) };
   }
 
-  const ALL = 'all2';                     // histórico (ver arriba)
+  const ALL = 'inf';                      // histórico (desde el modo infinito; antes all2)
   function periodIds(date = new Date()) {
     const { y, m, d } = madridDate(date);
     const w = isoWeek(y, m, d);
@@ -80,7 +83,8 @@ G.Ranking = (() => {
    */
   function boardIds(date) {
     const p = periodIds(date);
-    return Object.assign({}, p, { w: p.w + 'j', m: p.m + 'j' });
+    // "i": modo infinito (16-10-2026), todas desde cero.
+    return Object.assign({}, p, { d: p.d + 'i', w: p.w + 'i', m: p.m + 'i' });
   }
 
   /** El filtro por Pokémon sólo existe en el histórico. */
@@ -124,7 +128,7 @@ G.Ranking = (() => {
   // Tus mejores marcas por tabla (para no leer antes de escribir).
   // (best2 desde 2026-10-12: se quitaron del ranking las marcas rotas; así quien
   //  tenía una vuelve a mirar su marca real y puede volver a entrar.)
-  const bestKey = () => 'ps.rk.best2.' + (fbx() ? fbx().uid : '');
+  const bestKey = () => 'ps.rk.best3.' + (fbx() ? fbx().uid : '');
   function bests() { try { return JSON.parse(localStorage.getItem(bestKey()) || '{}'); } catch (e) { return {}; } }
   function saveBests(b) {
     // Sólo se conservan las tablas de los periodos actuales y las históricas.
@@ -406,18 +410,23 @@ G.Ranking = (() => {
     const boards = new Set();
     for (const m of ['s', 'g']) for (const [p] of PERIODS) boards.add(m + '_' + ids[p]);
     for (const k of Object.keys(bests())) boards.add(k.split(':')[0]);
-    await Promise.all([...boards].map(b => fb.fs.runTransaction(async tx => {
+    // Una fila por escritura (las reglas sólo dejan quitar una cada vez), hasta que no
+    // quede ninguna tuya (antes sólo la primera: con dos grupos en una tabla, una se quedaba).
+    const dropOne = b => fb.fs.runTransaction(async tx => {
       const s = await tx.get(sumRef(b));
-      if (!s.exists) return;
+      if (!s.exists) return false;
       const top = s.data().top || {};
       for (const [id, v] of Object.entries(top)) {
         if (!(v.uids || []).includes(fb.uid)) continue;
-        // Una fila por escritura (las reglas sólo dejan quitar una cada vez).
         const next = Object.assign({}, top); delete next[id];
         tx.set(sumRef(b), { top: next, me: '', ev: id });
-        return;
+        return true;
       }
-    }).catch(() => {})));
+      return false;
+    });
+    await Promise.all([...boards].map(async b => {
+      for (let i = 0; i < 20; i++) if (!(await dropOne(b).catch(() => false))) return;
+    }));
     try { localStorage.removeItem(bestKey()); } catch (e) { /* nada */ }
   }
 
@@ -522,15 +531,43 @@ G.Ranking = (() => {
     return { rows, boards };
   }
 
-  /** Admin: banea o desbanea una cuenta del ranking (baneada = no puede subir marcas). */
-  function setMarked(uid, on) { return fbx().fs.collection('saves').doc(uid).update({ ban: !!on }); }
+  /**
+   * Admin: banea o desbanea una cuenta del ranking (baneada = no puede subir marcas).
+   * Va en bans/{uid} (sólo lo escribe el admin): antes sólo era saves/{uid}.ban, y
+   * borrando su partida y volviendo a entrar se lo quitaba (16-10-2026). La marca
+   * vieja de la partida se pone igual, si la partida existe.
+   */
+  async function setMarked(uid, on) {
+    const fs = fbx().fs, ref = fs.collection('bans').doc(uid);
+    if (on) await ref.set({ at: firebase.firestore.FieldValue.serverTimestamp(), by: fbx().uid });
+    else await ref.delete();
+    await fs.collection('saves').doc(uid).update({ ban: !!on }).catch(() => {});
+  }
   /** Admin: borra reportes ya vistos. */
   function dismiss(ids) { return Promise.all(ids.map(id => fbx().fs.collection('reports').doc(id).delete().catch(() => {}))); }
-  /** Admin: cuentas baneadas del ranking. */
+  /**
+   * Admin: cuentas baneadas del ranking. Las que sólo tenían la marca vieja
+   * (saves/{uid}.ban) se pasan a bans/{uid} al verlas aquí.
+   */
   async function markedAccounts() {
-    const s = await fbx().fs.collection('saves').where('ban', '==', true).limit(100).get();
-    return s.docs.map(d => { const v = d.data().save || {}; return { uid: d.id, name: v.name || '?', coins: v.coins || 0,
-      t1: (v.tickets || {}).t1 || 0, t10: (v.tickets || {}).t10 || 0, owned: Object.keys(v.owned || {}).length }; });
+    const fs = fbx().fs;
+    const [b, old] = await Promise.all([fs.collection('bans').limit(200).get(), fs.collection('saves').where('ban', '==', true).limit(100).get()]);
+    const ids = new Set(b.docs.map(d => d.id));
+    for (const d of old.docs) {
+      if (ids.has(d.id)) continue;
+      ids.add(d.id);
+      await fs.collection('bans').doc(d.id).set({ at: firebase.firestore.FieldValue.serverTimestamp(), by: fbx().uid }).catch(() => {});
+    }
+    const uids = [...ids];
+    const saves = await Promise.all(uids.map(u => fs.collection('saves').doc(u).get().catch(() => null)));
+    // Los datos de la partida los escribe el jugador: todo número con num().
+    const num = v => (Number.isFinite(+v) ? Math.max(0, Math.floor(+v)) : 0);
+    return uids.map((uid, i) => {
+      const v = (saves[i] && saves[i].exists && saves[i].data().save) || {};
+      const tk = v.tickets && typeof v.tickets === 'object' ? v.tickets : {};
+      return { uid, name: String(v.name || '?'), coins: num(v.coins), t1: num(tk.t1), t10: num(tk.t10),
+               owned: v.owned && typeof v.owned === 'object' ? Object.keys(v.owned).length : 0 };
+    });
   }
 
   return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, myRank, removeMine,

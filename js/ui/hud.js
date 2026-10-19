@@ -58,8 +58,8 @@ G.HUD = (() => {
     ctx.fillText(Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), px + 48 + 84, py + 26);
 
     // buffs activos
-    const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
-    const LBL = { atk: 'ATK', spd: 'VEL', def: 'DEF', regen: 'REG' };
+    const COL = { atk: '#ff6b4d', spa: '#ff8ad8', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
+    const LBL = { atk: 'ATK', spa: 'AT.E', spd: 'VEL', def: 'DEF', regen: 'REG' };
     let bx = px;
     ctx.textAlign = 'left';
     for (const k in pl.buffs) {
@@ -82,7 +82,11 @@ G.HUD = (() => {
     ctx.fillText(G.U.mmss(st.time), w / 2, 42);
     ctx.font = F(600, 10);
     ctx.fillStyle = '#8fa3c4';
-    ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
+    // Acto y bioma, jefe final, victoria o modo infinito (systems/acts.js); en la grieta, su arena.
+    const where = G.Rift.inArena ? G.World.biomeName().toUpperCase() : G.Acts.hudLine();
+    // Cada trozo por separado (entero, el patrón del acto se partía por sus " · ").
+    const T = G.I18n.t;
+    ctx.fillText(G.I18n.raw(T(where) + '  ·  ' + pl.kills + ' ' + T('DERROTADOS') + '  ·  ' + pl.coins + ' ' + T('MONEDAS')), w / 2, 58);
 
     // ---------- clima (arriba a la derecha) ----------
     const wx = G.Weather.current;
@@ -132,7 +136,7 @@ G.HUD = (() => {
       ctx.restore();
     }
 
-    // Poder de altar activo.
+    // Poder de una baya activo.
     if (pl.power) {
       const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
       ctx.font = F(800, 9);
@@ -375,6 +379,8 @@ G.HUD = (() => {
       ctx.fillStyle = '#f4f8ff';
       ctx.fillRect(bx + 13, by + 11, 5, 18); ctx.fillRect(bx + 22, by + 11, 5, 18);
       G.Touch.addButton(bx, by, bs, bs, () => G.Game.togglePause(), 8);
+      // Mensajes rápidos del cooperativo: el bocadillo, debajo de la pausa.
+      if (G.Coop.active) G.Emotes.drawTouch(ctx, w, h, bx, by + bs + 10, F);
     }
 
     // pista de controles
@@ -384,6 +390,11 @@ G.HUD = (() => {
       ctx.fillStyle = 'rgba(180,200,230,.55)';
       ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
                          : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
+    } else if (G.Coop.active && !touch && st.time < 60) {
+      ctx.font = F(600, 10);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(180,200,230,.55)';
+      ctx.fillText('Mensajes rápidos: 5 ¡Ayuda!  ·  6 ¡Aquí!  ·  7 ¡Grieta!  ·  8 ¡Gracias!', w / 2, h - 4);
     }
 
     ctx.restore();
@@ -448,11 +459,13 @@ G.HUD = (() => {
       // Nombre y distancia: al lado contrario de la flecha, para que no se salga
       const lx = -Math.cos(a) * 30, ly = -Math.sin(a) * 26 + 4;
       ctx.font = F(800, 12);
-      const label = (o.dead ? '¡' + m.name + ' necesita ayuda! ' : m.name + ' ') + '· ' + metres + ' m';
+      // Si acaba de mandar un mensaje rápido, se ve junto a su flecha.
+      const em = o.emote && G.Emotes.LIST[o.emote.i];
+      const label = (o.dead ? '¡' + m.name + ' necesita ayuda! ' : m.name + (em ? ': ' + em.text + ' ' : ' ')) + '· ' + metres + ' m';
       ctx.textAlign = Math.cos(a) > 0.3 ? 'right' : Math.cos(a) < -0.3 ? 'left' : 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
       ctx.strokeText(label, lx, ly);
-      ctx.fillStyle = col;
+      ctx.fillStyle = em && !o.dead ? em.color : col;
       ctx.fillText(label, lx, ly);
       ctx.restore();
     }

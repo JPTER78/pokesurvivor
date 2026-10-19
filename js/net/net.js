@@ -10,8 +10,14 @@
  *            "directo" para el juego). Las claves las da cloudflare/turn-worker.js
  *            sólo a jugadores con cuenta.
  *   relé     Si ni así (o el Worker no responde), los mensajes van por la
- *            Realtime Database: rooms/{sala}/q/{destinatario}/{id}. Funciona,
- *            pero cuesta 1 $ el GB: antes del TURN era casi todo el gasto.
+ *            Realtime Database: rooms/{sala}/q2/{destinatario}/{remitente}/{id}.
+ *            Funciona, pero cuesta 1 $ el GB: antes del TURN era casi todo el gasto.
+ *
+ * Quién manda cada mensaje lo dice la RUTA, no el mensaje: las reglas
+ * (database.rules.json) sólo dejan escribir en q2/x/{tu uid}. Antes iba dentro
+ * del mensaje ("f") y cualquiera de la sala podía hacerse pasar por otro
+ * (16-10-2026). La ruta vieja (q) se queda en las reglas sólo para quien aún
+ * tenga abierta una versión anterior del juego.
  *
  * Se envía por el canal directo si está abierto; si no, por el relé. El que
  * recibe escucha los dos, así que no hace falta ponerse de acuerdo.
@@ -55,7 +61,7 @@ G.Net = (() => {
   const iceServers = () => (turn ? ICE.concat(turn.servers) : ICE);
 
   let rtdb = null, uid = null, roomId = null, isHost = false, hostUid = null;
-  let qref = null;
+  let qref = null, fromRefs = [];
   const peers = new Map();         // uid -> { pc, dc, mode, timer }
   const handlers = new Set(), peerHandlers = new Set();
   let stats = { sent: 0, recv: 0, relaySent: 0 };
@@ -74,15 +80,22 @@ G.Net = (() => {
     rtdb = fb.rtdb; uid = fb.uid;
     roomId = id; isHost = host; hostUid = hostId;
     fetchTurn();                    // se piden ya, para tenerlas al conectar
-    qref = rtdb.ref('rooms/' + id + '/q/' + uid);
-    qref.on('child_added', s => {
-      const raw = s.val();
-      s.ref.remove().catch(() => {});
-      let m;
-      try { m = JSON.parse(raw); } catch (e) { return; }
-      if (!m || !m.f) return;
-      if (m.sig) onSignal(m.f, m.sig);
-      else deliver(m.f, m.d);
+    qref = rtdb.ref('rooms/' + id + '/q2/' + uid);
+    // Un hijo por remitente (su uid); dentro, sus mensajes.
+    qref.on('child_added', fs => {
+      const from = fs.key;
+      if (fromRefs.some(r => r.key === from)) return;      // ya se escucha (el nodo se borra y vuelve)
+      const r = fs.ref;
+      fromRefs.push(r);
+      r.on('child_added', s => {
+        const raw = s.val();
+        s.ref.remove().catch(() => {});
+        let m;
+        try { m = JSON.parse(raw); } catch (e) { return; }
+        if (!m || typeof m !== 'object') return;
+        if (m.sig) onSignal(from, m.sig);
+        else deliver(from, m.d);
+      });
     });
     // Invitado: hueco para el anfitrión desde ya (se sustituye al llegar su
     // oferta). Así, si no llega nunca, se sigue por el relé y se sabe cuándo se va.
@@ -96,6 +109,8 @@ G.Net = (() => {
   function close() {
     for (const u of [...peers.keys()]) drop(u);
     if (qref) { qref.off(); qref = null; }
+    for (const r of fromRefs) r.off();
+    fromRefs = [];
     roomId = null; isHost = false; hostUid = null;
   }
 
@@ -200,7 +215,13 @@ G.Net = (() => {
         for (const c of pendingIce.get(from) || []) await p.pc.addIceCandidate(c).catch(() => {});
         pendingIce.delete(from);
       } else if (sig.sdp && sig.sdp.type === 'answer') {
-        if (p && p.pc) await p.pc.setRemoteDescription(sig.sdp);
+        if (p && p.pc) {
+          await p.pc.setRemoteDescription(sig.sdp);
+          // Los candidatos del invitado que llegaron mientras (antes se perdían: con redes
+          // que necesitan el TURN por los dos lados, no conectaba nunca).
+          for (const c of pendingIce.get(from) || []) await p.pc.addIceCandidate(c).catch(() => {});
+          pendingIce.delete(from);
+        }
       } else if (sig.c) {
         if (p && p.pc && p.pc.remoteDescription) await p.pc.addIceCandidate(sig.c).catch(() => {});
         else { if (!pendingIce.has(from)) pendingIce.set(from, []); pendingIce.get(from).push(sig.c); }
@@ -211,7 +232,7 @@ G.Net = (() => {
     }
   }
 
-  function signal(to, sig) { relayPush(to, { f: uid, sig }); }
+  function signal(to, sig) { relayPush(to, { sig }); }
 
   function drop(u, silent) {
     const p = peers.get(u);
@@ -228,7 +249,7 @@ G.Net = (() => {
 
   function relayPush(to, env) {
     if (!rtdb || !roomId) return;
-    rtdb.ref('rooms/' + roomId + '/q/' + to).push(JSON.stringify(env)).catch(e => console.warn('[Net] relé:', e.code || e.message));
+    rtdb.ref('rooms/' + roomId + '/q2/' + to + '/' + uid).push(JSON.stringify(env)).catch(e => console.warn('[Net] relé:', e.code || e.message));
   }
 
   function send(to, msg) {
@@ -242,7 +263,7 @@ G.Net = (() => {
     // pareja no está conectada). Sólo pasa el aviso de empezar.
     if (!ALLOW_RELAY && !(msg && msg.k === 'start')) return;
     stats.relaySent++;
-    relayPush(to, { f: uid, d: msg });
+    relayPush(to, { d: msg });
   }
 
   function toHost(msg) { if (!isHost && hostUid) send(hostUid, msg); }

@@ -34,9 +34,17 @@ G.Combat = (() => {
       m.t = 0.05;
       return;
     }
-    m.t = Math.max(0.05, m.cd * pl.cdMul);
+    // Habilidades: Ausente descansa (todo más lento), Bromista lanza antes los de estado.
+    const fx = pl.afx || {};
+    m.t = Math.max(0.05, m.cd * pl.cdMul * (fx.cdMul || 1) * (fx.statusCd && G.Moves.isStatus(m.id) ? fx.statusCd : 1));
+    // Rodar, Cortefuria...: cada lanzamiento que acierta seguido pega más (hasta ×1,8);
+    // si el anterior no dio a nadie, vuelve a empezar.
+    if (m.sig === 'combo') { m.combo = m.comboHit ? Math.min(5, (m.combo || 1) + 1) : 1; m.comboHit = false; }
     pl.cast(m);
     if (G.Coop.active) G.Coop.cast(pl, m);
+    // Retroceso (Doble Filo...) y los que cuestan vida (Explosión...).
+    if (m.recoil && !fx.noRecoil) pl.selfCost(m.recoil * 0.04);   // Cabeza Roca: sin retroceso
+    if (m.self) pl.selfCost(m.self);
     // Vínculo: su icono destella en el HUD al lanzarse (uno que explota pegado al
     // enemigo, como Ascuas tras Ataque Rápido, casi no se ve).
     m.castAt = performance.now();
@@ -60,6 +68,8 @@ G.Combat = (() => {
       case 'dash':       dash(pl, m); break;
       case 'trail':      trailPatch(pl, m); break;
       case 'cone':       cone(pl, m); break;
+      case 'debuff':     debuff(pl, m); break;
+      case 'weather':    weather(pl, m); break;
     }
   }
 
@@ -94,7 +104,7 @@ G.Combat = (() => {
       G.Projectiles.spawn(Object.assign({
         x: pl.x + Math.cos(a) * 3, y: pl.y + Math.sin(a) * 3,
         vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
-        dmg: m.dmg * pl.atk, r: m.size, life: m.life,
+        dmg: m.dmg * pl.atkOf(m), mv: m, r: m.size, life: m.life,
         pierce: m.pierce | 0, color: col, homing: m.homing || 0,
         hits: new Set(), vis, ghost, owner: pl
       }, payload(m)));
@@ -112,7 +122,7 @@ G.Combat = (() => {
       G.Projectiles.spawn(Object.assign({
         x: pl.x + Math.cos(a) * 3, y: pl.y + Math.sin(a) * 3,
         vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
-        dmg: m.dmg * pl.atk, r: m.size, life: m.life,
+        dmg: m.dmg * pl.atkOf(m), mv: m, r: m.size, life: m.life,
         pierce: m.pierce | 0, color: col, homing: m.homing || 0,
         hits: new Set(), vis, ghost, owner: pl
       }, payload(m)));
@@ -133,10 +143,10 @@ G.Combat = (() => {
 
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
       if (!inArc(pl.x, pl.y, e.x, e.y, pl.aim, half)) continue;
-      hit(pl, e, m.dmg * pl.atk, col, e.x - pl.x, e.y - pl.y, m.knock || 0, m);
+      hit(pl, e, m.dmg * pl.atkOf(m), col, e.x - pl.x, e.y - pl.y, m.knock || 0, m);
     }
     for (const p of G.World.propsInCircle(pl.x, pl.y, m.radius)) {
-      if (inArc(pl.x, pl.y, p.x, p.y, pl.aim, half)) G.World.damageProp(p, m.dmg * pl.atk, col);
+      if (inArc(pl.x, pl.y, p.x, p.y, pl.aim, half)) G.World.damageProp(p, m.dmg * pl.atkOf(m), col);
     }
   }
 
@@ -162,10 +172,10 @@ G.Combat = (() => {
       return Math.abs(-px * sa + py * ca) <= w / 2 + r;
     };
     for (const e of G.EnemyMgr.queryCircle(mx, my, len / 2 + w)) {
-      if (onBeam(e.x, e.y, e.r)) hit(pl, e, m.dmg * pl.atk, col, ca, sa, 0, m);
+      if (onBeam(e.x, e.y, e.r)) hit(pl, e, m.dmg * pl.atkOf(m), col, ca, sa, 0, m);
     }
     for (const p of G.World.propsInCircle(mx, my, len / 2 + w)) {
-      if (onBeam(p.x, p.y, p.r)) G.World.damageProp(p, m.dmg * pl.atk, col);
+      if (onBeam(p.x, p.y, p.r)) G.World.damageProp(p, m.dmg * pl.atkOf(m), col);
     }
   }
 
@@ -186,13 +196,10 @@ G.Combat = (() => {
       }
     }
     if (ghost) return;
-    let healed = 0;
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
-      hit(pl, e, m.dmg * pl.atk, col, e.x - pl.x, e.y - pl.y, 0, m);
-      if (m.drain) healed += m.drain;
+      hit(pl, e, m.dmg * pl.atkOf(m), col, e.x - pl.x, e.y - pl.y, 0, m);
     }
-    for (const p of G.World.propsInCircle(pl.x, pl.y, m.radius)) G.World.damageProp(p, m.dmg * pl.atk, col);
-    if (healed > 0) pl.heal(Math.min(healed, 6));
+    for (const p of G.World.propsInCircle(pl.x, pl.y, m.radius)) G.World.damageProp(p, m.dmg * pl.atkOf(m), col);
   }
 
   function buff(pl, m) {
@@ -206,6 +213,33 @@ G.Combat = (() => {
     }
   }
 
+  /** Estado sobre los enemigos de alrededor (Gruñido, Malicioso, Onda Trueno, Polvo Veneno...). */
+  function debuff(pl, m) {
+    const col = G.U.TYPE_COLOR[m.type];
+    G.FX.ring(pl.x, pl.y, pl.r * 1.5, m.radius, col, 0.4, 2);
+    const vis = G.VFX.forMove(m);
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * 6.2832, r = m.radius * G.U.rand(0.5, 1);
+      G.FX.sp(vis.buff || 'arrow', vis.pal, pl.x + Math.cos(a) * r, pl.y + Math.sin(a) * r * 0.8 - G.LIFT * 0.5,
+              { vy: 50, life: 0.5, angle: Math.PI });
+    }
+    if (ghost) return;
+    const a = m.amount;
+    for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
+      if (m.eff === 'weak') e.applyWeak(a, m.dur);
+      else if (m.eff === 'armor') e.applyArmor(a, m.dur);
+      else if (m.eff === 'slow') e.applySlow(Math.min(0.7, a), m.dur);
+      else if (m.eff === 'poison') e.applyPoison(a);
+      else if (m.eff === 'burn') e.applyBurn(a);
+    }
+  }
+
+  /** Danza Lluvia, Día Soleado, Tormenta Arena, Paisaje Nevado: su clima, si no hay otro. */
+  function weather(pl, m) {
+    G.FX.ring(pl.x, pl.y, pl.r, pl.r * 6, G.U.TYPE_COLOR[m.type], 0.6, 3);
+    if (!ghost) G.Weather.summon(m.w, m.dur);
+  }
+
   // ---------------- familias nuevas (2026-10-10) ----------------
 
   /** Bumerán: sale hacia el enemigo, se para y vuelve a ti golpeando a la ida y a la vuelta. */
@@ -217,7 +251,7 @@ G.Combat = (() => {
       const a = pl.aim + (n === 1 ? 0 : (i / (n - 1) - 0.5) * spread * Math.min(n, 3));
       G.Projectiles.spawn(Object.assign({
         x: pl.x, y: pl.y, vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
-        dmg: m.dmg * pl.atk, r: m.size, life: out * 4 + 1.5, pierce: 999, color: col,
+        dmg: m.dmg * pl.atkOf(m), mv: m, r: m.size, life: out * 4 + 1.5, pierce: 999, color: col,
         hits: new Set(), vis, ghost, owner: pl, boom: out, bsp: m.speed * 1.1
       }, payload(m)));
     }
@@ -237,8 +271,8 @@ G.Combat = (() => {
       G.FX.beam(fx, fy, Math.atan2(ty - fy, tx - fx), Math.hypot(tx - fx, ty - fy), 10, col, vis);
       if (!ghost) {
         // Infortunio: más daño a quien ya sufre un estado.
-        const hex = m.hex && (cur.burn > 0 || cur.poison > 0 || cur.slow > 0) ? m.hex : 1;
-        hit(pl, cur, m.dmg * pl.atk * k * hex, col, tx - fx, ty - fy, 0, m);
+        const hex = m.hex && statused(cur) ? m.hex : 1;
+        hit(pl, cur, m.dmg * pl.atkOf(m) * k * hex, col, tx - fx, ty - fy, 0, m);
       }
       k *= 0.85;
       fx = tx; fy = ty;
@@ -260,7 +294,7 @@ G.Combat = (() => {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * 6.2832, d = n === 1 ? 0 : G.U.rand(18, 46);
       fields.push({ kind: 'mine', owner: pl, ghost, m, col, vis, x: pl.x + Math.cos(a) * d, y: pl.y + Math.sin(a) * d * 0.8,
-                    t: 0, arm: 0.35, life: m.dur || 7, r: m.radius, dmg: m.dmg * pl.atk });
+                    t: 0, arm: 0.35, life: m.dur || 7, r: m.radius, dmg: m.dmg * pl.atkOf(m) });
     }
     // Como mucho unas pocas por jugador: las más viejas se van.
     const mine = fields.filter(f => f.kind === 'mine' && f.owner === pl);
@@ -277,7 +311,7 @@ G.Combat = (() => {
       const e = near[i];
       const x = e ? e.x + G.U.rand(-8, 8) : pl.x + G.U.rand(-140, 140);
       const y = e ? e.y + G.U.rand(-6, 6) : pl.y + G.U.rand(-110, 110);
-      fields.push({ kind: 'meteor', owner: pl, ghost, m, col, vis, x, y, t: -i * 0.09, fall: 0.5, r: m.radius, dmg: m.dmg * pl.atk });
+      fields.push({ kind: 'meteor', owner: pl, ghost, m, col, vis, x, y, t: -i * 0.09, fall: 0.5, r: m.radius, dmg: m.dmg * pl.atkOf(m) });
     }
   }
 
@@ -286,7 +320,7 @@ G.Combat = (() => {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     const a = pl.aim + Math.PI + G.U.rand(-0.6, 0.6);
     fields.push({ kind: 'turret', owner: pl, ghost, m, col, vis, x: pl.x + Math.cos(a) * 26, y: pl.y + Math.sin(a) * 20,
-                  t: 0, life: m.dur || 6, shotT: 0.3, dmg: m.dmg * pl.atk });
+                  t: 0, life: m.dur || 6, shotT: 0.3, dmg: m.dmg * pl.atkOf(m) });
     const mine = fields.filter(f => f.kind === 'turret' && f.owner === pl && !f.gone);
     for (const f of mine.slice(0, Math.max(0, mine.length - Math.max(1, m.count | 0)))) f.gone = true;
     G.FX.ring(pl.x, pl.y, 4, 30, col, 0.3, 2);
@@ -312,10 +346,10 @@ G.Combat = (() => {
     const w = m.width || 34;
     const mx = sx + ca * len / 2, my = sy + sa * len / 2;
     for (const e of G.EnemyMgr.queryCircle(mx, my, len / 2 + w)) {
-      if (segDist2(sx, sy, pl.x, pl.y, e.x, e.y) <= (w / 2 + e.r) ** 2) hit(pl, e, m.dmg * pl.atk, col, ca, sa, m.knock || 0, m);
+      if (segDist2(sx, sy, pl.x, pl.y, e.x, e.y) <= (w / 2 + e.r) ** 2) hit(pl, e, m.dmg * pl.atkOf(m), col, ca, sa, m.knock || 0, m);
     }
     for (const p of G.World.propsInCircle(mx, my, len / 2 + w)) {
-      if (segDist2(sx, sy, pl.x, pl.y, p.x, p.y) <= (w / 2 + p.r) ** 2) G.World.damageProp(p, m.dmg * pl.atk, col);
+      if (segDist2(sx, sy, pl.x, pl.y, p.x, p.y) <= (w / 2 + p.r) ** 2) G.World.damageProp(p, m.dmg * pl.atkOf(m), col);
     }
     G.Camera.kick(0.12);
   }
@@ -327,7 +361,7 @@ G.Combat = (() => {
     const last = pl.lastPatch;
     if (last && G.U.dist2(last.x, last.y, pl.x, pl.y) < (m.radius * 0.9) ** 2 && last.t < 1) return;
     const f = { kind: 'patch', owner: pl, ghost, m, col, vis, x: pl.x, y: pl.y, t: 0, life: m.dur || 3, r: m.radius,
-                tick: 0, dmg: m.dmg * pl.atk };
+                tick: 0, dmg: m.dmg * pl.atkOf(m) };
     fields.push(f);
     pl.lastPatch = f;
     const mine = fields.filter(o => o.kind === 'patch' && o.owner === pl && !o.gone);
@@ -343,7 +377,7 @@ G.Combat = (() => {
       const sp = m.speed * G.U.rand(0.85, 1.1);
       G.Projectiles.spawn(Object.assign({
         x: pl.x + Math.cos(a) * 4, y: pl.y + Math.sin(a) * 4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        dmg: m.dmg * pl.atk, r: m.size, life: m.life * G.U.rand(0.85, 1.05), pierce: m.pierce | 0, color: col,
+        dmg: m.dmg * pl.atkOf(m), mv: m, r: m.size, life: m.life * G.U.rand(0.85, 1.05), pierce: m.pierce | 0, color: col,
         hits: new Set(), vis, ghost, owner: pl
       }, payload(m)));
     }
@@ -391,7 +425,7 @@ G.Combat = (() => {
             const a = Math.atan2(tg.y - f.y, tg.x - f.x);
             G.Projectiles.spawn(Object.assign({
               x: f.x, y: f.y, vx: Math.cos(a) * (m.speed || 300), vy: Math.sin(a) * (m.speed || 300),
-              dmg: f.dmg, r: m.size || 6, life: 1.4, pierce: m.pierce | 0, color: f.col,
+              dmg: f.dmg, mv: m, r: m.size || 6, life: 1.4, pierce: m.pierce | 0, color: f.col,
               hits: new Set(), vis: f.vis, ghost: f.ghost, owner: f.owner
             }, payload(m)));
             f.kick = 0.12;
@@ -481,7 +515,7 @@ G.Combat = (() => {
       G.Projectiles.spawnOrb({
         owner: pl, ghost: isGhost, mid: m.id,
         x: pl.x, y: pl.y, r: m.size, color: col, vis: G.VFX.forMove(m),
-        dmg: m.dmg * pl.atk,
+        dmg: m.dmg * pl.atkOf(m), mv: m,
         oa: (i / want) * 6.2832, orad: m.radius, ospeed: m.speed,
         rehit: Math.max(0.12, m.cd),
         knock: m.knock || 0, burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, mtype: m.type
@@ -489,7 +523,7 @@ G.Combat = (() => {
     }
     const live = G.Projectiles.all().filter(mine);
     live.forEach((p, i) => {
-      p.dmg = m.dmg * pl.atk;
+      p.dmg = m.dmg * pl.atkOf(m);
       p.orad = m.radius;
       p.ospeed = m.speed;
       p.r = m.size;
@@ -524,18 +558,102 @@ G.Combat = (() => {
 
   // Golpe crítico (Mejoras → Golpe Crítico): x1,5 de daño, número naranja y grande.
   const CRIT_MUL = 1.5;
-  const isCrit = pl => !ghost && pl.critChance > 0 && Math.random() < pl.critChance;
+  // Algunos movimientos (Cuchillada, Tajo Aéreo...) tienen más probabilidad.
+  const isCrit = (pl, m) => {
+    const c = (pl.critChance || 0) + ((m && m.crit) || 0);
+    return !ghost && c > 0 && Math.random() < c;
+  };
 
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
-    const k = typeK(m.type, e);
-    const crit = isCrit(pl);
-    dmg *= k * (crit ? CRIT_MUL : 1);
+    if (pl.afx && pl.afx.sheer) knock = 0;        // Potencia Bruta: el movimiento pierde el empuje
+    dmg = sigDmg(pl, e, m, dmg);
+    // Tabla de tipos y clima, más la habilidad y el tipo del Pokémon (STAB).
+    const k = typeK(m.type, e) * pl.dmgOut(m, e);
+    const crit = isCrit(pl, m);
+    dmg *= k * (crit ? pl.critMul || CRIT_MUL : 1);
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
-    if (m.burn) e.applyBurn(m.burn);
-    if (m.poison) e.applyPoison(m.poison);
-    if (m.slow) e.applySlow(m.slow);
+    secondary(pl, e, m, m, dmg);
+  }
+
+  /** Quemadura, veneno, frenazo, debilitar y bajar defensa de un golpe (con lo que cambien las habilidades). */
+  function secondary(pl, e, src, m, dmg = 0) {
+    const fx = pl.afx || {};
+    if (!fx.sheer) {
+      const s = fx.serene ? 2 : 1;
+      if (src.burn) e.applyBurn(src.burn * s);
+      if (src.poison) e.applyPoison(src.poison * s);
+      if (src.slow) e.applySlow(Math.min(0.8, src.slow * (s > 1 ? 1.5 : 1)));
+      if (m && m.weak) e.applyWeak(m.weak * s);
+      if (m && m.armor) e.applyArmor(m.armor * s);
+    }
+    if (m && m.drain && !ghost) pl.leech(dmg * m.drain * 0.05);
+    if (fx.touchPoison && m && (m.kind === 'melee' || m.kind === 'dash')) e.applyPoison(1);
+    if (m && (m.sig || m.up) && !ghost) sigHit(pl, e, m, dmg);
+    if (fx.hit && m && !ghost) fx.hit(pl, e, m, dmg);              // habilidades al golpear (Hedor, Allanamiento...)
+  }
+
+  // ---------------- efectos propios de cada movimiento (moves.js, SIG) ----------------
+
+  // En un invitado los enemigos son copias: sus estados llegan del anfitrión
+  // (net.st: 1 quemado, 2 envenenado, 8 frenado). Antes Infortunio, Carga Tóxica
+  // y compañía nunca se activaban para los invitados.
+  const isBurn = e => (e.remote ? !!(e.net && e.net.st & 1) : e.burn > 0);
+  const isPois = e => (e.remote ? !!(e.net && e.net.st & 2) : e.poison > 0);
+  const isSlow = e => (e.remote ? !!(e.net && e.net.st & 8) : e.slow > 0);
+  const statused = e => isBurn(e) || isPois(e) || isSlow(e);
+  /** Cuánto más (o menos) pega este movimiento a este enemigo ahora mismo. */
+  function sigMul(pl, e, m) {
+    const w = G.Weather.current, hpF = pl.hp / pl.maxHp;
+    switch (m.sig) {
+      case 'lowhp':     return e.hp <= e.maxHp * 0.5 ? 2 : 1;
+      case 'status':    return statused(e) ? 2 : 1;
+      case 'poisoned':  return isPois(e) ? 2 : 1;
+      case 'slowed':    return isSlow(e) ? 2 : 1;
+      case 'fresh':     return e.hp >= e.maxHp * 0.999 ? 2 : 1;
+      case 'boss':      return e.boss || e.alpha || e.totem ? 1.6 : 1;
+      case 'revenge':   return performance.now() - (pl.hurtAt || -1e9) < 3000 ? 2 : 1;
+      case 'desperate': return 1 + (1 - hpF);
+      case 'fullhp':    return 0.6 + 0.8 * hpF;
+      case 'noitem':    return pl.item ? 1 : 1.5;
+      case 'buffs': {
+        let n = 0;
+        for (const k in pl.buffs) n += pl.buffs[k].n || 0;
+        return Math.min(2, 1 + 0.12 * n);
+      }
+      case 'combo':     return 1 + 0.2 * ((m.combo || 1) - 1);
+      case 'antiair':   return e.flying ? 2 : 1;
+      case 'speedy':    return G.U.clamp(pl.spd / 120, 0.7, 1.6);
+      case 'slowy':     return G.U.clamp(120 / Math.max(40, pl.spd), 0.7, 1.6);
+      case 'weather':   return w ? 2 : 1;
+      case 'rain': case 'snow': case 'sun': return w && w.kind === m.sig ? 1.5 : 1;
+      case 'defense':   return Math.min(1.7, 1 + (pl.redP || 0) * 1.8);
+    }
+    return 1;
+  }
+  /** El daño de un golpe con su efecto propio (Superdiente: un trozo de la vida que le quede). */
+  function sigDmg(pl, e, m, dmg) {
+    if (!m || !m.sig) return dmg;
+    if (m.sig === 'combo') m.comboHit = true;
+    if (m.sig === 'halve') return e.boss ? dmg : Math.max(dmg, e.hp * 0.3);
+    return dmg * sigMul(pl, e, m);
+  }
+  /** Lo que pasa además al golpear: monedas, curarte, romper escudos, subir tus stats. */
+  function sigHit(pl, e, m, dmg) {
+    switch (m.sig) {
+      case 'coins':    if (Math.random() < 0.08) G.Pickups.drop('coin', e.x, e.y, 1); break;
+      case 'heal':     pl.leech(dmg * 0.02); break;
+      case 'unshield': if (e.remote) G.Coop.status(e, 'u', 1); else if (e.shield > 0) { e.shield = 0; e.shieldT = 0; } break;
+    }
+    // Sube tus stats (Nitrocarga, Puño Incremento, Ida y Vuelta...): como mucho una vez por segundo.
+    if (m.up) {
+      const now = performance.now();
+      if (now - (m.upAt || 0) > 1000 && Math.random() * 100 < m.up[1]) {
+        m.upAt = now;
+        pl.addBuff(m.up[0], m.up[0] === 'spd' ? 0.12 : 0.08, 5, 3);
+      }
+    }
   }
 
   // ---------------- colisiones ----------------
@@ -563,7 +681,7 @@ G.Combat = (() => {
           continue;
         }
         if (G.U.dist2(p.x, p.y, pl.x, pl.y) < (p.r + pl.r) * (p.r + pl.r)) {
-          pl.hurt(p.dmg, p.mtype);
+          pl.hurt(p.dmg, p.mtype, false, 's');
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 7, 110);
           projectiles.splice(i, 1);
         }
@@ -635,16 +753,15 @@ G.Combat = (() => {
           break;
         }
 
-        const crit = isCrit(pl);
-        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? CRIT_MUL : 1);
-        e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
+        const crit = isCrit(pl, p.mv);
+        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (p.mv ? pl.dmgOut(p.mv, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1);
+        const base = sigDmg(pl, e, p.mv, p.dmg);
+        e.hurt(base * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), pl.afx && pl.afx.sheer ? 0 : p.knock,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
-        pl.dmgDealt += p.dmg * k;
-        pl.onDealt(p.dmg * k);
-        if (p.burn) e.applyBurn(p.burn);
-        if (p.poison) e.applyPoison(p.poison);
-        if (p.slow) e.applySlow(p.slow);
+        pl.dmgDealt += base * k;
+        pl.onDealt(base * k);
+        secondary(pl, e, p, p.mv, base * k);
 
         if (!p.orb) {
           if (p.pierce > 0) { p.pierce--; }
@@ -664,8 +781,10 @@ G.Combat = (() => {
       if (e.touchCd > 0 || e.behavior === 'thief') continue;
       e.touchCd = 0.55;
       e.strike(pl);
-      pl.hurt(e.dmg, e.atkType);
-      if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
+      // Habilidades de contacto y Casco Dentado sólo si el golpe ha entrado (no si lo esquivas o eres invulnerable).
+      const landed = pl.hurt(e.dmg, e.atkType, false, 'p');
+      if (landed && pl.afx.contact && !pl.dead) pl.afx.contact(pl, e);
+      if (landed && pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;
     }

@@ -128,6 +128,7 @@ export default {
     }
     const uid = await verify((req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, ''));
     if (!uid) return new Response(JSON.stringify({ error: 'no autorizado' }), { status: 401, headers: { ...h, 'content-type': 'application/json' } });
+    if (!(await rateOk(uid))) return new Response(JSON.stringify({ error: 'demasiadas' }), { status: 429, headers: { ...h, 'content-type': 'application/json' } });
     const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${env.TURN_KEY_ID}/credentials/generate-ice-servers`, {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + env.TURN_KEY_API_TOKEN, 'content-type': 'application/json' },
@@ -146,6 +147,27 @@ export default {
     });
   }
 };
+
+// ---------------- límite por cuenta ----------------
+
+/**
+ * Como mucho TURN_PER_HOUR claves por cuenta y hora (el juego pide una cada 4 h y
+ * la reutiliza). Va en la caché de Cloudflare: es gratis y no gasta peticiones
+ * del plan (no hace falta un Durable Object). Es por centro de datos, que basta
+ * para frenar a quien pida claves en bucle con una cuenta (16-10-2026). Sin
+ * claves el juego sigue con STUN, como si el TURN no respondiera.
+ */
+const TURN_PER_HOUR = 6;
+async function rateOk(uid) {
+  const hour = Math.floor(Date.now() / 3600e3);
+  const key = new Request('https://turn-rate.internal/' + encodeURIComponent(uid) + '/' + hour);
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  const n = hit ? parseInt(await hit.text(), 10) || 0 : 0;
+  if (n >= TURN_PER_HOUR) return false;
+  await cache.put(key, new Response(String(n + 1), { headers: { 'cache-control': 'max-age=3600' } }));
+  return true;
+}
 
 // ---------------- tope del TURN ----------------
 

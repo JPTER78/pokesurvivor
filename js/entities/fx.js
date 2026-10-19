@@ -96,6 +96,7 @@ G.FX = (() => {
       case 'impact': sp('impact', pal, mx, my, { life: 0.2, scale: 1.5, frameRate: 12, fade: false }); break;
       case 'jaws':   sp('jaws', pal, mx, my, { life: 0.24, scale: 1.5, frameRate: 9, fade: false }); break;
       case 'claw':   sp('claw', pal, mx, my, { life: 0.2, scale: 1.5, angle: angle - Math.PI / 4 }); break;
+      case 'crescent': sp('crescent', pal, mx, my, { life: 0.2, scale: 1.5, angle }); break;
       case 'vine':
       case 'feather':
         for (let i = 0; i < 4; i++) {
@@ -138,7 +139,7 @@ G.FX = (() => {
       const t = texts[i];
       t.t += dt;
       if (t.t >= t.life) { texts.splice(i, 1); continue; }
-      t.y += t.vy * dt; t.vy *= 0.94;
+      t.y += t.vy * dt; t.vy *= Math.pow(0.94, dt * 60);   // igual a 60 que a 144 fps
     }
     for (const arr of [rings, slashes, beams]) {
       for (let i = arr.length - 1; i >= 0; i--) {

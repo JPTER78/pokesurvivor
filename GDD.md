@@ -48,12 +48,26 @@ Menú principal  (el mundo de fondo, con Pokémon salvajes paseando)
   mitad de vida. Se acaba cuando caéis todos.
 - **Flechas** en el borde de la pantalla hacia los compañeros que no se ven
   (nombre y metros; roja si está caído).
+- **Mensajes rápidos** (`js/ui/emotes.js`, desde el 16-10-2026): ¡Ayuda!,
+  ¡Aquí!, ¡Grieta! y ¡Gracias! con las teclas 5-8 o el bocadillo del móvil
+  (debajo de la pausa). Bocadillo encima del Pokémon 3 s y, si no se le ve,
+  junto a su flecha. Uno cada 1,2 s (el anfitrión no reenvía más de uno por
+  segundo de cada uno).
+- **Qué va en cada envío del anfitrión** (no sólo en avisos sueltos, para que
+  nada se quede descolocado si se pierde uno): reloj, nivel y experiencia del
+  equipo, enemigos cercanos, quién está eligiendo, cartas de nivel, el acto /
+  jefe / portal / modo infinito (`f.ac`) y el evento en curso (`f.es`).
+  El rango del grupo va en el `start` (el más alto del grupo); el nivel del Pokémon de
+  cada uno se ve en la sala. Las stats, objetos, bayas y habilidades de cada
+  Pokémon los calcula su dueño.
 - Dificultad: ×(1 + 0,75·(n−1)) enemigos y ×(1 + 0,3·(n−1)) vida; la
   experiencia del equipo se divide entre (1 + 0,6·(n−1)).
 - La pausa no para el juego; si se va el anfitrión, la partida acaba para todos.
 
 ### 2.4 Ranking
-- Tiempo aguantado. Pestañas **Solo / Grupo**; periodos **diario, semanal,
+- **Sólo el modo infinito** (desde el 16-10-2026, todas las tablas desde cero):
+  el tiempo aguantado en él (tras ganar en Maestro), derrotados de desempate.
+  Tablas `s_d…i`, `s_w…i`, `s_m…i` e `inf` (histórico). Pestañas **Solo / Grupo**; periodos **diario, semanal,
   mensual, anual e histórico** (hora de España); **todos o sólo amigos**;
   **filtro por Pokémon**; tu puesto abajo aunque no salgas en el top 50.
 - Una entrada por jugador (o equipo) y tabla, sólo si mejora. En grupo sale
@@ -79,11 +93,20 @@ Menú principal  (el mundo de fondo, con Pokémon salvajes paseando)
 - Cada ataque reproduce la **animación de PMD** que toca: `Attack`, `Shoot` o `Charge`.
 - **Apuntado:** lo que te está tocando > el jefe si está a tiro > el enemigo más
   cercano > (sin enemigos) la roca o cofre más cercano.
-- **52 movimientos** en 7 familias (proyectil, cuerpo a cuerpo, rayo, orbes,
-  nova, aura, potenciador), 5 niveles cada uno. Cubren los **18 tipos**.
-- El pool de cada Pokémon sale de sus tipos + el pool normal común.
-- Los potenciadores no hacen daño: entras, acumulas y vuelves a uno de ataque.
-  Nunca se ofrecen más de 2.
+- **~575 movimientos** (desde el 16-10-2026): los 64 curados de `js/data/moves.js`
+  más los originales de los juegos (`js/data/moves-gen.js`, de
+  `tools/fetch_moves.py`), que copian la forma de un curado (`tpl`) con su daño,
+  tipo y efectos (quemar, envenenar, frenar, drenar, retroceso, críticos, bajar
+  ataque o defensa). 17 formas, 5 niveles cada uno. Cubren los **18 tipos**.
+- **Qué puede usar cada Pokémon**: su lista de aprendizaje por nivel (juego más
+  reciente en que sale, `js/data/learnsets.js`) hasta su nivel permanente, más
+  lo enseñado con MT (`save.ptm`, fase 4). Empieza con el mejor de ataque que
+  sabe (`G.Moves.bestStart`: potencia × STAB, sin los que cuestan vida).
+- **Estado** (no hacen daño): potenciadores (Ataque = físicos, At. Esp. =
+  especiales, Defensa, Velocidad, regeneración), `debuff` alrededor (pegan menos,
+  reciben más, frenar, veneno, quemadura; dormir y paralizar = frenar) y `weather`
+  (su clima, si no hay otro). Solos o en un vínculo. Como mucho 2 por partida;
+  en cada tanda de cartas entran como mucho 2 candidatos y pesan menos.
 - Al subir de nivel: **1 de 3 cartas**.
 
 ## 4. Mundo
@@ -100,16 +123,63 @@ desde código (16 px por tile, ×2).
 | Rocas | Se rompen; sueltan XP, monedas o bayas |
 | Cofres | Se rompen; buen botín de monedas |
 | Hierba alta | Se corta con cualquier ataque; a veces suelta algo |
-| **Altar de poder** | Al tocarlo, 25 s de Furia (daño ×2), Rayo (+45% velocidad), Imán (×4) o Prisa (−40% recarga); luego se apaga |
 | **Manantial** | Cura mientras estás encima; se agota y se recarga solo en ~45 s |
 | **Cofre con candado** | Quédate 3,5 s a su lado (aunque te ataquen): monedas, 1-3 tickets (15% un ×10) y experiencia para subir un nivel |
 | **Trampas** | Veneno, pegajosa (te frena) o explosiva; saltan al pisarlas, también con los enemigos |
 | **Grieta** | Rara (cada 30 s, 14% desde el minuto 1:15; dura 45 s). Te lleva a la arena de un legendario |
 
 - **Voladores, fantasmas y jefes** ignoran el terreno.
-- **3 biomas** que rotan cada 4 minutos, cada uno con su música:
-  Bosque Umbrío, Cueva Cristal, Volcán Ceniza. El cambio es un **fundido**
-  de 2,6 s entre la paleta vieja y la nueva (suelo y objetos).
+- **5 biomas**, cada uno con su música y los tipos de sus salvajes: Bosque
+  Umbrío (Planta, Bicho, Volador), Cueva Cristal (Roca, Tierra, Hielo), Volcán
+  Ceniza (Fuego, Roca, Dragón), **Torre Lavanda** (Fantasma, Veneno, Psíquico;
+  niebla, lápidas y los fantasmas atraviesan paredes) y **Desierto Ruta 111**
+  (Tierra, Roca, Siniestro; arenas movedizas que frenan, cactus, tormentas de
+  arena). Uno sorteado por acto, sin repetir; el cambio es un **fundido** de
+  2,6 s entre la paleta vieja y la nueva (suelo y objetos).
+
+### 4.0a Estructura de la partida (desde el 16-10-2026, `js/systems/acts.js`)
+Sustituye a la Sentencia de Arceus (se quitó entera).
+- **3 actos de 10 min.** Jefes sueltos a los 3 y 7 min de cada acto (6 franjas
+  en `BOSS_SLOTS`). En el minuto 10, **jefe de zona** (no legendario, de los
+  tipos del bioma; 12.000 / 40.000 PV × rango). Las oleadas siguen; al vencerlo,
+  siguiente acto. A los 3 min de combate se enfurece (×1,5 daño, ×1,25 velocidad).
+- **Jefe final** (acto 3): un legendario al azar (120.000 PV × rango), con fases
+  al 66 % (llama aliados y se pone escudo) y al 33 % (más aliados, más daño).
+  Suena el tema que era de la Sentencia. Al vencerlo: **portal**; cruzarlo = ganar.
+  Tras la victoria ya no salen enemigos (salvo en el modo infinito).
+- **Rangos** (`save.rank`): Normal, Bronce, Plata, Oro, Maestro; vida ×1 / 1,35 /
+  1,8 / 2,4 / 3,2, daño ×1 / 1,2 / 1,4 / 1,65 / 1,9, premio (monedas y exp. del
+  Pokémon) ×1 / 1,25 / 1,5 / 1,8 / 2,2. Se elige con cuál jugar debajo de «Jugar»
+  (`save.rpick`; sin elegir, el último desbloqueado). En grupo lo elige el anfitrión
+  en la sala, hasta el más alto que tenga alguien del grupo (desde el 17-10-2026).
+  Ganar desbloquea el siguiente al tuyo, uno solo aunque el grupo jugara uno más
+  alto. Victoria: +400 × (1 + rango × 0,5) monedas.
+- **Modo infinito** (sólo en Maestro): si no cruzas el portal en 20 s. Sin jefes,
+  grietas ni eventos; enemigos ×(1 + min × 0,45) de vida, ×(1 + min × 0,2) de daño
+  y ×(1,6 + min/2) de cantidad. Es lo único que cuenta para el ranking.
+- Cooperativo: decide el anfitrión; el estado va en cada fotograma (`f.ac`).
+
+### 4.0b Eventos e interactivos nuevos (desde el 16-10-2026)
+- **Eventos** (`js/systems/events.js`; nunca dos a la vez, cada 4-5 min; de los
+  nuevos, como mucho uno por acto): **Brote masivo** (40 s, una especie del tramo
+  y del bioma, shiny ×12), **Pokémon errante** (un legendario errante —Raikou,
+  Suicune, Latias, Uxie...— que huye 45 s; premio de jefe especial), **Apagón**
+  (sólo Torre Lavanda, 30 s, sólo se ve alrededor, exp. ×1,5) y **Espejismo**
+  (sólo desierto, 40 s, cofre que salta cada 3,5 s; tocarlo = botín de cofre grande).
+- **Árbol de bayas** (`berrytree`): al pasar, cura un 30 % y da el poder de la baya
+  de su bioma durante 20 s: Lichi (bosque, +40 % daño), Aslac (desierto, +40 %
+  velocidad), Chiri (volcán, −30 % recarga), Gonlan (cueva, −25 % daño recibido) y
+  Arabol (Torre Lavanda, uno de esos al azar o Imán ×4). Hojas y fruto de otro color
+  en cada bioma. Vuelve a dar fruto a los 90 s. Cada uno el suyo. **Desde el
+  20-10-2026 sustituyen a los altares de poder** (Furia, Rayo, Imán, Prisa), que se
+  quitaron: su hueco en el mapa es ahora de los árboles (el doble que antes).
+- **Altar de riesgo** (`riskaltar`): 2,5 s a su lado y despierta a un guardián
+  (fuerte, de los tipos del bioma) y un séquito; al vencerlo, botín grande.
+- **Jefes Alfa / Dominante** (20 % de los jefes sueltos y legendarios de grieta):
+  Alfa ×1,3 tamaño, ×1,5 vida, ×1,25 daño, aura y ojos rojos; Dominante ×1,3 vida,
+  aura dorada, llama a 3 ayudantes cada 14 s. Ambos ×1,5 exp. y botín grande
+  (objeto, ticket ×10, 60 % MT, monedas). En cooperativo se ven igual en todos
+  (`'ne'` lleva si es Alfa o Dominante); los ayudantes los llama el anfitrión.
 - **Grieta → arena:** zona redonda cerrada en el bioma *Grieta Distorsión*,
   contra un **legendario** (2 min). Ganas: ticket ×10 extra, 3 tickets y
   monedas, y vuelves donde estabas. Pierdes (caéis todos o se acaba el tiempo):
@@ -172,9 +242,10 @@ amarillo cuando es muy eficaz; gris si no (sin texto, para no cargar la pantalla
   sortea un elenco de 7 Pokémon por tramo, así cada partida es distinta.
 - IA según tipos: persecución, embestida telegrafiada (`Charge` → `Attack`),
   disparo a distancia o tanque.
-- **5 jefes** (min. 3, 6, 9, 12, 15): Pokémon fuertes **no legendarios**
-  (pseudolegendarios, Slaking...) al azar, cada vez más fuertes; cada uno suelta
-  un **ticket ×10**. Los legendarios sólo salen en las grietas. Durante un combate de jefe las oleadas bajan al 25%, no
+- **Jefes sueltos** (2 por acto, ver 4.0a): Pokémon fuertes **no legendarios**
+  (pseudolegendarios, Slaking...) al azar, cada vez más fuertes; 1 de cada 3
+  suelta un **ticket ×10**. Los legendarios salen en las grietas y como jefe final.
+- **Según el bioma:** el 65 % de los salvajes son de los tipos del bioma del acto. Durante un combate de jefe las oleadas bajan al 25%, no
   hay mareas y suena el tema de jefe.
 - Mareas cada ~45 s. Tope de **280** enemigos a la vez; al llegar al tope, los
   que siguen saliendo son élite (×1,6 vida y experiencia, ×1,25 daño).
@@ -212,13 +283,68 @@ primero, para ir aprendiendo). Los ataques "con aviso" se ven antes en el suelo.
 
 ## 7. Progresión
 
+### 7.0 Nivel de cada Pokémon (desde el 16-10-2026)
+- Cada Pokémon de la colección tiene su **nivel (1-100)**, distinto del nivel de
+  la partida. Al acabar una partida gana la experiencia conseguida en ella, con el
+  **ritmo de crecimiento de su especie** (tablas de los juegos, `G.EXP_TABLE`).
+  Una partida de 10 min lleva a un Pokémon nuevo al Nv. ~17; una de 30 min, al ~33.
+- **Stats** (`js/systems/mons.js`): iguales a los de antes en el Nv. 1; el nivel
+  sube vida y ataque hasta +50 % y velocidad hasta +10 % en el Nv. 100.
+  **Físico/especial**: los movimientos físicos usan Ataque y los especiales
+  At. Esp. (clase de `js/data/moves-gen.js`); Defensa y Def. Esp. reducen de
+  −10 % a +30 % el daño de su clase (`(Def − 70) / 450`; hasta el 19-10-2026, /400 y
+  +20 %), más hasta +8 % por nivel (cuerpo a cuerpo = físico; disparos, rayos
+  y zonas = especial). **STAB** ×1,2. **Muros:** el ataque físico usa el 45 % de la
+  Defensa si es mayor que el Ataque (y el especial, el 45 % de la Def. Esp.), como
+  Plancha Corporal: así Shuckle o Toxapex no son inútiles.
+- **Naturaleza** (×1,1 / ×0,9 al ataque de su clase y a la velocidad finales; ±5 %
+  de reducción en defensa; hasta el 19-10-2026 multiplicaba el stat base y apenas
+  se notaba) y **habilidad** (1 de cada 20, la oculta): al azar pero fijas por cuenta
+  y Pokémon (semilla = creación de la partida + nº), así no hace falta guardarlas.
+- **Habilidades** (`js/data/ability-fx.js`): unas 170 con efecto propio; el resto,
+  +8 % con su tipo principal. **Regla de balance del dueño (19-10-2026):** como en
+  los juegos, los legendarios son más fuertes, pero nadie rompe el juego ni queda
+  inútil.
+  - Una habilidad mala (Ausente, Inicio Lento, Flaqueza, Entusiasmo) es un
+    **intercambio**, y el Pokémon conserva su punto fuerte.
+  - Una muy buena va con un punto débil (Potencia en Azumarill, que tiene poco
+    Ataque; Superguarda en Shedinja, con 1 de PS).
+  - Las pequeñas o de vez en cuando suman además la genérica (`plusGeneric`), así
+    nadie salió perdiendo.
+  - Comprobación: con cualquiera de sus habilidades, cada Pokémon queda dentro de la
+    franja de fuerza de su rareza (script de balance, ver el historial del 19-10-2026).
+- Guardado: `pxp` (experiencia, se fusiona con el máximo), `pnat`/`pabil`
+  (elegidas a mano, fase 4). Las partidas de antes: Nv. 5 + niveles de mejora (máx. 40).
+- Datos de los juegos (listas de aprendizaje, MT, habilidades, stats) generados
+  por `tools/fetch_moves.py` desde las tablas CSV de PokeAPI.
+
+### 7.0b Tienda Kecleon, Mochila y MT (desde el 16-10-2026)
+- **Tienda Kecleon** (menú, `js/data/shop.js` + `js/ui/shop-ui.js`), se abre poco a
+  poco: tras 2 partidas (caramelos: Exp. S 800 exp. · 50, M 3.000 · 180, L 10.000 · 550,
+  Raro +1 Nv. · 150), con la primera MT (MT: 300 + potencia × 6, las de estado 400) y,
+  hasta que haya victorias (fase 6), tras vencer al primer legendario de grieta
+  (Menta 1.500, Cápsula Habilidad 1.500, Cápsula Habilidad Oculta 5.000). No se roba.
+- **Mochila**: `save.bag` (caramelos, Menta, Cápsulas) y `save.tms` (cada MT se
+  gasta al enseñarla). Se usa desde la Mochila o desde la ficha de la colección.
+  Lo enseñado va a `save.ptm[dex]` y entra en `G.Moves.poolFor`.
+- **MT como botín**: jefes (20 %) y cofres con candado (10 %). Cuál, lo decide quien
+  la coge: 80 % una que su Pokémon puede aprender y aún no sabe.
+- Fusión entre aparatos: Mochila de la versión más reciente (como las monedas);
+  `ptm` unión.
+
 ### 7.1 Pokémonedas
 Al terminar una run: `tiempo/5 + derrotados/4 + 80 por jefe + monedas recogidas`,
 multiplicado por la mejora Fortuna. Cuenta nueva: 500 de regalo.
 
 Las monedas sirven para las **mejoras**; el gacha va con tickets.
 
-### 7.2 Mejoras permanentes — de cada Pokémon
+### 7.2 Mejoras permanentes — de la cuenta (desde el 16-10-2026)
+Imán, Sabiduría, Fortuna, Repertorio, Golpe Crítico y Cambio de cartas cuentan con
+todos los Pokémon (`save.aupg`). El Veto sigue siendo de cada Pokémon
+(`save.pupg[dex].ban`). Las de stats se quitaron (lo da el nivel) y se devolvieron
+sus monedas (migración v5 en `js/core/db.js`, `G.Upgrades.spent`).
+
+### 7.2-antes Mejoras permanentes — de cada Pokémon (hasta el 16-10-2026)
 Vitalidad, Fuerza, Zancada, Reflejos, Coraza, Síntesis, Imán, Sabiduría, Fortuna
 y **Repertorio (empezar con 2 movimientos)**. Cada Pokémon tiene las suyas y
 sólo cuentan cuando juegas con él (en la pantalla de Mejoras se elige cuál).
@@ -227,17 +353,52 @@ Las que se compraron cuando eran de la cuenta pasaron al compañero de entonces.
 ### 7.2a Objetos equipables (uno por run)
 Restos, Cinta Elección, Garra Rápida, Banda Focus, Cascabel Concha, Moneda
 Amuleto, Huevo Suerte, Vidasfera, Pañuelo Elección, Casco Dentado y Chaleco
-Asalto. Los sueltan **todos los jefes**, los cofres con candado (50%) y a veces
+Asalto; desde el 16-10-2026 también Periscopio (+12 % críticos), Cinta Experto
+(+25 % muy eficaz), Cinta Fuerte / Gafas Especiales (+20 % físico / especial),
+Seguro Debilidad (+50 % 10 s al recibir un muy eficaz), Globo Helio (flotas hasta
+el primer golpe; se rehincha a los 25 s), Polvo Brillo (esquiva 10 %) y Hierba
+Blanca (nada te frena). 19 en total. Los sueltan **todos los jefes**, los cofres con candado (50%) y a veces
 los normales (8%). Si ya llevas uno, eliges (en solitario el juego se para).
 
 ### 7.2c Evolución de movimientos
 Un movimiento al nivel máximo evoluciona si en esa run has cogido su mejora de
 condición (Ascuas + Potencia → Llamarada, Burbuja + Carrera → Surf...): sale
-una **carta dorada** (siempre, si está lista). Los 47 de ataque evolucionan.
+una **carta dorada** (siempre, si está lista). Los de ataque evolucionan; los de
+los juegos, en el más fuerte de su tipo y forma (`evo` en `moves-gen.js`). El
+logro "Maestro de movimientos" pide 59 distintos (lo que había curados).
+
+### 7.2c-bis Cada movimiento, distinto (desde el 17-10-2026)
+Antes un movimiento de los juegos era una copia de su plantilla con otro daño
+(Salmuera = Pistola Agua, misma animación y mismas características). Ahora cada
+uno sale de sus datos originales (`moves-gen.js`: `pp`, `acc`, `pri`, `hits`,
+`fl`, `up`; `profile()` y `SIG` en `js/data/moves.js`):
+- **PP** = ritmo: muchos PP, golpes seguidos y flojos; pocos, lentos y fuertes
+  (el daño por segundo apenas cambia). **Potencia** = tamaño. **Prioridad** = sale
+  disparado. **Nunca falla** = persigue; **impreciso** = más grande y disperso.
+  **Golpes múltiples** = más disparos (o golpes) más pequeños.
+- **Banderas:** sonido atraviesa a todos, puño empuja más, mordisco más críticos,
+  pulso más alcance. **Sube tus stats al golpear** (Nitrocarga, Puño Incremento...).
+- **Efecto propio** de 60 famosos (`combat.js`, `sigMul` / `sigHit`):
+  Salmuera ×2 a quien tenga menos de la mitad de vida, Carga Tóxica ×2 a
+  envenenados, Desquite / Alud ×2 si te acaban de golpear, Inversión más cuanta
+  menos vida tengas, Salpicar más cuanta más, Rodar / Cortefuria crecen al acertar
+  seguido, Antiaéreo ×2 a los que vuelan, Día de Pago suelta monedas, Demolición
+  rompe escudos, Superdiente quita el 30 % de la vida que quede (no a jefes), Ida y
+  Vuelta da un acelerón, Bola Clima ×2 con clima...
+- **Aspecto propio** (`vfx.js`, `visOfGen`): forma de su tipo elegida por su nombre
+  y nunca la de su plantilla; sonido = notas, pulso = anillos, mordisco = fauces,
+  puño o patada = impacto, garra o corte = zarpazo; la mitad, con estela.
+- La descripción de cada uno dice lo que lo distingue (en español e inglés).
+- Comprobado: de los 489 de daño, ningún Pokémon aprende dos idénticos (quedaban
+  3 parejas, retocadas a mano en `EXTRA`: Fuego Sagrado, Sofoco, Mil Temblores).
 
 ### 7.2d Misiones, logros y perfil
 - **3 diarias + 2 semanales** (premio en tickets y monedas); una diaria se puede
   cambiar al día. Mismas misiones en cualquier ordenador (semilla por cuenta).
+- Desde el 16-10-2026 también: jefes de zona, llegar al acto 2-3, subir niveles
+  a tus Pokémon, enseñar una MT, ganar partidas y aguantar en el modo infinito.
+  Las de sistemas que aún no tienes no salen (`when` en `js/data/missions.js`:
+  MT sólo si ya has visto una, ganar desde 5 partidas, infinito sólo en Maestro).
 - **Logros** con medalla (bronce, plata, oro), premio y a veces **título**;
   uno por cada **legendario** vencido en una grieta.
 - **Perfil público** (desde el ranking o la lista de amigos): 3 favoritos,
@@ -285,6 +446,9 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 | Bosque | Run (bosque) | Re menor aventurero, 122 bpm |
 | Cueva | Run (cueva) | La menor misterioso, 92 bpm, campanitas |
 | Volcán | Run (volcán) | Mi frigio tenso, 132 bpm |
+| Torre Lavanda | Run (torre) | La menor lento e inquietante, 76 bpm, campanas |
+| Desierto | Run (desierto) | Mi frigio, 116 bpm, flauta |
+| Final | Jefe final | Re menor frigio solemne, 140 bpm (era el de la Sentencia) |
 | Jefe | Combate de jefe | Mi menor intenso, 150 bpm |
 
 - Efectos para botones, cada familia de ataque (con tono según el tipo),
@@ -301,6 +465,22 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   familia**; más corazón, guante, bota, reloj, escudo, brote, imán, libro,
   moneda, cartas, baya, bomba, estrella, destello shiny, corona, Poké Ball…
 - Siempre a múltiplos enteros de su resolución, para que el píxel quede nítido.
+- **Avisos de primera vez** (`js/ui/tips.js`, desde el 16-10-2026): caja de
+  diálogo de Mundo Misterioso abajo, con tu compañero hablando y el texto
+  escribiéndose solo (clic, toque, Intro o Espacio sigue; Esc cierra). Cada uno
+  sale una vez por cuenta (`save.told`, se junta entre aparatos).
+  - Menú: primera partida terminada (nivel del Pokémon), Tienda Kecleon, primera
+    MT, primera victoria (rangos, Mentas y Cápsulas) y rango Maestro (modo infinito).
+  - Partida: el primero (actos), en grupo (levantar y mensajes rápidos), jefe de
+    zona, jefe final, grieta y jefe Alfa/Dominante a la vista. En solitario la
+    partida se para mientras lees (estado `tip`); en grupo no, y cada página se
+    pasa sola a los 8 s.
+- **Guía de la web** (`guia/`, `en/guide/`, con `tools/make_seo_pages.py`):
+  cómo es una partida (actos, jefes, rangos, modo infinito), tu Pokémon entre
+  partidas (nivel, movimientos, tienda, MT) y preguntas frecuentes. La página
+  de movimientos lista los 575 con su clase (física, especial o estado).
+  `tools/export_data.js` carga el catálogo generado (`moves-gen.js`,
+  `learnsets.js`) y el diccionario inglés entero.
 
 ## 10. Técnica
 
@@ -312,6 +492,37 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
 - **Datos:** stats y nombres en español bajados **una vez** de PokeAPI.
 - **Fuente:** Pixelify Sans (OFL).
 - Los ficheros generados se rehacen con los scripts de `tools/`.
+- **Pruebas:** `?todo` (en cualquier dirección en modo local que no sea la web
+  oficial: `ps.localhost`, un túnel o la copia https://pokesurvivor-pruebas.vercel.app;
+  con `localhost` o `127.0.0.1` el juego usa la nube) lo desbloquea todo al entrar: Pokémon y shinies al
+  Nv. 100, monedas y tickets, rango Maestro, mejoras, Mochila y MT
+  (`js/core/dev-unlock.js`). En la web publicada no hace nada.
+- **Seguridad** (revisión del 16-10-2026):
+  - Todo lo que escriben otros jugadores (ranking, perfil, amistades, sala,
+    moderación) entra en el HTML escapado y los números pasan por `Number()`;
+    además las reglas lo comprueban campo a campo (`firestore.rules`): la fila
+    del resumen del ranking es idéntica a la marca validada, el perfil sólo lleva
+    números, Pokémon y logros, y los nombres son los apodos de los perfiles.
+  - Apodos: 3-16 letras (con tildes y ñ), números o `_`, también en las reglas.
+  - Ranking: el tiempo del modo infinito tiene que caber en lo que ha durado la
+    partida (t + 25 min), en solitario hace falta el rango Maestro, y nadie del
+    equipo puede estar en `bans/{uid}` (sólo lo escribe el admin; antes bastaba
+    con borrar la partida para quitarse `saves/{uid}.ban`).
+  - Cooperativo (`database.rules.json`): el remitente va en la ruta
+    (`q2/{para}/{de}/…`, sólo puedes escribir como tú); el anfitrión escribe la
+    lista de admitidos (`ok`, como mucho 3 uids: 4 con él) y sólo entran ellos;
+    los datos de cada miembro se comprueban; mensajes de menos de 20.000
+    caracteres. La sala ya no va en `pres/`. (La ruta vieja `q` y las salas sin
+    `ok` siguen aceptándose para quien tenga abierta una versión anterior:
+    se pueden quitar más adelante.)
+  - TURN: como mucho 6 claves por cuenta y hora (caché de Cloudflare, gratis).
+  - CSP en `dev.html` (pasa a `index.html`): sólo código de la web y de
+    Firebase/Google, nada escrito dentro de la página (`js/boot-lang.js` y
+    `js/pages.js` salieron del HTML por eso).
+  - Partida guardada: el servidor comprueba también el rango y que los datos
+    nuevos (nivel, Mochila, MT, naturalezas, habilidades...) sean mapas de
+    tamaño razonable; el juego los limpia al cargar (`db.js` sanitize).
+  - Pruebas de las reglas con el emulador de Firebase (casos buenos y malos).
 
 ## 11. Pendiente
 
@@ -445,7 +656,7 @@ guitarra punteada, bajo, pad, lead y batería, con reverb). Cero ficheros.
   de monedas): ×1 de Pokémon normales (1/260), ×10 de legendarios (siempre) y jefes (1 de cada 3).
 - **Jefes casuales no legendarios**; los legendarios, sólo en las **grietas**
   (arena aparte; perder te devuelve sin premio). En grupo viajáis todos.
-- **Altares, manantiales, cofres con candado y trampas**, en pixel art propio.
+- **Árboles de bayas, manantiales, cofres con candado y trampas**, en pixel art propio.
 - **Fundido** entre biomas en vez del cambio brusco.
 - Pokédex: campo `leg` (legendario o singular) de PokeAPI.
 

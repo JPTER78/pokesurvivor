@@ -4,7 +4,6 @@
     ".write": false,
     "rooms": {
       "$room": {
-        ".read": "auth != null && data.child('m').child(auth.uid).exists()",
         ".write": "auth != null && ((!data.exists() && newData.child('host').val() === auth.uid) || data.child('host').val() === auth.uid)",
         "host": {
           ".read": "auth != null"
@@ -12,9 +11,32 @@
         "open": {
           ".read": "auth != null"
         },
+        "ok": {
+          ".validate": "newData.isString() && newData.val().length <= 90"
+        },
         "m": {
+          ".read": "auth != null && data.child(auth.uid).exists()",
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && (!newData.exists() || data.exists() || (root.child('rooms').child($room).child('open').val() === true))"
+            ".write": "auth != null && auth.uid === $uid && (!newData.exists() || data.exists() || (root.child('rooms').child($room).child('open').val() === true && (root.child('rooms').child($room).child('host').val() === auth.uid || !root.child('rooms').child($room).child('ok').exists() || root.child('rooms').child($room).child('ok').val().contains(auth.uid))))",
+            ".validate": "newData.hasChildren(['name', 'dex'])",
+            "name": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_ñÑáéíóúÁÉÍÓÚ]{3,16}$/)" },
+            "dex": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 2000" },
+            "shiny": { ".validate": "newData.isBoolean()" },
+            "rank": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4" },
+            "lv": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100" },
+            "at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "q2": {
+          "$to": {
+            ".read": "auth != null && auth.uid === $to",
+            "$from": {
+              "$msg": {
+                ".write": "auth != null && ((auth.uid === $from && root.child('rooms').child($room).child('m').child(auth.uid).exists()) || (auth.uid === $to && !newData.exists()))",
+                ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 20000)"
+              }
+            }
           }
         },
         "q": {
@@ -22,7 +44,7 @@
             ".read": "auth != null && auth.uid === $to",
             "$msg": {
               ".write": "auth != null && (auth.uid === $to || root.child('rooms').child($room).child('m').child(auth.uid).exists())",
-              ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 200000)"
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 20000)"
             }
           }
         }

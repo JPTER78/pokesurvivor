@@ -26,10 +26,18 @@ G.Player = class Player {
     this.xpMul = perks.xpMul || 1;
     this.coinMul = perks.coinMul || 1;
 
-    this.maxHp = mon.hp + (perks.hp || 0);
+    // Stats del Pokémon permanente (nivel, naturaleza; ver systems/mons.js).
+    // Los compañeros de cooperativo los manda su dueño: aquí da igual.
+    const st = G.Mons.stats(mon.dex);
+    this.monLevel = st.level;
+    this.maxHp = st.hp + (perks.hp || 0);
     this.hp = this.maxHp;
-    this.baseSpd = mon.spd;
-    this.baseAtk = mon.atk;
+    this.baseSpd = st.spd;
+    this.atkP = st.atkP;            // movimientos físicos
+    this.atkS = st.atkS;            // movimientos especiales
+    this.baseAtk = Math.max(st.atkP, st.atkS);
+    this.redP = st.redP;            // reducción de daño físico (Defensa)
+    this.redS = st.redS;            // reducción de daño especial (Def. Esp.)
 
     this.moves = [];           // todos los movimientos aprendidos
     this.slots = [];           // huecos: cada uno, una lista de movimientos que se lanzan a la vez
@@ -38,7 +46,8 @@ G.Player = class Player {
     this.bonds = 0;            // vínculos por usar (premio de los legendarios)
 
     this.buffs = {
-      atk: { n: 0, t: 0, amount: 0 },
+      atk: { n: 0, t: 0, amount: 0 },          // movimientos físicos
+      spa: { n: 0, t: 0, amount: 0 },          // movimientos especiales
       spd: { n: 0, t: 0, amount: 0 },
       def: { n: 0, t: 0, amount: 0 },
       regen: { n: 0, t: 0, amount: 0 }
@@ -67,12 +76,46 @@ G.Player = class Player {
     this.lavaTick = 0;
     this.attackFace = 0;       // tiempo que sigue mirando al objetivo tras atacar
     this.dead = false;
-    this.power = null;         // poder de altar activo: { def, t, dur }
+    this.power = null;         // poder de una baya activo: { def, t, dur }
     this.slowT = 0;            // pegado por una trampa
     this.item = null;          // objeto equipado (data/items.js), uno por run
-    this.sashT = -999;         // última vez que salvó la Banda Focus
+    this.sashCd = 0;           // Banda Focus: segundos de partida hasta que vuelva a salvar
     this.bellHeal = 0;         // curación pendiente del Cascabel Concha
     this.statsTaken = {};      // mejoras de stat cogidas (condición de evolución)
+    this.itemP = 1; this.itemS = 1;   // Cinta Fuerte / Gafas Especiales
+    this.wpT = 0;              // Seguro Debilidad activo (segundos)
+    this.balloonUp = false;    // Globo Helio hinchado
+    this.balloonT = 0;         // lo que le falta para volver a hincharse
+
+    // Habilidad (data/ability-fx.js) y bonificación por tipo (STAB) como en los juegos.
+    this.ability = G.Mons.ability(mon.dex);
+    this.afx = G.AbilityFX.of(this.ability, mon);
+    this.stab = 1.2;
+    this.stabAll = false;
+    this.critMul = 1.5;
+    this.moxie = 0;            // daño extra por derrotados (Autoestima y compañía)
+    this.abSpd = 0;            // velocidad extra (Impulso)
+    this.sturdyCd = 0;         // Robustez: igual
+    this.levitate = !!this.afx.levitate;
+    this.guard = !!this.afx.guard;
+    this.steady = !!this.afx.steady;
+    if (this.afx.start) this.afx.start(this);
+  }
+
+  /** Multiplicador de ataque para un movimiento: físico o especial. */
+  atkOf(m) {
+    const sp = m && G.Mons.moveClass(m) === 's';
+    const b = sp ? this.buffs.spa : this.buffs.atk;
+    return (sp ? this.atkS * this.itemS : this.atkP * this.itemP) * this.atkMul * (1 + b.n * b.amount) * (1 + this.moxie)
+      * (this.wpT > 0 ? 1.5 : 1);
+  }
+
+  /** Lo que la habilidad y el tipo del Pokémon añaden al daño de `m` contra `e`. */
+  dmgOut(m, e) {
+    let k = this.stabAll || this.mon.types.includes(m.type) ? this.stab : 1;
+    if (this.afx.out) k *= this.afx.out(this, m, e);
+    if (this.item === 'expertbelt' && e && G.Types.mult(m.type, e.types) > 1) k *= 1.25;
+    return k;
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -86,11 +129,14 @@ G.Player = class Player {
   cy() { return this.y; }
 
   // ---------------- stats efectivos ----------------
-  get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount); }
+  get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + this.moxie); }
   get spd() {
-    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
-    const w = G.Weather.speedFor(this.mon.types);
-    const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
+    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1)
+            * (1 + this.abSpd) * (this.afx.speed ? this.afx.speed(this) : 1);
+    // Hierba Blanca: ni el agua ni el clima te frenan.
+    const herb = this.item === 'whiteherb';
+    const w = herb ? Math.max(1, G.Weather.speedFor(this.mon.types)) : G.Weather.speedFor(this.mon.types);
+    const slow = this.inLiquid && !herb ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return s * slow * w;
   }
   get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
@@ -205,9 +251,11 @@ G.Player = class Player {
     }
     const anim = { melee: 'Attack', beam: 'Shoot', projectile: 'Shoot', nova: 'Attack',
                    aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
-                   mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot' }[m.kind] || 'Attack';
+                   mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot',
+                   debuff: 'Charge', weather: 'Charge' }[m.kind] || 'Attack';
     // Las familias nuevas suenan como la parecida de las de siempre.
-    const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile' };
+    const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile',
+                  debuff: 'buff', weather: 'buff' };
     // El rastro no suena a cada charco (sería un zumbido constante).
     if (m.kind !== 'trail') G.Audio.sfx('shot', { kind: SND[m.kind] || m.kind, type: m.type });
     if (m.kind === 'trail') return;
@@ -224,32 +272,77 @@ G.Player = class Player {
   /**
    * @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual
    * @param pure  daño que no baja con la defensa ni el cuerpo a cuerpo (Arceus)
+   * @param cls   'p' físico (cuerpo a cuerpo) o 's' especial (disparos, rayos,
+   *              zonas): baja con la Defensa o la Def. Esp. del Pokémon
    */
-  hurt(amount, type = null, pure = false) {
+  hurt(amount, type = null, pure = false, cls = null) {
     if (this.invuln > 0 || this.dead) return;
+    // Polvo Brillo: esquiva 1 de cada 10 golpes.
+    if (!pure && this.item === 'brightpowder' && Math.random() < 0.1) {
+      this.invuln = 0.3;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 4, '¡Esquiva!', '#e8f0ff');
+      return;
+    }
+    // Habilidades que esquivan (Velo Arena con arena, Telepatía, Tumbos...).
+    if (!pure && this.afx.dodge && Math.random() < this.afx.dodge(this, type, cls)) {
+      this.invuln = 0.3;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 4, '¡Esquiva!', '#e8f0ff');
+      return;
+    }
+    // Habilidades que absorben un tipo (Absorbe Agua, Absorbe Elec...): curan un poco.
+    if (type && !pure && this.afx.absorb === type) {
+      this.invuln = 0.45;
+      this.heal(Math.min(this.maxHp * 0.05, amount * 0.25));
+      return;
+    }
+    this.hurtAt = performance.now();         // para Desquite, Alud... (combat.js, sigMul)
     let eff = null;
+    if (!pure && this.afx.inMul) amount *= this.afx.inMul(this, type, cls);
     if (type) {
       const k = G.Types.mult(type, this.mon.types);
       eff = G.Types.label(k);
       amount *= k * G.Weather.mult(type);
+      // Seguro Debilidad: un golpe muy eficaz te da +50 % de daño un rato.
+      if (eff === 'super' && !pure && this.item === 'weaknesspolicy' && !(this.wpT > 0)) {
+        this.wpT = 10;
+        G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Seguro Debilidad!', '#ff9a3d', true);
+      }
     }
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
-    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
+    const base = cls === 'p' ? this.redP : cls === 's' ? this.redS : 0;
+    const red = Math.max(-0.2, Math.min(0.8, this.reduction + base));
+    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - red) * close);
     this.hp -= d;
     this.invuln = 0.45;
+    if (!pure && this.afx.hurt) this.afx.hurt(this, type, cls, d);   // Armadura Frágil, Hurto...
+    // Globo Helio: se pincha con el golpe.
+    if (this.balloonUp && !pure) {
+      this.balloonUp = false; this.balloonT = 25;
+      this.levitate = !!this.afx.levitate;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Globo pinchado!', '#ff8ad8');
+    }
     this.flash = 0.14;
     G.Audio.sfx('hurt');
     G.Camera.kick(0.28);
     G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), eff === 'super' ? '#ff3048' : eff === 'weak' ? '#c9a0a8' : '#ff6b7a', eff === 'super');
     G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ff5f6d', 6, 90);
     // Banda Focus: aguanta el golpe con 1 de vida (una vez cada 60 s).
-    if (this.hp <= 0 && this.hasItem('focussash') && performance.now() - this.sashT > 60000) {
-      this.sashT = performance.now();
+    // (Con segundos de partida: antes contaban la pausa y las cartas, y en el primer
+    // minuto desde que abrías la página no funcionaba.)
+    if (this.hp <= 0 && this.hasItem('focussash') && this.sashCd <= 0) {
+      this.sashCd = 60;
       this.hp = 1; this.invuln = 1.2;
       G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Banda Focus!', '#ff9a3d', true);
       G.FX.ring(this.x, this.y, 6, 70, '#ff9a3d', 0.5, 4);
+    }
+    // Robustez: igual, cada 90 s.
+    if (this.hp <= 0 && this.afx.sturdy && this.sturdyCd <= 0) {
+      this.sturdyCd = 90;
+      this.hp = 1; this.invuln = 1.2;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Robustez!', '#c9b48a', true);
+      G.FX.ring(this.x, this.y, 6, 70, '#c9b48a', 0.5, 4);
     }
     if (this.hp <= 0) {
       this.hp = 0; this.dead = true;
@@ -257,9 +350,12 @@ G.Player = class Player {
       G.Projectiles.clearOrbs(this);
       this.reviveT = 0;
     }
+    return true;                             // el golpe ha entrado
   }
 
-  heal(amount) {
+  /** @param food  cura de comida (curaciones del suelo, bayas): Gula y Recogecosecha curan más. */
+  heal(amount, food = false) {
+    if (food && this.afx.healMul) amount *= this.afx.healMul;
     const before = this.hp;
     this.hp = Math.min(this.maxHp, this.hp + amount);
     const got = Math.round(this.hp - before);
@@ -271,6 +367,7 @@ G.Player = class Player {
   /** Devuelve cuántos niveles ha subido (pueden ser varios de golpe). */
   gainXp(amount) {
     this.xp += amount * this.xpMul;
+    this.xpTotal = (this.xpTotal || 0) + amount * this.xpMul;   // para el nivel del Pokémon
     let leveled = 0;
     while (this.xp >= this.xpNext) {
       this.xp -= this.xpNext;
@@ -291,25 +388,60 @@ G.Player = class Player {
     if (id) G.Items.BY[id].on(this);
   }
 
+  /** Movimientos que drenan (Absorber, Gigadrenado...): un poco de vida por el daño (tope 4/s, junto al Cascabel Concha). */
+  leech(amount) {
+    if (amount > 0) this.bellHeal = Math.min(4, this.bellHeal + amount);
+  }
+
+  /** Movimientos con retroceso o que cuestan vida (Doble Filo, Explosión...): nunca te dejan KO. */
+  selfCost(frac) {
+    if (frac > 0 && !this.remote) this.hp = Math.max(1, this.hp - this.maxHp * frac);
+  }
+
   /** Cascabel Concha: un poco de vida por el daño que haces (tope 4/s). */
   onDealt(dmg) {
     if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
   }
 
-  /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
+  /** Poder de una baya (ver systems/interact.js): se aplica y se quita solo. */
   addPower(def, dur) {
     if (this.power) this.power.def.off(this);
     def.on(this);
     this.power = { def, t: dur, dur };
   }
 
+  /**
+   * Un hueco por stat. El mismo potenciador se acumula; uno distinto nunca baja lo
+   * que ya hay (20-10-2026: Armadura Frágil, Aguante o la subida al golpear dejaban
+   * en 1 las 5 cargas de Agilidad o Danza Espada): si da más, sustituye; si no, sólo
+   * alarga el tiempo.
+   */
   addBuff(stat, amount, dur, maxStacks) {
     const b = this.buffs[stat];
     if (!b) return;
-    b.amount = amount;
-    b.n = Math.min(maxStacks, b.n + 1);
-    b.t = dur;
+    if (b.n <= 0 || b.amount === amount) {
+      b.amount = amount;
+      b.n = Math.max(b.n, Math.min(maxStacks, b.n + 1));
+      b.t = Math.max(b.t, dur);
+    } else if (amount > b.n * b.amount) {
+      b.amount = amount; b.n = 1; b.t = dur;
+    } else b.t = Math.max(b.t, dur);
   }
+
+  /** Quita la invulnerabilidad corta de un golpe (≤ 0,45 s), no la larga (Banda Focus, revivir...). */
+  breakShortInvuln() { if (this.invuln <= 0.45) this.invuln = 0; }
+
+  /** Cuánto le frenan ahora (1 = nada): trampa, agua o arenas, clima. */
+  slowFactor() {
+    let k = this.slowT > 0 ? 0.5 : 1;
+    if (this.item !== 'whiteherb') {
+      if (this.inLiquid) k *= G.World.liquidEffect(this.mon.types).slow || 1;
+      k *= Math.min(1, G.Weather.speedFor(this.mon.types));
+    }
+    return k;
+  }
+  /** ¿Va frenado? (Agallas, Competitivo, Respondón, Pies Rápidos, Tumbos.) */
+  isSlowed() { return this.slowFactor() < 0.99; }
 
   // ---------------- ciclo ----------------
   update(dt) {
@@ -323,7 +455,20 @@ G.Player = class Player {
       const b = this.buffs[k];
       if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
     }
-    if (this.slowT > 0) this.slowT -= dt;
+    if (this.slowT > 0) this.slowT = this.steady ? 0 : this.slowT - dt;
+    if (this.sashCd > 0) this.sashCd -= dt;
+    if (this.sturdyCd > 0) this.sturdyCd -= dt;
+    if (this.wpT > 0) this.wpT -= dt;
+    if (this.item === 'airballoon' && !this.balloonUp && (this.balloonT -= dt) <= 0) {
+      this.balloonUp = true; this.levitate = true;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Globo Helio!', '#ff8ad8');
+    }
+    if (this.afx.tick) this.afx.tick(this, dt);
+    // Sequía, Llovizna...: su clima al poco de empezar y cada 3 minutos.
+    if (this.afx.summon) {
+      this.summonT = (this.summonT == null ? 6 : this.summonT) - dt;
+      if (this.summonT <= 0) this.summonT = G.Weather.summon(this.afx.summon, 45) ? 180 : 20;
+    }
     if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
@@ -343,13 +488,13 @@ G.Player = class Player {
     if (this.walking) this.moveAngle = Math.atan2(ay, ax);
 
     // --- terreno líquido ---
-    this.inLiquid = G.World.isLiquid(this.x, this.y);
+    this.inLiquid = !this.levitate && G.World.isLiquid(this.x, this.y);
     if (this.inLiquid) {
       const le = G.World.liquidEffect(this.mon.types);
       if (le.dmg) {
         this.lavaTick -= dt;
-        if (this.lavaTick <= 0) {
-          this.lavaTick = le.every; this.invuln = 0;
+        if (this.lavaTick <= 0 && !this.guard && !this.afx.lavaProof) {
+          this.lavaTick = le.every; this.breakShortInvuln();
           this.hurt(Math.max(le.flat, this.maxHp * le.dmg * 0.5));
           G.FX.burst(this.x, this.y - 4, le.color, 5, 70);
         }
@@ -444,7 +589,7 @@ G.Player = class Player {
       ctx.restore();
     }
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y);
-    // Poder de altar: aro de su color latiendo bajo los pies.
+    // Poder de una baya: aro de su color latiendo bajo los pies.
     if (this.power && !this.dead) {
       ctx.save();
       ctx.globalAlpha = 0.35 + Math.sin(performance.now() / 120) * 0.15;
@@ -457,7 +602,7 @@ G.Player = class Player {
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
 
     // Arcos de buff alrededor de los pies.
-    const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
+    const COL = { atk: '#ff6b4d', spa: '#ff8ad8', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     let i = 0;
     for (const k in this.buffs) {
       const b = this.buffs[k];
@@ -489,9 +634,9 @@ G.Player = class Player {
       ctx.textAlign = 'center';
       const y = this.y - this.bodyH - 8;
       ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
-      ctx.strokeText(this.tag, this.x, y);
+      ctx.strokeText(G.I18n.noT(this.tag), this.x, y);      // (un apodo no se traduce)
       ctx.fillStyle = this.dead ? '#ff8a96' : this.tagColor || '#fff';
-      ctx.fillText(this.tag, this.x, y);
+      ctx.fillText(G.I18n.noT(this.tag), this.x, y);
       if (this.dead) {
         ctx.font = '700 6px Pixelify,"Segoe UI",sans-serif';
         ctx.strokeText(this.revLabel || '', this.x, y - 8);
@@ -499,5 +644,6 @@ G.Player = class Player {
       }
       ctx.restore();
     }
+    if (this.emote) G.Emotes.drawBubble(ctx, this);     // mensaje rápido (cooperativo)
   }
 };

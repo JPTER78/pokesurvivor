@@ -18,6 +18,8 @@ for m in re.finditer(r'^\s*(\d+): (\{.*\}),?\s*$', open(os.path.join(ROOT, 'js/d
     except Exception: pass
 esc = html.escape
 N = len(DEX)
+NA = len(D['achievements'])          # logros
+NM = len(D['moves'])                 # movimientos
 
 # ---------------- traducción con el diccionario del juego ----------------
 EN = D['en']
@@ -159,10 +161,13 @@ FAQ = {
   ('¿Hay que descargar algo?', 'No. Se juega en el navegador, en PC, tablet o móvil. Si quieres, puedes instalarlo como app con «Añadir a pantalla de inicio».'),
   ('¿Se puede jugar en el móvil?', 'Sí, en horizontal. Pon el dedo en cualquier parte de la pantalla y arrastra para moverte (el joystick aparece donde tocas), toca un ataque para cambiarlo y el botón de arriba a la derecha para pausar.'),
   ('¿Está en inglés?', 'Sí: el juego sale en español o en inglés según el idioma de tu navegador, y se puede cambiar en Ajustes.'),
-  ('¿Puedo jugar con mis amigos?', 'Sí: el modo cooperativo online admite hasta 4 jugadores. Añade a tus amigos por su apodo, invítalos a tu sala y empezad la partida. La experiencia se comparte y podéis revivir a un compañero caído quedándoos a su lado.'),
+  ('¿Puedo jugar con mis amigos?', 'Sí: el modo cooperativo online admite hasta 4 jugadores. Añade a tus amigos por su apodo, invítalos a tu sala y empezad la partida. La experiencia se comparte, podéis revivir a un compañero caído quedándoos a su lado y hay mensajes rápidos (¡Ayuda!, ¡Aquí!…). Se juega el rango más alto que tenga alguien del grupo.'),
+  ('¿Cómo se gana una partida?', 'La partida tiene 3 actos de 10 minutos, cada uno en un bioma al azar. Al final de cada acto llega un jefe de zona; el del tercero es un legendario con fases. Si lo vences se abre un portal: crúzalo y has ganado. Cada victoria desbloquea el rango siguiente (Bronce, Plata, Oro y Maestro), más duro y con más premio.'),
+  ('¿Qué es el modo infinito?', 'En el rango Maestro, si vences al jefe final y no cruzas el portal, empiezan oleadas sin fin cada vez más fuertes. El ranking cuenta cuánto aguantas ahí.'),
+  ('¿Cómo sube de nivel mi Pokémon?', 'Cada Pokémon tiene su propio nivel (hasta el 100), que sube con la experiencia que gana en cada partida o con caramelos de la Tienda Kecleon. Al subir aprende los mismos movimientos que en los juegos, y con las MT puedes enseñarle otros. También tiene su naturaleza y su habilidad.'),
   ('¿Cuántos Pokémon hay?', f'{N} Pokémon de las 9 regiones (de Kanto a Paldea), todos jugables como compañero y con su versión shiny cuando existe.'),
   ('¿Cómo consigo más Pokémon?', 'Con el gacha, que funciona con tickets que se ganan jugando: los Pokémon normales sueltan tickets de vez en cuando, y los jefes y los legendarios de las grietas, a veces, tickets ×10. No se pueden comprar con dinero real.'),
-  ('¿Qué son las grietas?', 'Portales misteriosos que aparecen muy de vez en cuando. Si entras, luchas contra un Pokémon legendario en una arena de su tipo (hay 18 distintas). Si ganas, te llevas premio; si caes, vuelves al mapa.'),
+  ('¿Qué son las grietas?', 'Portales misteriosos que aparecen de vez en cuando durante los actos. Si entras, luchas contra un Pokémon legendario en una arena de su tipo (hay 18 distintas). Si ganas, te llevas premio y un vínculo para lanzar varios movimientos a la vez; si caes, vuelves al mapa.'),
   ('¿Se guarda mi progreso?', 'Con una cuenta (nombre y contraseña o Google) tu partida se guarda en la nube y la puedes seguir en cualquier dispositivo. Como invitado se juega al momento, pero no se guarda.'),
   ('¿Es un juego oficial de Pokémon?', 'No. Es un proyecto hecho por fans, gratuito y sin ánimo de lucro, sin relación con Nintendo, GAME FREAK ni The Pokémon Company.')],
  'en': [
@@ -170,10 +175,13 @@ FAQ = {
   ('Do I need to download anything?', 'No. You play in your browser on PC, tablet or phone. If you like, you can install it as an app with “Add to Home Screen”.'),
   ('Can I play on my phone?', 'Yes, in landscape. Put your finger anywhere on the screen and drag to move (the joystick appears where you touch), tap a move to switch to it and the top-right button to pause.'),
   ('Is it in English?', 'Yes: the game shows up in English or Spanish depending on your browser language, and you can change it in Settings.'),
-  ('Can I play with my friends?', 'Yes: online co-op supports up to 4 players. Add your friends by nickname, invite them to your room and start the game. Experience is shared and you can revive a fallen teammate by standing next to them.'),
+  ('Can I play with my friends?', 'Yes: online co-op supports up to 4 players. Add your friends by nickname, invite them to your room and start the game. Experience is shared, you can revive a fallen teammate by standing next to them and there are quick messages (Help!, Over here!…). You play the highest rank anyone in the group has.'),
+  ('How do you win a run?', 'A run has 3 acts of 10 minutes, each in a random biome. At the end of each act a zone boss arrives; the third one is a legendary with phases. Beat it and a portal opens: step through and you win. Each victory unlocks the next rank (Bronze, Silver, Gold and Master), harder and with bigger rewards.'),
+  ('What is endless mode?', 'In the Master rank, if you beat the final boss and don\'t step through the portal, endless waves begin, stronger and stronger. The leaderboard counts how long you last there.'),
+  ('How does my Pokémon level up?', 'Each Pokémon has its own level (up to 100), which goes up with the experience it earns in each run or with candies from the Kecleon Shop. As it levels up it learns the same moves as in the main games, and TMs can teach it others. It also has its own nature and ability.'),
   ('How many Pokémon are there?', f'{N} Pokémon from all 9 regions (Kanto to Paldea), all playable as your partner, with their shiny form when one exists.'),
   ('How do I get more Pokémon?', 'From the gacha, which uses tickets you earn by playing: regular Pokémon drop tickets now and then, and bosses and rift legendaries sometimes drop ×10 tickets. They can\'t be bought with real money.'),
-  ('What are rifts?', 'Mysterious portals that open very rarely. If you go in, you fight a legendary Pokémon in an arena of its type (there are 18). Win and you get a reward; fall and you\'re sent back to the map.'),
+  ('What are rifts?', 'Mysterious portals that open now and then during the acts. If you go in, you fight a legendary Pokémon in an arena of its type (there are 18). Win and you get a reward and a bond to fire several moves at once; fall and you\'re sent back to the map.'),
   ('Is my progress saved?', 'With an account (name and password, or Google) your game is saved in the cloud and you can continue on any device. Guests can play right away, but nothing is saved.'),
   ('Is this an official Pokémon game?', 'No. It\'s a free, non-profit fan project, unrelated to Nintendo, GAME FREAK or The Pokémon Company.')]}
 
@@ -192,12 +200,27 @@ navegador: eliges un compañero, te mueves por un mapa infinito y tus ataques sa
 <li><b>En PC:</b> muévete con <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o las flechas. Cambia de ataque con <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> o haciendo clic en su icono. Pausa con <kbd>Esc</kbd>.</li>
 <li><b>En móvil o tablet (horizontal):</b> arrastra el dedo en cualquier parte para moverte, toca un ataque para cambiarlo y el botón de arriba a la derecha para pausar.</li>
 <li>Tu Pokémon <b>ataca solo</b> con el movimiento activo. Tú te encargas de esquivar y de colocarte bien.</li>
-<li>Recoge la experiencia para <b>subir de nivel</b> y elige entre tres cartas: <a href="{lk('moves')}">movimientos</a> nuevos, mejorar los que tienes o potenciar a tu Pokémon.</li>
+<li>Recoge la experiencia para <b>subir de nivel</b> y elige entre tres cartas: <a href="{lk('moves')}">movimientos</a> nuevos (de los que conoce tu Pokémon), mejorar los que tienes o potenciar a tu Pokémon.</li>
+<li><b>En grupo:</b> mensajes rápidos con <kbd>5</kbd>–<kbd>8</kbd> (¡Ayuda!, ¡Aquí!, ¡Grieta!, ¡Gracias!) o con el bocadillo en el móvil.</li>
+</ul>
+<h2>Cómo es una partida</h2>
+<ul>
+<li><b>3 actos de 10 minutos</b>, cada uno en un bioma al azar: Bosque, Cueva, Volcán, Torre Lavanda (niebla y fantasmas) o Desierto (arenas movedizas y tormentas de arena). Los Pokémon salvajes suelen ser de los tipos del bioma.</li>
+<li>Al final de cada acto llega un <b>jefe de zona</b>: véncelo para pasar al siguiente. El del acto 3 es el <b>jefe final</b>, un legendario con fases. Si lo vences se abre un <b>portal</b>: crúzalo y has ganado.</li>
+<li>Por el camino: jefes sueltos (a veces <b>Alfa</b>, enormes y con ojos rojos, o <b>Dominantes</b>, que llaman a ayudantes), <a href="{lk('legends')}">grietas legendarias</a>, cofres, árboles de bayas (cada bioma con su baya y su poder), altares de riesgo y eventos como el brote masivo (más shinies) o el Pokémon errante.</li>
+<li><b>Rangos</b>: ganar en Normal desbloquea Bronce, luego Plata, Oro y Maestro. Cada uno es más duro y da más premio, y debajo de «Jugar» eliges con cuál juegas (en grupo, el anfitrión, hasta el más alto del grupo). En Maestro, si no cruzas el portal, empieza el <b>modo infinito</b>, que es lo que cuenta en el ranking.</li>
+</ul>
+<h2>Tu Pokémon, entre partidas</h2>
+<ul>
+<li>Cada Pokémon tiene su propio <b>nivel</b> (Nv., hasta el 100), que sube con la experiencia de cada partida. Al subir <b>aprende movimientos</b>, los mismos que en los juegos, y sólo esos (más los que le enseñes con MT) te salen en las cartas.</li>
+<li>Tiene sus <b>stats reales</b> (los movimientos físicos usan el Ataque y los especiales el At. Esp.), una <b>naturaleza</b> y una <b>habilidad</b> de las suyas.</li>
+<li>Tras unas partidas abre la <b>Tienda Kecleon</b>: caramelos para subir de nivel, <b>MT</b>, Mentas (cambian la naturaleza) y Cápsulas Habilidad. Todo va a la Mochila.</li>
+<li>Las <b>Mejoras</b> de la cuenta (Imán, Sabiduría, Fortuna, Crítico…) valen para todos tus Pokémon.</li>
 </ul>
 <h2>Características</h2>
 <ul class="feat">
-<li><b>{N} Pokémon de las 9 regiones</b> (<a href="{lk('pokedex')}">ver la Pokédex</a>), cada uno con sus ataques y sus propias mejoras permanentes.</li>
-<li><b>Los movimientos evolucionan</b>: al nivel máximo y con la mejora adecuada, Ascuas se convierte en Llamarada, Burbuja en Surf…</li>
+<li><b>{N} Pokémon de las 9 regiones</b> (<a href="{lk('pokedex')}">ver la Pokédex</a>), cada uno con su nivel, sus stats, su naturaleza y su habilidad.</li>
+<li><a href="{lk('moves')}"><b>{NM} movimientos de los juegos</b></a>, y cada Pokémon aprende los suyos. <b>Evolucionan</b>: al nivel máximo y con la carta adecuada, Ascuas se convierte en Llamarada, Burbuja en Surf…</li>
 <li><b>Enemigos con personalidad</b>: hay Pokémon que curan, ponen escudos, invocan ayuda, explotan o disparan rayos avisando en el suelo.</li>
 <li><b>Jefes</b> y <a href="{lk('legends')}"><b>grietas</b> con 18 arenas legendarias</a>, una por tipo.</li>
 <li><a href="{lk('types')}"><b>Clima y tabla de tipos</b></a>: con lluvia el Agua se potencia y el Fuego se debilita; sol, arena, nieve y niebla.</li>
@@ -205,7 +228,7 @@ navegador: eliges un compañero, te mueves por un mapa infinito y tus ataques sa
 <li><b>Gacha con forma de tragaperras</b>, por región, con tickets que se ganan jugando.</li>
 <li><a href="{lk('items')}"><b>Objetos equipables</b></a> como Restos, Cinta Elección o Vidasfera.</li>
 <li><b>Cooperativo online hasta 4</b> con tu lista de amigos.</li>
-<li><b>Misiones</b> diarias y semanales, <a href="{lk('achievements')}"><b>127 logros</b></a> con medallas y títulos, perfil público y ranking.</li>
+<li><b>Misiones</b> diarias y semanales, <a href="{lk('achievements')}"><b>{NA} logros</b></a> con medallas y títulos, perfil público y ranking.</li>
 <li>En <b>español y en inglés</b>, en PC y en móvil, e <b>instalable como app</b>.</li>
 </ul>
 <h2>Consejos para aguantar más</h2>
@@ -214,14 +237,16 @@ navegador: eliges un compañero, te mueves por un mapa infinito y tus ataques sa
 <li>Aprovecha la tabla de tipos: cambia al ataque que sea muy eficaz contra lo que tienes delante.</li>
 <li>Los avisos en el suelo (círculos y rayas que se llenan) son ataques a punto de caer: sal de ellos.</li>
 <li>Elimina primero a los Pokémon que curan o ponen escudos.</li>
-<li>Gasta tus monedas en las mejoras de tu compañero favorito.</li>
+<li>Mira la ficha de tu Pokémon: si es mejor con movimientos físicos o especiales, elige cartas de esa clase.</li>
+<li>Sube de nivel a tu favorito con caramelos: aprende movimientos nuevos antes y aguanta más.</li>
+<li>Guarda vida para el jefe de zona: si tardas mucho en vencerlo, se enfurece.</li>
 </ol>
 <h2>Preguntas frecuentes</h2>
 {''.join(f'<h3>{esc(q)}</h3><p>{esc(a)}</p>' for q, a in FAQ[lang])}
 {cta(pid, lang, 'Jugar a PokéSurvivor')}
 </article>'''
         title = 'Guía de PokéSurvivor: cómo jugar, trucos y preguntas frecuentes'
-        desc = f'Cómo se juega a PokéSurvivor en PC y móvil, sus características ({N} Pokémon, cooperativo, grietas legendarias, gacha), trucos y preguntas frecuentes.'
+        desc = f'Cómo se juega a PokéSurvivor en PC y móvil: actos, jefes, rangos, el nivel de tu Pokémon y la Tienda Kecleon. {N} Pokémon, {NM} movimientos, cooperativo, trucos y preguntas frecuentes.'
     else:
         body = f'''<article class="doc">
 <h1>PokéSurvivor guide</h1>
@@ -234,12 +259,27 @@ How long can you last?</p>
 <li><b>On PC:</b> move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys. Switch moves with <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> or by clicking their icon. Pause with <kbd>Esc</kbd>.</li>
 <li><b>On phone or tablet (landscape):</b> drag your finger anywhere to move, tap a move to switch to it and the top-right button to pause.</li>
 <li>Your Pokémon <b>attacks on its own</b> with the active move. Your job is to dodge and position yourself well.</li>
-<li>Collect experience to <b>level up</b> and pick one of three cards: new <a href="{lk('moves')}">moves</a>, upgrades to the ones you have, or boosts for your Pokémon.</li>
+<li>Collect experience to <b>level up</b> and pick one of three cards: new <a href="{lk('moves')}">moves</a> (from the ones your Pokémon knows), upgrades to the ones you have, or boosts for your Pokémon.</li>
+<li><b>In a group:</b> quick messages with <kbd>5</kbd>–<kbd>8</kbd> (Help!, Over here!, Rift!, Thanks!) or the speech bubble on mobile.</li>
+</ul>
+<h2>What a run is like</h2>
+<ul>
+<li><b>3 acts of 10 minutes</b>, each in a random biome: Forest, Cave, Volcano, Lavender Tower (fog and ghosts) or Desert (quicksand and sandstorms). Wild Pokémon are usually of the biome’s types.</li>
+<li>At the end of each act a <b>zone boss</b> arrives: beat it to move on. The act 3 one is the <b>final boss</b>, a legendary with phases. Beat it and a <b>portal</b> opens: step through and you win.</li>
+<li>Along the way: roaming bosses (sometimes <b>Alpha</b>, huge with red eyes, or <b>Totem</b>, calling for help), <a href="{lk('legends')}">legendary rifts</a>, chests, berry trees (each biome with its own berry and power), risk altars and events like mass outbreaks (more shinies) or a roaming Pokémon.</li>
+<li><b>Ranks</b>: winning in Normal unlocks Bronze, then Silver, Gold and Master. Each is harder and gives more rewards, and under “Play” you choose which one to play (in a group, the host picks, up to the highest in the group). In Master, if you don’t step through the portal, <b>endless mode</b> begins, which is what the leaderboard counts.</li>
+</ul>
+<h2>Your Pokémon, between runs</h2>
+<ul>
+<li>Each Pokémon has its own <b>level</b> (Lv., up to 100), which goes up with the experience from each run. As it levels up it <b>learns moves</b>, the same as in the main games, and only those (plus the ones you teach it with TMs) show up in your cards.</li>
+<li>It has its <b>real stats</b> (physical moves use Attack and special ones Sp. Atk), a <b>nature</b> and one of its own <b>abilities</b>.</li>
+<li>After a few runs the <b>Kecleon Shop</b> opens: candies to level up, <b>TMs</b>, Mints (change the nature) and Ability Capsules. Everything goes to your Bag.</li>
+<li>Account <b>Upgrades</b> (Magnet, Wisdom, Fortune, Critical…) apply to all your Pokémon.</li>
 </ul>
 <h2>Features</h2>
 <ul class="feat">
-<li><b>{N} Pokémon from all 9 regions</b> (<a href="{lk('pokedex')}">see the Pokédex</a>), each with its own moves and permanent upgrades.</li>
-<li><b>Moves evolve</b>: at max level with the right upgrade, Ember becomes Fire Blast, Bubble becomes Surf…</li>
+<li><b>{N} Pokémon from all 9 regions</b> (<a href="{lk('pokedex')}">see the Pokédex</a>), each with its own level, stats, nature and ability.</li>
+<li><a href="{lk('moves')}"><b>{NM} moves from the main games</b></a>, and each Pokémon learns its own. They <b>evolve</b>: at max level with the right card, Ember becomes Fire Blast, Bubble becomes Surf…</li>
 <li><b>Enemies with personality</b>: some Pokémon heal, shield their allies, summon help, explode or fire telegraphed beams.</li>
 <li><b>Bosses</b> and <a href="{lk('legends')}"><b>rifts</b> with 18 legendary arenas</a>, one per type.</li>
 <li><a href="{lk('types')}"><b>Weather and type chart</b></a>: in the rain Water gets stronger and Fire weaker; plus sun, sand, snow and fog.</li>
@@ -247,7 +287,7 @@ How long can you last?</p>
 <li>A <b>slot-machine gacha</b> for each region, with tickets you earn by playing.</li>
 <li><a href="{lk('items')}"><b>Held items</b></a> such as Leftovers, Choice Band and Life Orb.</li>
 <li><b>Online co-op for up to 4</b> with your friends list.</li>
-<li>Daily and weekly <b>missions</b>, <a href="{lk('achievements')}"><b>127 achievements</b></a> with medals and titles, a public profile and leaderboards.</li>
+<li>Daily and weekly <b>missions</b>, <a href="{lk('achievements')}"><b>{NA} achievements</b></a> with medals and titles, a public profile and leaderboards.</li>
 <li>In <b>English and Spanish</b>, on PC and mobile, and <b>installable as an app</b>.</li>
 </ul>
 <h2>Tips to survive longer</h2>
@@ -256,14 +296,16 @@ How long can you last?</p>
 <li>Use the type chart: switch to the move that's super effective against what's in front of you.</li>
 <li>Markers on the ground (circles and lines filling up) are attacks about to land: step out of them.</li>
 <li>Take out healers and shield-casters first.</li>
-<li>Spend your coins on upgrades for your favorite partner.</li>
+<li>Check your Pokémon’s card: if it’s better with physical or special moves, pick cards of that class.</li>
+<li>Level up your favorite with candies: it learns new moves sooner and lasts longer.</li>
+<li>Save some health for the zone boss: if you take too long to beat it, it gets enraged.</li>
 </ol>
 <h2>Frequently asked questions</h2>
 {''.join(f'<h3>{esc(q)}</h3><p>{esc(a)}</p>' for q, a in FAQ[lang])}
 {cta(pid, lang, 'Play PokéSurvivor')}
 </article>'''
         title = 'PokéSurvivor guide: how to play, tips and FAQ'
-        desc = f'How to play PokéSurvivor on PC and mobile, its features ({N} Pokémon, online co-op, legendary rifts, gacha), tips and frequently asked questions.'
+        desc = f'How to play PokéSurvivor on PC and mobile: acts, bosses, ranks, your Pokémon’s level and the Kecleon Shop. {N} Pokémon, {NM} moves, online co-op, tips and FAQ.'
     ld = {'@context': 'https://schema.org', '@graph': [
         {'@type': 'FAQPage', 'inLanguage': lang, 'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in FAQ[lang]]},
         crumbs(pid, lang, 'Guía' if lang == 'es' else 'Guide')]}
@@ -395,9 +437,10 @@ document.querySelectorAll('#chart td').forEach(td => {
     write(pid, lang, page(pid, lang, title, desc, body, {'@context': 'https://schema.org', '@graph': [crumbs(pid, lang, h1)]}))
 
 # ================= movimientos =================
+CLS = {'es': {'p': 'Físico', 's': 'Especial', 'st': 'Estado'}, 'en': {'p': 'Physical', 's': 'Special', 'st': 'Status'}}
 KIND = {'es': {'projectile': 'Proyectil', 'melee': 'Cuerpo a cuerpo', 'beam': 'Rayo', 'orbit': 'Órbita', 'nova': 'Ráfaga', 'aura': 'Aura', 'buff': 'Mejora',
                'boomerang': 'Bumerán', 'chain': 'Cadena', 'mine': 'Minas', 'meteor': 'Meteoros', 'turret': 'Torreta', 'dash': 'Embestida',
-               'trail': 'Rastro', 'cone': 'Abanico'},
+               'trail': 'Rastro', 'cone': 'Abanico', 'debuff': 'Debilitar', 'weather': 'Clima'},
         'en': {'projectile': 'Projectile', 'melee': 'Melee', 'beam': 'Beam', 'orbit': 'Orbit', 'nova': 'Burst', 'aura': 'Aura', 'buff': 'Buff',
                'boomerang': 'Boomerang', 'chain': 'Chain', 'mine': 'Mines', 'meteor': 'Meteors', 'turret': 'Turret', 'dash': 'Dash',
                'trail': 'Trail', 'cone': 'Spray'}}
@@ -408,22 +451,27 @@ def moves_page(lang):
         for m in [x for x in D['moves'] if x['type'] == t]:
             evo = m['evo']
             evo_txt = (f'<b>{esc(L(lang, evo["name"]))}</b><small>{"con" if lang == "es" else "with"} {esc(L(lang, evo["needs"]))} · {esc(L(lang, evo["text"]))}</small>' if evo else '—')
-            rows.append(f'<tr><td><b>{esc(L(lang, m["name"]))}</b></td><td>{tbadge(t, lang)}</td><td>{KIND[lang].get(m["kind"], m["kind"])}</td>'
+            cls = CLS[lang].get(m.get('cls') or '', '—')
+            rows.append(f'<tr><td><b>{esc(L(lang, m["name"]))}</b></td><td>{tbadge(t, lang)}</td><td>{cls}</td><td>{KIND[lang].get(m["kind"], m["kind"])}</td>'
                         f'<td>{esc(L(lang, m["desc"]))}</td><td class="evo">{evo_txt}</td></tr>')
-    th = ('<th>Movimiento</th><th>Tipo</th><th>Clase</th><th>Qué hace</th><th>Evoluciona a</th>' if lang == 'es'
-          else '<th>Move</th><th>Type</th><th>Kind</th><th>What it does</th><th>Evolves into</th>')
+    th = ('<th>Movimiento</th><th>Tipo</th><th>Clase</th><th>Forma</th><th>Qué hace</th><th>Evoluciona a</th>' if lang == 'es'
+          else '<th>Move</th><th>Type</th><th>Category</th><th>Kind</th><th>What it does</th><th>Evolves into</th>')
     nevo = sum(1 for m in D['moves'] if m['evo'])
     nm = len(D['moves'])
     if lang == 'es':
         h1 = 'Movimientos de PokéSurvivor y sus evoluciones'
-        intro = (f'<p class="lead">Hay <b>{nm} movimientos</b> de los 18 tipos. Tu Pokémon ataca solo con el activo, y al subir de nivel eliges cartas '
-                 f'para aprender otros o mejorarlos hasta el nivel 5. <b>{nevo} pueden evolucionar</b>: llévalos al nivel máximo, consigue la carta de mejora '
+        intro = (f'<p class="lead">Hay <b>{nm} movimientos</b> de los juegos originales, de los 18 tipos. Cada Pokémon aprende <b>los suyos</b> al subir de nivel '
+                 f'(los mismos que en los juegos) y puede aprender otros con las <b>MT</b>. En la partida ataca solo con el activo, y al subir de nivel eliges cartas '
+                 f'para aprender otros de los que conoce o mejorarlos. Los físicos usan su Ataque y los especiales su At. Esp.; los de estado no hacen daño, '
+                 f'pero refuerzan a tu Pokémon o debilitan a los enemigos. <b>{nevo} pueden evolucionar</b>: llévalos al nivel máximo, consigue la carta '
                  f'que indican (Potencia, Vigor, Reflejos…) y aparecerá una carta dorada de evolución.</p>')
         title, desc, c = f'Movimientos de PokéSurvivor: los {nm} ataques y sus evoluciones', f'Lista de los {nm} movimientos de PokéSurvivor por tipo, qué hace cada uno y en qué evoluciona (Ascuas → Llamarada, Burbuja → Surf…).', 'Pruébalos: jugar gratis'
     else:
         h1 = 'PokéSurvivor moves and their evolutions'
-        intro = (f'<p class="lead">There are <b>{nm} moves</b> across all 18 types. Your Pokémon attacks on its own with the active one, and when you level up '
-                 f'you pick cards to learn new moves or upgrade them up to level 5. <b>{nevo} of them can evolve</b>: max them out, get the upgrade card they ask for '
+        intro = (f'<p class="lead">There are <b>{nm} moves</b> from the main games, across all 18 types. Each Pokémon learns <b>its own</b> as it levels up '
+                 f'(the same as in the main games) and can learn others with <b>TMs</b>. In a run it attacks on its own with the active one, and when you level up '
+                 f'you pick cards to learn more of the ones it knows or upgrade them. Physical moves use its Attack and special ones its Sp. Atk; status moves deal no damage '
+                 f'but boost your Pokémon or weaken enemies. <b>{nevo} of them can evolve</b>: max them out, get the card they ask for '
                  f'(Power, Vigor, Reflexes…) and a golden evolution card will appear.</p>')
         title, desc, c = f'PokéSurvivor moves: all {nm} attacks and their evolutions', f'All {nm} PokéSurvivor moves by type, what each one does and what it evolves into (Ember → Fire Blast, Bubble → Surf…).', 'Try them: play free'
     body = f'<article class="doc wide"><h1>{h1}</h1>{intro}<div class="tablewrap"><table class="list"><thead><tr>{th}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>{cta(pid, lang, c)}</article>'
@@ -475,6 +523,9 @@ def ach_page(lang):
 
 # ================= novedades =================
 NEWS = [
+ ('2026-10-16', ('Gran actualización: actos, rangos y tu Pokémon', 'Big update: acts, ranks and your Pokémon'),
+  ('Adiós a la Sentencia de Arceus: la partida tiene 3 actos de 10 minutos con un jefe de zona al final de cada uno y un legendario con fases como jefe final; si lo vences, cruzas el portal y ganas. Rangos (Bronce, Plata, Oro y Maestro) y modo infinito para el ranking. Cada Pokémon tiene su nivel, sus movimientos de los juegos (575), sus stats, naturaleza y habilidad. Tienda Kecleon con caramelos, MT, Mentas y Cápsulas; 8 objetos nuevos; 2 biomas nuevos (Torre Lavanda y Desierto); jefes Alfa y Dominantes; brotes masivos, Pokémon errantes, árboles de bayas y altares de riesgo; mensajes rápidos en cooperativo y misiones nuevas.',
+   'Farewell to the Judgment of Arceus: a run has 3 acts of 10 minutes with a zone boss at the end of each and a legendary with phases as the final boss; beat it, step through the portal and you win. Ranks (Bronze, Silver, Gold and Master) and endless mode for the leaderboard. Each Pokémon has its own level, its moves from the main games (575), stats, nature and ability. Kecleon Shop with candies, TMs, Mints and Capsules; 8 new items; 2 new biomes (Lavender Tower and Desert); Alpha and Totem bosses; mass outbreaks, roaming Pokémon, berry trees and risk altars; quick messages in co-op and new missions.')),
  ('2026-10-14', ('Coloca los botones a tu gusto en el móvil', 'Place the buttons your way on mobile'),
   ('En Ajustes > Controles > Colocar los botones puedes arrastrar los ataques, la pausa y el joystick a donde quieras, y elegir un joystick fijo.',
    'In Settings > Controls > Place the buttons you can drag the attacks, the pause button and the joystick wherever you want, and choose a fixed joystick.')),

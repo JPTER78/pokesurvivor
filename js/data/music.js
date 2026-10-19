@@ -83,6 +83,42 @@ G.MUSIC = {
   },
 
   // ---------------- Combate contra jefe ----------------
+  // ---------------- Run: Torre Lavanda (lenta, inquietante) ----------------
+  tower: {
+    bpm: 76, swing: 0.08,
+    chords: ['Am', 'Am', 'Dm', 'E', 'Am', 'F', 'Dm', 'E',
+             'F', 'G', 'Em', 'Am', 'Dm', 'E', 'Am', 'E'],
+    melody: [{ inst: 'bell', vel: 0.8, bars: [
+      'E5:4 A5:4 E5:4 D5:4', 'C5:8 B4:8', 'A4:4 D5:4 F5:4 E5:4', 'G#4:12 -:4',
+      'E5:4 A5:4 E5:4 C6:4', 'B5:8 A5:8', 'F5:4 E5:4 D5:4 C5:4', 'B4:12 -:4',
+      'C5:4 F5:4 A5:4 G5:4', 'D5:4 G5:4 B5:4 A5:4', 'G5:8 E5:8', 'A5:12 -:4',
+      'F5:4 E5:4 D5:4 F5:4', 'E5:4 D5:4 C5:4 B4:4', 'A4:8 C5:4 E5:4', 'E5:12 -:4'] }],
+    parts: [
+      { inst: 'bass', octave: 2, vel: 0.7, pattern: 'R-------F-------' },
+      { inst: 'pluck', octave: 4, vel: 0.4, pattern: '0...2...1...2...' },
+      { inst: 'pad', octave: 3, vel: 0.7, pattern: 'C---------------' }
+    ],
+    drums: { kick: 'x.......x.......', snare: '............o...', hat: '..o...o...o...o.' }
+  },
+
+  // ---------------- Run: Desierto Ruta 111 ----------------
+  desert: {
+    bpm: 116, swing: 0.12,
+    chords: ['Em', 'F', 'Em', 'D', 'Em', 'F', 'G', 'F',
+             'Am', 'G', 'F', 'E', 'Am', 'G', 'F', 'E'],
+    melody: [{ inst: 'flute', vel: 1, bars: [
+      'E5:3 F5:1 G5:4 B5:4 A5:2 G5:2', 'F5:6 E5:2 D5:4 F5:4', 'E5:4 G5:4 B5:4 E6:4', 'D6:8 B5:4 A5:4',
+      'G5:3 A5:1 B5:4 E6:4 D6:2 B5:2', 'C6:6 B5:2 A5:4 F5:4', 'G5:4 B5:4 D6:4 B5:4', 'A5:8 F5:4 E5:4',
+      'A5:4 C6:4 E6:4 C6:4', 'B5:4 G5:4 D5:4 G5:4', 'A5:4 F5:4 C5:4 F5:4', 'G#5:8 E5:8',
+      'C6:4 B5:4 A5:4 E5:4', 'D6:4 C6:4 B5:4 G5:4', 'A5:4 G5:4 F5:4 E5:4', 'E5:12 -:4'] }],
+    parts: [
+      { inst: 'bass', octave: 2, vel: 0.9, pattern: 'R..R..F.R..R..O.' },
+      { inst: 'pluck', octave: 4, vel: 0.55, pattern: '0.1.2.1.0.1.2.3.' },
+      { inst: 'pad', octave: 3, vel: 0.5, pattern: 'C-------C-------' }
+    ],
+    drums: { kick: 'X..x..x.X..x..x.', snare: '....X.......X...', shaker: 'o.o.x.o.o.o.x.o.' }
+  },
+
   boss: {
     bpm: 150,
     chords: ['Em', 'C', 'D', 'B', 'Em', 'C', 'D', 'B'],
@@ -124,10 +160,10 @@ G.MUSIC.rift = {
   drums: { kick: 'X.x.X.x.X.x.X.xx', snare: '....X.......X..X', hat: 'xoxoxoxoxoxoxoxo' }
 };
 
-/* ---------------- La Sentencia de Arceus (minuto 30) ----------------
- * Solemne y sin salida: Re menor con un Mi bemol (frigio) que oscurece,
+/* ---------------- Jefe final (systems/acts.js; era el de la Sentencia de Arceus) ----------------
+ * Solemne: Re menor con un Mi bemol (frigio) que oscurece,
  * campanas graves en cada compás y la melodía subiendo hasta el final. */
-G.MUSIC.judgment = {
+G.MUSIC.final = {
   bpm: 140,
   chords: ['Dm', 'Bb', 'Gm', 'A', 'Dm', 'Eb', 'C', 'A',
            'Bb', 'C', 'Dm', 'Dm', 'Gm', 'A', 'Dm', 'A'],
@@ -149,4 +185,4 @@ G.MUSIC.judgment = {
 };
 
 /** Tema de cada bioma durante la run. */
-G.BIOME_MUSIC = ['forest', 'cave', 'volcano'];
+G.BIOME_MUSIC = ['forest', 'cave', 'volcano', 'tower', 'desert'];

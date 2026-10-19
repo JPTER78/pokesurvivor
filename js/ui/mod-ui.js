@@ -53,14 +53,17 @@ G.ModUI = (() => {
 
   /** "s_w2026-42" -> "Solo · Semana" */
   function boardName(b) {
-    const [m, p] = b.split('_');
+    // (Tolerante: un reporte con un nombre raro rompía toda la pestaña.)
+    const [m, p = ''] = String(b || '').split('_');
     const mode = m === 'g' ? 'Grupo' : 'Solo';
     const per = p.startsWith('d') ? 'Hoy' : p.startsWith('w') ? 'Semana' : p.startsWith('m') ? 'Mes' : 'Histórico';
     const dex = (b.match(/_p(\d+)$/) || [])[1];
     return mode + ' · ' + per + (dex && G.DEX_BY[dex] ? ' · sólo ' + G.DEX_BY[dex].name : '');
   }
-  // Con la Sentencia de Arceus (minuto 30) casi nadie pasa de ~32-33 min.
-  const SUSPECT_T = 33 * 60;
+  // El ranking mide el modo infinito (desde el 16-10-2026): los enemigos suben sin
+  // límite y pasar de 25 min ahí es muy difícil.
+  const SUSPECT_T = 25 * 60;
+  const num = v => (Number.isFinite(+v) ? Math.max(0, Math.floor(+v)) : 0);
 
   async function renderReports(list) {
     const groups = await G.Ranking.reports();
@@ -72,16 +75,16 @@ G.ModUI = (() => {
       // Lo que se ve de la marca ahora en su tabla (nivel, derrotados, Pokémon).
       const info = await G.Ranking.entryInfo(g.board, g.e).catch(() => null);
       const t = info ? info.t : g.t;
-      const sus = t > SUSPECT_T;
+      const sus = num(t) > SUSPECT_T;
       const mons = document.createElement('span');
       mons.className = 'mons';
-      if (info) info.dex.forEach((d, i) => { if (G.DEX_BY[d]) mons.appendChild(G.UI.spriteCanvas(d, 44, 40, { scale: 1, shiny: !!(info.shiny || [])[i] })); });
-      row.innerHTML = `<span class="pos" title="veces reportada">${g.n}×</span>`;
+      if (info && Array.isArray(info.dex)) info.dex.forEach((d, i) => { if (Object.prototype.hasOwnProperty.call(G.DEX_BY, d)) mons.appendChild(G.UI.spriteCanvas(+d, 44, 40, { scale: 1, shiny: !!(info.shiny || [])[i] })); });
+      row.innerHTML = `<span class="pos" title="veces reportada">${num(g.n)}×</span>`;
       row.appendChild(mons);
       row.insertAdjacentHTML('beforeend', `<span class="who"><b translate="no">${g.names.map(esc).join(' · ')}</b>
-          <small>${esc(boardName(g.board))}${info ? ' · Nv. ' + (info.lv || 1) + ' · ' + (info.kills || 0).toLocaleString('es') + ' derrotados' : ' · ya no está en el top 50'}</small>
-          ${sus ? '<small class="mod-warn">Más de 33 min: casi imposible con la Sentencia de Arceus</small>' : ''}</span>
-        <span class="time${sus ? ' mod-warn' : ''}">${fmt(t)}</span>`);
+          <small>${esc(boardName(g.board))}${info ? ' · Nv. ' + (num(info.lv) || 1) + ' · ' + num(info.kills).toLocaleString('es') + ' derrotados' : ' · ya no está en el top 50'}</small>
+          ${sus ? '<small class="mod-warn">Más de 25 min en el modo infinito: muy difícil</small>' : ''}</span>
+        <span class="time${sus ? ' mod-warn' : ''}">${fmt(num(t))}</span>`);
       const acts = document.createElement('span');
       acts.className = 'mod-acts';
       const busy = async (fn, msg) => {
@@ -117,7 +120,7 @@ G.ModUI = (() => {
       const row = document.createElement('div');
       row.className = 'rk-row mod-row';
       row.innerHTML = `<span class="pos"></span>
-        <span class="who"><b translate="no">${esc(a.name)}</b><small translate="no">${a.coins.toLocaleString('es')} monedas · ${a.t1} tickets · ${a.t10} ×10 · ${a.owned} Pokémon · ${esc(a.uid)}</small></span>`;
+        <span class="who"><b translate="no">${esc(a.name)}</b><small translate="no">${num(a.coins).toLocaleString('es')} monedas · ${num(a.t1)} tickets · ${num(a.t10)} ×10 · ${num(a.owned)} Pokémon · ${esc(a.uid)}</small></span>`;
       const acts = document.createElement('span');
       acts.className = 'mod-acts';
       acts.append(btn('Desbanear', 'ghost', async () => {

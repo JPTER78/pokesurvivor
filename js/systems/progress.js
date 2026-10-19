@@ -6,14 +6,18 @@
  *   item      { id }        objeto equipado
  *   evolve    { move }      movimiento evolucionado
  *   rift      { type }      pelea de grieta ganada
- *   runEnd    { time, level, coins, types, group }
- *   judge     llegas a la Sentencia de Arceus (minuto 30)
- *   judgeEnd  { time, bosses }  aguantado ante Arceus (al acabar la partida)
+ *   runEnd    { time, level, coins, types, group, act }
+ *   monLevel  { dex, from, to }   un Pokémon sube de nivel (al acabar o con caramelos)
+ *   tmTaught  { dex, move }       has enseñado una MT
+ *   win       { rank }  has ganado una partida (portal tras el jefe final)
+ *   infEnd    { time }  tiempo aguantado en el modo infinito (al acabar)
+ *   zoneBoss  { act }   has vencido a un jefe de zona
  *   missionDone { daily }   (lo lanza claim)
  *
  * y esto actualiza en la partida guardada:
  *   stats.bossesTotal · riftWins · evolutions · missionsDone · groupRuns
- *   stats.judged · judgeTime (mejor tiempo ante Arceus) · judgeBosses (mejor nº de jefes)
+ *   stats.wins · masterWins (victorias en Maestro) · infTime (mejor modo infinito) · zoneBosses
+ *   (judged, judgeTime y judgeBosses: de la Sentencia de Arceus, que ya no existe)
  *   legends{dex} · arenas{tipo} · itemsFound{id} · evoMoves{id} · ach{id}
  *   missions { day, daily[], rerolled, week, weekly[] }
  *
@@ -33,16 +37,25 @@ G.Progress = (() => {
     return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
 
-  function make(def, r) {
+  /** Tipos de los Pokémon que tienes (la misión de "juega con un tipo" era a veces imposible). */
+  function ownedTypes(s) {
+    const set = new Set();
+    for (const d of Object.keys((s && s.owned) || {})) for (const t of ((G.DEX_BY[d] || {}).types || [])) set.add(t);
+    const l = TYPES.filter(t => set.has(t));
+    return l.length ? l : TYPES;
+  }
+
+  function make(def, r, s) {
     const goal = def.goals[Math.floor(r() * def.goals.length)];
-    const param = def.param === 'type' ? TYPES[Math.floor(r() * TYPES.length)] : null;
+    const types = def.param === 'type' ? ownedTypes(s) : null;
+    const param = types ? types[Math.floor(r() * types.length)] : null;
     return { id: def.id, goal, param, prog: 0, claimed: false, told: false };
   }
 
-  function pickSet(defs, n, r, avoid = []) {
-    const pool = defs.filter(d => !avoid.includes(d.id));
+  function pickSet(defs, n, r, avoid = [], s = G.DB.save) {
+    const pool = defs.filter(d => !avoid.includes(d.id) && (!d.when || !s || d.when(s)));
     const out = [];
-    while (out.length < n && pool.length) out.push(make(pool.splice(Math.floor(r() * pool.length), 1)[0], r));
+    while (out.length < n && pool.length) out.push(make(pool.splice(Math.floor(r() * pool.length), 1)[0], r, s));
     return out;
   }
 
@@ -55,11 +68,11 @@ G.Progress = (() => {
     const M = s.missions;
     if (M.day !== ids.d) {
       M.day = ids.d; M.rerolled = false;
-      M.daily = pickSet(G.MissionDefs.daily, 3, rng(ids.d + key));
+      M.daily = pickSet(G.MissionDefs.daily, 3, rng(ids.d + key), [], s);
     }
     if (M.week !== ids.w) {
       M.week = ids.w;
-      M.weekly = pickSet(G.MissionDefs.weekly, 2, rng(ids.w + key));
+      M.weekly = pickSet(G.MissionDefs.weekly, 2, rng(ids.w + key), [], s);
     }
   }
 
@@ -101,7 +114,7 @@ G.Progress = (() => {
     const m = M.daily[i];
     if (!m || M.rerolled || m.claimed) return false;
     const r = rng(M.day + 'cambio' + Date.now());
-    const [n] = pickSet(G.MissionDefs.daily, 1, r, M.daily.map(x => x.id));
+    const [n] = pickSet(G.MissionDefs.daily, 1, r, M.daily.map(x => x.id), s);
     if (!n) return false;
     M.daily[i] = n;
     M.rerolled = true;
@@ -153,12 +166,15 @@ G.Progress = (() => {
       case 'runEnd':
         if (d.group) S.groupRuns = (S.groupRuns || 0) + 1;
         break;
-      case 'judge':
-        S.judged = (S.judged || 0) + 1;
+      case 'win':
+        S.wins = (S.wins || 0) + 1;
+        if (d.rank >= G.Acts.MAX_RANK) S.masterWins = (S.masterWins || 0) + 1;
         break;
-      case 'judgeEnd':
-        S.judgeTime = Math.max(S.judgeTime || 0, Math.floor(d.time));
-        S.judgeBosses = Math.max(S.judgeBosses || 0, d.bosses);
+      case 'infEnd':
+        S.infTime = Math.max(S.infTime || 0, Math.floor(d.time));
+        break;
+      case 'zoneBoss':
+        S.zoneBosses = (S.zoneBosses || 0) + 1;
         break;
     }
     advance(s.missions.daily, kind, d);
@@ -170,10 +186,8 @@ G.Progress = (() => {
 
   /** Un enemigo ha caído (anfitrión, solitario o copia en el invitado). */
   function kill(e) {
-    // Los legendarios de la Sentencia de Arceus no cuentan como jefes (ni para
-    // misiones ni para logros de jefes): tienen su propio contador.
-    if (G.Judgment.active && e.boss) { G.Judgment.bossDown(); event('kill', { types: e.types || [], boss: false, legend: 0 }); return; }
-    const legend = e.legend || (G.Rift.inArena && e.boss) ? e.dex : 0;
+    // Sólo los de la grieta (los errantes y el jefe final contaban como "vencido en una grieta").
+    const legend = G.Rift.inArena && (e.legend || e.boss) ? e.dex : 0;
     event('kill', { types: e.types || [], boss: !!e.boss, legend });
   }
 

@@ -10,7 +10,12 @@ rules_version = '2';
 //   reports/{tabla__id__uid}  reportes de marcas sospechosas (sólo los lee el admin)
 //   lbs/{tabla}            resumen con el top 50 de cada tabla
 //   pres/{uid}             en línea (aproximado) · inv/{para_de} invitaciones
+//   bans/{uid}             cuentas baneadas del ranking (sólo las escribe el admin)
 // Todo lo demás está cerrado.
+//
+// Seguridad (revisión del 16-10-2026): todo lo que otros jugadores ven (ranking,
+// perfil, amistades, invitaciones) se comprueba campo a campo, y los apodos
+// sólo pueden tener letras, números y _ (como en el juego).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -18,6 +23,13 @@ service cloud.firestore {
     function me() { return request.auth.uid; }
     // Moderación (pantalla oculta del juego, js/ui/mod-ui.js): sólo esta cuenta.
     function admin() { return signedIn() && me() in ['rshaa5gKD3fXw6lE4PPXITbowaG2']; }
+
+    // Apodos: 3-16 letras (con tildes y ñ), números o _ (js/net/social.js, VALID).
+    function nickOk(n) { return n is string && n.matches('^[A-Za-z0-9_ñÑáéíóúÁÉÍÓÚ]{3,16}$'); }
+    // El apodo que tiene alguien en su perfil.
+    function profName(u) { return get(/databases/$(database)/documents/profiles/$(u)).data.name; }
+    // Baneado del ranking por el admin (bans/{uid}; ya no basta con borrar la partida).
+    function banned(u) { return exists(/databases/$(database)/documents/bans/$(u)); }
 
     // ---------- partida guardada ----------
     // Sólo su dueño la lee y la escribe. Ya no se marca a nadie solo (14-10-2026:
@@ -47,11 +59,18 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
     function tk(s, k) { return s.get('tickets', {}).get(k, 0); }
-    // Sólo que los números tengan sentido (el juego ya los limpia al cargar).
+    // Que los números y los tipos tengan sentido (el juego ya los limpia al cargar:
+    // db.js sanitize). Desde el 16-10-2026 también los datos nuevos: nivel de cada
+    // Pokémon, Mochila, MT, naturalezas, habilidades, mejoras de la cuenta y rango.
+    function mapOf(s, k, n) { return !(k in s) || (s[k] is map && s[k].size() <= n); }
     function saneSave(s) {
       return s.get('coins', 0) is number && s.get('coins', 0) >= 0
         && tk(s, 't1') is number && tk(s, 't1') >= 0
-        && tk(s, 't10') is number && tk(s, 't10') >= 0;
+        && tk(s, 't10') is number && tk(s, 't10') >= 0
+        && (!('rank' in s) || (s.rank is int && s.rank >= 0 && s.rank <= 4))
+        && mapOf(s, 'pxp', 2000) && mapOf(s, 'pnat', 2000) && mapOf(s, 'pabil', 2000) && mapOf(s, 'ptm', 2000)
+        && mapOf(s, 'bag', 50) && mapOf(s, 'tms', 1000) && mapOf(s, 'aupg', 50) && mapOf(s, 'wins', 5)
+        && mapOf(s, 'told', 200) && mapOf(s, 'pupg', 2000) && mapOf(s, 'pban', 2000) && mapOf(s, 'pbind', 2000);
     }
 
     // ---------- apodos ----------
@@ -61,8 +80,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['uid'])
         && request.resource.data.uid == me()
-        && lower.size() >= 3 && lower.size() <= 16
-        && lower == lower.lower();
+        && lower.matches('^[a-z0-9_ñáéíóú]{3,16}$');
       allow delete: if signedIn() && resource.data.uid == me();
     }
 
@@ -72,15 +90,34 @@ service cloud.firestore {
       allow create, update: if signedIn()
         && me() == uid
         && request.resource.data.keys().hasOnly(['name', 'lower', 'at', 'favs', 'title', 'best', 'medals'])
-        && request.resource.data.name is string
+        && nickOk(request.resource.data.name)
         && request.resource.data.lower == request.resource.data.name.lower()
         && request.resource.data.at == request.time
-        && (!('favs' in request.resource.data) || (request.resource.data.favs is list && request.resource.data.favs.size() <= 3))
+        && (!('favs' in request.resource.data) || favsOk(request.resource.data.favs))
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
-        && (!('best' in request.resource.data) || request.resource.data.best is map)
-        && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
+        && (!('best' in request.resource.data) || bestOk(request.resource.data.best))
+        && (!('medals' in request.resource.data) || medalsOk(request.resource.data.medals))
         && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
       allow delete: if signedIn() && me() == uid;
+    }
+
+    // Lo que enseña el perfil: sólo números, Pokémon y logros (antes se podía meter
+    // cualquier cosa, también HTML).
+    function numOk(m, k) { return !(k in m) || (m[k] is int && m[k] >= 0 && m[k] <= 1000000000); }
+    function bestOk(b) {
+      return b is map && b.keys().hasOnly(['solo', 'group', 'level', 'bosses', 'legends', 'kills', 'medals'])
+        && numOk(b, 'solo') && numOk(b, 'group') && numOk(b, 'level') && numOk(b, 'bosses')
+        && numOk(b, 'legends') && numOk(b, 'kills') && numOk(b, 'medals');
+    }
+    function favOk(l, i) {
+      return l.size() <= i || (l[i] is map && l[i].keys().hasOnly(['dex', 'shiny'])
+        && l[i].dex is int && l[i].dex >= 1 && l[i].dex <= 2000 && l[i].get('shiny', false) is bool);
+    }
+    function favsOk(l) { return l is list && l.size() <= 3 && favOk(l, 0) && favOk(l, 1) && favOk(l, 2); }
+    function medalOk(l, i) { return l.size() <= i || (l[i] is string && l[i].matches('^[A-Za-z0-9_]{1,40}$')); }
+    function medalsOk(l) {
+      return l is list && l.size() <= 8 && medalOk(l, 0) && medalOk(l, 1) && medalOk(l, 2) && medalOk(l, 3)
+        && medalOk(l, 4) && medalOk(l, 5) && medalOk(l, 6) && medalOk(l, 7);
     }
 
     // ---------- amigos ----------
@@ -99,13 +136,20 @@ service cloud.firestore {
         && request.resource.data.to in request.resource.data.users
         && pid == request.resource.data.users[0] + '_' + request.resource.data.users[1]
         && request.resource.data.names is map
+        && request.resource.data.names.keys().hasOnly(request.resource.data.users)
+        // Los nombres, los de los perfiles (antes se podía poner cualquiera).
+        && request.resource.data.names[me()] == profName(me())
+        && request.resource.data.names[request.resource.data.to] == profName(request.resource.data.to)
         && request.resource.data.at == request.time;
       // Sólo quien la recibe puede aceptarla.
       allow update: if signedIn()
         && resource.data.to == me()
         && resource.data.status == 'pending'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'at', 'names'])
-        && request.resource.data.status == 'ok';
+        && request.resource.data.status == 'ok'
+        && request.resource.data.names.keys().hasOnly(resource.data.users)
+        && request.resource.data.names[me()] == profName(me())
+        && request.resource.data.names[resource.data.from] == resource.data.names[resource.data.from];
       allow delete: if signedIn() && me() in resource.data.users;
     }
 
@@ -120,30 +164,43 @@ service cloud.firestore {
     }
 
     // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
-    //   - no puede durar más que el tiempo real desde que empezó tu partida
-    //     (runs/{uid}), con 30 s de margen; ni más de 1 h (la Sentencia de
-    //     Arceus acaba las partidas hacia el minuto 31-32; 1 h por si alguien
-    //     muy bueno aguanta mucho más)
+    //   - t = segundos aguantados en el MODO INFINITO (desde el 16-10-2026), que
+    //     empieza tras ganar los 3 actos de 10 min: la partida tiene que haber
+    //     durado (runs/{uid}) al menos t + 25 min (30 s de margen); como mucho 1 h
     //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
-    //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban)
+    //   - en solitario, tu partida guardada tiene que tener el rango Maestro
+    //   - nadie del equipo puede estar baneado por el admin (bans/{uid}; y en
+    //     solitario, tampoco con la marca vieja saves/{uid}.ban)
+    //   - cada nombre es el apodo del perfil de ese jugador, y los Pokémon, números
+    // (Como mucho 9 lecturas por marca en grupo: el límite por escritura es 10.)
     function validEntry(board, id) {
       let d = request.resource.data;
       let run = get(/databases/$(database)/documents/runs/$(me())).data;
+      let secs = (request.time - run.startedAt).seconds();
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
         && d.t is int && d.t > 0 && d.t <= 3600
-        && d.t <= (request.time - run.startedAt).seconds() + 30
-        && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
-        && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
-        && get(/databases/$(database)/documents/saves/$(me())).data.get('ban', false) == false
+        && d.t + 1500 <= secs + 30
+        && d.lv is int && d.lv >= 1 && d.lv <= 10 + secs / 4
+        && d.kills is int && d.kills >= 0 && d.kills <= 100 + secs * 12
         && d.uids is list && me() in d.uids
         && d.names is list && d.names.size() == d.uids.size()
         && d.dex is list && d.dex.size() == d.uids.size()
         && d.shiny is list && d.shiny.size() == d.uids.size()
         && d.at == request.time
         && (board.matches('s_.*')
-              ? (d.uids.size() == 1 && id == me())
+              ? (d.uids.size() == 1 && id == me() && soloOk())
               : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')))
+        && slotOk(d, 0) && slotOk(d, 1) && slotOk(d, 2) && slotOk(d, 3)
         && (resource == null || d.t > resource.data.t);
+    }
+    function soloOk() {
+      let sv = get(/databases/$(database)/documents/saves/$(me())).data;
+      return sv.get('ban', false) == false && sv.save.get('rank', 0) >= 4;
+    }
+    function slotOk(d, i) {
+      return d.uids.size() <= i || (d.uids[i] is string && d.names[i] == profName(d.uids[i])
+        && d.dex[i] is int && d.dex[i] >= 1 && d.dex[i] <= 2000 && d.shiny[i] is bool
+        && !banned(d.uids[i]));
     }
 
     match /lb/{board}/e/{id} {
@@ -176,8 +233,15 @@ service cloud.firestore {
       let row = d.top[d.me];
       return me() in e.uids
         && changed.hasOnly([d.me, d.ev])
+        // La fila del resumen, idéntica a tu marca validada (antes se podía colar
+        // cualquier otro campo, o un nivel o unos derrotados que no fueran números).
+        && row.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills'])
         && row.t == e.t && row.uids == e.uids && row.names == e.names && row.dex == e.dex
-        && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t));
+        && row.lv == e.lv && row.kills == e.kills && (!('shiny' in row) || row.shiny == e.shiny)
+        // Echar a otro (ev) sólo si entras nuevo en un top lleno (antes se podía ir
+        // quitando filas ajenas por debajo de la tuya una a una).
+        && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t
+                           && old.size() >= 50 && !(d.me in old)));
     }
     function removeMine(d, old, changed) {
       return d.ev in old && me() in old[d.ev].uids && !(d.ev in d.top) && changed.hasOnly([d.ev]);
@@ -186,6 +250,16 @@ service cloud.firestore {
     match /lbs/{board} {
       allow read: if signedIn();
       allow create, update: if signedIn() && validTop(board);
+    }
+
+    // Baneados del ranking. Antes era sólo saves/{uid}.ban, y bastaba con borrar
+    // tu partida (y volver a crearla) para quitártelo. Sólo los escribe el admin.
+    match /bans/{uid} {
+      allow read: if signedIn() && (me() == uid || admin());
+      allow create, update: if admin()
+        && request.resource.data.keys().hasOnly(['at', 'by'])
+        && request.resource.data.at == request.time && request.resource.data.by == me();
+      allow delete: if admin();
     }
 
     // Presencia aproximada: "en línea" si at es de hace menos de unos minutos.
@@ -207,7 +281,7 @@ service cloud.firestore {
         && request.resource.data.from == me()
         && id == request.resource.data.to + '_' + me()
         && request.resource.data.room is string && request.resource.data.room.size() <= 40
-        && request.resource.data.name is string && request.resource.data.name.size() <= 16
+        && request.resource.data.name is string && request.resource.data.name == profName(me())
         && request.resource.data.at == request.time
         && get(/databases/$(database)/documents/friendships/$(request.resource.data.to < me() ? request.resource.data.to + '_' + me() : me() + '_' + request.resource.data.to)).data.status == 'ok';
       allow delete: if signedIn() && (me() == resource.data.to || me() == resource.data.from);
@@ -222,6 +296,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['board', 'e', 'names', 't', 'by', 'at'])
         && request.resource.data.by == me()
         && request.resource.data.board is string && request.resource.data.board.size() <= 40
+        && request.resource.data.board.matches('^[sg]_[a-z0-9-]{2,16}(_p[0-9]{1,4})?$')
         && request.resource.data.e is string && request.resource.data.e.size() <= 160
         && request.resource.data.names is list && request.resource.data.names.size() <= 4
         && request.resource.data.t is int

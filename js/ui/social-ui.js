@@ -159,7 +159,9 @@
         if (room) {
           G.Net.open(room.id, room.isHost, room.host);
           G.Net.syncMembers(room.members.map(m => m.uid));
-        } else if (G.Net.open_) G.Net.close();
+        // Si la sala desaparece en plena partida (un corte corto de la base de datos),
+        // la partida sigue por la conexión directa; se cierra todo al acabar.
+        } else if (G.Net.open_ && !G.Coop.active) G.Net.close();
         if (what === 'room-closed') {
           G.UI.toast('La sala se ha cerrado', 2600);
           if (G.UI.isOpen('scr-lobby')) G.MenuUI.open();
@@ -196,7 +198,7 @@
         : 'Estás en la sala de ' + ((ms.find(m => m.uid === room.host) || {}).name || '…') + '. El anfitrión empezará la partida.';
 
       // Las tarjetas sólo se rehacen si cambian los miembros (los sprites no parpadean).
-      const key = ms.map(m => m.uid + ':' + m.dex + ':' + (m.shiny ? 1 : 0)).join('|');
+      const key = ms.map(m => m.uid + ':' + m.dex + ':' + (m.shiny ? 1 : 0) + ':' + (m.lv | 0)).join('|');
       const box = $('lobby-members');
       if (key !== membersKey) {
         membersKey = key;
@@ -208,7 +210,7 @@
           if (m) {
             c.style.setProperty('--pc', G.Coop.COLORS[i]);
             c.appendChild(G.UI.spriteCanvas(m.dex, 120, 96, { scale: 2, lively: true, shiny: !!m.shiny }));
-            c.insertAdjacentHTML('beforeend', `<b translate="no">${esc(m.name)}</b><small>${esc((G.DEX_BY[m.dex] || {}).name || '')}</small><span class="conn" data-u="${m.uid}"></span>`);
+            c.insertAdjacentHTML('beforeend', `<b translate="no">${esc(m.name)}</b><small>${esc((G.DEX_BY[m.dex] || {}).name || '')}${m.lv ? ' · Nv. ' + Math.max(1, Math.min(100, m.lv | 0)) : ''}</small><span class="conn" data-u="${esc(m.uid)}"></span>`);
           } else c.innerHTML = '<span>Libre</span>';
           box.appendChild(c);
         }
@@ -246,20 +248,56 @@
       btn.classList.toggle('hidden', !room.isHost);
       const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
       const failed = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'failed');
-      btn.disabled = !room.isHost || ms.length < 2 || connecting || failed;
+      // Aún sin conexión (esperando al TURN): el aviso de empezar no le llegaría.
+      const missing = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'closed');
+      btn.disabled = !room.isHost || ms.length < 2 || connecting || failed || missing;
       btn.textContent = 'Empezar partida (' + ms.length + '/' + G.Social.MAX_PLAYERS + ')';
-      $('lobby-note').textContent = !room.isHost ? 'Cuando el anfitrión empiece, entraréis todos a la vez.'
+      const note = !room.isHost ? 'Cuando el anfitrión empiece, entraréis todos a la vez.'
         : ms.length < 2 ? 'Necesitas al menos un amigo en la sala.'
         : failed ? 'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.'
-        : connecting ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.';
+        : connecting || missing ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.';
+      $('lobby-note').textContent = note;
+      rankRow(room, ms);
     }
+
+    // Rango de la partida en grupo: lo elige el anfitrión, hasta el más alto que tenga
+    // alguien del grupo (null = ese, el más alto).
+    let pick = null;
+    const chosen = ms => { const top = groupRank(ms); return pick == null ? top : Math.min(pick, top); };
+    function rankRow(room, ms) {
+      const box = $('lobby-rank');
+      const top = groupRank(ms);
+      box.classList.toggle('hidden', ms.length < 2);
+      if (ms.length < 2) return;
+      box.innerHTML = '';
+      if (!room.isHost) {
+        box.innerHTML = `<span class="lbl">El anfitrión elige el rango de la partida (hasta ${G.Acts.RANKS[top].name}).</span>`;
+        return;
+      }
+      box.insertAdjacentHTML('beforeend', '<span class="lbl">Rango de la partida:</span>');
+      const cur = chosen(ms);
+      G.Acts.RANKS.forEach((R, i) => {
+        const b = document.createElement('button');
+        b.textContent = R.name;
+        b.className = i === cur ? 'on' : '';
+        b.disabled = i > top;
+        b.title = i > top ? 'Nadie del grupo lo tiene desbloqueado' : '';
+        b.onclick = () => { pick = i === top ? null : i; G.Audio.sfx('click'); rankRow(room, ms); };
+        box.appendChild(b);
+      });
+    }
+
+    /** En grupo se juega el rango más alto que tenga desbloqueado alguien del grupo (systems/acts.js). */
+    function groupRank(ms) { return Math.max(0, ...ms.map(m => Math.max(0, Math.min(G.Acts.MAX_RANK, m.rank | 0)))); }
 
     function start() {
       const room = G.Social.room;
       if (!room || !room.isHost || room.members.length < 2) return;
       const cfg = {
         k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host,
-        members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny }))
+        members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny,
+                                          lv: Math.max(1, Math.min(100, m.lv | 0)) || 1 })),
+        rank: chosen(room.members)
       };
       G.Social.setOpen(false);
       G.Net.broadcast(cfg);

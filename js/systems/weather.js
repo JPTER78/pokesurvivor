@@ -28,11 +28,13 @@ G.Weather = (() => {
     fog:  { name: 'Niebla', icon: 'wfog', color: '#c9cfdc', tint: [190, 195, 210, 0.12],
             mult: { ghost: 1.3, fairy: 1.3, psychic: 1.3 }, hint: 'Fantasma, Hada y Psíquico se potencian' }
   };
-  // Probabilidad de cada clima según el bioma (bosque, cueva, volcán).
+  // Probabilidad de cada clima según el bioma (bosque, cueva, volcán, Torre Lavanda, desierto).
   const BIOME_W = [
     { rain: 3, fog: 2, sun: 1.5, snow: 0.5, sand: 0.5 },
     { fog: 3, snow: 2.5, rain: 1, sand: 1 },
-    { sun: 3, sand: 3, fog: 1 }
+    { sun: 3, sand: 3, fog: 1 },
+    { fog: 4, rain: 1.5, snow: 0.5 },
+    { sand: 5, sun: 2.5 }
   ];
   const FROM = 120, CHECK = 60, CHANCE = 0.18;
 
@@ -93,7 +95,7 @@ G.Weather = (() => {
     if (cur) {
       cur.t += dt;
       if (cur.t >= cur.dur) cur = null;
-    } else if (authority() && time > FROM && !G.Rift.inArena && !G.Judgment.active) {
+    } else if (authority() && time > FROM && !G.Rift.inArena && G.Acts.eventsAllowed()) {
       checkT -= dt;
       if (checkT <= 0) {
         checkT = CHECK;
@@ -108,7 +110,7 @@ G.Weather = (() => {
     chipT -= dt;
     if (chipT <= 0) {
       chipT = 2;
-      if (pl && !pl.dead && hurts(pl.mon.types) && level() > 0.5) {
+      if (pl && !pl.dead && hurts(pl.mon.types) && level() > 0.5 && !pl.guard && !(pl.afx && (pl.afx.guardWeather === cur.kind || pl.afx.guardWeather === 'all'))) {
         const d = Math.max(1, pl.maxHp * 0.012);
         if (pl.hp > d + 1) {
           pl.hp -= d;
@@ -174,6 +176,16 @@ G.Weather = (() => {
     get vignette() { return cur && cur.kind === 'fog' ? level() : 0; },
     /** Pone un clima ya (la arena de la grieta; no se manda: cada uno lo pone). */
     force(kind, dur) { start(kind, dur); },
+    /** Habilidades como Sequía o Llovizna: su clima, si no hay otro (en grupo, sólo quien manda). */
+    summon(kind, dur) {
+      // Invitado: se lo pide al anfitrión (antes Danza Lluvia o Sequía no hacían nada).
+      if (!cur && G.Coop.active && !G.Coop.isHost && !G.Rift.inArena) { G.Coop.toHost(['wx', kind, dur]); return false; }
+      if (cur || !authority() || G.Rift.inArena) return false;
+      start(kind, dur);
+      if (G.Coop.isHost) G.Coop.broadcast(['wx', kind, dur]);
+      return true;
+    },
+    has(kind) { return typeof kind === 'string' && Object.prototype.hasOwnProperty.call(KINDS, kind); },
     /** Quita el clima de golpe (al salir de la arena). */
     clear() { cur = null; parts.length = 0; },
     debugStart(kind = 'rain', dur = 60) { start(kind, dur); if (G.Coop.isHost) G.Coop.broadcast(['wx', kind, dur]); }

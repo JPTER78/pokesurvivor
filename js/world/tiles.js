@@ -10,7 +10,8 @@ G.Tiles = (() => {
   const T = 16;                       // píxeles de arte por tile
 
   const BIOMES = [
-    { name: 'Bosque Umbrío', liquid: 'water',
+    // key: para el código · types: tipos de los salvajes del bioma (data/enemies.js)
+    { name: 'Bosque Umbrío', key: 'forest', types: ['grass', 'bug', 'flying'], liquid: 'water',
       floor: ['#3e7a39', '#44813d', '#397134'], dirt: ['#7d6742', '#735e3b', '#86704a'],
       speck: '#2f5f2b', light: '#5f9d50', flowers: ['#f4d65c', '#f39ac0', '#eef2ff'],
       wallTop: ['#5d6e49', '#677a50', '#566544'], wallLight: '#88a06e', wallEdge: '#26301f',
@@ -18,7 +19,7 @@ G.Tiles = (() => {
       liq: '#3b7fc6', liqDeep: '#2c64a6', foam: '#b3defa', shore: '#2b5b2a',
       prop: 'tree', leaf: ['#235a2b', '#2f7535', '#45943f', '#64b252'], trunk: ['#5b3b22', '#7a5130'],
       rock: ['#5e6670', '#7f8893', '#a1aab4'], grass: ['#2f6b2c', '#4c9a3f', '#7cc45a'] },
-    { name: 'Cueva Cristal', liquid: 'water',
+    { name: 'Cueva Cristal', key: 'cave', types: ['rock', 'ground', 'ice'], liquid: 'water',
       floor: ['#4d5778', '#535e81', '#47506f'], dirt: ['#3c4462', '#424a69', '#37405b'],
       speck: '#3b4363', light: '#6a78a4', flowers: ['#8fe3ff', '#c9a6ff', '#7ef0d0'],
       wallTop: ['#5f5089', '#695996', '#56497d'], wallLight: '#a08ddc', wallEdge: '#1f1934',
@@ -26,7 +27,7 @@ G.Tiles = (() => {
       liq: '#2a9cab', liqDeep: '#1d7c8a', foam: '#aaf4f7', shore: '#33405e',
       prop: 'crystal', leaf: ['#5ad1e8', '#8fe7f5', '#c8f7ff', '#ffffff'], trunk: ['#3a4a78', '#4e64a0'],
       rock: ['#555d79', '#737c9c', '#959fc0'], grass: ['#3d5c8a', '#5a86c0', '#8ab8ee'] },
-    { name: 'Volcán Ceniza', liquid: 'lava',
+    { name: 'Volcán Ceniza', key: 'volcano', types: ['fire', 'rock', 'dragon'], liquid: 'lava',
       floor: ['#5b4537', '#644c3c', '#533f32'], dirt: ['#403530', '#473b34', '#392f2b'],
       speck: '#47362b', light: '#806452', flowers: ['#ff8d3d', '#ffc45e', '#e06a4a'],
       wallTop: ['#3c3634', '#443d3a', '#35302e'], wallLight: '#625752', wallEdge: '#141110',
@@ -34,9 +35,28 @@ G.Tiles = (() => {
       liq: '#e45a1f', liqDeep: '#b9401a', foam: '#ffd46a', shore: '#3a2a22',
       prop: 'dead', leaf: ['#4a3a30', '#5e4a3c', '#6f5a49', '#806a58'], trunk: ['#3a2e27', '#52423a'],
       rock: ['#4e4642', '#6a605b', '#877c76'], grass: ['#6b4a2a', '#94693a', '#c4914e'] },
+    // ---- desde el 16-10-2026 ----
+    // Torre Lavanda (cementerio de Kanto): niebla, lápidas y fantasmas que atraviesan paredes.
+    { name: 'Torre Lavanda', key: 'tower', types: ['ghost', 'poison', 'psychic'], liquid: 'swamp', fog: 0.55,
+      floor: ['#4a4258', '#504862', '#443d52'], dirt: ['#3a3446', '#40394d', '#352f40'],
+      speck: '#3a3346', light: '#6a5f80', flowers: ['#c9a6ff', '#e8e0ff', '#8a7aa8'],
+      wallTop: ['#5a5068', '#63587a', '#52485f'], wallLight: '#8a7fa8', wallEdge: '#1a1622',
+      wallFace: ['#3a3248', '#332c40'], wallFaceDark: '#201b2a',
+      liq: '#5a4a7a', liqDeep: '#45386a', foam: '#c9b8f0', shore: '#352f42',
+      prop: 'tomb', leaf: ['#3e3a50', '#5a5470', '#7a7290', '#9a92b0'], trunk: ['#2a2434', '#3a3248'],
+      rock: ['#6a6878', '#8a8898', '#aaa8b8'], grass: ['#3e3a50', '#5a5470', '#7a7290'] },
+    // Desierto (Ruta 111): arenas movedizas que frenan y tormentas de arena.
+    { name: 'Desierto Ruta 111', key: 'desert', types: ['ground', 'rock', 'dark'], liquid: 'sand',
+      floor: ['#c9a768', '#d1b072', '#bf9e60'], dirt: ['#b08a52', '#a8834c', '#b8925a'],
+      speck: '#a8874f', light: '#e6c88a', flowers: ['#ff8d5a', '#ffd46a', '#7ac47a'],
+      wallTop: ['#a87a4a', '#b38452', '#9c7044'], wallLight: '#d6a874', wallEdge: '#3a2614',
+      wallFace: ['#7a5532', '#6e4c2c'], wallFaceDark: '#4a321c',
+      liq: '#a8844e', liqDeep: '#8f6e3e', foam: '#e0c48a', shore: '#9a7a48',
+      prop: 'cactus', leaf: ['#2f6b3a', '#3f8a4a', '#5aa85a', '#7cc47a'], trunk: ['#3a5a2a', '#4a7a3a'],
+      rock: ['#9a7a58', '#b8987a', '#d6b898'], grass: ['#9a8a4a', '#b8a85a', '#d6c87a'] },
   ];
-  const NORMAL = 3;                   // biomas que se van turnando en una run
-  const ARENA = 3;                    // a partir de aquí, las arenas de la grieta (una por tipo)
+  const NORMAL = 5;                   // biomas de los actos (uno sorteado por acto: systems/acts.js)
+  const ARENA = 5;                    // a partir de aquí, las arenas de la grieta (una por tipo)
 
   // ---------------- arenas de la grieta ----------------
   /*
@@ -102,12 +122,7 @@ G.Tiles = (() => {
                 pools: 0, pillars: 0.08, props: { tree: 0.01 }, weather: null },
     fairy:    { name: 'Bosque Encantado', floor: '#4f7f5a', wall: '#7a5a8a', liquid: 'water', liq: '#8fd8ff', foam: '#ffe0f4', prop: 'tree',
                 leaf: '#e08ad0', trunk: '#6b4a5a', flowers: ['#ff8ad8', '#ffffff', '#c9a6ff'], grass: '#c48ad8', rock: '#9a8aa8',
-                pools: 0.16, pillars: 0, props: { tree: 0.05, grass: 0.1 }, weather: null },
-    // La arena de Arceus al minuto 30 (systems/judgment.js): ceniza, ruinas y
-    // árboles muertos, con un claro donde aterriza (clear). No es de ninguna grieta.
-    judgment: { name: 'Ruinas del Juicio', floor: '#4a4240', wall: '#2e2829', liquid: 'lava', liq: '#e8a82a', foam: '#fff1b8', prop: 'dead',
-                leaf: '#3e3633', trunk: '#2a2321', flowers: ['#8a7f76', '#e8a82a', '#5a514c'], grass: '#5e544c', rock: '#6a625c',
-                pools: 0, pillars: 0.03, props: { tree: 0.012, rock: 0.02 }, weather: null, clear: 4.5 }
+                pools: 0.16, pillars: 0, props: { tree: 0.05, grass: 0.1 }, weather: null }
   };
   const ARENA_TYPES = Object.keys(ARENA_THEMES);
 
@@ -134,7 +149,6 @@ G.Tiles = (() => {
     };
   }
   for (const t of ARENA_TYPES) BIOMES.push(arenaBiome(ARENA_THEMES[t]));
-  BIOMES[ARENA + ARENA_TYPES.indexOf('judgment')].name = ARENA_THEMES.judgment.name;
 
   // ---------------- utilidades de color / píxel ----------------
 
@@ -395,6 +409,8 @@ G.Tiles = (() => {
       const edge = pack('#14200f');
       if (B.prop === 'crystal') return PAINT.crystal(B);
       if (B.prop === 'dead') return PAINT.deadtree(B);
+      if (B.prop === 'tomb') return PAINT.tomb(B);
+      if (B.prop === 'cactus') return PAINT.cactus(B);
       for (let y = 26; y < 38; y++) for (let x = 13; x < 18; x++) P.set(x, y, Tr[x === 13 || x === 17 ? 0 : 1]);
       P.set(12, 37, Tr[0]); P.set(18, 37, Tr[0]); P.set(11, 38, Tr[0]); P.set(19, 38, Tr[0]);
       const blobs = [[15, 20, 10], [9, 16, 7], [21, 16, 7], [15, 10, 8], [10, 23, 6], [20, 23, 6]];
@@ -425,6 +441,39 @@ G.Tiles = (() => {
         }
       }
       outline(P, D[0]);
+      return P.canvas();
+    },
+
+    /** Lápida de Torre Lavanda: piedra redondeada con una cruz. */
+    tomb(B) {
+      const P = Pix(24, 34);
+      const R = B.rock.map(h => pack(h)), dark = pack('#24202e');
+      for (let y = 8; y <= 31; y++) for (let x = 5; x <= 18; x++) {
+        if (y < 14 && Math.hypot(x - 11.5, y - 14) > 7) continue;
+        const lit = x < 9 ? 2 : x > 15 ? 0 : 1;
+        P.set(x, y, y > 28 ? R[0] : R[lit]);
+      }
+      for (let y = 13; y <= 23; y++) { P.set(11, y, dark); P.set(12, y, dark); }
+      for (let x = 8; x <= 15; x++) { P.set(x, 16, dark); P.set(x, 17, dark); }
+      for (let x = 3; x <= 20; x++) { P.set(x, 32, R[0]); P.set(x, 33, pack('#1c1826')); }
+      outline(P, pack('#14111c'));
+      return P.canvas();
+    },
+
+    /** Cactus del Desierto (Ruta 111). */
+    cactus(B) {
+      const P = Pix(26, 40);
+      const L = B.leaf.map(h => pack(h));
+      const col = (x0, x1, y0, y1) => {
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+          const k = x === x0 ? 1 : x === x1 ? 0 : x === x0 + 1 ? 3 : 2;
+          P.set(x, y, (y - y0) % 4 === 0 && x === x0 + 2 ? L[3] : L[k]);
+        }
+      };
+      col(10, 15, 6, 38);
+      col(3, 7, 14, 24); col(7, 10, 22, 25);
+      col(18, 22, 10, 20); col(15, 18, 18, 21);
+      outline(P, pack('#14240f'));
       return P.canvas();
     },
 
@@ -499,26 +548,53 @@ G.Tiles = (() => {
 
     // ---------- objetos interactivos ----------
 
-    /** Altar de poder. variante = efecto*2 + (usado ? 1 : 0). */
-    altar(B, variant) {
+    /**
+     * Árbol de bayas (como los de los juegos). variante 1 = sin fruto. Cada bioma, su
+     * árbol y su baya (systems/interact.js, BERRIES): hojas y fruto de otro color.
+     */
+    berrytree(B, variant) {
+      const P = Pix(30, 40);
+      const LOOK = {
+        forest:  { leaf: ['#1f5a26', '#2e7a33', '#47a043', '#6cc45a'], fruit: ['#ff4f6a', '#ffc0cc'] },
+        desert:  { leaf: ['#4a5222', '#66702c', '#878f3a', '#aab24e'], fruit: ['#3fb8ff', '#d8f6ff'] },
+        volcano: { leaf: ['#3a2a18', '#5a3a1e', '#7a5226', '#a06c2e'], fruit: ['#ffd23f', '#fff3b0'] },
+        cave:    { leaf: ['#1a3f48', '#255d66', '#3a8086', '#5aaaa6'], fruit: ['#c8d0e0', '#ffffff'] },
+        tower:   { leaf: ['#33204a', '#4e3068', '#6c4589', '#9064b0'], fruit: ['#d08aff', '#f4e0ff'] }
+      }[B.key] || null;
+      const look = LOOK || { leaf: ['#1f5a26', '#2e7a33', '#47a043', '#6cc45a'], fruit: ['#ff4f6a', '#ffc0cc'] };
+      const L = look.leaf.map(h => pack(h)), Tr = ['#5b3b22', '#7a5130'].map(h => pack(h));
+      for (let y = 26; y < 38; y++) for (let x = 13; x < 18; x++) P.set(x, y, Tr[x === 13 || x === 17 ? 0 : 1]);
+      const blobs = [[15, 18, 10], [8, 16, 6], [22, 16, 6], [15, 9, 7]];
+      for (const [bx, by, br] of blobs) disc(P, bx, by, br, (x, y) => {
+        const lit = ((x - bx) * -0.6 + (y - by) * -0.8) / br;
+        return L[lit > 0.45 ? 3 : lit > 0.05 ? 2 : lit > -0.45 ? 1 : 0];
+      });
+      if (!variant) {
+        const R = pack(look.fruit[0]), Rl = pack(look.fruit[1]);
+        [[9, 14], [20, 12], [14, 20], [22, 20], [12, 8], [17, 15], [7, 19]].forEach(([x, y]) => {
+          P.set(x, y, R); P.set(x + 1, y, R); P.set(x, y + 1, R); P.set(x + 1, y + 1, R); P.set(x, y, Rl);
+        });
+      }
+      outline(P, pack('#14200f'));
+      return P.canvas();
+    },
+
+    /** Altar de riesgo: piedra oscura con una calavera y un orbe rojo. variante 1 = usado. */
+    riskaltar(B, variant) {
       const P = Pix(18, 27);
-      const R = B.rock.map(h => pack(h));
-      const eff = variant >> 1, used = variant & 1;
-      const ORB = [['#ff5f6d', '#c23a4b', '#ffd3d8'], ['#5fd4ff', '#2a8fd0', '#d8f6ff'],
-                   ['#ff8ad8', '#b03d84', '#ffe0f4'], ['#ffd23f', '#c08a10', '#fff3b0']][eff];
-      const O = (used ? ['#6b7380', '#4a505c', '#9aa2ae'] : ORB).map(h => pack(h));
-      // Escalones, columna y losa.
+      const R = ['#2a2430', '#3c3446', '#544a60'].map(h => pack(h));
+      const O = (variant ? ['#6b7380', '#4a505c', '#9aa2ae'] : ['#ff3a3a', '#a01a1a', '#ffc0c0']).map(h => pack(h));
       for (let y = 21; y <= 25; y++) for (let x = 1; x <= 16; x++) P.set(x, y, R[y === 21 ? 2 : y >= 24 ? 0 : 1]);
       for (let y = 12; y <= 20; y++) for (let x = 5; x <= 12; x++) P.set(x, y, R[x === 5 ? 2 : x >= 11 ? 0 : 1]);
       for (let y = 10; y <= 11; y++) for (let x = 3; x <= 14; x++) P.set(x, y, R[y === 10 ? 2 : 1]);
-      // Runas de su color en la columna.
-      [[7, 14], [8, 15], [10, 14], [9, 17], [7, 18], [10, 18]].forEach(([x, y]) => P.set(x, y, O[1]));
-      // Orbe.
+      const bone = pack('#d8d0c0');
+      [[7, 14], [8, 14], [9, 14], [10, 14], [7, 15], [10, 15], [7, 16], [8, 16], [9, 16], [10, 16], [8, 17], [9, 17]].forEach(([x, y]) => P.set(x, y, bone));
+      P.set(8, 15, R[0]); P.set(9, 15, R[0]);
       disc(P, 8.5, 5.5, 4.2, (x, y, d) => {
         const lit = (8.5 - x) * 0.5 + (5.5 - y) * 0.7;
         return lit > 1.6 ? O[2] : d > 0.75 ? O[1] : O[0];
       });
-      outline(P, pack('#120e1a'));
+      outline(P, pack('#0e0a12'));
       return P.canvas();
     },
 

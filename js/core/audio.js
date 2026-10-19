@@ -428,7 +428,7 @@ G.Audio = (() => {
     legend:  () => { arp('square', [523, 659, 784, 1047, 1319, 1568], 0.08, 0.3, 0.05); SFX.shiny(); },
     gameover: () => arp('triangle', [523, 440, 349, 262], 0.2, 0.35, 0.08),
     biome:   () => [392, 494, 587, 784].forEach(f => INST.pad(ctx.currentTime, f, 1.2, 1.4, sfxBus)),
-    // La Sentencia de Arceus (systems/judgment.js).
+    // Jefe final (systems/acts.js) y efectos grandes.
     quake:   () => { hiss(2.4, 0.18, 'lowpass', 320, 50); tone('sine', 52, 30, 2.2, 0.22); },
     toll() {
       const t = ctx.currentTime;

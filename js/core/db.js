@@ -27,7 +27,7 @@
 G.DB = (() => {
   const K_ACC = 'ps.accounts', K_SES = 'ps.session', K_SAVE = 'ps.save.';
   const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.';
-  const VERSION = 3;
+  const VERSION = 5;
   const START_COINS = 500;
   const SDK = 'https://www.gstatic.com/firebasejs/13.0.0/';
   const NAME_DOMAIN = 'jugadores.pokesurvivor.net';   // sólo para el email interno
@@ -80,7 +80,17 @@ G.DB = (() => {
       starter: null,          // dex que te tocó en el test
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
-      pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+      pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon (desde la v5, sólo el Veto)
+      aupg: {},               // id -> nivel: mejoras de la cuenta (data/upgrades.js)
+      bag: {},                // id -> cantidad: Mochila (caramelos, Menta, Cápsulas; data/shop.js)
+      tms: {},                // id de movimiento -> cantidad: MT en la Mochila
+      ptm: {},                // dex -> [ids]: movimientos enseñados con MT
+      told: {},               // aviso -> fecha: avisos de "ya está abierto" que ya se han enseñado
+      rank: 0,                // rango desbloqueado (0 Normal ... 4 Maestro; systems/acts.js)
+      wins: {},               // rango -> victorias en él
+      pxp: {},                // dex -> experiencia total del Pokémon (su nivel, ver systems/mons.js)
+      pnat: {},               // dex -> naturaleza elegida (índice de G.NATURES), si se ha cambiado
+      pabil: {},              // dex -> habilidad elegida (0, 1 o 2 = oculta), si se ha cambiado
       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
       pity: {},               // generación del banner -> tiradas sin ★5
       legends: {},            // dex -> fecha: legendarios vencidos en grietas
@@ -97,6 +107,7 @@ G.DB = (() => {
 
   /** Rellena campos que falten en partidas de versiones anteriores. */
   function migrate(s, name) {
+    const hadLevels = s.pxp != null;
     const base = newSave(name || s.name);
     for (const k in base) if (s[k] == null) s[k] = base[k];
     for (const k in base.stats) if (s.stats[k] == null) s.stats[k] = base.stats[k];
@@ -110,6 +121,35 @@ G.DB = (() => {
       s.pupgDone = true;
     }
     s.tickets = Object.assign({ t1: 0, t10: 0 }, s.tickets);
+    // v3 -> v4 (nivel de cada Pokémon): los que ya tenías empiezan en el Nv. 5,
+    // y más cuanto más los hubieras mejorado (hasta el Nv. 40).
+    if (!hadLevels && G.Mons && G.EXP_TABLE) {
+      for (const d of Object.keys(s.owned || {})) {
+        if (!G.DEX_BY || !G.DEX_BY[d]) continue;
+        const ups = Object.values((s.pupg || {})[d] || {}).reduce((a, v) => a + (+v || 0), 0);
+        s.pxp[d] = G.Mons.xpAt(+d, Math.min(40, 5 + ups));
+      }
+    }
+    // v4 -> v5: las mejoras pasan a ser de la cuenta. Las de stats se quitan (ya
+    // lo da el nivel) y se devuelven sus monedas; de las que quedan, se queda el
+    // nivel más alto que tuviera algún Pokémon y se devuelve lo gastado en los
+    // demás. El Veto sigue siendo de cada Pokémon.
+    if (!s.aupgDone && G.Upgrades) {
+      let refund = 0;
+      for (const d of Object.keys(s.pupg || {})) {
+        const u = s.pupg[d] || {};
+        for (const id of Object.keys(u)) {
+          if (id === 'ban') continue;
+          const lvl = Math.max(0, Math.floor(+u[id] || 0));
+          refund += G.Upgrades.spent(id, lvl);
+          if (G.Upgrades.BY[id]) s.aupg[id] = Math.max(s.aupg[id] || 0, Math.min(G.Upgrades.BY[id].max, lvl));
+          delete u[id];
+        }
+      }
+      for (const id of Object.keys(s.aupg)) refund -= G.Upgrades.spent(id, s.aupg[id]);
+      if (refund > 0) { s.coins = (+s.coins || 0) + refund; s.refundMsg = refund; }
+      s.aupgDone = true;
+    }
     sanitize(s);
     s.v = VERSION;
     return s;
@@ -129,6 +169,14 @@ G.DB = (() => {
     if (G.DEX_BY) for (const coll of ['owned', 'shiny']) {
       for (const d of Object.keys(s[coll] || {})) if (!G.DEX_BY[d]) delete s[coll][d];
     }
+    // Compañero que ya no existe (o que no tienes): el primero que tengas. Antes el
+    // menú y el inicio de partida leían G.DEX_BY[partner].dex y fallaban.
+    if (G.DEX_BY && s.partner != null && (!G.DEX_BY[s.partner] || !(s.owned || {})[s.partner])) {
+      const first = Object.keys(s.owned || {})[0];
+      s.partner = first ? +first : null; s.partnerShiny = false;
+    }
+    // Lo que la nube tenía en la última sincronización (ver mergeSync): sólo números.
+    if (s.syncBase != null && (typeof s.syncBase !== 'object' || Array.isArray(s.syncBase))) delete s.syncBase;
     // Atajos: 4 huecos con un movimiento que exista (o null), sin repetir.
     if (s.pbind && typeof s.pbind === 'object') {
       for (const d of Object.keys(s.pbind)) {
@@ -148,6 +196,48 @@ G.DB = (() => {
         s.pban[d] = [...new Set(l.filter(id => typeof id === 'string' && (!G.Moves || G.Moves.BY_ID[id])))].slice(0, 3);
       }
     } else s.pban = {};
+    // Nivel de cada Pokémon: experiencia entera, sin pasarse del Nv. 100.
+    for (const k of ['pxp', 'pnat', 'pabil']) if (!s[k] || typeof s[k] !== 'object' || Array.isArray(s[k])) s[k] = {};
+    for (const d of Object.keys(s.pxp)) {
+      if (G.DEX_BY && !G.DEX_BY[d]) { delete s.pxp[d]; continue; }
+      s.pxp[d] = G.Mons ? Math.min(G.Mons.xpAt(+d, 100), n(s.pxp[d])) : n(s.pxp[d]);
+    }
+    for (const d of Object.keys(s.pnat)) if (!Number.isInteger(s.pnat[d]) || s.pnat[d] < 0 || s.pnat[d] > 24) delete s.pnat[d];
+    for (const d of Object.keys(s.pabil)) if (![0, 1, 2].includes(s.pabil[d])) delete s.pabil[d];
+    // Mochila y MT: cantidades enteras (como mucho 999) de cosas que existen.
+    for (const k of ['aupg', 'bag', 'tms', 'ptm']) if (!s[k] || typeof s[k] !== 'object' || Array.isArray(s[k])) s[k] = {};
+    for (const id of Object.keys(s.bag)) {
+      if (G.Shop && !G.Shop.ITEMS[id]) delete s.bag[id];
+      else { s.bag[id] = Math.min(999, n(s.bag[id])); if (!s.bag[id]) delete s.bag[id]; }
+    }
+    for (const id of Object.keys(s.tms)) {
+      if (G.Moves && !G.Moves.BY_ID[id]) delete s.tms[id];
+      else { s.tms[id] = Math.min(99, n(s.tms[id])); if (!s.tms[id]) delete s.tms[id]; }
+    }
+    for (const d of Object.keys(s.ptm)) {
+      const l = Array.isArray(s.ptm[d]) ? s.ptm[d] : [];
+      s.ptm[d] = [...new Set(l.filter(id => typeof id === 'string' && (!G.Moves || G.Moves.BY_ID[id])))].slice(0, 200);
+      if ((G.DEX_BY && !G.DEX_BY[d]) || !s.ptm[d].length) delete s.ptm[d];
+    }
+    // Avisos ya vistos (ui/tips.js y los de la tienda): id corto -> fecha.
+    if (!s.told || typeof s.told !== 'object' || Array.isArray(s.told)) s.told = {};
+    for (const k of Object.keys(s.told)) if (k.length > 40 || !Number.isFinite(+s.told[k])) delete s.told[k];
+    // Perfil público: 3 favoritos que existan y un título corto (lo ven los demás).
+    if (!s.profile || typeof s.profile !== 'object' || Array.isArray(s.profile)) s.profile = { favs: [], title: '' };
+    s.profile.favs = (Array.isArray(s.profile.favs) ? s.profile.favs : [])
+      .filter(f => f && (!G.DEX_BY || G.DEX_BY[f.dex])).slice(0, 3).map(f => ({ dex: f.dex | 0, shiny: !!f.shiny }));
+    s.profile.title = typeof s.profile.title === 'string' ? s.profile.title.slice(0, 40) : '';
+    // Rango (0-4) y victorias por rango.
+    s.rank = Math.max(0, Math.min(4, Math.floor(+s.rank || 0)));
+    // Rango elegido para jugar (si no hay, el último desbloqueado).
+    if (s.rpick != null && !(Number.isInteger(s.rpick) && s.rpick >= 0 && s.rpick <= s.rank)) delete s.rpick;
+    if (!s.wins || typeof s.wins !== 'object' || Array.isArray(s.wins)) s.wins = {};
+    for (const k of Object.keys(s.wins)) { if (!/^[0-4]$/.test(k)) delete s.wins[k]; else s.wins[k] = n(s.wins[k]); }
+    if (G.Upgrades) for (const id of Object.keys(s.aupg)) {
+      const u = G.Upgrades.BY[id];
+      if (!u || u.per) delete s.aupg[id];
+      else s.aupg[id] = Math.min(u.max, n(s.aupg[id]));
+    }
     if (G.Upgrades) for (const d of Object.keys(s.pupg || {})) {
       const u = s.pupg[d];
       if (!u || typeof u !== 'object') { delete s.pupg[d]; continue; }
@@ -185,8 +275,29 @@ G.DB = (() => {
       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
+    r.aupg = r.aupg || {};
+    for (const k in older.aupg || {}) r.aupg[k] = Math.max(r.aupg[k] || 0, older.aupg[k] || 0);
+    r.aupgDone = r.aupgDone || older.aupgDone;
+    // Mochila (bag, tms): la de la versión más reciente, como las monedas (si no,
+    // lo gastado en un aparato volvería desde el otro). Lo enseñado con MT no se
+    // pierde nunca: unión.
+    r.ptm = r.ptm || {};
+    for (const d in older.ptm || {}) r.ptm[d] = [...new Set((r.ptm[d] || []).concat(older.ptm[d] || []))];
+    r.tmSeen = r.tmSeen || older.tmSeen;
+    // Rango y victorias: lo conseguido no se pierde.
+    r.rank = Math.max(r.rank || 0, older.rank || 0);
+    r.wins = r.wins || {};
+    for (const k in older.wins || {}) r.wins[k] = Math.max(r.wins[k] || 0, older.wins[k] || 0);
+    // Experiencia de cada Pokémon: sólo crece, así que el máximo. Naturaleza y
+    // habilidad elegidas: las de la versión más reciente (y las que sólo tenga la otra).
+    r.pxp = r.pxp || {};
+    for (const d in older.pxp || {}) r.pxp[d] = Math.max(r.pxp[d] || 0, older.pxp[d] || 0);
+    for (const k of ['pnat', 'pabil']) {
+      r[k] = r[k] || {};
+      for (const d in older[k] || {}) if (r[k][d] == null) r[k][d] = older[k][d];
+    }
     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
-    for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
+    for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach', 'told']) {
       r[coll] = r[coll] || {};
       for (const k in older[coll] || {}) if (!r[coll][k]) r[coll][k] = older[coll][k];
     }
@@ -210,6 +321,44 @@ G.DB = (() => {
     r.updated = Math.max(a.updated || 0, b.updated || 0);
     return r;
   }
+
+  /*
+   * Monedas, tickets, Mochila y MT al juntar ESTE aparato con la nube (20-10-2026).
+   * Con "la versión más reciente gana", una pestaña vieja que guardaba después
+   * devolvía lo gastado en otro aparato (el Caramelo, los tickets del gacha...)
+   * mientras se quedaba lo comprado con ello, y borraba lo ganado allí.
+   * Ahora cada copia recuerda lo que tenía la nube en su última sincronización
+   * (syncBase) y se suma sólo lo que ha cambiado aquí desde entonces:
+   *   resultado = nube + (aquí − syncBase), por cosa y nunca por debajo de 0.
+   * Sin syncBase (partidas de antes), como siempre: la más reciente.
+   */
+  const CUR_MAPS = ['bag', 'tms'];
+  function currency(s) {
+    const t = s.tickets || {};
+    const o = { coins: +s.coins || 0, t1: +t.t1 || 0, t10: +t.t10 || 0 };
+    for (const k of CUR_MAPS) o[k] = Object.assign({}, s[k] || {});
+    return o;
+  }
+  function mergeSync(local, cloud) {
+    const r = merge(local, cloud);
+    const base = local && cloud && local.syncBase;
+    if (!base) return r;
+    const d = (c, l, b) => Math.max(0, Math.floor((+c || 0) + (+l || 0) - (+b || 0)));
+    const lc = currency(local), cc = currency(cloud);
+    r.coins = d(cc.coins, lc.coins, base.coins);
+    r.tickets = Object.assign({}, r.tickets, { t1: d(cc.t1, lc.t1, base.t1), t10: d(cc.t10, lc.t10, base.t10) });
+    for (const k of CUR_MAPS) {
+      const b = base[k] || {}, out = {};
+      for (const id of new Set([...Object.keys(cc[k]), ...Object.keys(lc[k]), ...Object.keys(b)])) {
+        const v = d(cc[k][id], lc[k][id], b[id]);
+        if (v) out[id] = v;
+      }
+      r[k] = out;
+    }
+    return r;
+  }
+  /** La partida tal como se sube: sin lo que sólo sirve en este aparato. */
+  function forCloud(s) { const c = plain(s); delete c.syncBase; return c; }
 
   /** Sustituye el contenido de `save` sin cambiar el objeto (otros módulos lo tienen). */
   // Copia `s` sobre la partida SIN cambiar los objetos de dentro (mejoras,
@@ -262,6 +411,26 @@ G.DB = (() => {
     key = k; user = name; guest = false;
     save = loadLocal(k, name);
     write(K_SES, k);
+    localSeen = save.updated || 0; localBase = currency(save);
+  }
+
+  /*
+   * Dos pestañas con la misma cuenta local: antes cada una escribía su partida
+   * entera y la última borraba lo de la otra (un shiny, un Pokémon del gacha...).
+   * Si otra pestaña ha guardado desde la última vez, se fusiona antes de escribir.
+   */
+  let localSeen = 0, localBase = null;
+  function writeLocal() {
+    const disk = read(K_SAVE + key);
+    if (disk && (disk.updated || 0) !== localSeen) {
+      const mine = plain(save); mine.syncBase = localBase;
+      const out = mergeSync(mine, migrate(disk));
+      delete out.syncBase;
+      out.updated = Date.now();
+      applyInPlace(out);
+    }
+    localSeen = save.updated; localBase = currency(save);
+    return write(K_SAVE + key, save);
   }
 
   async function registerLocal(name, pass) {
@@ -385,7 +554,7 @@ G.DB = (() => {
     const hideFlush = () => { if (pending && Date.now() - lastPush > HIDE_GAP) pushNow(); };
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') hideFlush(); });
     // Al cerrar o recargar la página, lo pendiente se sube siempre.
-    addEventListener('pagehide', () => { if (pending) pushNow(); });
+    addEventListener('pagehide', () => { if (pending) pushNow(true); });
     return true;
   }
 
@@ -416,8 +585,11 @@ G.DB = (() => {
       if (!cached) throw e;                // sin conexión y sin copia: no hay nada que abrir
       online = false;
     }
-    let s = merge(cached && migrate(cached), remote && migrate(remote));
+    const mc = cached && migrate(cached), mr = remote && migrate(remote);
+    let s = mc && mr ? mergeSync(mc, mr) : (mc || mr);
     if (!s) s = newSave(opts.name || displayNameOf(u));
+    // Lo que tiene la nube ahora (sin conexión, lo que tenía la copia de aquí).
+    s.syncBase = mr ? currency(mr) : (mc && mc.syncBase) || null;
     if (opts.legacy) {
       s = merge(s, opts.legacy.save);
       write(K_MIGRATED + opts.legacy.key, uid);
@@ -453,16 +625,17 @@ G.DB = (() => {
   const sinceOk = () => Date.now() - (+read(K_OK + uid) || 0);
 
   /** Sube la partida fusionándola con lo que haya en la nube (transacción). */
-  function pushNow() {
+  /** @param force  true: aunque hayan pasado menos de 65 s (al cerrar sesión o la página). */
+  function pushNow(force = false) {
     if (mode !== 'cloud' || guest || !save || !uid) return Promise.resolve();
     // Si ya hay una subida en marcha, se hace otra justo después (para lo que haya cambiado mientras).
-    if (pushing) { pending = true; return pushing.then(() => (pending ? pushNow() : undefined)); }
+    if (pushing) { pending = true; return pushing.then(() => (pending ? pushNow(force) : undefined)); }
     clearTimeout(pushT); pushT = 0; pushDue = 0;
     if (navigator.onLine === false) {
       pending = true; setSync('offline'); scheduleRetry();
       return Promise.resolve();
     }
-    if (sinceOk() < MIN_GAP) {
+    if (!force && sinceOk() < MIN_GAP) {
       pending = true; setSync('pending');
       schedulePush(MIN_GAP - sinceOk() + 500);
       return Promise.resolve();
@@ -471,12 +644,13 @@ G.DB = (() => {
     lastPush = Date.now();
     setSync('syncing');
     let merged = null;
+    const mine = plain(save);          // lo que se sube (y con qué se compara al acabar)
     const tr = fs.runTransaction(async tx => {
       const ref = docRef();
       const snap = await tx.get(ref);
       const remote = snap.exists ? migrate(snap.data().save) : null;
-      merged = remote ? merge(plain(save), remote) : plain(save);
-      const doc = { save: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION };
+      merged = remote ? mergeSync(mine, remote) : plain(mine);
+      const doc = { save: forCloud(merged), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION };
       if (snap.exists && snap.data().ban === true) doc.ban = true;
       tx.set(ref, doc);
     });
@@ -488,7 +662,13 @@ G.DB = (() => {
       write(K_OK + uid, Date.now());
       // Se FUSIONA con lo de ahora (no se sobrescribe): si has cambiado algo
       // mientras se subía (elegir compañero, una compra...), no se pierde.
-      if (merged && save) { applyInPlace(merge(plain(save), merged)); write(K_CLOUD + uid, save); }
+      // Monedas y Mochila: lo de la nube más lo que haya cambiado aquí desde que empezó la subida.
+      if (merged && save) {
+        const now = plain(save); now.syncBase = currency(mine);
+        const out = mergeSync(now, merged);
+        out.syncBase = currency(merged);
+        applyInPlace(out); write(K_CLOUD + uid, save);
+      }
       setSync(pending ? 'pending' : 'ok');
       if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
     }).catch(e => {
@@ -640,7 +820,7 @@ G.DB = (() => {
   function commit(urgent = false) {
     if (guest || !key || !save) return false;
     save.updated = Date.now();
-    if (mode === 'local') return write(K_SAVE + key, save);
+    if (mode === 'local') return writeLocal();
     write(K_CLOUD + uid, save);
     pending = true;
     setSync('pending');
@@ -655,7 +835,8 @@ G.DB = (() => {
   async function logout() {
     for (const fn of leaveHooks) { try { await fn('logout'); } catch (e) { /* nada */ } }
     if (mode === 'cloud' && !guest && save) {
-      if (pending) { try { await pushNow(); } catch (e) { /* queda la copia local */ } }
+      // (force: si se subió hace menos de 65 s, antes sólo se programaba y luego se cancelaba aquí abajo.)
+      if (pending) { try { await pushNow(true); } catch (e) { /* queda la copia local */ } }
       stopListening();
       try { await auth.signOut(); } catch (e) { /* nada */ }
     } else if (mode === 'local' && !guest) {
@@ -742,6 +923,12 @@ G.DB = (() => {
   function ownsShiny(dex) { return !!(save && save.shiny && save.shiny[dex]); }
 
   /** Mejoras compradas para un Pokémon: { id -> nivel }. */
+  /** Mejoras de la cuenta (id -> nivel). */
+  function accountUpgrades() {
+    if (!save) return {};
+    return save.aupg || (save.aupg = {});
+  }
+
   function upgradesOf(dex) {
     if (!save) return {};
     save.pupg = save.pupg || {};
@@ -758,7 +945,7 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
-    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
+    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, accountUpgrades,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */

@@ -8,7 +8,7 @@
  * Cada ordenador dibuja los peligros y comprueba sólo SU Pokémon. En
  * cooperativo los crea el anfitrión y los manda con 'hz'.
  *
- * Los de Arceus (systems/judgment.js) quitan un % de la vida (pct) sin mirar
+ * Los que traen pct (eran los de Arceus, ya no los usa nadie) quitan un % de la vida sin mirar
  * tipos ni defensa (pure), y la Sentencia cae como un pilar de luz (vis).
  */
 G.Hazards = (() => {
@@ -20,7 +20,8 @@ G.Hazards = (() => {
     list.push(o);
     if (!fromNet && G.Coop.isHost) {
       G.Coop.broadcast(['hz', { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y), r: o.r, angle: o.angle, len: o.len, w: o.w,
-                                delay: o.delay, dmg: Math.round(o.dmg), type: o.type, color: o.color, pct: o.pct, pure: o.pure, vis: o.vis }]);
+                                delay: o.delay, dmg: Math.round(o.dmg), type: o.type, color: o.color, pct: o.pct, pure: o.pure, vis: o.vis,
+                                boom: o.boom, cls: o.cls }]);   // boom: Humedad también para los invitados
     }
     return o;
   }
@@ -44,9 +45,12 @@ G.Hazards = (() => {
       if (!h.hit && h.t >= h.delay) {
         h.hit = true;
         detonate(h);
-        if (pl && !pl.dead && inside(h, pl.x, pl.y, pl.r)) {
-          pl.invuln = 0;
-          pl.hurt(h.pct ? Math.max(h.dmg, pl.maxHp * h.pct) : h.dmg, h.type, !!h.pure);
+        // (Humedad: las explosiones de los kamikaze no le dañan.)
+        if (pl && !pl.dead && inside(h, pl.x, pl.y, pl.r) && !(h.boom && pl.afx && pl.afx.damp)) {
+          // (Sólo la invulnerabilidad corta: antes también la de la Banda Focus o revivir,
+          // y la segunda zona avisada te remataba justo después de salvarte.)
+          pl.breakShortInvuln();
+          pl.hurt(h.pct ? Math.max(h.dmg, pl.maxHp * h.pct) : h.dmg, h.type, !!h.pure, h.cls || 's');
         }
       }
       if (h.hit && h.t >= h.delay + h.end) list.splice(i, 1);

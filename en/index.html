@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <base href="../">
+<!-- Política de seguridad (CSP, 16-10-2026): sólo se ejecuta código de esta web y de Firebase/Google
+     (nada escrito dentro de la página ni en atributos onclick). Si se añade un servicio nuevo, va aquí. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://turn.pokesurvivor.com https://www.gstatic.com http://127.0.0.1:* ws://127.0.0.1:*; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PokéSurvivor – Free online Pokémon survival game (Survivor.io style)</title>
 <meta name="description" content="Survive hordes of Pokémon with your partner in this free fan game for browser and mobile: 966 Pokémon, shinies, legendaries and online co-op with friends. No downloads, no ads.">
@@ -25,7 +28,7 @@
 <meta name="twitter:title" content="PokéSurvivor – Survive the Pokémon hordes">
 <meta name="twitter:description" content="A free fan game for browser and mobile, with co-op for up to 4. No downloads, no ads.">
 <meta name="twitter:image" content="https://pokesurvivor.com/assets/og-image.jpg">
-<script>window.PS_PAGES = true;</script>
+<script src="js/pages.js"></script>
 <link rel="manifest" href="manifest.webmanifest">
 <!-- Google sólo enseña en los resultados iconos de 48 px o múltiplos -->
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -176,12 +179,15 @@
     <div class="box">
       <div class="menu-list">
         <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
+        <div id="menu-rank" class="rank-pick hidden"></div>
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
+        <button class="menu-item hidden" data-go="shop">Tienda Kecleon<small>Caramelos, MT y más</small></button>
+        <button class="menu-item hidden" data-go="bag">Mochila<small id="menu-bag-sub">Caramelos y MT</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
         <button class="menu-item" data-go="friends">Amigos<small id="menu-friends-sub">Juega en grupo, hasta 4</small></button>
-        <button class="menu-item" data-go="rank">Ranking<small>Quién aguanta más</small></button>
+        <button class="menu-item" data-go="rank">Ranking<small>Modo infinito: quién aguanta más</small></button>
         <button class="menu-item" data-go="settings">Ajustes<small>Sonido, gráficos, controles y cuenta</small></button>
       </div>
     </div>
@@ -301,19 +307,7 @@
     <p class="boot-ld">Loading…</p>
   </div>
 </div>
-<script>
-  (function () {
-    var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
-    var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
-    var l = s === 'es' || s === 'en' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : (n.indexOf('es') === 0 ? 'es' : 'en'));
-    document.documentElement.lang = l;
-    if (l === 'en') {
-      var p = document.querySelectorAll('#boot p');
-      p[0].textContent = 'A Pokémon survival game, free in your browser and on mobile.';
-      p[1].textContent = 'Loading…';
-    }
-  })();
-</script>
+<script src="js/boot-lang.js"></script>
 <div id="tap-start" class="tapstart hidden">
   <div class="boot-in">
     <h1>PokéSurvivor</h1>
@@ -370,6 +364,7 @@
     <div id="lobby-members" class="lobby-members"></div>
     <h3 id="lobby-inv-title" style="margin:14px 0 6px">Invitar amigos</h3>
     <div id="lobby-invite" class="fr-list"></div>
+    <div id="lobby-rank" class="rank-pick lobby hidden"></div>
     <div class="row" style="margin-top:14px">
       <button id="lobby-start" class="btn gold grow">Empezar partida</button>
     </div>
@@ -380,7 +375,7 @@
 <!-- ====== Ranking ====== -->
 <section id="scr-rank" class="scr dim hidden">
   <div class="box wide">
-    <div class="row between"><h2>Ranking <span class="sub" style="font-size:15px">· tiempo aguantado</span></h2><span class="row" style="gap:6px"><button id="rk-mod" class="btn small ghost hidden">Moderación</button><button class="btn small ghost" data-back>Volver</button></span></div>
+    <div class="row between"><h2>Ranking <span class="sub" style="font-size:15px">· modo infinito</span></h2><span class="row" style="gap:6px"><button id="rk-mod" class="btn small ghost hidden">Moderación</button><button class="btn small ghost" data-back>Volver</button></span></div>
     <div class="gen-tabs" id="rk-mode"></div>
     <div class="filters" id="rk-period"></div>
     <div class="row rk-tools">
@@ -455,17 +450,48 @@
 <section id="scr-upgrades" class="scr dim hidden">
   <div class="box wide">
     <div class="row between"><h2>Mejoras</h2><button class="btn small ghost" data-back>Volver</button></div>
+    <p class="sub" style="margin:0 0 8px">Cuentan con todos tus Pokémon.</p>
+    <div class="upg" id="upg-list"></div>
+    <h3 style="margin:16px 0 8px">De cada Pokémon</h3>
     <div class="upg-head">
       <canvas id="upg-stage" class="stage" width="120" height="96"></canvas>
       <div class="grow">
-        <p class="sub" style="margin:0">Cada Pokémon tiene sus propias mejoras: sólo cuentan cuando juegas con él.</p>
+        <p class="sub" style="margin:0">El Veto y los atajos son de cada Pokémon, porque cada uno tiene sus propios movimientos.</p>
         <div class="row" style="margin-top:8px">
           <label for="upg-mon" style="margin:0">Pokémon</label>
           <select id="upg-mon" class="field" style="width:auto;min-width:220px"></select>
         </div>
       </div>
     </div>
-    <div class="upg" id="upg-list"></div>
+    <div class="upg" id="upg-mon-list"></div>
+  </div>
+</section>
+
+<!-- ====== Tienda Kecleon ====== -->
+<section id="scr-shop" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Tienda Kecleon</h2><button class="btn small ghost" id="shop-back">Volver</button></div>
+    <p class="sub" id="shop-greet" style="margin:0 0 8px"></p>
+    <div class="seg" id="shop-tabs"></div>
+    <div id="shop-body" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ====== Mochila ====== -->
+<section id="scr-bag" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Mochila</h2><button class="btn small ghost" id="bag-back">Volver</button></div>
+    <div class="upg-head">
+      <canvas id="bag-stage" class="stage" width="120" height="96"></canvas>
+      <div class="grow">
+        <div class="row">
+          <label for="bag-mon" style="margin:0">Pokémon</label>
+          <select id="bag-mon" class="field" style="width:auto;min-width:220px"></select>
+        </div>
+        <div id="bag-info" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <div id="bag-body" style="margin-top:10px"></div>
   </div>
 </section>
 
@@ -509,6 +535,7 @@
     <div id="cards" class="cards"></div>
     <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
     <p id="lvl-wait" class="note hidden"></p>
+    <button id="lvl-quit" class="btn small ghost hidden" style="margin-top:6px">Salir de la partida</button>
   </div>
 </section>
 
@@ -554,6 +581,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=bc2124ff1d"></script>
+<script defer src="js/app.min.js?v=dc28d887d0"></script>
 </body>
 </html>

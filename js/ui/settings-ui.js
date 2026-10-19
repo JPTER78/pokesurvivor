@@ -160,6 +160,9 @@ G.SettingsUI = (() => {
       const ok = await G.UI.confirmDelete();
       if (!ok) return;
       del.disabled = true;
+      // Abierto desde la pausa: antes la partida seguía viva sin partida guardada y
+      // al acabar se quedaba la pantalla congelada.
+      G.Game.quit && G.Game.quit();
       const r = await G.DB.deleteAccount(ok.pass);
       if (!r.ok) { $('set-msg').textContent = r.error; del.disabled = false; return; }
       close();

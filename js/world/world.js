@@ -10,9 +10,12 @@
  *   rock    bloquea, se rompe; puede soltar experiencia, monedas o bayas
  *   chest   bloquea, se rompe; suelta un buen botín
  *   grass   hierba alta, no bloquea; se corta con cualquier ataque
- *   altar   altar de poder: al tocarlo da un poder temporal (una vez)
  *   spring  manantial: cura mientras estás encima; se agota y se recarga
  *   bigchest cofre con candado: se abre quedándote al lado unos segundos
+ *   berrytree árbol de bayas: al pasar a su lado lo sacudes (cura y da el poder
+ *            de la baya de su bioma); vuelve a dar fruto pasado un rato
+ *   riskaltar altar de riesgo: quédate a su lado y despierta a un guardián
+ *            (más enemigos) que suelta mucho botín
  *   trap    trampa (veneno, pegajosa, explosiva): salta al pisarla, también
  *           con los enemigos
  *   (la lógica de los interactivos está en systems/interact.js)
@@ -42,6 +45,13 @@ G.World = (() => {
   const FADE = 2.6;
   let fade = null;                         // { from, images, t }
   const MAX_IMAGES = 48, MAX_DATA = 400;
+  // Manantiales y árboles gastados de las zonas que se olvidan (al volver, se vuelven
+  // a crear: antes salían como nuevos y se podían volver a usar).
+  const propState = new Map();             // "tx,ty" -> { charge, used }
+  function rememberProps(c) {
+    if (!c) return;
+    for (const p of c.props) if (p.used || (p.charge != null && p.charge < 1)) propState.set(p.tx + ',' + p.ty, { charge: p.charge, used: p.used });
+  }
   const broken = new Set();                // props destruidos: "tx,ty"
   let nextPropId = 1;
 
@@ -105,7 +115,11 @@ G.World = (() => {
       c.terr[j * N + i] = t;
       if (t === LIQUID) c.liquids.push(tx, ty);
     }
-    if (data.size > MAX_DATA) data.delete(data.keys().next().value);
+    if (data.size > MAX_DATA) {
+      const old = data.keys().next().value;
+      rememberProps(data.get(old));
+      data.delete(old);
+    }
     data.set(k, c);
     placeProps(c);
     return c;
@@ -149,9 +163,11 @@ G.World = (() => {
       let type = null, kind = 0;
       // Interactivos (raros), lejos del claro del principio.
       const hs = H(tx, ty, seed + 909);
-      if (open && Math.hypot(tx, ty) > 12 && hs < 0.0032) {
-        type = hs < 0.0004 ? 'altar' : hs < 0.0008 ? 'spring' : hs < 0.0011 ? 'bigchest' : 'trap';
-        kind = Math.floor(H(tx, ty, seed + 910) * (type === 'altar' ? 4 : 3));
+      if (open && Math.hypot(tx, ty) > 12 && hs < 0.0039) {
+        // (El hueco de los altares de poder, quitados el 20-10-2026, es ahora de los árboles de bayas.)
+        type = hs < 0.0004 ? 'berrytree' : hs < 0.0008 ? 'spring' : hs < 0.0011 ? 'bigchest' : hs < 0.0032 ? 'trap'
+             : hs < 0.00365 ? 'berrytree' : 'riskaltar';
+        kind = Math.floor(H(tx, ty, seed + 910) * 3);
       }
       if (type) { /* ya elegido */ }
       else if (open && h < (grove ? 0.07 : 0.006)) type = 'tree';
@@ -161,6 +177,8 @@ G.World = (() => {
       if (!type) continue;
 
       const p = makeProp(type, tx, ty, kind);
+      const st = propState.get(tx + ',' + ty);
+      if (st) Object.assign(p, st);
       c.props.push(p);
       if (p.solid) c.propAt.set(tx + ',' + ty, p);
     }
@@ -171,12 +189,13 @@ G.World = (() => {
     rock:  { solid: true,  hp: 34,       r: 12 },
     chest: { solid: true,  hp: 22,       r: 12 },
     grass: { solid: false, hp: 1,        r: 14 },
-    altar:    { solid: true,  hp: Infinity, r: 9 },
     spring:   { solid: false, hp: Infinity, r: 22, flat: true },
     bigchest: { solid: true,  hp: Infinity, r: 14 },
-    trap:     { solid: false, hp: Infinity, r: 9, flat: true }
+    trap:     { solid: false, hp: Infinity, r: 9, flat: true },
+    berrytree: { solid: true, hp: Infinity, r: 13 },
+    riskaltar: { solid: true, hp: Infinity, r: 10 }
   };
-  const SPECIAL = new Set(['altar', 'spring', 'bigchest', 'trap']);
+  const SPECIAL = new Set(['spring', 'bigchest', 'trap', 'berrytree', 'riskaltar']);
 
   function makeProp(type, tx, ty, kind = 0) {
     const d = PROP[type];
@@ -186,7 +205,7 @@ G.World = (() => {
       r: d.r, hp: d.hp, maxHp: d.hp, solid: d.solid, flat: !!d.flat,
       destructible: d.hp !== Infinity, flash: 0,
       wiggle: H(tx, ty, 9) * 6.28,
-      used: false, charge: 1, open: 0          // altar / manantial / cofre con candado
+      used: false, charge: 1, open: 0          // manantial y árbol / cofre con candado
     };
   }
 
@@ -207,6 +226,7 @@ G.World = (() => {
   const LIQ = {
     water: { slow: 0.6, immune: ['water'] },     // los de tipo agua nadan sin frenarse
     swamp: { slow: 0.45, immune: ['water'] },
+    sand:  { slow: 0.4, immune: ['ground'] },     // arenas movedizas del desierto
     lava:   { dmg: 0.06, flat: 5, every: 0.5, color: '#ff8a3d', immune: ['fire'] },
     poison: { dmg: 0.035, flat: 3, every: 0.5, color: '#c86bdc', immune: ['poison', 'steel'] },
     spark:  { dmg: 0.045, flat: 4, every: 0.7, color: '#ffe14d', immune: ['electric', 'ground'] },
@@ -260,7 +280,7 @@ G.World = (() => {
     return out;
   }
 
-  /** Objetos interactivos (altares, manantiales, cofres con candado, trampas) cerca. */
+  /** Objetos interactivos (manantiales, árboles de bayas, cofres con candado, trampas) cerca. */
   function specialsNear(x, y, r) {
     const out = [];
     const c0x = Math.floor((x - r) / CW), c1x = Math.floor((x + r) / CW);
@@ -407,10 +427,12 @@ G.World = (() => {
       for (let i = 0; i < tk; i++) G.Pickups.drop('ticket', p.x + G.U.rand(-16, 16), p.y + G.U.rand(-10, 10), 1);
       if (Math.random() < 0.15) G.Pickups.drop('ticket10', p.x, p.y - 10, 1);
       if (Math.random() < 0.5) G.Pickups.drop('item', p.x + 14, p.y - 14, G.Items.roll());
+      if (Math.random() < 0.1) G.Pickups.drop('tm', p.x - 14, p.y - 14, 0);
       G.Pickups.dropXp(p.x, p.y, G.Game.levelXp());
       G.Progress.event('chest');
       return;
     }
+    if (p.type === 'riskaltar') { G.Interact.riskAwaken(p); return; }
     if (p.type === 'trap') G.Interact.trapEffect(p);
   }
 
@@ -493,8 +515,8 @@ G.World = (() => {
     const P = G.Sprites.PX;
     const variant = p.type === 'grass' ? (Math.sin(t * 2.4 + p.wiggle) > 0.55 ? 1 : 0)
                   : p.type === 'rock' ? (p.hp < p.maxHp * 0.5 ? 1 : 0)
-                  : p.type === 'altar' ? p.kind * 2 + (p.used ? 1 : 0)
                   : p.type === 'spring' ? (p.charge < 0.15 ? 1 : 0)
+                  : p.type === 'berrytree' ? (p.charge < 1 ? 1 : 0)
                   : p.type === 'trap' ? p.kind : 0;
     const img = G.Tiles.propSprite(biome, p.type, variant);
     const w = img.width * P, h = img.height * P;
@@ -506,19 +528,19 @@ G.World = (() => {
       }
       return;
     }
-    if (p.type === 'altar' && !p.used) {
-      // Halo del orbe, latiendo.
-      const col = ['#ff5f6d', '#5fd4ff', '#ff8ad8', '#ffd23f'][p.kind];
+    if (p.type === 'riskaltar') {
+      // Altar de riesgo: llama roja que late.
       ctx.save();
-      ctx.globalAlpha = 0.22 + Math.sin(t * 3 + p.wiggle) * 0.1;
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(p.x, p.y - h + 11 * P, 13, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = 0.25 + Math.sin(t * 4 + p.wiggle) * 0.12;
+      ctx.fillStyle = '#ff3a3a';
+      ctx.beginPath(); ctx.arc(p.x, p.y - h + 11 * P, 15, 0, 6.2832); ctx.fill();
       ctx.restore();
     }
-    if (p.type === 'bigchest' && p.open > 0) {
+    if ((p.type === 'bigchest' || p.type === 'riskaltar') && p.open > 0) {
       ctx.save();
       ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3;
       ctx.beginPath();
+      ctx.strokeStyle = p.type === 'riskaltar' ? '#ff5f5f' : '#ffd23f';
       ctx.arc(p.x, p.y - h / 2, 26, -Math.PI / 2, -Math.PI / 2 + 6.2832 * Math.min(1, p.open / G.Interact.CHEST_TIME));
       ctx.stroke();
       ctx.restore();
@@ -553,7 +575,7 @@ G.World = (() => {
 
   function reset(s) {
     seed = (s | 0) || 1;
-    data.clear(); images.clear(); broken.clear();
+    data.clear(); images.clear(); broken.clear(); propState.clear();
     fade = null; arena = null;
   }
 
@@ -575,6 +597,8 @@ G.World = (() => {
   }
 
   function biomeName() { return G.Tiles.BIOMES[biome].name; }
+  /** Niebla propia del bioma (Torre Lavanda), 0-1. */
+  function biomeFog() { return G.Tiles.BIOMES[biome].fog || 0; }
 
   /** Viñeta en coordenadas de pantalla. */
   function drawVignette(ctx, w, h) {
@@ -586,7 +610,7 @@ G.World = (() => {
   }
 
   return {
-    TS, CW, reset, setBiome, biomeName, liquidKind, liquidEffect, walkable,
+    TS, CW, reset, setBiome, biomeName, biomeFog, liquidKind, liquidEffect, walkable,
     kindAt, isWall, isLiquid, isFree, collide, projectileBlock, propsInCircle, nearestBreakable,
     damageProp, breakAt, specialsNear, update,
     breakProp(p) { if (!broken.has(p.tx + ',' + p.ty)) destroyProp(p); },
@@ -603,6 +627,7 @@ G.World = (() => {
       }
     },
     get arena() { return arena; }, drawGround, drawLiquid, visibleProps, drawProp, drawVignette,
-    get biome() { return biome; }
+    get biome() { return biome; },
+    get biomeKey() { return G.Tiles.BIOMES[biome].key || ''; }
   };
 })();

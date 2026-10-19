@@ -39,10 +39,17 @@ G.STARTERS = [
 G.STARTER_BY = {};
 for (const s of G.STARTERS) G.STARTER_BY[s.dex] = s;
 
-/** Movimiento inicial de cualquier Pokémon (starter o del gacha). */
-G.startMoveOf = dex => {
+/**
+ * Movimiento inicial de cualquier Pokémon: el mejor de ataque que ya sabe por
+ * su nivel (ver G.Moves.bestStart). `start` de arriba sólo queda por si no
+ * tiene lista de aprendizaje.
+ */
+G.startMoveOf = (dex, level) => {
+  const mon = G.DEX_BY[dex];
+  const best = G.Moves.bestStart(mon, level);
+  if (best) return best;
   const s = G.STARTER_BY[dex];
-  return s ? s.start : G.Moves.startFor(G.DEX_BY[dex]);
+  return s ? s.start : G.Moves.startFor(mon);
 };
 
 /** Descripción corta de cada rasgo, para la pantalla de resultado. */

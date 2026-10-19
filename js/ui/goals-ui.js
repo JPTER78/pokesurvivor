@@ -247,24 +247,28 @@
     }
 
     function showData(d) {
-      const b = d.best || {};
+      // El perfil de otro lo escribe él: números con num(), textos con esc() y sólo
+      // Pokémon y logros que existan (16-10-2026: se podía colar HTML).
+      const num = v => (Number.isFinite(+v) ? Math.max(0, Math.floor(+v)) : 0);
+      const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+      const b = d.best && typeof d.best === 'object' ? d.best : {};
       const body = $('prof-body');
       body.innerHTML = `
         <div class="prof-head"><h2 translate="no">${esc(d.name || '???')}</h2>${d.title ? `<span class="prof-title">${esc(d.title)}</span>` : ''}</div>
         <div class="fav-slots view" id="prof-favs"></div>
         <div class="prof-marks">
-          <div><span>Mejor tiempo</span><b>${fmt(b.solo || 0)}</b></div>
-          <div><span>En grupo</span><b>${fmt(b.group || 0)}</b></div>
-          <div><span>Nivel máximo</span><b>${b.level || 0}</b></div>
-          <div><span>Jefes</span><b>${(b.bosses || 0).toLocaleString('es')}</b></div>
-          <div><span>Legendarios</span><b>${b.legends || 0}</b></div>
-          <div><span>Derrotados</span><b>${(b.kills || 0).toLocaleString('es')}</b></div>
+          <div><span>Mejor tiempo</span><b>${fmt(num(b.solo))}</b></div>
+          <div><span>En grupo</span><b>${fmt(num(b.group))}</b></div>
+          <div><span>Nivel máximo</span><b>${num(b.level)}</b></div>
+          <div><span>Jefes</span><b>${num(b.bosses).toLocaleString('es')}</b></div>
+          <div><span>Legendarios</span><b>${num(b.legends)}</b></div>
+          <div><span>Derrotados</span><b>${num(b.kills).toLocaleString('es')}</b></div>
         </div>
-        <h3>Medallas <span class="sub">${b.medals || 0}</span></h3>
+        <h3>Medallas <span class="sub">${num(b.medals)}</span></h3>
         <div class="prof-medals" id="prof-medals"></div>`;
       const favs = $('prof-favs');
-      for (const f of (d.favs || []).slice(0, 3)) {
-        if (!G.DEX_BY[f.dex]) continue;
+      for (const f of (Array.isArray(d.favs) ? d.favs : []).slice(0, 3)) {
+        if (!f || !has(G.DEX_BY, f.dex)) continue;
         const slot = document.createElement('div');
         slot.className = 'fav-slot';
         slot.appendChild(G.UI.spriteCanvas(f.dex, 120, 100, { scale: 2, lively: true, shiny: !!f.shiny }));
@@ -273,8 +277,8 @@
       }
       if (!favs.children.length) favs.innerHTML = '<p class="sub">Sin favoritos todavía.</p>';
       const med = $('prof-medals');
-      for (const id of d.medals || []) {
-        const a = G.AchDefs.BY[id];
+      for (const id of (Array.isArray(d.medals) ? d.medals : []).slice(0, 8)) {
+        const a = has(G.AchDefs.BY, id) && G.AchDefs.BY[id];
         if (!a) continue;
         const m = document.createElement('div');
         m.className = 'pm';

@@ -21,7 +21,7 @@ G.Rift = (() => {
   // (0.14 hasta el 11-10-2026: más grietas para que se vean los vínculos)
   // Menos azar (12-10-2026): cada vez que no sale, la siguiente es más
   // probable (20 %, 40 %, 60 %, 80 %, 100 %): como mucho 2,5 min sin grieta.
-  // Desde 2 min antes de la Sentencia de Arceus (minuto 30) ya no se abren.
+  // Sólo durante los actos, y no en los 2 min antes del jefe final (systems/acts.js).
   const CHECK = 30, CHANCE = 0.2, TTL = 45;
   const ARENA_R = 11, ARENA_TIME = 120, FROM = 75;
   let rift = null;          // { x, y, ttl, t }
@@ -40,7 +40,7 @@ G.Rift = (() => {
       rift.ttl -= dt;
       if (rift.ttl <= 0) { rift = null; return; }
       if (!arena && !pl.dead && G.U.dist2(pl.x, pl.y, rift.x, rift.y - 10) < 30 * 30) enter();
-    } else if (!arena && authority() && time > FROM && time < G.Judgment.AT - 120) {
+    } else if (!arena && authority() && time > FROM && G.Acts.riftsAllowed()) {
       checkT -= dt;
       if (checkT <= 0) {
         checkT = CHECK;
@@ -154,6 +154,7 @@ G.Rift = (() => {
     // rocas, tus disparos no podrían alcanzarle (bug de Celebi).
     e.flying = false;
     if (arena.shiny) e.makeShiny();
+    G.Spawner.special(e);
     G.EnemyMgr.add(e);
     arena.bossId = e.id;
     G.Spawner.say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' te esperaba en la grieta!', 3.2);

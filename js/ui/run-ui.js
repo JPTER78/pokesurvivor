@@ -76,15 +76,23 @@ G.RunUI = (() => {
   function setWaiting(names) {
     const me = G.Social.me ? G.Social.me.name : '';
     const others = names.filter(n => n !== me);
-    const list = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1] : a[0];
+    // (Apodos sin traducir; " y " y "tú" en el idioma del jugador.)
+    const en = G.I18n.lang !== 'es';
+    const list = a => a.length > 1 ? a.slice(0, -1).join(', ') + (en ? ' and ' : ' y ') + a[a.length - 1] : a[0];
+    const nm = others.map(G.I18n.noT);
     $('lvl-wait').textContent = !names.length ? ''
       : !others.length ? 'Elige tu carta'
-      : names.includes(me) ? 'Faltan por elegir: ' + list([...others, 'tú'])
-      : 'Esperando a ' + list(others) + '…';
+      : names.includes(me) ? 'Faltan por elegir: ' + list([...nm, G.I18n.noT(en ? 'you' : 'tú')])
+      : 'Esperando a ' + list(nm) + '…';
+    // Ya has elegido y esperas a otros: puedes irte (antes sólo cerrando la pestaña).
+    const q = $('lvl-quit');
+    q.classList.toggle('hidden', !others.length || names.includes(me));
+    q.onclick = () => G.Game.quit();
   }
 
   function closeLevelUp() {
     offers = null; offerCb = null;
+    $('lvl-quit').classList.add('hidden');
     $('cards').classList.remove('done');
     G.UI.hide('scr-levelup');
   }
@@ -102,14 +110,31 @@ G.RunUI = (() => {
     return true;
   }
 
+  /** Lo que ha subido tu Pokémon (su nivel permanente). */
+  function monLine(mon) {
+    const p = G.DEX_BY[mon.dex], pr = G.Mons.progress(mon.dex);
+    const up = mon.to > mon.from;
+    // Movimientos nuevos que ha aprendido al subir (salen ya en las cartas de la próxima partida).
+    const learned = up ? G.Moves.learnset(mon.dex).filter(([lv]) => lv > mon.from && lv <= mon.to).map(([, id]) => G.Moves.BY_ID[id].name)
+      .filter((n, i, a) => a.indexOf(n) === i) : [];
+    return `<div style="grid-column:1/-1" class="mon-xp"><span>${p.name}</span>
+      <b class="${up ? 'gold' : ''}">${up ? `¡Nv. ${mon.from} → Nv. ${mon.to}!` : 'Nv. ' + mon.to} <small>+${mon.xp.toLocaleString('es')} exp.</small></b>
+      <div class="bar"><i style="width:${Math.round(pr.frac * 100)}%"></i></div>
+      ${learned.length ? `<span class="learned">Ha aprendido: ${learned.join(', ')}</span>` : ''}</div>`;
+  }
+
   function showOver(r, onBack) {
-    $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
+    const A = r.acts || { rank: 0, act: 1 }, R = G.Acts.RANKS[A.rank];
+    $('over-title').textContent = r.win ? '¡Victoria!' : r.dead ? 'Has caído…' : 'Run terminada';
     $('over-stats').innerHTML = `
+      <div style="grid-column:1/-1"><span>Rango ${R.name}</span><b class="${r.win ? 'gold' : ''}">${
+        A.inf ? 'Modo infinito · ' + G.U.mmss(A.infT) : r.win ? '¡Jefe final vencido!' : 'Acto ' + A.act + ' de 3'}</b></div>
       <div><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
-      <div><span>Nivel</span><b>${r.level}</b></div>
+      <div><span>Nivel de partida</span><b>${r.level}</b></div>
       <div><span>Derrotados</span><b>${r.kills}</b></div>
       <div><span>Jefes</span><b>${r.bosses}</b></div>
-      ${r.judge ? `<div style="grid-column:1/-1"><span>Ante Arceus</span><b class="gold">${G.U.mmss(r.judge.time)} · ${r.judge.bosses} ${r.judge.bosses === 1 ? 'legendario' : 'legendarios'}</b></div>` : ''}
+      ${r.unlocked > 0 ? `<div style="grid-column:1/-1;text-align:center" class="gold">¡Has desbloqueado el rango ${G.Acts.RANKS[r.unlocked].name}!</div>` : ''}
+      ${r.mon ? monLine(r.mon) : ''}
       <div style="grid-column:1/-1"><span>Pokémonedas ganadas</span>
         <b class="gold"><span class="coin"></span> +${r.coins}</b>
         <div style="font-size:12px;color:var(--muted)">${r.breakdown}</div></div>
@@ -117,6 +142,8 @@ G.RunUI = (() => {
         ${r.t1 ? G.Icons.html('ticket', 22) + ' +' + r.t1 + ' ' : ''}${r.t10 ? G.Icons.html('ticket10', 22) + ' +' + r.t10 + ' ×10' : ''}</b></div>` : ''}
       <div style="grid-column:1/-1"><span>Movimientos</span><b style="font-size:15px">
         ${r.moves.map(m => `${G.Icons.html('move:' + m.id, 16)} ${m.name} Nv.${m.lvl}`).join(' · ') || '—'}</b></div>
+      ${r.tms && r.tms.length ? `<div style="grid-column:1/-1"><span>MT conseguidas (en la Mochila)</span><b style="font-size:15px">
+        ${r.tms.map(id => `${G.Icons.html('tm', 16)} ${G.Moves.BY_ID[id].name}`).join(' · ')}</b></div>` : ''}
       ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
         <div class="caught-row" id="over-caught"></div></div>` : ''}
       ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">¡Nuevo récord de tiempo!</div>' : ''}

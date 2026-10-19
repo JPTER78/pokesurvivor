@@ -155,7 +155,8 @@ G.Social = (() => {
     // Sin amigos nadie lo lee: no se gasta una escritura (cupo diario de Firebase).
     if (!fb || !me || !hasFriends()) return;
     lastBeat = Date.now();
-    fb.fs.collection('pres').doc(uid).set({ on, at: fts(), room: room ? room.id : '', play: playing }).catch(() => {});
+    // (Sin la sala: cualquiera con cuenta puede leer esto. Se entra por invitación.)
+    fb.fs.collection('pres').doc(uid).set({ on, at: fts(), room: '', play: playing }).catch(() => {});
   }
   function setPlaying(p) { if (playing !== !!p) { playing = !!p; writeStatus(); } }
   // Al volver a la pestaña tras un rato, un latido; al cerrarla, "desconectado".
@@ -296,7 +297,8 @@ G.Social = (() => {
 
   function memberInfo() {
     const s = G.DB.save;
-    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts() };
+    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), rank: G.Acts.rankOf(s),
+             lv: G.Mons.level(s.partner), at: ts() };
   }
 
   /**
@@ -312,7 +314,9 @@ G.Social = (() => {
     if (room) return room;
     rtOn();
     const id = fb.rtdb.ref('rooms').push().key;
-    await fb.rtdb.ref('rooms/' + id).set({ host: uid, open: true, at: ts(), m: { [uid]: memberInfo() } });
+    admitted = [];
+    // ok: los que pueden entrar (los invitados; lo escribe el anfitrión). '-' = nadie aún.
+    await fb.rtdb.ref('rooms/' + id).set({ host: uid, open: true, at: ts(), ok: '-', m: { [uid]: memberInfo() } });
     enterRoom(id, uid);
     return room;
   }
@@ -356,7 +360,19 @@ G.Social = (() => {
     href.on('value', s => { if (room && room.id === id && !s.val()) closedRoom(); }, () => closedRoom());
     const oref = fb.rtdb.ref('rooms/' + id + '/open');
     oref.on('value', s => { if (room && room.id === id) { room.open = s.val() === true; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref];
+    // Tras un corte corto de la conexión, el borrado automático (onDisconnect) ya se
+    // ha gastado: se vuelve a armar. Y si tu plaza se borró mientras, se recupera.
+    const cref = fb.rtdb.ref('.info/connected');
+    let wasDown = false;
+    cref.on('value', s => {
+      if (!room || room.id !== id) return;
+      if (s.val() !== true) { wasDown = true; return; }
+      if (!wasDown) return;
+      wasDown = false;
+      watchRoomDisconnect();
+      if (!room.isHost) fb.rtdb.ref('rooms/' + id + '/m/' + uid).update(memberInfo()).catch(() => {});
+    });
+    roomRefs = [mref, href, oref, cref];
     writeStatus();
     emit('room');
   }
@@ -404,8 +420,12 @@ G.Social = (() => {
 
   /** Actualiza tu Pokémon en la sala (si cambias de compañero). */
   function refreshMember() {
-    if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update(
-      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner) }).catch(() => {});
+    // También el rango y el nivel: tras ganar en grupo, o al cambiar de compañero, la sala
+    // seguía con los de cuando entraste.
+    if (room && me) {
+      const i = memberInfo();
+      fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update({ dex: i.dex, shiny: i.shiny, rank: i.rank, lv: i.lv }).catch(() => {});
+    }
   }
 
   // ---------------- invitaciones ----------------
@@ -417,10 +437,31 @@ G.Social = (() => {
     if (room && !room.isHost) return { ok: false, error: 'Sólo el anfitrión de la sala puede invitar.' };
     if (!room) await createRoom();
     try {
+      await admit(other);
       await fb.fs.collection('inv').doc(other + '_' + uid).set({ to: other, from: uid, room: room.id, name: me.name, at: fts() });
     } catch (e) { return { ok: false, error: 'No se pudo invitar (' + (e.code || 'error') + ').' }; }
     sentInv.add(other);
     return { ok: true, msg: 'Invitación enviada a ' + f.name };
+  }
+
+  /**
+   * Anfitrión: apunta a `other` en la lista de los que pueden entrar en la sala
+   * (rooms/{id}/ok). Las reglas sólo dejan entrar a quien esté ahí, y caben 3
+   * (con el anfitrión, 4): si no hay sitio, salen primero los invitados que aún
+   * no han entrado, los más antiguos antes. Antes, sabiendo el id de la sala,
+   * entraba cualquiera.
+   */
+  let admitted = [];
+  async function admit(other) {
+    const inRoom = room.members.map(m => m.uid).filter(u => u !== uid);
+    let list = [...new Set([...inRoom, ...admitted.filter(u => u !== other), other])];
+    while (list.length > MAX_PLAYERS - 1) {
+      const i = list.findIndex(u => !inRoom.includes(u) && u !== other);
+      if (i < 0) break;
+      list.splice(i, 1);
+    }
+    admitted = list;
+    await fb.rtdb.ref('rooms/' + room.id + '/ok').set(list.join(',') || '-');
   }
 
   /** Retira las invitaciones que mandaste (al salir de la sala). */

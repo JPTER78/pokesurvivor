@@ -17,6 +17,16 @@
  *   dash        cruzas hacia el enemigo golpeando todo el camino (sin recibir daño)
  *   trail       vas dejando charcos que dañan a lo que los pisa
  *   cone        muchos disparos cortos en abanico (aliento, chorro...)
+ *   ---- desde 2026-10-16 (movimientos de estado de los juegos) ----
+ *   debuff      no hace daño: los enemigos de alrededor pegan menos, reciben más
+ *               daño, van más lentos, se envenenan o se queman (`eff`)
+ *   weather     no hace daño: invoca un clima un rato, si no hay otro (`w`)
+ *
+ * Catálogo: los 64 de aquí ("curados") más todos los de los juegos que
+ * genera tools/fetch_moves.py (js/data/moves-gen.js), que copian la forma de
+ * un curado (`tpl`). Cada Pokémon sólo puede usar los de su lista de
+ * aprendizaje (js/data/learnsets.js) hasta su nivel, más los que se le
+ * enseñen con MT: ver poolFor().
  *
  * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
  *
@@ -118,6 +128,18 @@
       { t: '+40% potencia',                 m: { amount: 1.40 } },
       { t: '+50% duración',                 m: { dur: 1.50 } },
       { t: '+1 acumulación y +40% potencia', m: { stacks: 1, amount: 1.40 } }
+    ],
+    debuff: [
+      { t: '+30% radio',                    m: { radius: 1.30 } },
+      { t: '+40% potencia',                 m: { amount: 1.40 } },
+      { t: '-25% recarga',                  m: { cd: 0.75 } },
+      { t: '+30% radio y +40% potencia',    m: { radius: 1.30, amount: 1.40 } }
+    ],
+    weather: [
+      { t: '+50% duración',                 m: { dur: 1.50 } },
+      { t: '-25% recarga',                  m: { cd: 0.75 } },
+      { t: '+50% duración',                 m: { dur: 1.50 } },
+      { t: '-25% recarga y +30% duración',  m: { cd: 0.75, dur: 1.30 } }
     ]
   };
 
@@ -422,13 +444,6 @@
     BY_ID[m.id] = m;
   }
 
-  /** Movimientos que este Pokémon puede aprender (sus tipos + normal). */
-  function poolFor(mon) {
-    const ids = new Set(POOL.normal);
-    for (const t of mon.types) for (const id of (POOL[t] || [])) ids.add(id);
-    return [...ids];
-  }
-
   /**
    * Instancia de movimiento en una run: los números base de `def` con todas
    * las mejoras de la escalera hasta `lvl` ya aplicadas.
@@ -478,6 +493,10 @@
     for (const t of mon.types) if (START[t]) return START[t];
     return 'tackle';
   }
+
+  /** Movimientos que no hacen daño (como mucho 2 en una partida; ver levelup.js). */
+  const STATUS_KINDS = ['buff', 'debuff', 'weather'];
+  const isStatus = id => !!BY_ID[id] && STATUS_KINDS.includes(BY_ID[id].kind);
 
   // ---------------- evolución de movimientos ----------------
   /*
@@ -557,6 +576,325 @@
     return true;
   }
 
-  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
-              EVO, NEED_NAME, evoInfo, evolve };
+  // El logro "evolucionarlos todos" cuenta sólo los curados (con los de los juegos serían cientos).
+  const EVO_GOAL = Object.keys(EVO).length;
+
+  // ---------------- movimientos de los juegos (moves-gen.js) ----------------
+  /*
+   * Cada uno copia la forma de un curado (`tpl`: velocidad, tamaño, recarga...)
+   * con su propio daño, tipo y efectos. Los nombres y textos van en español;
+   * en inglés se añaden al diccionario de G.I18n.
+   */
+  const KIND_DESC = {
+    projectile: ['Disparo al enemigo más cercano.', 'Shot at the nearest enemy.'],
+    melee:      ['Golpe en arco a lo que tengas delante.', 'Arc strike at whatever is in front of you.'],
+    beam:       ['Rayo recto que atraviesa todo.', 'Straight beam that pierces everything.'],
+    orbit:      ['Gira a tu alrededor sin parar.', 'Circles around you nonstop.'],
+    nova:       ['Estalla en todas direcciones.', 'Bursts in every direction.'],
+    aura:       ['Daña sin parar todo lo que tienes cerca.', 'Constantly hurts everything near you.'],
+    boomerang:  ['Sale hacia el enemigo y vuelve a ti.', 'Flies at the enemy and comes back to you.'],
+    chain:      ['Salta de un enemigo a otro.', 'Jumps from one enemy to the next.'],
+    mine:       ['Deja trampas que estallan al pisarlas.', 'Leaves traps that blow up when stepped on.'],
+    meteor:     ['Cae del cielo sobre los enemigos cercanos.', 'Falls from the sky onto nearby enemies.'],
+    turret:     ['Deja algo que dispara solo un rato.', 'Leaves something that shoots on its own for a while.'],
+    dash:       ['Cruzas hacia el enemigo golpeando todo el camino.', 'You dash at the enemy, hitting everything on the way.'],
+    trail:      ['Vas dejando un rastro que daña.', 'Leaves a damaging trail behind you.'],
+    cone:       ['Abanico corto de disparos.', 'Short fan of shots.']
+  };
+  const FX_DESC = {
+    burn: ['Quema.', 'Burns.'], poison: ['Envenena.', 'Poisons.'], slow: ['Frena.', 'Slows.'],
+    drain: ['Te cura un poco al golpear.', 'Heals you a little on hit.'],
+    recoil: ['Te hace algo de daño a ti.', 'Hurts you a little too.'],
+    self: ['Te cuesta mucha vida.', 'Costs you a lot of HP.'],
+    crit: ['Más golpes críticos.', 'More critical hits.'],
+    weak: ['Los golpeados pegan menos.', 'Enemies it hits deal less damage.'],
+    armor: ['Los golpeados reciben más daño.', 'Enemies it hits take more damage.'],
+    slowcd: ['Lento pero fuerte.', 'Slow but strong.']
+  };
+  const BUFF_DESC = {
+    atk: ['No hace daño: acumula ATAQUE (movimientos físicos) mientras esté activo.', 'Deals no damage: builds ATTACK (physical moves) while active.'],
+    spa: ['No hace daño: acumula AT. ESPECIAL (movimientos especiales) mientras esté activo.', 'Deals no damage: builds SP. ATK (special moves) while active.'],
+    def: ['No hace daño: acumula DEFENSA mientras esté activo.', 'Deals no damage: builds DEFENSE while active.'],
+    spd: ['No hace daño: acumula VELOCIDAD mientras esté activo.', 'Deals no damage: builds SPEED while active.'],
+    regen: ['No hace daño: acumula REGENERACIÓN de vida.', 'Deals no damage: builds health REGENERATION.']
+  };
+  const DEBUFF_DESC = {
+    weak: ['No hace daño: los enemigos de alrededor pegan menos.', 'Deals no damage: nearby enemies deal less damage.'],
+    armor: ['No hace daño: los enemigos de alrededor reciben más daño.', 'Deals no damage: nearby enemies take more damage.'],
+    slow: ['No hace daño: los enemigos de alrededor van más lentos.', 'Deals no damage: nearby enemies move slower.'],
+    poison: ['No hace daño: envenena a los enemigos de alrededor.', 'Deals no damage: poisons nearby enemies.'],
+    burn: ['No hace daño: quema a los enemigos de alrededor.', 'Deals no damage: burns nearby enemies.']
+  };
+  const WEATHER_DESC = {
+    sun: ['No hace daño: invoca Sol abrasador un rato (si no hay otro clima).', 'Deals no damage: summons harsh sunlight for a while (if there is no other weather).'],
+    rain: ['No hace daño: invoca Lluvia un rato (si no hay otro clima).', 'Deals no damage: summons rain for a while (if there is no other weather).'],
+    sand: ['No hace daño: invoca una tormenta de arena un rato (si no hay otro clima).', 'Deals no damage: summons a sandstorm for a while (if there is no other weather).'],
+    snow: ['No hace daño: invoca una nevada un rato (si no hay otro clima).', 'Deals no damage: summons snow for a while (if there is no other weather).']
+  };
+  // Plantilla de los potenciadores según lo que suben.
+  const BUFF_TPL = { atk: 'swords-dance', spa: 'swords-dance', def: 'harden', spe: 'agility', regen: 'aqua-ring' };
+  // Efectos de la plantilla que no se copian (cada movimiento trae los suyos).
+  const OWN_FX = ['burn', 'poison', 'slow', 'hex', 'drain', 'recoil', 'crit', 'weak', 'armor', 'self'];
+  const EN = {};
+
+  // ---------------- cada movimiento, a su manera (17-10-2026) ----------------
+  // Antes un generado era una copia de su plantilla con otro daño (Salmuera =
+  // Pistola Agua). Ahora sale distinto con sus datos de los juegos (moves-gen.js):
+  //   PP        ritmo: muchos = rápido y flojo por golpe; pocos = lento y fuerte
+  //             (el daño por segundo apenas cambia)
+  //   potencia  tamaño (y algo más lento cuanto más grande)
+  //   prioridad sale disparado · precisión: nunca falla = persigue; imprecisa = más
+  //             grande y dispersa · golpes múltiples = más disparos (o golpes) más pequeños
+  //   banderas  sonido atraviesa · puño empuja · mordisco más críticos · pulso más alcance
+  //   up        sube tus stats al golpear (Nitrocarga, Puño Incremento...)
+  //   SIG       el efecto propio de los famosos (Salmuera, Desquite, Rodar...: combat.js sigMul)
+  const TEMPO = pp => (pp >= 35 ? 0.78 : pp >= 25 ? 0.88 : pp >= 15 ? 1 : pp >= 10 ? 1.15 : 1.35);
+  const MULTI_KINDS = ['projectile', 'nova', 'cone', 'boomerang', 'meteor', 'orbit'];
+  const TRAIT_DESC = {
+    fast:   ['Rápido: golpes seguidos pero flojos.', 'Fast: quick but light hits.'],
+    heavy:  ['Lento pero contundente.', 'Slow but hard-hitting.'],
+    prio:   ['Prioridad: sale disparado.', 'Priority: it shoots out fast.'],
+    homing: ['Nunca falla: persigue al enemigo.', 'Never misses: it homes in on the enemy.'],
+    wild:   ['Impreciso: más grande y disperso.', 'Inaccurate: bigger and more scattered.'],
+    multi:  ['Golpea varias veces.', 'Hits several times.'],
+    sound:  ['Sonido: atraviesa a todos.', 'Sound: goes through everyone.'],
+    punch:  ['Puñetazo: empuja más.', 'Punch: knocks back harder.'],
+    bite:   ['Mordisco: más golpes críticos.', 'Bite: more critical hits.'],
+    pulse:  ['Pulso: más alcance.', 'Pulse: longer reach.']
+  };
+  const UP_DESC = {
+    atk: ['Al golpear, puede subir tu Ataque.', 'On hit, it may raise your Attack.'],
+    spa: ['Al golpear, puede subir tu At. Esp.', 'On hit, it may raise your Sp. Atk.'],
+    def: ['Al golpear, puede subir tu Defensa.', 'On hit, it may raise your Defense.'],
+    spd: ['Al golpear, puede subir tu Velocidad.', 'On hit, it may raise your Speed.']
+  };
+  // Efecto propio de los movimientos famosos (lo aplica combat.js, sigMul / sigHit).
+  const SIG = {
+    brine: 'lowhp',
+    venoshock: 'poisoned', 'barb-barrage': 'poisoned',
+    'bolt-beak': 'fresh', 'fishious-rend': 'fresh',
+    'knock-off': 'boss', 'low-kick': 'boss', 'grass-knot': 'boss', 'heavy-slam': 'boss', 'heat-crash': 'boss',
+    revenge: 'revenge', avalanche: 'revenge', payback: 'revenge', comeuppance: 'revenge', 'rage-fist': 'revenge',
+    reversal: 'desperate', flail: 'desperate', facade: 'desperate', 'last-resort': 'desperate',
+    eruption: 'fullhp', 'water-spout': 'fullhp', 'dragon-energy': 'fullhp',
+    acrobatics: 'noitem',
+    'stored-power': 'buffs', 'power-trip': 'buffs',
+    rollout: 'combo', 'fury-cutter': 'combo', 'echoed-voice': 'combo', 'triple-axel': 'combo', 'triple-kick': 'combo',
+    'smack-down': 'antiair', 'thousand-arrows': 'antiair',
+    'electro-ball': 'speedy', 'gyro-ball': 'slowy',
+    'weather-ball': 'weather', thunder: 'rain', hurricane: 'rain', blizzard: 'snow', 'solar-beam': 'sun', 'solar-blade': 'sun',
+    'body-press': 'defense',
+    'pay-day': 'coins', 'make-it-rain': 'coins', thief: 'coins', covet: 'coins',
+    pluck: 'heal',
+    'brick-break': 'unshield', 'psychic-fangs': 'unshield', 'clear-smog': 'unshield', 'raging-bull': 'unshield',
+    psyshock: 'unshield', psystrike: 'unshield', 'secret-sword': 'unshield',
+    'super-fang': 'halve', 'ruination': 'halve', 'natures-madness': 'halve',
+    'u-turn': 'switch', 'volt-switch': 'switch', 'flip-turn': 'switch', 'rapid-spin': 'switch'
+  };
+  const SIG_DESC = {
+    lowhp:     ['El doble de daño a quien tenga menos de la mitad de vida.', 'Double damage to targets below half HP.'],
+    status:    ['El doble de daño a enemigos quemados, envenenados o frenados.', 'Double damage to burned, poisoned or slowed enemies.'],
+    poisoned:  ['El doble de daño a enemigos envenenados.', 'Double damage to poisoned enemies.'],
+    slowed:    ['El doble de daño a enemigos frenados.', 'Double damage to slowed enemies.'],
+    fresh:     ['El doble de daño a enemigos que aún no han recibido daño.', 'Double damage to enemies that haven’t been hurt yet.'],
+    boss:      ['Más daño a los jefes.', 'More damage to bosses.'],
+    revenge:   ['El doble de daño si te acaban de golpear.', 'Double damage if you were just hit.'],
+    desperate: ['Cuanta menos vida te queda, más daño.', 'The less HP you have, the more damage.'],
+    fullhp:    ['Cuanta más vida tienes, más daño.', 'The more HP you have, the more damage.'],
+    noitem:    ['Más daño si no llevas objeto.', 'More damage if you hold no item.'],
+    buffs:     ['Más daño por cada mejora que tengas activa.', 'More damage for each active boost.'],
+    combo:     ['Cada vez que acierta seguido pega más fuerte.', 'Hits harder each time it lands in a row.'],
+    antiair:   ['El doble de daño a los que vuelan.', 'Double damage to flying enemies.'],
+    speedy:    ['Más daño cuanto más rápido eres.', 'More damage the faster you are.'],
+    slowy:     ['Más daño cuanto más lento eres.', 'More damage the slower you are.'],
+    weather:   ['El doble de daño si hace algún clima.', 'Double damage in any weather.'],
+    rain:      ['Más daño con lluvia.', 'More damage in the rain.'],
+    snow:      ['Más daño con nieve.', 'More damage in the snow.'],
+    sun:       ['Más daño con sol.', 'More damage in the sun.'],
+    defense:   ['Pega más cuanta más Defensa tienes.', 'Hits harder the higher your Defense.'],
+    coins:     ['A veces suelta monedas al golpear.', 'Sometimes drops coins on hit.'],
+    heal:      ['Al golpear recuperas un poco de vida.', 'You recover a little HP on hit.'],
+    unshield:  ['Rompe los escudos de los enemigos.', 'Breaks enemy shields.'],
+    halve:     ['Quita un buen trozo de la vida que le quede (menos a los jefes).', 'Takes a big chunk of the target’s remaining HP (not bosses).'],
+    switch:    ['Al golpear, te da un acelerón.', 'On hit, you get a burst of speed.']
+  };
+
+  // Retoques a mano de los pocos que aún saldrían idénticos a otro que aprende el mismo Pokémon.
+  const EXTRA = {
+    'sacred-fire': { burn: 2 },                        // 50 % de quemar (Llamarada, 10 %)
+    overheat: { cd: 1.3, dmg: 1.3, trait: 'heavy' },   // luego te baja el At. Esp.: más lento y más fuerte
+    'thousand-waves': { slow: 0.4 }                    // atrapa: frena
+  };
+
+  /** Ritmo, tamaño y rasgos de un movimiento generado según sus datos originales. → [rasgos] */
+  function profile(d, g, tplPw) {
+    const traits = [];
+    const t = TEMPO(g.pp || 15);
+    if (t !== 1 && d.cd && d.dmg) {
+      d.cd = +(d.cd * t).toFixed(2);
+      d.dmg = +(d.dmg * t).toFixed(1);
+      traits.push(t < 1 ? 'fast' : 'heavy');
+    }
+    const pk = Math.max(0.8, Math.min(1.3, Math.pow((g.pw || tplPw || 60) / (tplPw || g.pw || 60), 0.35)));
+    for (const k of ['size', 'radius', 'width']) if (d[k]) d[k] = Math.round(d[k] * pk);
+    const flies = d.speed && d.kind !== 'orbit';
+    if (flies) d.speed = Math.round(d.speed / Math.sqrt(pk));
+    if (g.pri > 0) {
+      if (flies) d.speed = Math.round(d.speed * 1.35);
+      d.cd = +(d.cd * 0.9).toFixed(2);
+      traits.push('prio');
+    }
+    if (g.acc === 0 && (d.kind === 'projectile' || d.kind === 'boomerang')) {
+      d.homing = Math.max(d.homing || 0, 3);
+      traits.push('homing');
+    } else if (g.acc && g.acc < 85) {
+      if (d.size) d.size = Math.round(d.size * 1.15);
+      if (d.radius) d.radius = Math.round(d.radius * 1.1);
+      if (d.spread != null) d.spread = +(d.spread + 0.12).toFixed(2);
+      traits.push('wild');
+    }
+    if (g.hits) {
+      const n = Math.max(2, Math.round((g.hits[0] + g.hits[1]) / 2));
+      if (MULTI_KINDS.includes(d.kind) && d.count) {
+        d.count += n - 1;
+        d.dmg = +(d.dmg / n * 1.15).toFixed(1);
+        if (d.size) d.size = Math.max(4, Math.round(d.size * 0.85));
+      } else {
+        d.cd = +(d.cd * 0.6).toFixed(2);
+        d.dmg = +(d.dmg * 0.62).toFixed(1);
+      }
+      d.multi = true;                                  // (Encadenado: +25 % con estos)
+      traits.push('multi');
+    }
+    const fl = g.fl || '';
+    if (fl.includes('s')) {
+      if (d.pierce != null || flies) d.pierce = (d.pierce || 0) + 3;
+      else if (d.radius) d.radius = Math.round(d.radius * 1.12);
+      traits.push('sound');
+    }
+    if (fl.includes('p')) { d.knock = Math.round((d.knock || 50) * 1.5); traits.push('punch'); }
+    if (fl.includes('b')) { d.crit = Math.max(d.crit || 0, 0.15); traits.push('bite'); }
+    if (fl.includes('u')) {
+      if (d.life) d.life = +(d.life * 1.3).toFixed(2);
+      else if (d.radius) d.radius = Math.round(d.radius * 1.15);
+      traits.push('pulse');
+    }
+    if (g.up) d.up = [g.up[0] === 'spe' ? 'spd' : g.up[0] === 'spd' ? 'def' : g.up[0], g.up[1]];
+    return traits;
+  }
+
+  function fromGen(id, g) {
+    let d;
+    if (g.k === 'buff') {
+      const t = BY_ID[BUFF_TPL[g.stat]];
+      const stat = g.stat === 'spe' ? 'spd' : g.stat;
+      d = { kind: 'buff', cd: t.cd, dur: t.dur, stacks: t.stacks, stat, amount: g.amount, desc: BUFF_DESC[stat] };
+    } else if (g.k === 'debuff') {
+      d = { kind: 'debuff', cd: 1.4, radius: 110, dur: 3, eff: g.eff, amount: g.amount, desc: DEBUFF_DESC[g.eff] };
+    } else if (g.k === 'weather') {
+      d = { kind: 'weather', cd: 30, dur: 30, w: g.w, desc: WEATHER_DESC[g.w] };
+    } else {
+      // Daño (o trampas: Trampa Rocas como Púas, Red Viscosa como Disparo Demora).
+      const t = BY_ID[g.k === 'hazard' ? (g.eff === 'slow' ? 'string-shot' : 'spikes') : g.tpl];
+      if (!t) return null;
+      d = Object.assign({}, t, { tpl: t.id });
+      for (const k of OWN_FX) delete d[k];
+      let traits = [];
+      if (g.k === 'hazard') { if (g.eff === 'slow') d.slow = t.slow; }
+      else {
+        d.dmg = g.dmg;
+        if (g.cdm) d.cd = +(t.cd * g.cdm).toFixed(2);
+        for (const k of OWN_FX) if (g[k] != null) d[k] = g[k];
+        if (g.knock) d.knock = Math.max(d.knock || 0, g.knock);
+        traits = profile(d, g, (G.MOVES_GEN[t.id] || {}).pw);
+        if (g.fl) d.fl = g.fl;                       // banderas: también deciden su aspecto (vfx.js)
+        d.sig = SIG[id];
+        if (d.sig === 'switch') d.up = ['spd', 100];
+        const x = EXTRA[id];
+        if (x) {
+          if (x.burn) d.burn = x.burn;
+          if (x.slow) d.slow = x.slow;
+          if (x.cd) d.cd = +(d.cd * x.cd).toFixed(2);
+          if (x.dmg) d.dmg = +(d.dmg * x.dmg).toFixed(1);
+          if (x.trait && !traits.includes(x.trait)) traits.push(x.trait);
+        }
+      }
+      // (Sin repetir: el mordisco ya dice lo de los críticos y "lento" ya lo dice la recarga.)
+      const fx = OWN_FX.filter(k => d[k] && FX_DESC[k] && !(k === 'crit' && traits.includes('bite'))).map(k => FX_DESC[k]);
+      if (g.cdm && !g.self) { fx.push(FX_DESC.slowcd); traits = traits.filter(x => x !== 'heavy'); }
+      // Lo que lo distingue: su efecto propio primero, luego cómo se nota.
+      if (d.sig) fx.unshift(SIG_DESC[d.sig]);
+      for (const tr of traits) fx.push(TRAIT_DESC[tr]);
+      if (d.up && d.sig !== 'switch') fx.push(UP_DESC[d.up[0]]);
+      const base = KIND_DESC[d.kind] || ['', ''];
+      d.desc = [0, 1].map(i => [base[i]].concat(fx.map(f => f[i])).join(' '));
+    }
+    const desc = d.desc;
+    Object.assign(d, { id, name: g.n[0], type: g.t, cls: g.c, gen: 1, desc: desc[0] });
+    EN[g.n[0]] = g.n[1];
+    EN[desc[0]] = desc[1];
+    return d;
+  }
+
+  if (G.MOVES_GEN) {
+    for (const id of Object.keys(G.MOVES_GEN)) {
+      const g = G.MOVES_GEN[id];
+      if (BY_ID[id]) continue;                       // curado: se queda como está
+      const d = fromGen(id, g);
+      if (!d) continue;
+      d.ups = LADDERS[d.kind];
+      d.maxLvl = d.ups.length + 1;
+      RAW.push(d);
+      BY_ID[id] = d;
+      if (g.evo && EVO_MODS[d.kind]) {
+        EVO[id] = [g.evo[0][0], g.evo[1]];
+        EN[g.evo[0][0]] = g.evo[0][1];
+      }
+    }
+    if (G.I18n && G.I18n.lang === 'en') G.I18n.add(EN);
+  }
+
+  // ---------------- qué puede usar cada Pokémon ----------------
+
+  /** [[nivel, id], ...] de su lista de aprendizaje (sólo los que existen en el juego). */
+  function learnset(dex) {
+    const L = G.LEARN && G.LEARN[dex];
+    if (!L) return [];
+    return L.map(([lv, i]) => [lv, G.MOVE_IDS[i]]).filter(([, id]) => BY_ID[id]);
+  }
+
+  /** Movimientos de un Pokémon con nivel `level`: los de su lista hasta ese nivel + los enseñados con MT. */
+  function poolFor(mon, level = G.Mons.level(mon.dex)) {
+    const L = learnset(mon.dex);
+    // Sin lista (no debería pasar): los de sus tipos, como antes.
+    if (!L.length) {
+      const ids = new Set(POOL.normal);
+      for (const t of mon.types) for (const id of (POOL[t] || [])) ids.add(id);
+      return [...ids];
+    }
+    const ids = new Set(L.filter(([lv]) => lv <= level).map(([, id]) => id));
+    for (const id of G.Mons.taught(mon.dex)) if (BY_ID[id]) ids.add(id);
+    return [...ids];
+  }
+
+  /**
+   * Movimiento con el que empieza la partida: el mejor de ataque que ya sabe
+   * (más potencia, y con su tipo mejor), sin los que cuestan vida y mejor sin
+   * retroceso ni recarga larga (Envite Ígneo o Rayo Solar no son buen comienzo).
+   */
+  function bestStart(mon, level = G.Mons.level(mon.dex)) {
+    let best = null, score = -1;
+    const L = learnset(mon.dex).filter(([lv]) => lv <= level);
+    for (const [, id] of L.concat(G.Mons.taught(mon.dex).map(i => [0, i]))) {
+      const d = BY_ID[id];
+      if (!d || isStatus(id) || d.self) continue;
+      const g = G.MOVES_GEN && G.MOVES_GEN[id];
+      const s = ((g && g.pw) || 50) * (mon.types.includes(d.type) ? 1.51 : 1) * (d.recoil || (g && g.cdm) ? 0.6 : 1);
+      if (s >= score) { score = s; best = id; }
+    }
+    return best;
+  }
+
+  G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, learnset, bestStart, isStatus, STATUS_KINDS, instance, levelUp,
+              nextUpText, startFor, EVO, EVO_GOAL, NEED_NAME, evoInfo, evolve };
 })();

@@ -6,6 +6,10 @@
 G.RankingUI = (() => {
   const $ = G.UI.$;
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Lo que viene del ranking lo escribe cada jugador: todo número pasa por num()
+  // y todo texto por esc() antes de entrar en el HTML (16-10-2026: se podía colar HTML).
+  const num = v => (Number.isFinite(+v) ? Math.max(0, Math.floor(+v)) : 0);
+  const list = v => (Array.isArray(v) ? v : []);
   let mode = 's', period = 'w', scope = 'all', dex = null;
   let token = 0;
 
@@ -97,8 +101,8 @@ G.RankingUI = (() => {
     $('rk-me').innerHTML = !G.Social.me ? 'Elige un apodo (en Amigos) para salir en el ranking.'
       : me && me.out ? (en ? `<span translate="no">You're not in the top 50 ${where} ${pn} yet. Your exact rank is in All-time.</span>`
                            : `Aún no estás en el top 50 ${pn} ${where}. Tu puesto exacto está en Histórico.`)
-      : me ? (en ? `<span translate="no">Your best ${where} rank ${pn}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}</span>`
-                 : `Tu mejor puesto ${pn} ${where}: <b class="gold">#${me.pos}</b> · ${fmt(me.t)}`)
+      : me ? (en ? `<span translate="no">Your best ${where} rank ${pn}: <b class="gold">#${num(me.pos)}</b> · ${fmt(num(me.t))}</span>`
+                 : `Tu mejor puesto ${pn} ${where}: <b class="gold">#${num(me.pos)}</b> · ${fmt(num(me.t))}`)
       : (en ? `<span translate="no">You don't have a ${where} record ${pn} yet.</span>` : `Aún no tienes marca ${pn} ${where}.`);
   }
 
@@ -108,11 +112,12 @@ G.RankingUI = (() => {
     el.insertAdjacentHTML('beforeend', `<span class="pos">${pos <= 3 ? G.Icons.html('trophy', 20) : ''}${pos}</span>`);
     const mons = document.createElement('span');
     mons.className = 'mons';
-    r.dex.forEach((d, i) => { if (G.DEX_BY[d]) mons.appendChild(G.UI.spriteCanvas(d, 44, 40, { scale: 1, shiny: !!r.shiny[i] })); });
+    const shiny = list(r.shiny);
+    list(r.dex).forEach((d, i) => { if (Object.prototype.hasOwnProperty.call(G.DEX_BY, d)) mons.appendChild(G.UI.spriteCanvas(+d, 44, 40, { scale: 1, shiny: !!shiny[i] })); });
     el.appendChild(mons);
     el.insertAdjacentHTML('beforeend',
-      `<span class="who"><b translate="no">${r.names.map((n, i) => `<a href="#" class="plink" data-u="${esc(r.uids[i] || '')}">${esc(n)}</a>`).join(' · ')}</b><small>Nv. ${r.lv || 1} · ${(r.kills || 0).toLocaleString('es')} derrotados</small></span>
-       <span class="time">${fmt(r.t)}</span>`);
+      `<span class="who"><b translate="no">${list(r.names).map((n, i) => `<a href="#" class="plink" data-u="${esc(list(r.uids)[i] || '')}">${esc(n)}</a>`).join(' · ')}</b><small>Nv. ${num(r.lv) || 1} · ${num(r.kills).toLocaleString('es')} derrotados</small></span>
+       <span class="time">${fmt(num(r.t))}</span>`);
     el.querySelectorAll('.plink').forEach(a => { a.onclick = e => { e.preventDefault(); G.ProfileUI.show(a.dataset.u); }; });
     // Reportar una marca sospechosa (no la tuya). Lo revisa el admin (mod-ui.js).
     if (!mine && G.Social.me) {
@@ -123,7 +128,7 @@ G.RankingUI = (() => {
       rep.innerHTML = G.Icons.html('flag', 16);
       rep.onclick = async () => {
         if (rep.classList.contains('sent')) { G.UI.toast('Ya has reportado esta marca'); return; }
-        if (!confirm('¿Reportar la marca de ' + r.names.join(', ') + ' como trampa?')) return;
+        if (!confirm('¿Reportar la marca de ' + list(r.names).join(', ') + ' como trampa?')) return;
         rep.classList.add('sent'); rep.title = 'Ya la has reportado';
         await G.Ranking.report(b, r);
         G.UI.toast('Gracias: la revisaremos');

@@ -346,7 +346,7 @@ G.I18n.add({
   'Vence a los {x} legendarios.': 'Defeat all {x} legendaries.', 'Vence a todos los legendarios.': 'Defeat every legendary.',
   'Vence a {x}': 'Defeat {x}', 'Derrota a {x} en una grieta.': 'Defeat {x} in a rift.',
   'Evolución': 'Evolution', 'Evolucionista': 'Evolutionist', 'Maestro de movimientos': 'Move master', 'Evoluciona un movimiento.': 'Evolve a move.',
-  'Evoluciona 25 movimientos.': 'Evolve 25 moves.', 'Evoluciona los {x} movimientos distintos.': 'Evolve all {x} different moves.',
+  'Evoluciona 25 movimientos.': 'Evolve 25 moves.', 'Evoluciona los {x} movimientos distintos.': 'Evolve all {x} different moves.', 'Evoluciona {x} movimientos distintos.': 'Evolve {x} different moves.',
   'Evoluciona los 47 movimientos distintos.': 'Evolve all 47 different moves.', 'Coleccionista de objetos': 'Item collector', 'Bolsa llena': 'Full bag',
   'Encuentra 5 objetos distintos.': 'Find 5 different items.', 'Encuentra los 11 objetos.': 'Find all 11 items.',
   'Cumplidor': 'Reliable', 'Constante': 'Steady', 'Incansable': 'Tireless', 'Completa 10 misiones.': 'Complete 10 missions.',
@@ -575,5 +575,152 @@ G.I18n.add({
   // ---------------- reportar marcas del ranking ----------------
   'Reportar marca sospechosa': 'Report suspicious record', 'Ya la has reportado': 'You already reported it',
   'Ya has reportado esta marca': 'You already reported this record',
-  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it'
+  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it',
+
+  // ---------------- nivel de cada Pokémon, naturaleza y habilidad ----------------
+  'Nivel de partida': 'Run level', 'Naturaleza': 'Nature', 'Habilidad': 'Ability', '(oculta)': '(hidden)',
+  'Nivel máximo': 'Max level', '{x} exp. para el Nv. {x}': '{x} XP to Lv. {x}', '¡Nv. {x} → Nv. {x}!': 'Lv. {x} → Lv. {x}!',
+  '+{x} exp.': '+{x} XP', 'neutra': 'neutral', 'At. Esp.': 'Sp. Atk', 'Def. Esp.': 'Sp. Def', 'Defensa': 'Defense',
+  'Mejor con movimientos físicos': 'Best with physical moves', 'Mejor con movimientos especiales': 'Best with special moves',
+  'Igual de bien con físicos y especiales': 'Equally good with physical and special moves', '¡Robustez!': 'Sturdy!',
+
+  // ---------------- movimientos de los juegos (los nombres y textos de cada uno los añade js/data/moves.js) ----------------
+  '{x} de {x} aprendidos · salen en las cartas de la partida': '{x} of {x} learned · they show up in the run cards',
+  'Ha aprendido: {x}': 'Learned: {x}', 'MT': 'TM', 'Nv. {x}': 'Lv. {x}',
+  '+30% radio y +40% potencia': '+30% radius and +40% power', '-25% recarga y +30% duración': '-25% cooldown and +30% duration',
+
+  // ---------------- Tienda Kecleon, Mochila y mejoras de cuenta ----------------
+  'Tienda Kecleon': 'Kecleon Shop', 'Caramelos, MT y más': 'Candies, TMs and more', 'Mochila': 'Bag', 'Caramelos y MT': 'Candies and TMs',
+  '{x} objeto': '{x} item', '{x} objetos': '{x} items', 'Caramelos': 'Candies', 'MT': 'TM', 'Menta y Cápsulas': 'Mints and Capsules',
+  'Caramelo Raro': 'Rare Candy', 'Caramelo Exp. S': 'Exp. Candy S', 'Caramelo Exp. M': 'Exp. Candy M', 'Caramelo Exp. L': 'Exp. Candy L',
+  'Menta': 'Mint', 'Cápsula Habilidad': 'Ability Capsule', 'Cápsula Habilidad Oculta': 'Hidden Ability Capsule',
+  'Sube 1 nivel a un Pokémon.': 'Raises a Pokémon by 1 level.', '+800 de experiencia a un Pokémon.': '+800 experience for a Pokémon.',
+  '+3.000 de experiencia a un Pokémon.': '+3,000 experience for a Pokémon.', '+10.000 de experiencia a un Pokémon.': '+10,000 experience for a Pokémon.',
+  'Cambia la naturaleza de un Pokémon por la que tú elijas.': 'Changes a Pokémon\'s nature to the one you choose.',
+  'Cambia la habilidad de un Pokémon por otra de las suyas (la oculta, sólo si es la que le tocó).': 'Changes a Pokémon\'s ability to another of its own (the hidden one, only if that is the one it got).',
+  'Como la Cápsula Habilidad, pero deja elegir también su habilidad oculta.': 'Like the Ability Capsule, but it also lets you pick its hidden ability.',
+  '¡Bienvenido a la Tienda Kecleon! Aquí todo se paga, ¿eh? Nada de llevarse cosas sin pagar.': 'Welcome to the Kecleon Shop! Everything here gets paid for, OK? No walking off with things.',
+  'Tienes {x}': 'You have {x}', 'Lo que compras va a la Mochila. Úsalo desde la Mochila o desde la ficha de cada Pokémon en la colección.': 'What you buy goes to the Bag. Use it from the Bag or from each Pokémon\'s card in the collection.',
+  'MT para': 'TMs for', 'Movimientos que {x} puede aprender con MT y aún no sabe. Cada MT se gasta al enseñarla.': 'Moves {x} can learn by TM and doesn\'t know yet. Each TM is used up when taught.',
+  'No hay MT nuevas para este Pokémon.': 'No new TMs for this Pokémon.', 'MT {x}': 'TM {x}', '{x} a la Mochila': '{x} to the Bag',
+  'Estado': 'Status', 'Especial': 'Special', 'Físico': 'Physical', 'Potencia {x}': 'Power {x}', 'Usar': 'Use', 'Enseñar': 'Teach',
+  'Ya la sabe': 'Already knows it', 'No puede aprenderla': 'Can\'t learn it', 'No tiene otra habilidad que elegir': 'No other ability to pick',
+  'La Mochila está vacía. Compra caramelos en la Tienda Kecleon, o consigue MT venciendo jefes y abriendo cofres con candado.': 'The Bag is empty. Buy candies at the Kecleon Shop, or get TMs by beating bosses and opening locked chests.',
+  '¡{x} sube al Nv. {x}! Ha aprendido: {x}': '{x} grew to Lv. {x}! Learned: {x}', '¡{x} sube al Nv. {x}!': '{x} grew to Lv. {x}!', '{x} gana experiencia': '{x} gains experience',
+  '¿Enseñar {x} a {x}? La MT se gasta.': 'Teach {x} to {x}? The TM is used up.',
+  '¡{x} ha aprendido {x}! Ya puede salirte en las cartas de la partida.': '{x} learned {x}! It can now show up in the run cards.',
+  'Menta: elige la naturaleza de {x}': 'Mint: choose {x}\'s nature', '{x} ahora es {x}': '{x} is now {x}',
+  '{x}: elige la habilidad de {x}': '{x}: choose {x}\'s ability', 'La que tiene': 'Current one', 'Oculta: hace falta la Cápsula Habilidad Oculta': 'Hidden: needs the Hidden Ability Capsule',
+  '{x} ahora tiene {x}': '{x} now has {x}', 'Caramelos, MT, Menta y Cápsulas': 'Candies, TMs, Mints and Capsules',
+  'Las mejoras ahora son de tu cuenta. Las de stats ya no existen (eso lo da el nivel): te devolvemos {x} Pokémonedas.': 'Upgrades now belong to your account. Stat upgrades no longer exist (your level does that now): we refunded you {x} Pokécoins.',
+  '¡Ha abierto la Tienda Kecleon! Caramelos para subir de nivel a tus Pokémon.': 'The Kecleon Shop is open! Candies to level up your Pokémon.',
+  'Las MT ya están en la Tienda Kecleon: enseñan movimientos nuevos.': 'TMs are now in the Kecleon Shop: they teach new moves.',
+  'Mentas y Cápsulas Habilidad a la venta en la Tienda Kecleon.': 'Mints and Ability Capsules on sale at the Kecleon Shop.',
+  'Cuentan con todos tus Pokémon.': 'They count for all your Pokémon.', 'De cada Pokémon': 'Per Pokémon',
+  'El Veto y los atajos son de cada Pokémon, porque cada uno tiene sus propios movimientos.': 'Veto and shortcuts are per Pokémon, because each one has its own moves.',
+  'Periscopio': 'Scope Lens', 'Cinta Experto': 'Expert Belt', 'Cinta Fuerte': 'Muscle Band', 'Gafas Especiales': 'Wise Glasses',
+  'Seguro Debilidad': 'Weakness Policy', 'Globo Helio': 'Air Balloon', 'Polvo Brillo': 'Bright Powder', 'Hierba Blanca': 'White Herb',
+  '+12% de probabilidad de golpe crítico.': '+12% critical hit chance.', '+25% de daño con los golpes muy eficaces.': '+25% damage with super effective hits.',
+  '+20% de daño con los movimientos físicos.': '+20% damage with physical moves.', '+20% de daño con los movimientos especiales.': '+20% damage with special moves.',
+  'Si te golpean con algo muy eficaz, +50% de daño durante 10 s.': 'If you get hit by something super effective, +50% damage for 10 s.',
+  'Flotas: el agua, la lava y las trampas no te afectan. Se pincha al recibir un golpe y se vuelve a hinchar a los 25 s.': 'You float: water, lava and traps don’t affect you. It pops when you get hit and refills after 25 s.',
+  'Esquivas 1 de cada 10 golpes.': 'You dodge 1 in 10 hits.', 'Nada te frena: ni las trampas pegajosas, ni el agua, ni el clima.': 'Nothing slows you down: not sticky traps, water or weather.',
+  '¡Esquiva!': 'Dodged!', '¡Seguro Debilidad!': 'Weakness Policy!', '¡Globo pinchado!': 'Balloon popped!', '¡Globo Helio!': 'Air Balloon!',
+  'Encuentra los {x} objetos.': 'Find all {x} items.',
+
+  // ---------------- actos, jefes, rangos y modo infinito (systems/acts.js) ----------------
+  'Torre Lavanda': 'Lavender Tower', 'Desierto Ruta 111': 'Route 111 Desert',
+  'Bronce': 'Bronze', 'Plata': 'Silver', 'Oro': 'Gold', 'Maestro': 'Master',
+  'Rango {x} · Acto {x}: {x}': '{x} rank · Act {x}: {x}', '— Acto {x}: {x} —': '— Act {x}: {x} —',
+  '¡El jefe de zona se acerca!': 'The zone boss is coming!', '¡Algo enorme se acerca…!': 'Something huge is coming…!',
+  '¡{x} se impacienta! Pega más fuerte': '{x} is getting impatient! It hits harder', '¡{x} aparece! ¡Jefe final!': '{x} appears! Final boss!',
+  '¡Jefe de zona: {x}!': 'Zone boss: {x}!', '¡{x} llama a sus aliados!': '{x} calls its allies!', '¡{x} lo da todo!': '{x} gives it everything!',
+  '¡Victoria! Cruza el portal para salir… o quédate: el modo infinito empieza en 20 s': 'Victory! Step through the portal to leave… or stay: endless mode starts in 20 s',
+  '¡Victoria! Cruza el portal para salir y cobrar': 'Victory! Step through the portal to leave and collect',
+  '¡MODO INFINITO! Aguanta todo lo que puedas': 'ENDLESS MODE! Survive as long as you can',
+  'MODO INFINITO · {x}': 'ENDLESS MODE · {x}', '¡VICTORIA! · INFINITO EN {x}': 'VICTORY! · ENDLESS IN {x}', '¡VICTORIA! · CRUZA EL PORTAL': 'VICTORY! · STEP THROUGH THE PORTAL',
+  'JEFE FINAL · {x}': 'FINAL BOSS · {x}', 'JEFE DE ZONA · ACTO {x}/{x}': 'ZONE BOSS · ACT {x}/{x}', 'ACTO {x}/{x} · {x}': 'ACT {x}/{x} · {x}',
+  'Rango {x}': '{x} rank', '¡Jefe final vencido!': 'Final boss defeated!', 'Modo infinito · {x}': 'Endless mode · {x}', 'Acto {x} de 3': 'Act {x} of 3',
+  '¡Victoria!': 'Victory!', '¡Has desbloqueado el rango {x}!': 'You unlocked the {x} rank!', 'victoria': 'victory', 'rango': 'rank',
+  'Entra en la mazmorra · Rango {x}': 'Enter the dungeon · {x} rank', 'Modo infinito: quién aguanta más': 'Endless mode: who survives longest', '· modo infinito': '· endless mode',
+  'Primera victoria': 'First victory', 'Gana una partida: vence al jefe final y cruza el portal.': 'Win a run: defeat the final boss and step through the portal.',
+  'Vencedor': 'Victor', 'Gana una partida en el rango Maestro.': 'Win a run in the Master rank.', 'Sin final': 'No end',
+  'Aguanta 5 minutos en el modo infinito.': 'Survive 5 minutes in endless mode.', 'Infinito': 'Endless',
+  'Guardián de zona': 'Zone keeper', 'Vence a 3 jefes de zona.': 'Defeat 3 zone bosses.',
+
+  // ---------------- eventos nuevos, bayas, altar de riesgo y jefes Alfa / Dominante ----------------
+  '¡Brote masivo de {x}! Más probabilidad de shiny': 'Mass outbreak of {x}! Higher shiny odds',
+  '¡Un Pokémon errante! Atrápalo antes de que se escape': 'A roaming Pokémon! Catch it before it gets away',
+  '¡Apagón! Sólo ves a tu alrededor (y ganas más experiencia)': 'Blackout! You only see around you (and earn more experience)',
+  '¡Un espejismo! Toca el cofre antes de que se desvanezca': 'A mirage! Touch the chest before it fades',
+  'El espejismo se ha desvanecido…': 'The mirage has faded…', '¡Has alcanzado el espejismo! Era un cofre de verdad': 'You reached the mirage! It was a real chest',
+  'Espejismo': 'Mirage', 'BROTE MASIVO · {x} · {x} s': 'MASS OUTBREAK · {x} · {x} s', 'POKÉMON ERRANTE · {x} s': 'ROAMING POKÉMON · {x} s',
+  'APAGÓN · {x} s': 'BLACKOUT · {x} s', 'ESPEJISMO · {x} s': 'MIRAGE · {x} s',
+  '{x} alfa': 'Alpha {x}', '{x} dominante': 'Totem {x}', '¡{x} llama a sus ayudantes!': '{x} calls for help!',
+  'Altar de riesgo: quédate y despertará a su guardián…': 'Risk altar: stay and its guardian will awaken…',
+  '¡Baya Lichi! +30% de daño durante 15 s': 'Liechi Berry! +30% damage for 15 s', '¡Baya Zidra! Recuperas vida': 'Sitrus Berry! You recover HP',
+  'Baya Lichi': 'Liechi Berry', '+30% daño': '+30% damage',
+  '¡El altar despierta a {x}! Véncelo y tendrás su premio': 'The altar awakens {x}! Defeat it to claim its reward',
+
+  // ---------------- mensajes rápidos del cooperativo y misiones nuevas ----------------
+  '¡Ayuda!': 'Help!', '¡Aquí!': 'Over here!', '¡Grieta!': 'Rift!', '¡Gracias!': 'Thanks!',
+  // (con los espacios juntos: el traductor los junta antes de buscar)
+  'Mensajes rápidos: 5 ¡Ayuda! · 6 ¡Aquí! · 7 ¡Grieta! · 8 ¡Gracias!': 'Quick messages: 5 Help! · 6 Over here! · 7 Rift! · 8 Thanks!',
+  '{x}: ¡Ayuda! · {x} m': '{x}: Help! · {x} m', '{x}: ¡Aquí! · {x} m': '{x}: Over here! · {x} m',
+  '{x}: ¡Grieta! · {x} m': '{x}: Rift! · {x} m', '{x}: ¡Gracias! · {x} m': '{x}: Thanks! · {x} m',
+  'Vence a un jefe de zona': 'Defeat a zone boss', 'Vence a {x} jefes de zona': 'Defeat {x} zone bosses',
+  'Llega al acto {x} en una partida': 'Reach act {x} in a run', 'Sube {x} niveles a tus Pokémon': 'Gain {x} levels on your Pokémon',
+  'Enseña una MT a un Pokémon': 'Teach a TM to a Pokémon', 'Gana una partida': 'Win a run', 'Gana {x} partidas': 'Win {x} runs',
+  'Aguanta {x} minutos en el modo infinito': 'Survive {x} minutes in endless mode',
+  'Rango de la partida: {x} (el más alto del grupo).': 'Run rank: {x} (the highest in the group).',
+
+  // ---------------- avisos de primera vez (ui/tips.js) ----------------
+  '¡Primera partida terminada! Cada Pokémon tiene su propio nivel (Nv.), que sube con la experiencia que gana jugando contigo.':
+    'First run done! Each Pokémon has its own level (Lv.), which goes up with the experience it earns playing with you.',
+  'Al subir de nivel aprende movimientos nuevos, los mismos que en los juegos, y te pueden salir en las cartas. Lo verás todo en su ficha (botón Pokémon del menú).':
+    'As it levels up it learns new moves, the same as in the main games, and they can show up in your cards. You’ll see it all on its card (Pokémon button in the menu).',
+  '¡Ha abierto la Tienda Kecleon! Vende caramelos para subir de nivel a tus Pokémon.': 'The Kecleon Shop is open! It sells candies to level up your Pokémon.',
+  'Se paga con las Pokémonedas que ganas en cada partida. Lo que compres va a la Mochila.': 'You pay with the Pokécoins you earn in each run. What you buy goes to your Bag.',
+  'También vende MT, para enseñar movimientos nuevos.': 'It also sells TMs, to teach new moves.',
+  'Has conseguido una MT: está en la Mochila. Sirve para enseñar a un Pokémon un movimiento que no aprende por nivel.':
+    'You got a TM: it’s in your Bag. Use it to teach a Pokémon a move it doesn’t learn by level.',
+  'Desde ahora la Tienda Kecleon también vende MT.': 'From now on the Kecleon Shop also sells TMs.',
+  '¡Has ganado tu primera partida! Has desbloqueado el rango {x}.': 'You won your first run! You unlocked the {x} rank.',
+  'Cada rango es más duro, pero da más monedas y experiencia. Debajo de Jugar eliges con cuál juegas; en grupo, el anfitrión elige hasta el más alto del grupo.':
+    'Each rank is harder, but gives more coins and experience. Under Play you choose which one to play; in a group, the host picks up to the highest in the group.',
+  'El anfitrión elige el rango de la partida (hasta {x}).': 'The host picks the run rank (up to {x}).', 'Rango de la partida:': 'Run rank:',
+  'Gana en el rango anterior para desbloquearlo': 'Win in the previous rank to unlock it', 'Nadie del grupo lo tiene desbloqueado': 'Nobody in the group has it unlocked',
+  'Además, la Tienda Kecleon ya vende Mentas (cambian la naturaleza) y Cápsulas Habilidad.': 'Also, the Kecleon Shop now sells Mints (they change the nature) and Ability Capsules.',
+  '¡Has llegado al rango {x}!': 'You reached the {x} rank!',
+  'Si vences al jefe final y no cruzas el portal, empieza el modo infinito: oleadas sin fin. El ranking cuenta cuánto aguantas ahí.':
+    'If you beat the final boss and don’t step through the portal, endless mode begins: never-ending waves. The leaderboard counts how long you last there.',
+  '¡Vamos allá! Muévete y yo ataco solo. Recoge la experiencia para subir de nivel y elegir cartas.':
+    'Here we go! You move and I attack on my own. Pick up experience to level up and choose cards.',
+  'La partida tiene 3 actos de 10 minutos. Al final de cada uno llega un jefe de zona.': 'A run has 3 acts of 10 minutes. At the end of each one a zone boss arrives.',
+  'Jugáis en grupo: si alguien cae, quédate a su lado para levantarle. Mensajes rápidos con las teclas 5-8 (o el bocadillo en el móvil).':
+    'You’re playing as a group: if someone falls, stay next to them to revive them. Quick messages with keys 5-8 (or the speech bubble on mobile).',
+  '¡Un jefe de zona! Véncelo para pasar al siguiente acto, en otro bioma. Si tardas mucho, se enfurece.':
+    'A zone boss! Beat it to move on to the next act, in another biome. If you take too long, it gets enraged.',
+  '¡El jefe final! Es un legendario con fases. Si lo vences, se abrirá un portal: crúzalo para ganar la partida.':
+    'The final boss! It’s a legendary with phases. Beat it and a portal will open: step through it to win the run.',
+  '¡Una grieta! Si entras, te espera un legendario en su arena. Si lo vences, consigues un vínculo para lanzar varios movimientos a la vez.':
+    'A rift! Go in and a legendary awaits in its arena. Beat it and you get a bond to fire several moves at once.',
+  'Ese jefe es Alfa (enorme, ojos rojos) o Dominante (aura dorada, llama a ayudantes). Es más fuerte, pero suelta mucho más botín.':
+    'That boss is an Alpha (huge, red eyes) or a Totem (golden aura, calls for help). It’s stronger, but drops much more loot.',
+  'Las Mejoras ahora son de tu cuenta y valen para todos tus Pokémon. Las de stats ya no existen, porque eso lo da el nivel.':
+    'Upgrades now belong to your account and apply to all your Pokémon. Stat upgrades are gone, since levels give you that.',
+  'Te devolvemos {x} Pokémonedas por las que tenías.': 'We’re refunding you {x} Pokécoins for the ones you had.',
+  '{x} Rango de la partida: {x} (el más alto del grupo).': '{x} Run rank: {x} (the highest in the group).',
+  '¡MT {x}!': 'TM {x}!', 'MT {x} a la Mochila': 'TM {x} to the Bag', 'MT conseguidas (en la Mochila)': 'TMs found (in the Bag)', '{x} · Nv. {x}': '{x} · Lv. {x}',
+  // ---------------- revisión del 20-10-2026 ----------------
+  'DERROTADOS': 'DEFEATED', 'Buscar por nombre': 'Search by name',
+  '{x} no estaba listo': '{x} wasn\'t ready', '{x} se ha desconectado': '{x} disconnected', '{x} no ha podido entrar': '{x} couldn\'t join',
+  'Has estado desconectado demasiado rato: la partida sigue sin ti': 'You were disconnected for too long: the game goes on without you',
+  'Pausa: {x} está eligiendo…': 'Paused: {x} is choosing…', 'Pausa: {x} están eligiendo…': 'Paused: {x} are choosing…',
+  'Pausa: esperando a {x} (anfitrión)…': 'Paused: waiting for {x} (host)…',
+  '¡{x}! Recuperas vida y {x} durante {x} s': '{x}! You recover HP and {x} for {x} s',
+  'Baya Aslac': 'Salac Berry', 'Baya Chiri': 'Custap Berry', 'Baya Gonlan': 'Ganlon Berry', 'Baya Arabol': 'Starf Berry',
+  '+40% de daño': '+40% damage', '+40% de velocidad': '+40% speed', '-30% de recarga': '-30% cooldown',
+  '-25% de daño recibido': '-25% damage taken', 'un poder al azar': 'a random power', 'atraes todo desde lejos': 'you pull everything from afar',
+  'Imán': 'Magnet'
 });
