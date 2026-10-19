@@ -481,10 +481,10 @@
     // Planta
     { id: 'seed-bomb', name: 'Bomba Germen', type: 'grass', kind: 'bounce',
       desc: 'Una semilla que rebota de enemigo en enemigo.',
-      cd: 0.6, dmg: 10, speed: 320, life: 1.6, size: 7, bounce: 3 },
+      cd: 0.6, dmg: 10, speed: 320, life: 1.6, size: 7, count: 1, bounce: 3 },
     { id: 'energy-ball', name: 'Energibola', type: 'grass', kind: 'homing',
       desc: 'Una bola de energía que persigue al enemigo.',
-      cd: 0.62, dmg: 19, speed: 280, life: 2.0, size: 8, homing: 5 },
+      cd: 0.62, dmg: 19, speed: 280, life: 2.0, size: 8, count: 1, homing: 5 },
     { id: 'solar-beam', name: 'Rayo Solar', type: 'grass', kind: 'charge',
       desc: 'Absorbe luz un momento y la suelta en un rayo enorme.',
       cd: 2.3, charge: 0.85, dmg: 62, radius: 290, width: 40 },
@@ -494,18 +494,18 @@
       cd: 1.6, dmg: 22, radius: 58, stun: 1.0 },
     { id: 'electro-ball', name: 'Bola Voltio', type: 'electric', kind: 'bounce',
       desc: 'Una bola eléctrica que salta de enemigo en enemigo.',
-      cd: 0.62, dmg: 10, speed: 340, life: 1.6, size: 7, bounce: 3 },
+      cd: 0.62, dmg: 10, speed: 340, life: 1.6, size: 7, count: 1, bounce: 3 },
     // Psíquico
     { id: 'extrasensory', name: 'Paranormal', type: 'psychic', kind: 'shove',
       desc: 'Una onda mental que daña y aparta a todos los que tienes cerca.',
       cd: 1.2, dmg: 16, radius: 92, knock: 320 },
     { id: 'mist-ball', name: 'Bola Neblina', type: 'psychic', kind: 'homing',
       desc: 'Una bola de bruma que persigue al enemigo y le frena.',
-      cd: 0.55, dmg: 13, speed: 270, life: 2.0, size: 8, homing: 5, slow: 0.3 },
+      cd: 0.55, dmg: 13, speed: 270, life: 2.0, size: 8, count: 1, homing: 5, slow: 0.3 },
     // Veneno
     { id: 'acid-spray', name: 'Bomba Ácida', type: 'poison', kind: 'bounce',
       desc: 'Un chorro ácido que salta entre enemigos y los envenena.',
-      cd: 0.66, dmg: 8, speed: 310, life: 1.6, size: 7, bounce: 3, poison: 1 },
+      cd: 0.66, dmg: 8, speed: 310, life: 1.6, size: 7, count: 1, bounce: 3, poison: 1 },
     // Tierra
     { id: 'sand-tomb', name: 'Bucle Arena', type: 'ground', kind: 'vortex',
       desc: 'Un remolino de arena que atrapa y arrastra a los enemigos.',
@@ -523,7 +523,7 @@
     // Bicho
     { id: 'signal-beam', name: 'Rayo Señal', type: 'bug', kind: 'bounce',
       desc: 'Un destello que rebota entre los enemigos.',
-      cd: 0.6, dmg: 10, speed: 340, life: 1.6, size: 7, bounce: 3 },
+      cd: 0.6, dmg: 10, speed: 340, life: 1.6, size: 7, count: 1, bounce: 3 },
     { id: 'u-turn', name: 'Ida y Vuelta', type: 'bug', kind: 'dash',
       desc: 'Cruzas entre los enemigos golpeando a todos los del camino.',
       cd: 0.7, dmg: 17, radius: 120, width: 34 },
@@ -536,11 +536,11 @@
       cd: 0.28, dmg: 13, count: 3, radius: 70, speed: 2.6, size: 9 },
     { id: 'power-gem', name: 'Joya de Luz', type: 'rock', kind: 'bounce',
       desc: 'Un destello de gema que rebota de enemigo en enemigo.',
-      cd: 0.66, dmg: 11, speed: 320, life: 1.6, size: 8, bounce: 3 },
+      cd: 0.66, dmg: 11, speed: 320, life: 1.6, size: 8, count: 1, bounce: 3 },
     // Hielo
     { id: 'ice-shard', name: 'Canto Helado', type: 'ice', kind: 'homing',
       desc: 'Esquirlas rapidísimas que persiguen al enemigo.',
-      cd: 0.32, dmg: 9, speed: 380, life: 1.5, size: 6, homing: 7 },
+      cd: 0.32, dmg: 9, speed: 380, life: 1.5, size: 6, count: 1, homing: 7 },
     { id: 'freeze-dry', name: 'Liofilización', type: 'ice', kind: 'stun',
       desc: 'Un frío repentino que avisa en el suelo y deja congelados a los que pilla.',
       cd: 1.6, dmg: 24, radius: 60, stun: 1.0 },
@@ -557,7 +557,7 @@
     // Fantasma
     { id: 'shadow-sneak', name: 'Sombra Vil', type: 'ghost', kind: 'homing',
       desc: 'Una sombra que se escurre por el suelo hasta el enemigo.',
-      cd: 0.45, dmg: 14, speed: 300, life: 1.8, size: 7, homing: 6 },
+      cd: 0.45, dmg: 14, speed: 300, life: 1.8, size: 7, count: 1, homing: 6 },
     { id: 'ominous-wind', name: 'Viento Aciago', type: 'ghost', kind: 'vortex',
       desc: 'Un viento maldito que arremolina a los enemigos y los va dañando.',
       cd: 3.0, dmg: 9, radius: 74, dur: 2.6, pull: 140 },
@@ -574,7 +574,7 @@
     // Hada
     { id: 'draining-kiss', name: 'Beso Drenaje', type: 'fairy', kind: 'homing',
       desc: 'Un beso que persigue al enemigo y te cura un poco al darle.',
-      cd: 0.55, dmg: 13, speed: 280, life: 2.0, size: 7, homing: 5, drain: 1 },
+      cd: 0.55, dmg: 13, speed: 280, life: 2.0, size: 7, count: 1, homing: 5, drain: 1 },
     { id: 'play-rough', name: 'Carantoña', type: 'fairy', kind: 'melee',
       desc: 'Un ataque juguetón pero muy fuerte en arco.',
       cd: 0.6, dmg: 22, radius: 50, arc: 2.0, knock: 60 },
@@ -584,14 +584,14 @@
     // Acero
     { id: 'mirror-shot', name: 'Disparo Espejo', type: 'steel', kind: 'bounce',
       desc: 'Un destello metálico que rebota entre los enemigos.',
-      cd: 0.64, dmg: 10, speed: 340, life: 1.6, size: 7, bounce: 3 },
+      cd: 0.64, dmg: 10, speed: 340, life: 1.6, size: 7, count: 1, bounce: 3 },
     { id: 'gyro-ball', name: 'Giro Bola', type: 'steel', kind: 'spin',
       desc: 'Giras como una bola de acero golpeando todo alrededor.',
       cd: 1.05, dmg: 12, count: 3, radius: 60 },
     // Siniestro
     { id: 'sucker-punch', name: 'Golpe Bajo', type: 'dark', kind: 'homing',
       desc: 'Un golpe a traición que busca al enemigo.',
-      cd: 0.7, dmg: 22, speed: 330, life: 1.6, size: 7, homing: 6 },
+      cd: 0.7, dmg: 22, speed: 330, life: 1.6, size: 7, count: 1, homing: 6 },
     { id: 'night-slash', name: 'Tajo Umbrío', type: 'dark', kind: 'spin',
       desc: 'Cortes en giro que alcanzan a todo lo que te rodea.',
       cd: 1.0, dmg: 11, count: 3, radius: 62 }
