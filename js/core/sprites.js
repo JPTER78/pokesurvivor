@@ -130,6 +130,26 @@ G.Sprites = (() => {
     return G.U.clamp(w * 0.22, 5, 26) * PX * scale;
   }
 
+  /*
+   * Tu Pokémon, si es de los grandes (18-10-2026: Onix, Gyarados, Eternatus...
+   * chocaban con todo y casi no se podía jugar con ellos):
+   *   - se dibuja más pequeño, pero sin pasarse: hasta 36 píxeles de alto (el
+   *     90 % de los Pokémon) igual; lo que pase de ahí cuenta un 40 %. Gyarados
+   *     queda al 75 % y sigue siendo de los más grandes. Los muy anchos y no
+   *     tan altos (Cetitan, Regieleki) cuentan por su ancho (el del marco × 0,55).
+   *   - choca como uno normal: como mucho PLAYER_R de radio (el de Pikachu; el
+   *     85 % de los Pokémon no llega), así cabe por los pasillos y no recibe
+   *     más golpes por ser grande.
+   */
+  const BIG_H = 36, BIG_K = 0.4, PLAYER_R = 18;
+  function playerScale(dex) {
+    const m = animMeta(dex, 'Idle');
+    const h = m ? Math.max(m.ay, m.w * 0.55) : 24;
+    if (h <= BIG_H) return 1;
+    return Math.round((BIG_H + (h - BIG_H) * BIG_K) / h * 16) / 16;
+  }
+  function playerRadius(dex) { return Math.min(PLAYER_R, bodyRadius(dex, playerScale(dex))); }
+
   /** Alto visual aproximado (para barras de vida y números de daño). */
   function bodyHeight(dex, scale = 1) {
     const m = animMeta(dex, 'Idle');
@@ -258,6 +278,6 @@ G.Sprites = (() => {
     }
   }
 
-  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
+  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight, playerScale, playerRadius,
            drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; } };
 })();

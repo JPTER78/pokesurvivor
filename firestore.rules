@@ -67,6 +67,13 @@ service cloud.firestore {
     }
 
     // Perfil público: apodo, 3 favoritos, título, mejores marcas y medallas.
+    // Récords del perfil: sólo números (lo que pinta el perfil; nada de texto).
+    function validBest(b) {
+      return b is map && b.keys().hasOnly(['solo', 'group', 'level', 'bosses', 'legends', 'kills', 'medals'])
+        && b.get('solo', 0) is int && b.get('group', 0) is int && b.get('level', 0) is int && b.get('bosses', 0) is int
+        && b.get('legends', 0) is int && b.get('kills', 0) is int && b.get('medals', 0) is int;
+    }
+
     match /profiles/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn()
@@ -77,7 +84,7 @@ service cloud.firestore {
         && request.resource.data.at == request.time
         && (!('favs' in request.resource.data) || (request.resource.data.favs is list && request.resource.data.favs.size() <= 3))
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
-        && (!('best' in request.resource.data) || request.resource.data.best is map)
+        && (!('best' in request.resource.data) || validBest(request.resource.data.best))
         && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
         && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
       allow delete: if signedIn() && me() == uid;
@@ -121,16 +128,16 @@ service cloud.firestore {
 
     // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
     //   - no puede durar más que el tiempo real desde que empezó tu partida
-    //     (runs/{uid}), con 30 s de margen; ni más de 1 h (la Sentencia de
-    //     Arceus acaba las partidas hacia el minuto 31-32; 1 h por si alguien
-    //     muy bueno aguanta mucho más)
+    //     (runs/{uid}), con 30 s de margen; ni más de 45 min (desde el
+    //     18-10-2026 la Sentencia de Arceus deja KO de un toque hacia el
+    //     minuto 40; antes era 1 h y se llegaba huyendo)
     //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
     //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban)
     function validEntry(board, id) {
       let d = request.resource.data;
       let run = get(/databases/$(database)/documents/runs/$(me())).data;
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
-        && d.t is int && d.t > 0 && d.t <= 3600
+        && d.t is int && d.t > 0 && d.t <= 2700
         && d.t <= (request.time - run.startedAt).seconds() + 30
         && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
@@ -174,9 +181,16 @@ service cloud.firestore {
     function addMine(board, d, old, changed) {
       let e = getAfter(/databases/$(database)/documents/lb/$(board)/e/$(d.me)).data;
       let row = d.top[d.me];
+      // La fila del resumen es una COPIA exacta de la marca ya validada (validEntry):
+      // también nivel, derrotados y shiny (18-10-2026: sin esto se podía meter
+      // texto con código en el "nivel" y se ejecutaba en quien abría el ranking).
+      // shiny es opcional: las versiones del juego de antes del 18-10 no lo ponían.
       return me() in e.uids
         && changed.hasOnly([d.me, d.ev])
+        && row.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills'])
         && row.t == e.t && row.uids == e.uids && row.names == e.names && row.dex == e.dex
+        && row.lv == e.lv && row.kills == e.kills
+        && (!('shiny' in row) || row.shiny == e.shiny)
         && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t));
     }
     function removeMine(d, old, changed) {

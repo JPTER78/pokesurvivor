@@ -41,7 +41,8 @@ G.HUD = (() => {
     ctx.fillRect(0, 0, w * G.U.clamp(xpF, 0, 1), 7);
 
     // ---------- vida + nivel ----------
-    const px = 16, py = 20;
+    const sa = G.Touch.safeArea();
+    const px = 16 + sa.left, py = 20 + sa.top;     // lejos de la muesca del iPhone
     ctx.font = F(800, 13);
     ctx.fillStyle = '#eaf2ff';
     ctx.textAlign = 'left';
@@ -58,8 +59,8 @@ G.HUD = (() => {
     ctx.fillText(Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), px + 48 + 84, py + 26);
 
     // buffs activos
-    const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
-    const LBL = { atk: 'ATK', spd: 'VEL', def: 'DEF', regen: 'REG' };
+    const COL = { atk: '#ff6b4d', patk: '#ff6b4d', satk: '#c47bff', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
+    const LBL = { atk: 'ATK', patk: 'ATK', satk: 'AT.E', spd: 'VEL', def: 'DEF', regen: 'REG' };
     let bx = px;
     ctx.textAlign = 'left';
     for (const k in pl.buffs) {
@@ -91,7 +92,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 14;
+      const x0 = w - tw - 16 - sa.right - (touch ? 56 : 0), y0 = 14 + sa.top;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
@@ -329,7 +330,7 @@ G.HUD = (() => {
         ctx.font = F(700, 10);
         ctx.textAlign = 'center';
         ctx.fillStyle = fused ? BOND : col;
-        ctx.fillText(fused ? m.name + ' +' + (g.length - 1) : m.name, x + S / 2, y - 7);
+        ctx.fillText(fused ? G.T(m.name, 'move') + ' +' + (g.length - 1) : G.T(m.name, 'move'), x + S / 2, y - 7);
       }
     }
 
@@ -407,7 +408,7 @@ G.HUD = (() => {
       const o = m.pl;
       ctx.font = F(800, 10);
       ctx.fillStyle = m.color;
-      ctx.fillText(m.name, px, y + 9);
+      G.I18n.rawCanvas(ctx, 'fillText', m.name, px, y + 9);
       const lx = px + 78;
       bar(ctx, lx, y + 1, 110, 8, o.dead ? 0 : o.hp / o.maxHp, o.dead ? '#ff5f6d' : '#5fe08a');
       if (o.dead) {
@@ -444,16 +445,16 @@ G.HUD = (() => {
       ctx.font = F(800, 14);
       ctx.textAlign = 'center';
       ctx.fillStyle = '#fff';
-      ctx.fillText(m.name.charAt(0).toUpperCase(), 0, 5);
+      G.I18n.rawCanvas(ctx, 'fillText', m.name.charAt(0).toUpperCase(), 0, 5);
       // Nombre y distancia: al lado contrario de la flecha, para que no se salga
       const lx = -Math.cos(a) * 30, ly = -Math.sin(a) * 26 + 4;
       ctx.font = F(800, 12);
-      const label = (o.dead ? '¡' + m.name + ' necesita ayuda! ' : m.name + ' ') + '· ' + metres + ' m';
+      const label = o.dead ? G.I18n.f('¡{x} necesita ayuda! · {x} m', m.name, metres) : m.name + ' · ' + metres + ' m';
       ctx.textAlign = Math.cos(a) > 0.3 ? 'right' : Math.cos(a) < -0.3 ? 'left' : 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
-      ctx.strokeText(label, lx, ly);
+      G.I18n.rawCanvas(ctx, 'strokeText', label, lx, ly);
       ctx.fillStyle = col;
-      ctx.fillText(label, lx, ly);
+      G.I18n.rawCanvas(ctx, 'fillText', label, lx, ly);
       ctx.restore();
     }
 

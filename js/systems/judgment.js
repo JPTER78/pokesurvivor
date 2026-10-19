@@ -33,6 +33,19 @@ G.Judgment = (() => {
   const ARENA_R = 24;                 // en tiles (la arena de la grieta: 11)
   const BOSS_EVERY = 5;               // sin tope: siguen saliendo mientras aguantes
   const TOUCH = 0.4;                  // vida que quita tocar a Arceus
+  /*
+   * Contra la huida sin fin (18-10-2026: con toda la velocidad subida se
+   * aguantaba hasta el minuto 60 corriendo en círculos):
+   *   - Velocidad con tope suave: lo que pase de 130 cuenta sólo un 25 %
+   *     (corriendo al máximo, ~170 en vez de ~290). Antes del minuto 30 no cambia nada.
+   *   - Los legendarios corren como mínimo al 80 % de vuestra velocidad.
+   *   - Desde los 5 min de Sentencia Arceus acelera sin tope, y desde los 7
+   *     su toque quita cada vez más, hasta el 100 % a los 10 (hacia el
+   *     minuto 40). Pasar de ahí es prácticamente imposible.
+   */
+  const SPD_SOFT = 130, SPD_OVER = 0.25;
+  const capSpd = s => (s <= SPD_SOFT ? s : SPD_SOFT + (s - SPD_SOFT) * SPD_OVER);
+  const touchPct = () => Math.min(1, TOUCH + Math.max(0, arenaT - 420) / 180 * (1 - TOUCH));
   const ARCEUS = 493, SCALE = 1.5;
   // Línea de tiempo de la animación (segundos).
   const T_TITLE = 1.3, T_FLASH = 4.7, T_PORT = 5.1, T_DESC = 5.7, T_LAND = 7.9, T_BACK = 9.1, T_END = 10.1;
@@ -243,7 +256,7 @@ G.Judgment = (() => {
     if (A.cast) { castTick(dt, tg); return; }
     if (!tg) { A.anim.loop('Idle'); return; }
     // Más lento que tú al principio; a los ~35 s ya te alcanza.
-    const k = Math.min(1.22, 0.74 + arenaT * 0.013);
+    const k = Math.min(1.22, 0.74 + arenaT * 0.013) + Math.max(0, arenaT - 300) * 0.0015;
     const spd = Math.max(70, (tg.spd || 100) * k);
     const [dx, dy] = G.U.norm(tg.x - A.x, tg.y - A.y);
     A.x += dx * spd * dt; A.y += dy * spd * dt;
@@ -327,7 +340,7 @@ G.Judgment = (() => {
     if (G.U.dist2(A.x, A.y, pl.x, pl.y) > rr * rr) return;
     A.touchCd = 0.9;
     pl.invuln = 0;
-    pl.hurt(pl.maxHp * TOUCH, null, true);
+    pl.hurt(pl.maxHp * touchPct(), null, true);
     G.Camera.kick(0.6);
     G.FX.ring(pl.x, pl.y, 6, 70, GOLD, 0.4, 4);
     if (authority()) A.anim.play('Attack', { speed: 1.4 });
@@ -359,10 +372,11 @@ G.Judgment = (() => {
       if (G.Game.everyone().every(p => G.U.dist2(p.x, p.y, x, y) > 280 * 280)) break;
     }
     const k = Math.pow(2, bossN);          // cada uno, el doble que el anterior
+    const fast = Math.max(0, ...G.Game.everyone().map(p => (p.dead ? 0 : p.spd || 0)));
     const def = {
       dex, name: mon.name,
       hp: Math.round(base * k),
-      spd: Math.round(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105)),
+      spd: Math.round(Math.max(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105), fast * 0.8)),
       dmg: Math.round((36 + t / 20) * k), xp: Math.round(500 + t * 1.2),
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
       shotDmg: Math.round((18 + t / 40) * k), shotCd: 0.9, range: 300
@@ -692,7 +706,7 @@ G.Judgment = (() => {
 
   return {
     AT, reset, noteDmg, update, cineTick, skip, bossDown, drawable, drawAir, drawOverlay, onEvent, netState, netApply,
-    get active() { return !!phase; },
+    get active() { return !!phase; }, capSpd,
     get cinematic() { return phase === 'cine'; },
     /** Lo que suena: nada en la animación hasta que aterriza. */
     get music() { return phase === 'cine' && ct < T_LAND ? null : 'judgment'; },

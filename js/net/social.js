@@ -502,6 +502,18 @@ G.Social = (() => {
     }, 800);
   }
 
+  /** El perfil de otro jugador, limpio (ver G.U.int / str): sólo lo que el juego sabe pintar. */
+  function cleanProfile(d) {
+    const U = G.U, b = d.best || {};
+    return {
+      name: U.str(d.name, 24), title: U.str(d.title, 40),
+      favs: U.list(d.favs, 3).filter(f => f && G.DEX_BY[U.int(f.dex)]).map(f => ({ dex: U.int(f.dex), shiny: f.shiny === true })),
+      best: { solo: U.int(b.solo, 86400), group: U.int(b.group, 86400), level: U.int(b.level, 999), bosses: U.int(b.bosses, 1e9),
+              legends: U.int(b.legends, 999), kills: U.int(b.kills, 1e12), medals: U.int(b.medals, 999) },
+      medals: U.list(d.medals, 8).map(x => U.str(x, 40))
+    };
+  }
+
   /** El perfil público de otro jugador. */
   const profCache = new Map();
   async function getProfile(other) {
@@ -511,7 +523,7 @@ G.Social = (() => {
     const c = profCache.get(other);
     if (c && Date.now() - c.at < 10 * 60 * 1000) return c.v;     // lo leído vale 10 min
     const d = await fb.fs.collection('profiles').doc(other).get().catch(() => null);
-    const v = d && d.exists ? d.data() : null;
+    const v = d && d.exists ? cleanProfile(d.data()) : null;
     profCache.set(other, { at: Date.now(), v });
     return v;
   }
