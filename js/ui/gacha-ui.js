@@ -17,7 +17,7 @@ G.GachaUI = (() => {
       const t = document.createElement('button');
       t.className = 'gen-tab';
       t.dataset.gen = b.gen;
-      t.innerHTML = `<b>${b.name}</b><small>Gen ${b.gen}</small>`;
+      t.innerHTML = `<b>${b.name}</b><small>${b.gen === 0 ? 'Gen 1–9' : 'Gen ' + b.gen}</small>`;
       t.onclick = () => { gen = b.gen; refresh(); };
       tabs.appendChild(t);
     });
@@ -30,10 +30,10 @@ G.GachaUI = (() => {
 
   function refresh() {
     const s = G.DB.save;
-    const banner = G.Gacha.BANNERS[gen - 1];
+    const banner = G.Gacha.BANNERS.find(b => b.gen === gen);
     document.querySelectorAll('#gacha-gens .gen-tab').forEach(t => t.classList.toggle('on', +t.dataset.gen === gen));
 
-    const all = G.DEX.filter(p => p.gen === gen);
+    const all = G.DEX.filter(p => (gen === 0 || p.gen === gen) && G.SPRITE_META[p.dex]);
     const owned = all.filter(p => s.owned[p.dex]).length;
     const shinies = all.filter(p => s.shiny && s.shiny[p.dex]).length;
     const [c1, c2, c3] = banner.color;
@@ -41,8 +41,10 @@ G.GachaUI = (() => {
       `radial-gradient(circle at 80% 30%, rgba(255,210,63,.3), transparent 45%),
        radial-gradient(circle at 15% 80%, rgba(196,123,255,.3), transparent 50%),
        linear-gradient(135deg, ${c1}, ${c2} 55%, ${c3})`;
-    $('banner-title').textContent = banner.name + ' Misterioso';
-    $('banner-desc').textContent = `Los ${all.length} Pokémon de la generación ${gen}. ¡Los legendarios esperan!`;
+    $('banner-title').textContent = gen === 0 ? banner.name : banner.name + ' Misterioso';
+    $('banner-desc').textContent = gen === 0
+      ? `Los ${all.length} Pokémon de todas las generaciones. ¡Los legendarios esperan!`
+      : `Los ${all.length} Pokémon de la generación ${gen}. ¡Los legendarios esperan!`;
     $('gacha-owned').innerHTML = `Tienes ${owned} de ${all.length}` +
       (shinies ? ` · ${G.Icons.html('shiny', 12)} ${shinies} shiny` : '');
 
@@ -61,6 +63,7 @@ G.GachaUI = (() => {
       `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria en un banner, la siguiente lo es.<br>
+       · Cada banner tiene su propio contador de garantía.<br>
        · Los repetidos dan Pokémonedas. Los shiny no se repiten.<br>
        · Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y
          los jefes y los legendarios de las grietas, a veces, tickets ×10.</p>`;
