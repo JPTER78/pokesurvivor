@@ -31,6 +31,7 @@ de personalidad y a la mazmorra.
 | `W` `A` `S` `D` / flechas | Moverse |
 | `1` `2` `3` `4` | Elegir el movimiento activo |
 | `Q` / `E` | Ciclar movimientos |
+| `T` | Teracristalizarse (con el Teraorbe cargado) |
 | `Esc` / `P` | Pausa |
 
 **En móvil o tablet** (en horizontal): pon el dedo en cualquier sitio y arrastra
@@ -60,6 +61,19 @@ favoritos, tus marcas y tus medallas. En las runs encuentras **objetos** (Restos
 Cinta Elección...) y tus movimientos **evolucionan** al máximo nivel. Los
 enemigos tienen personalidad: curan, ponen escudos, llaman a su manada o atacan
 con aviso en el suelo.
+
+**Teracristalización:** en Mejoras se compra el **Teraorbe** de cada Pokémon y
+se elige su Teratipo (uno de los 18 tipos). En la partida, desde el minuto 2
+aparece un **cristal Tera**: quédate 2 s a su lado para cargar el orbe y pulsa
+`T` (o toca el orbe). Tu Pokémon se vuelve de cristal, con la corona de su
+Teratipo, hasta el final: +20 % a los movimientos de ese tipo y se defiende como
+ese tipo. Como en los juegos, no aprende movimientos nuevos: con Teraorbe puede
+salir **Teraexplosión**, de tipo Normal, que al teracristalizarse pasa a ser de su
+Teratipo. A veces sale un **cristal Astral**,
+más raro y que se va al minuto: cargado, `T` da una ráfaga Astral de 15 s (+50 %
+de daño a todo, más velocidad y recarga, menos daño recibido). El aspecto se hace
+en el juego para cualquier Pokémon a partir de sus sprites (`js/systems/tera.js`,
+sprites en `assets/tera/`).
 
 Las **mejoras** son de cada Pokémon. El **gacha** va con **tickets** que se
 ganan jugando (×1 de algunos Pokémon, ×10 de jefes y legendarios), y se tira
@@ -115,6 +129,7 @@ css/style.css           interfaz estilo Mundo Misterioso
 assets/pokemon/{dex}/   hojas de sprites PMD (Idle, Walk, Attack, Shoot, Charge, Hurt, Faint)
 assets/pokemon/{dex}/s/ las mismas en versión shiny
 assets/fonts/           Pixelify Sans (OFL) y su versión con números redibujados (tools/make_font.py)
+assets/tera/            Teracristalización: coronas (5 vistas por tipo), efectos, cristal y Teraorbe
 js/
   net/      social (apodo, amigos, salas), net (WebRTC + relé),
             coop (partida en grupo), ranking

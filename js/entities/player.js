@@ -78,6 +78,7 @@ G.Player = class Player {
     this.sashT = -999;         // última vez que salvó la Banda Focus
     this.bellHeal = 0;         // curación pendiente del Cascabel Concha
     this.statsTaken = {};      // mejoras de stat cogidas (condición de evolución)
+    this.tera = null;          // { type } al teracristalizarse (systems/tera.js)
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -117,6 +118,7 @@ G.Player = class Player {
     if (this.slots.length >= this.maxMoves || this.hasMove(id)) return false;
     const m = G.Moves.instance(id, 1);
     m.since = G.Game.st.time;          // desde cuándo lo tienes (daño por segundo en el resumen)
+    G.Tera.adapt(this, m);     // Teraexplosión: del Teratipo si ya está teracristalizado
     this.moves.push(m);
     const group = [m];
     this.slots.push(group);
@@ -249,14 +251,15 @@ G.Player = class Player {
     if (!pure) amount *= G.Stats.taken(this.mon, cat);
     let eff = null;
     if (type) {
-      const k = G.Types.mult(type, this.mon.types);
+      // Teracristalizado se defiende con su Teratipo (systems/tera.js).
+      const k = G.Types.mult(type, G.Tera.defTypes(this));
       eff = G.Types.label(k);
       amount *= k * G.Weather.mult(type);
     }
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
-    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
+    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close * G.Tera.takenMul(this));
     this.hp -= d;
     this.invuln = 0.45;
     this.flash = 0.14;
@@ -513,7 +516,8 @@ G.Player = class Player {
       ctx.restore();
     }
 
-    const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
+    // (Mientras se teracristaliza es invulnerable, pero no parpadea.)
+    const alpha = this.invuln > 0 && !this.dead && !G.Tera.busy(this) ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
 
     // Arcos de buff alrededor de los pies.
