@@ -2,7 +2,8 @@
 
 **Estado: paquete preparado; no desplegado ni conectado al juego.** Rama
 `codex/coturn-deployment`. No contrata recursos, no toca DNS y no modifica Firebase.
-El permiso del autor para desplegar y activar el relé sigue pendiente.
+El operador puede desplegarlo y validarlo siguiendo la [guía de Oracle](ORACLE.md).
+La activación en el juego requiere la integración y validación descritas más abajo.
 
 ## Qué incluye
 
@@ -72,7 +73,7 @@ Campos que hay que cambiar:
 - `turnHost`, `apiHost`, `acmeEmail`: nombres reales y correo del operador.
 - `publicIp`: IPv4 pública estable.
 - `localIp`: dirección de la interfaz, comprobada con `ip -4 address`.
-  En un VPS con IP pública directa coincide con `publicIp`. En GCP con NAT suele ser
+  En un VPS con IP pública directa coincide con `publicIp`. En Oracle/GCP con NAT suele ser
   privada: se genera `external-ip=PUBLICA/PRIVADA`. El NAT debe preservar los puertos.
 - `allowedUids`: UID de las cuentas Firebase elegidas para el piloto. Con la lista
   vacía nadie obtiene credenciales, aunque tenga una sesión válida.
@@ -86,7 +87,7 @@ coturn y de la API usan el UID/GID del operador; archivos de secretos en modo 06
 No copiar `.env` de Windows: regenerarlo en Linux. No compartir `runtime/`, `certs/`
 ni `settings.json` en una PR. Respaldarlos solo en almacenamiento privado.
 
-## Arranque, cuando el autor lo autorice
+## Arranque del piloto
 
 ```sh
 docker compose up -d
@@ -130,8 +131,7 @@ debe tener candidato `relay`; recoger solo un candidato no demuestra conectivida
 Probar UDP y TCP por separado, TLS si se habilita, reconexión, dos jugadores ambos
 tras NAT restrictivo, expiración/renovación, límite de cuota y credenciales inválidas.
 Después restaurar `iceTransportPolicy: 'all'`: la conexión directa sigue preferida.
-No ejecutar estas pruebas controlando el escritorio de Aaron; las hará el operador
-o se añadirá un banco automatizado autorizado en la infraestructura de pruebas.
+Registrar los resultados con la lista de aceptación de la guía de Oracle.
 
 ## TLS para TURN, opcional
 
