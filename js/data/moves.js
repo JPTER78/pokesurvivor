@@ -17,6 +17,15 @@
  *   dash        cruzas hacia el enemigo golpeando todo el camino (sin recibir daño)
  *   trail       vas dejando charcos que dañan a lo que los pisa
  *   cone        muchos disparos cortos en abanico (aliento, chorro...)
+ *   ---- desde 2026-10-19 (más ataques por tipo; mismos gráficos) ----
+ *   homing      proyectiles que persiguen al enemigo
+ *   bounce      un proyectil que rebota de enemigo en enemigo `bounce` veces
+ *   charge      se carga `charge` s y sale un rayo enorme
+ *   spin        giras golpeando todo alrededor `count` veces seguidas
+ *   quake       una onda avanza por el suelo en línea: `count` explosiones
+ *   vortex      un remolino atrae a los enemigos a su centro y les va dañando
+ *   shove       onda alrededor que daña y aparta a los enemigos
+ *   stun        zona con aviso que daña y deja aturdidos (quietos) `stun` s
  *
  * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
  *
@@ -112,6 +121,54 @@
       { t: '+40% daño',                     m: { dmg: 1.40 } },
       { t: '+30% alcance',                  m: { life: 1.30 } },
       { t: '+3 disparos y +1 perforación',  m: { count: 3, pierce: 1 } }
+    ],
+    homing: [
+      { t: '+1 proyectil',                  m: { count: 1, spread: 1.3 } },
+      { t: '+45% daño',                     m: { dmg: 1.45 } },
+      { t: '-25% recarga',                  m: { cd: 0.75 } },
+      { t: '+1 proyectil y +40% daño',      m: { count: 1, dmg: 1.40 } }
+    ],
+    bounce: [
+      { t: '+1 rebote',                     m: { bounce: 1 } },
+      { t: '+45% daño',                     m: { dmg: 1.45 } },
+      { t: '-25% recarga',                  m: { cd: 0.75 } },
+      { t: '+1 proyectil y +1 rebote',      m: { count: 1, bounce: 1, spread: 1.3 } }
+    ],
+    charge: [
+      { t: '+45% daño',                     m: { dmg: 1.45 } },
+      { t: '+30% alcance y grosor',         m: { radius: 1.30, width: 1.30 } },
+      { t: 'Carga más rápido y -20% recarga', m: { charge: 0.7, cd: 0.8 } },
+      { t: '+50% daño',                     m: { dmg: 1.50 } }
+    ],
+    spin: [
+      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+25% radio',                    m: { radius: 1.25 } },
+      { t: '+1 vuelta',                     m: { count: 1 } },
+      { t: '-25% recarga y +30% daño',      m: { cd: 0.75, dmg: 1.30 } }
+    ],
+    quake: [
+      { t: '+2 ondas',                      m: { count: 2 } },
+      { t: '+45% daño',                     m: { dmg: 1.45 } },
+      { t: '+25% tamaño',                   m: { radius: 1.25 } },
+      { t: '-25% recarga y +2 ondas',       m: { cd: 0.75, count: 2 } }
+    ],
+    vortex: [
+      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+30% radio',                    m: { radius: 1.30 } },
+      { t: '+50% duración',                 m: { dur: 1.50 } },
+      { t: 'Atrae más fuerte y +40% daño',  m: { pull: 1.40, dmg: 1.40 } }
+    ],
+    shove: [
+      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+25% radio',                    m: { radius: 1.25 } },
+      { t: '-25% recarga',                  m: { cd: 0.75 } },
+      { t: '+50% empuje y +40% daño',       m: { knock: 1.50, dmg: 1.40 } }
+    ],
+    stun: [
+      { t: '+40% daño',                     m: { dmg: 1.40 } },
+      { t: '+25% radio',                    m: { radius: 1.25 } },
+      { t: '+50% aturdimiento',             m: { stun: 1.50 } },
+      { t: '-25% recarga y +30% daño',      m: { cd: 0.75, dmg: 1.30 } }
     ],
     buff: [
       { t: '+1 acumulación máxima',         m: { stacks: 1 } },
@@ -403,7 +460,141 @@
 
     { id: 'hex', name: 'Infortunio', type: 'ghost', kind: 'chain',
       desc: 'Maldición que salta entre enemigos. Mucho más daño si están quemados, envenenados o frenados.',
-      cd: 0.9, dmg: 17, count: 4, radius: 150, hex: 1.7 }
+      cd: 0.9, dmg: 17, count: 4, radius: 150, hex: 1.7 },
+
+    // ================= NUEVOS (19-10-2026): todos los tipos con 5 o más =================
+    // Normal
+    { id: 'hyper-beam', name: 'Hiperrayo', type: 'normal', kind: 'charge',
+      desc: 'Se carga un momento y suelta un rayo enorme que lo atraviesa todo.',
+      cd: 2.2, charge: 0.75, dmg: 58, radius: 300, width: 44 },
+    { id: 'rapid-spin', name: 'Giro Rápido', type: 'normal', kind: 'spin',
+      desc: 'Giras sobre ti mismo golpeando todo lo que te rodea varias veces.',
+      cd: 1.0, dmg: 9, count: 3, radius: 62 },
+    // Fuego
+    { id: 'flame-charge', name: 'Nitrocarga', type: 'fire', kind: 'dash',
+      desc: 'Te lanzas envuelto en llamas y quemas todo el camino.',
+      cd: 0.8, dmg: 19, radius: 115, width: 36, burn: 1 },
+    // Agua
+    { id: 'whirlpool', name: 'Torbellino', type: 'water', kind: 'vortex',
+      desc: 'Un remolino que arrastra a los enemigos a su centro y los va dañando.',
+      cd: 3.0, dmg: 8, radius: 72, dur: 2.6, pull: 150 },
+    // Planta
+    { id: 'seed-bomb', name: 'Bomba Germen', type: 'grass', kind: 'bounce',
+      desc: 'Una semilla que rebota de enemigo en enemigo.',
+      cd: 0.6, dmg: 10, speed: 320, life: 1.6, size: 7, bounce: 3 },
+    { id: 'energy-ball', name: 'Energibola', type: 'grass', kind: 'homing',
+      desc: 'Una bola de energía que persigue al enemigo.',
+      cd: 0.62, dmg: 19, speed: 280, life: 2.0, size: 8, homing: 5 },
+    { id: 'solar-beam', name: 'Rayo Solar', type: 'grass', kind: 'charge',
+      desc: 'Absorbe luz un momento y la suelta en un rayo enorme.',
+      cd: 2.3, charge: 0.85, dmg: 62, radius: 290, width: 40 },
+    // Eléctrico
+    { id: 'thunder-wave', name: 'Onda Trueno', type: 'electric', kind: 'stun',
+      desc: 'Una descarga que avisa en el suelo y deja paralizados a los que pilla.',
+      cd: 1.6, dmg: 22, radius: 58, stun: 1.0 },
+    { id: 'electro-ball', name: 'Bola Voltio', type: 'electric', kind: 'bounce',
+      desc: 'Una bola eléctrica que salta de enemigo en enemigo.',
+      cd: 0.62, dmg: 10, speed: 340, life: 1.6, size: 7, bounce: 3 },
+    // Psíquico
+    { id: 'extrasensory', name: 'Paranormal', type: 'psychic', kind: 'shove',
+      desc: 'Una onda mental que daña y aparta a todos los que tienes cerca.',
+      cd: 1.2, dmg: 16, radius: 92, knock: 320 },
+    { id: 'mist-ball', name: 'Bola Neblina', type: 'psychic', kind: 'homing',
+      desc: 'Una bola de bruma que persigue al enemigo y le frena.',
+      cd: 0.55, dmg: 13, speed: 270, life: 2.0, size: 8, homing: 5, slow: 0.3 },
+    // Veneno
+    { id: 'acid-spray', name: 'Bomba Ácida', type: 'poison', kind: 'bounce',
+      desc: 'Un chorro ácido que salta entre enemigos y los envenena.',
+      cd: 0.66, dmg: 8, speed: 310, life: 1.6, size: 7, bounce: 3, poison: 1 },
+    // Tierra
+    { id: 'sand-tomb', name: 'Bucle Arena', type: 'ground', kind: 'vortex',
+      desc: 'Un remolino de arena que atrapa y arrastra a los enemigos.',
+      cd: 3.0, dmg: 9, radius: 70, dur: 2.6, pull: 140 },
+    { id: 'magnitude', name: 'Magnitud', type: 'ground', kind: 'quake',
+      desc: 'El suelo revienta en línea delante de ti, onda tras onda.',
+      cd: 1.15, dmg: 18, count: 6, radius: 30 },
+    // Volador
+    { id: 'whirlwind', name: 'Remolino', type: 'flying', kind: 'shove',
+      desc: 'Un golpe de viento que barre a todos los que tienes cerca.',
+      cd: 1.1, dmg: 14, radius: 96, knock: 360 },
+    { id: 'air-slash', name: 'Tajo Aéreo', type: 'flying', kind: 'homing',
+      desc: 'Dos cuchillas de aire que buscan al enemigo.',
+      cd: 0.55, dmg: 9, count: 2, spread: 0.35, speed: 330, life: 1.6, size: 7, homing: 4 },
+    // Bicho
+    { id: 'signal-beam', name: 'Rayo Señal', type: 'bug', kind: 'bounce',
+      desc: 'Un destello que rebota entre los enemigos.',
+      cd: 0.6, dmg: 10, speed: 340, life: 1.6, size: 7, bounce: 3 },
+    { id: 'u-turn', name: 'Ida y Vuelta', type: 'bug', kind: 'dash',
+      desc: 'Cruzas entre los enemigos golpeando a todos los del camino.',
+      cd: 0.7, dmg: 17, radius: 120, width: 34 },
+    // Roca
+    { id: 'rock-tomb', name: 'Tumba Rocas', type: 'rock', kind: 'stun',
+      desc: 'Caen rocas donde avisa el suelo y dejan atrapados a los que pilla.',
+      cd: 1.7, dmg: 31, radius: 56, stun: 0.9 },
+    { id: 'ancient-power', name: 'Poder Pasado', type: 'rock', kind: 'orbit',
+      desc: 'Rocas antiguas que giran a tu alrededor.',
+      cd: 0.28, dmg: 13, count: 3, radius: 70, speed: 2.6, size: 9 },
+    { id: 'power-gem', name: 'Joya de Luz', type: 'rock', kind: 'bounce',
+      desc: 'Un destello de gema que rebota de enemigo en enemigo.',
+      cd: 0.66, dmg: 11, speed: 320, life: 1.6, size: 8, bounce: 3 },
+    // Hielo
+    { id: 'ice-shard', name: 'Canto Helado', type: 'ice', kind: 'homing',
+      desc: 'Esquirlas rapidísimas que persiguen al enemigo.',
+      cd: 0.32, dmg: 9, speed: 380, life: 1.5, size: 6, homing: 7 },
+    { id: 'freeze-dry', name: 'Liofilización', type: 'ice', kind: 'stun',
+      desc: 'Un frío repentino que avisa en el suelo y deja congelados a los que pilla.',
+      cd: 1.6, dmg: 24, radius: 60, stun: 1.0 },
+    // Lucha
+    { id: 'rolling-kick', name: 'Patada Giro', type: 'fighting', kind: 'spin',
+      desc: 'Patadas en giro que golpean todo lo que tienes alrededor.',
+      cd: 0.95, dmg: 11, count: 3, radius: 60 },
+    { id: 'vacuum-wave', name: 'Onda Vacío', type: 'fighting', kind: 'shove',
+      desc: 'Un puñetazo al aire que lanza una onda y aparta a los enemigos.',
+      cd: 1.1, dmg: 17, radius: 88, knock: 330 },
+    { id: 'dynamic-punch', name: 'Puño Dinámico', type: 'fighting', kind: 'stun',
+      desc: 'Un puñetazo tremendo donde avisa el suelo: deja aturdidos a los que pilla.',
+      cd: 1.7, dmg: 33, radius: 54, stun: 0.9 },
+    // Fantasma
+    { id: 'shadow-sneak', name: 'Sombra Vil', type: 'ghost', kind: 'homing',
+      desc: 'Una sombra que se escurre por el suelo hasta el enemigo.',
+      cd: 0.45, dmg: 14, speed: 300, life: 1.8, size: 7, homing: 6 },
+    { id: 'ominous-wind', name: 'Viento Aciago', type: 'ghost', kind: 'vortex',
+      desc: 'Un viento maldito que arremolina a los enemigos y los va dañando.',
+      cd: 3.0, dmg: 9, radius: 74, dur: 2.6, pull: 140 },
+    // Dragón
+    { id: 'dragon-breath', name: 'Dragoaliento', type: 'dragon', kind: 'cone',
+      desc: 'Un aliento de dragón en abanico corto que frena.',
+      cd: 0.7, dmg: 7, count: 7, arc: 0.95, speed: 330, life: 0.5, size: 7, slow: 0.25 },
+    { id: 'dragon-claw', name: 'Garra Dragón', type: 'dragon', kind: 'melee',
+      desc: 'Un zarpazo de dragón en arco.',
+      cd: 0.52, dmg: 19, radius: 52, arc: 2.0, knock: 70 },
+    { id: 'outrage', name: 'Enfado', type: 'dragon', kind: 'spin',
+      desc: 'Una furia de golpes en giro que no deja a nadie en pie.',
+      cd: 1.1, dmg: 12, count: 4, radius: 64 },
+    // Hada
+    { id: 'draining-kiss', name: 'Beso Drenaje', type: 'fairy', kind: 'homing',
+      desc: 'Un beso que persigue al enemigo y te cura un poco al darle.',
+      cd: 0.55, dmg: 13, speed: 280, life: 2.0, size: 7, homing: 5, drain: 1 },
+    { id: 'play-rough', name: 'Carantoña', type: 'fairy', kind: 'melee',
+      desc: 'Un ataque juguetón pero muy fuerte en arco.',
+      cd: 0.6, dmg: 22, radius: 50, arc: 2.0, knock: 60 },
+    { id: 'disarming-voice', name: 'Voz Cautivadora', type: 'fairy', kind: 'shove',
+      desc: 'Un grito encantador que daña y aparta a los que tienes cerca.',
+      cd: 1.15, dmg: 15, radius: 94, knock: 300 },
+    // Acero
+    { id: 'mirror-shot', name: 'Disparo Espejo', type: 'steel', kind: 'bounce',
+      desc: 'Un destello metálico que rebota entre los enemigos.',
+      cd: 0.64, dmg: 10, speed: 340, life: 1.6, size: 7, bounce: 3 },
+    { id: 'gyro-ball', name: 'Giro Bola', type: 'steel', kind: 'spin',
+      desc: 'Giras como una bola de acero golpeando todo alrededor.',
+      cd: 1.05, dmg: 12, count: 3, radius: 60 },
+    // Siniestro
+    { id: 'sucker-punch', name: 'Golpe Bajo', type: 'dark', kind: 'homing',
+      desc: 'Un golpe a traición que busca al enemigo.',
+      cd: 0.7, dmg: 22, speed: 330, life: 1.6, size: 7, homing: 6 },
+    { id: 'night-slash', name: 'Tajo Umbrío', type: 'dark', kind: 'spin',
+      desc: 'Cortes en giro que alcanzan a todo lo que te rodea.',
+      cd: 1.0, dmg: 11, count: 3, radius: 62 }
   ];
 
   // Cuerpo a cuerpo (12-10-2026): +20 % de daño y +25 % de alcance y de arco
@@ -428,7 +619,11 @@
    */
   const PHYSICAL = new Set(['tackle', 'quick-attack', 'vine-whip', 'razor-leaf', 'wing-attack', 'body-slam', 'poison-sting',
     'bulldoze', 'bug-bite', 'string-shot', 'rock-throw', 'rock-slide', 'karate-chop', 'lick', 'metal-claw', 'bite',
-    'bonemerang', 'psycho-cut', 'spikes', 'toxic-spikes', 'meteor-mash', 'substitute', 'aerial-ace', 'flame-wheel']);
+    'bonemerang', 'psycho-cut', 'spikes', 'toxic-spikes', 'meteor-mash', 'substitute', 'aerial-ace', 'flame-wheel',
+    // nuevos del 19-10-2026
+    'rapid-spin', 'flame-charge', 'seed-bomb', 'sand-tomb', 'magnitude', 'u-turn', 'rock-tomb', 'ice-shard',
+    'rolling-kick', 'dynamic-punch', 'shadow-sneak', 'dragon-claw', 'outrage', 'play-rough', 'gyro-ball',
+    'sucker-punch', 'night-slash']);
 
   const BY_ID = {};
   for (const m of RAW) {
@@ -457,8 +652,9 @@
     return s;
   }
 
-  const MULT = ['dmg', 'cd', 'speed', 'radius', 'dur', 'amount', 'arc', 'width', 'spread', 'life', 'size', 'rate'];
-  const ADD = ['count', 'pierce', 'stacks'];
+  const MULT = ['dmg', 'cd', 'speed', 'radius', 'dur', 'amount', 'arc', 'width', 'spread', 'life', 'size', 'rate',
+                'pull', 'knock', 'stun', 'charge'];
+  const ADD = ['count', 'pierce', 'stacks', 'bounce'];
 
   function applyMods(s, m) {
     for (const k in m) {
@@ -533,7 +729,27 @@
     'hail': ['Alud', 'cd'],                  'meteor-mash': ['Bomba Imán', 'atk'],
     'will-o-wisp': ['Infierno', 'cd'],       'substitute': ['Doble Equipo', 'def'],
     'aerial-ace': ['Acróbata', 'spd'],       'flame-wheel': ['Envite Ígneo', 'spd'],
-    'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag']
+    'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag'],
+    // nuevos del 19-10-2026
+    'hyper-beam': ['Rayo Prisma', 'atk'],    'rapid-spin': ['Triataque', 'spd'],
+    'flame-charge': ['Golpe Calor', 'spd'],  'whirlpool': ['Salmuera', 'rgn'],
+    'seed-bomb': ['Mazazo', 'atk'],          'energy-ball': ['Gigadrenado', 'rgn'],
+    'solar-beam': ['Cuchilla Solar', 'cd'],  'thunder-wave': ['Voltio Cruel', 'atk'],
+    'electro-ball': ['Chispa', 'spd'],       'extrasensory': ['Psicoonda', 'def'],
+    'mist-ball': ['Resplandor', 'cd'],       'acid-spray': ['Onda Tóxica', 'rgn'],
+    'sand-tomb': ['Fuerza Equina', 'hp'],    'magnitude': ['Taladradora', 'atk'],
+    'whirlwind': ['Huracán', 'spd'],         'air-slash': ['Ataque Aéreo', 'cd'],
+    'signal-beam': ['Megacuerno', 'atk'],    'u-turn': ['Sanguijuela', 'rgn'],
+    'rock-tomb': ['Testarazo', 'hp'],        'ancient-power': ['Tormenta de Diamantes', 'def'],
+    'power-gem': ['Rayo Meteórico', 'atk'],  'ice-shard': ['Carámbano', 'cd'],
+    'freeze-dry': ['Frío Polar', 'atk'],     'rolling-kick': ['Patada Salto Alta', 'spd'],
+    'vacuum-wave': ['Puño Incremento', 'def'], 'dynamic-punch': ['Megapuño', 'atk'],
+    'shadow-sneak': ['Garra Umbría', 'cd'],  'ominous-wind': ['Golpe Umbrío', 'mag'],
+    'dragon-breath': ['Pulso Dragón', 'atk'], 'dragon-claw': ['Carga Dragón', 'atk'],
+    'outrage': ['Dracoflecha', 'hp'],        'draining-kiss': ['Luz Lunar', 'rgn'],
+    'play-rough': ['Choque Anímico', 'atk'], 'disarming-voice': ['Encanto', 'def'],
+    'mirror-shot': ['Metaláser', 'atk'],     'gyro-ball': ['Cuerpo Pesado', 'def'],
+    'sucker-punch': ['Juego Sucio', 'atk'],  'night-slash': ['Lariat Oscuro', 'spd']
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {
@@ -550,7 +766,15 @@
     turret:     { t: '×1,8 daño, +1 a la vez y dispara más rápido', m: { dmg: 1.8, count: 1, rate: 0.8 } },
     dash:       { t: '×1,9 daño, más distancia y menos recarga', m: { dmg: 1.9, radius: 1.25, cd: 0.8 } },
     trail:      { t: '×1,8 daño, charcos más grandes y duraderos', m: { dmg: 1.8, radius: 1.25, dur: 1.3 } },
-    cone:       { t: '×1,7 daño, +4 disparos y +1 perforación', m: { dmg: 1.7, count: 4, pierce: 1 } }
+    cone:       { t: '×1,7 daño, +4 disparos y +1 perforación', m: { dmg: 1.7, count: 4, pierce: 1 } },
+    homing:     { t: '×1,8 daño, +2 proyectiles y más grandes', m: { dmg: 1.8, count: 2, size: 1.3, spread: 1.2 } },
+    bounce:     { t: '×1,8 daño, +2 rebotes y +1 proyectil', m: { dmg: 1.8, bounce: 2, count: 1, spread: 1.3 } },
+    charge:     { t: '×1,8 daño, rayo un 50% más grueso y carga más rápido', m: { dmg: 1.8, width: 1.5, charge: 0.7 } },
+    spin:       { t: '×1,8 daño, +1 vuelta y más radio', m: { dmg: 1.8, count: 1, radius: 1.2 } },
+    quake:      { t: '×1,8 daño, +3 ondas y ondas más grandes', m: { dmg: 1.8, count: 3, radius: 1.25 } },
+    vortex:     { t: '×1,8 daño, más radio y atrae más fuerte', m: { dmg: 1.8, radius: 1.3, pull: 1.4 } },
+    shove:      { t: '×1,8 daño, más radio y empuja más', m: { dmg: 1.8, radius: 1.25, knock: 1.4 } },
+    stun:       { t: '×1,8 daño, más radio y aturde más rato', m: { dmg: 1.8, radius: 1.3, stun: 1.4 } }
   };
 
   /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */

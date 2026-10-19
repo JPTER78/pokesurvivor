@@ -163,6 +163,12 @@
       G.Audio.sfx('hit');
     }
 
+    /** Aturdido: se queda quieto y no ataca `dur` s (Onda Trueno, Tumba Rocas...). */
+    applyStun(dur) {
+      if (this.remote) { G.Coop.status(this, 't', dur); return; }
+      this.stunT = Math.max(this.stunT || 0, dur);
+    }
+
     applySlow(factor, dur = 1.2) {
       if (this.remote) { G.Coop.status(this, 's', factor); return; }
       this.slow = Math.max(this.slow, factor);
@@ -301,6 +307,8 @@
           if (this.dead) return;
         } else if (le.slow) terrainMul = le.slow < 0.5 ? 0.45 : 0.55;
       }
+
+      if (this.stunT > 0) { this.stunT -= dt; this.anim.loop('Idle'); return; }
 
       const spd = this.spd * (1 - this.slow) * terrainMul * G.Weather.speedFor(this.types);
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
@@ -734,6 +742,14 @@
       ctx.restore();
 
       if (this.dead) return;
+      // Aturdido: estrellitas girando sobre la cabeza.
+      if (this.stunT > 0) {
+        const now = performance.now() / 1000;
+        for (let i = 0; i < 3; i++) {
+          const a = now * 5 + i * 2.094;
+          G.VFX.draw(ctx, 'star', 'electric', this.x + Math.cos(a) * 9, this.y - lift - this.bodyH - 6 + Math.sin(a) * 3, { scale: 0.6 });
+        }
+      }
 
       // Escudo: burbuja azul.
       if (this.shield > 0 || (this.net && this.net.st & 4)) {

@@ -39,10 +39,31 @@ G.STARTERS = [
 G.STARTER_BY = {};
 for (const s of G.STARTERS) G.STARTER_BY[s.dex] = s;
 
-/** Movimiento inicial de cualquier Pokémon (starter o del gacha). */
-G.startMoveOf = dex => {
+/** Movimiento inicial de serie de cualquier Pokémon (starter o del gacha). */
+G.baseStartOf = dex => {
   const s = G.STARTER_BY[dex];
   return s ? s.start : G.Moves.startFor(G.DEX_BY[dex]);
+};
+
+/**
+ * Ataques que se pueden elegir para empezar (Mejoras → Movimiento inicial): los suyos, sin potenciadores,
+ * y siempre el de serie (aunque no sea de su tipo, como Confusión en Psyduck), para poder volver a él.
+ */
+G.startChoices = dex => {
+  const ids = G.Moves.poolFor(G.DEX_BY[dex]).filter(id => G.Moves.BY_ID[id].kind !== 'buff');
+  const base = G.baseStartOf(dex);
+  if (!ids.includes(base)) ids.push(base);
+  return ids;
+};
+
+/**
+ * Movimiento con el que empieza: el elegido con la mejora Movimiento inicial
+ * (si la tiene comprada para ese Pokémon y sigue siendo de los suyos) o el de serie.
+ */
+G.startMoveOf = dex => {
+  const s = G.DB && G.DB.save, pick = s && s.pstart && s.pstart[dex];
+  if (pick && s.pupg && s.pupg[dex] && s.pupg[dex].start && G.startChoices(dex).includes(pick)) return pick;
+  return G.baseStartOf(dex);
 };
 
 /** Descripción corta de cada rasgo, para la pantalla de resultado. */

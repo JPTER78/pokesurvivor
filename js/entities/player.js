@@ -98,8 +98,11 @@ G.Player = class Player {
    */
   atkFor(m) {
     const cat = m && m.cat, b = cat === 'physical' ? this.buffs.patk : cat === 'special' ? this.buffs.satk : null;
-    return this.atk * G.Stats.fit(this.mon, cat) * (b ? 1 + b.n * b.amount : 1);
+    return this.atk * G.Stats.fit(this.mon, cat) * (b ? 1 + b.n * b.amount : 1) * (m && this.monoType(m.type) ? Player.MONO_K : 1);
   }
+  /** Monotipo (19-10-2026): los de un solo tipo pegan un +20 % con los ataques de su tipo (tienen menos variedad). */
+  static get MONO_K() { return 1.2; }
+  monoType(type) { return this.mon.types.length === 1 && type === this.mon.types[0]; }
   get spd() {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
     const w = G.Weather.speedFor(this.mon.types);
@@ -118,8 +121,9 @@ G.Player = class Player {
     const group = [m];
     this.slots.push(group);
     this.arrange();
-    // Se cambia al nuevo, salvo si estás usando un vínculo (no te quita el grupo).
-    if (!(this.slots[this.active] && this.slots[this.active].length > 1)) this.setActive(this.slots.indexOf(group));
+    // Te quedas con el que llevabas (18-10-2026: antes se cambiaba solo al nuevo
+    // y te quitaba el ataque que estabas usando). Sólo si no tenías ninguno, el nuevo.
+    if (!this.slots[this.active]) this.active = this.slots.indexOf(group);
     return true;
   }
 

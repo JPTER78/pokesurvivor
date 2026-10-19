@@ -83,6 +83,7 @@ G.DB = (() => {
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
       dfav: {},               // dex -> fecha: favorito de la colección (negativa = quitado entonces)
       pused: {},              // dex -> partidas jugadas con él (orden "más usados")
+      pstart: {},             // dex -> movimiento inicial elegido (Mejoras → Movimiento inicial)
       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
       pity: {},               // generación del banner -> tiradas sin ★5
       legends: {},            // dex -> fecha: legendarios vencidos en grietas
@@ -144,6 +145,10 @@ G.DB = (() => {
     for (const coll of ['dfav', 'pused']) {
       if (!isObj(s[coll])) { s[coll] = {}; continue; }
       for (const d of Object.keys(s[coll])) if (!Number.isFinite(+s[coll][d])) delete s[coll][d];
+    }
+    if (!isObj(s.pstart)) s.pstart = {};
+    for (const d of Object.keys(s.pstart)) {
+      if (typeof s.pstart[d] !== 'string' || (G.DEX_BY && !G.DEX_BY[d]) || (G.Moves && !G.Moves.BY_ID[s.pstart[d]])) delete s.pstart[d];
     }
     // Atajos: 4 huecos con un movimiento que exista (o null), sin repetir.
     if (s.pbind && typeof s.pbind === 'object') {
@@ -270,6 +275,9 @@ G.DB = (() => {
     for (const d in older.dfav || {}) if (Math.abs(+older.dfav[d] || 0) > Math.abs(+r.dfav[d] || 0)) r.dfav[d] = older.dfav[d];
     r.pused = r.pused || {};
     for (const d in older.pused || {}) r.pused[d] = Math.max(+r.pused[d] || 0, +older.pused[d] || 0);
+    // Movimiento inicial: el de la versión más reciente; si no lo tenía elegido, el de la otra.
+    r.pstart = r.pstart || {};
+    for (const d in older.pstart || {}) if (!(d in r.pstart)) r.pstart[d] = older.pstart[d];
     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
       r[coll] = r[coll] || {};
