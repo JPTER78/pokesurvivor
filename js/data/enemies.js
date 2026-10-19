@@ -223,8 +223,19 @@ G.Enemies = (() => {
     return out;
   }
 
+  /**
+   * Un Pokémon cualquiera con la plantilla del tramo del segundo `t` (las
+   * apariciones de talla, systems/spawner.js): tan duro como lo que sale ahora.
+   * Los que explotan, aquí no (se derrotarían solos y te darían la talla).
+   */
+  function defAt(p, t) {
+    const ti = tierAt(t), d = defFor(p, TIERS[ti], ti);
+    if (d.behavior === 'bomber') d.behavior = 'chase';
+    return d;
+  }
+
   return {
-    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs, defAt,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

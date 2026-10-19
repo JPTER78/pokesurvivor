@@ -758,5 +758,18 @@ G.I18n.add({
   'Tu mejor puesto: {x}': 'Your best rank: {x}',
   'Aún no estás en el top 50. Tu puesto está en Histórico.': 'You are not in the top 50 yet. Your rank is in All-time.',
   'Aún no tienes marca.': 'You do not have a record yet.',
-  'Folagor, Sekiam, PokeAlex: ¿un hueco?': 'Folagor, Sekiam, PokeAlex: room for one more?'
+  'Folagor, Sekiam, PokeAlex: ¿un hueco?': 'Folagor, Sekiam, PokeAlex: room for one more?',
+
+  // ---------------- tallas XS-XL (2026-10-14) ----------------
+  // (después de '¡Un {x} shiny anda cerca!', que es más concreta)
+  '¡Un {x} anda cerca!': 'A {x} is nearby!', '¡{x} se une a tu colección!': '{x} joins your collection!',
+  'Ya tenías a {x}': 'You already had {x}', 'Tallas conseguidas': 'Sizes obtained', '· ¡nueva!': '· new!',
+  '· Tallas: {x}': '· Sizes: {x}',
+  'Consigue más tallas derrotando a sus versiones con aura azul o roja en las partidas.': 'Get more sizes by defeating its versions with a blue or red aura in your runs.',
+  'Más pequeño: más rápido y más difícil de golpear, pero con menos vida.': 'Smaller: faster and harder to hit, but with less HP.',
+  'Más grande: más vida y pega más fuerte, pero más lento y más fácil de golpear.': 'Bigger: more HP and hits harder, but slower and easier to hit.',
+  'Otra talla': 'Another size', 'Consigue 1 talla.': 'Get 1 size.', 'Probador': 'Fitting room', 'Consigue 25 tallas.': 'Get 25 sizes.',
+  'Sastre': 'Tailor', 'Consigue 100 tallas.': 'Get 100 sizes.', 'Maestro sastre': 'Master tailor', 'Consigue 500 tallas.': 'Get 500 sizes.',
+  'De la XS a la XL': 'From XS to XL', 'Consigue las cinco tallas de un Pokémon.': 'Get all five sizes of one Pokémon.',
+  'Consigue una talla XS.': 'Get an XS size.', 'Consigue una talla XL.': 'Get an XL size.'
 });

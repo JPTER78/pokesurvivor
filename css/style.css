@@ -491,6 +491,13 @@ img.pix { image-rendering: pixelated; image-rendering: crisp-edges; vertical-ali
   padding: 5px 14px; font-size: 14px; display: flex; gap: 5px; align-items: center;
   text-shadow: 2px 2px 0 var(--shadow); }
 .seg button.on { background: rgba(154,230,255,.22); color: #c9f3ff; }
+.seg-size button { padding: 4px 10px; font-size: 13px; font-weight: 700; }
+.seg-size button.on { background: rgba(255,210,63,.2); color: var(--gold); }
+.seg-size button.miss { opacity: .35; cursor: default; }
+/* Talla (XS-XL): etiqueta azul los pequeños, roja los grandes */
+.size-badge { display: inline-block; padding: 0 5px; border-radius: 5px; font-size: .62em; font-weight: 800;
+  line-height: 1.5; vertical-align: middle; color: #fff; background: #ff5a4a; text-shadow: none; }
+.size-badge.small { background: #4fa8ff; }
 .pcard.shiny { animation: pop .3s ease-out both, legend 1.1s ease-in-out infinite alternate; }
 .caught > span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .caught-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }

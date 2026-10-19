@@ -7,20 +7,29 @@ G.Player = class Player {
   /**
    * @param mon   entrada de G.DEX
    * @param perks mejoras permanentes ya resueltas (ver data/upgrades.js)
+   * @param size  talla (data/sizes.js): 'xs' | 's' | 'm' | 'l' | 'xl'
    */
-  constructor(mon, perks = {}, shiny = false) {
+  constructor(mon, perks = {}, shiny = false, size = 'm') {
     this.mon = mon;
     this.dex = mon.dex;
     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
+    // Talla: cambia el tamaño (sprite y zona de golpe) y un poco la vida, el
+    // ataque, la velocidad y el daño que recibes. Con el terreno se choca
+    // siempre con el tamaño de la M (wallR): lo grande cabe por donde cabe ella.
+    this.size = G.Sizes.BY[size] && G.Sizes.can(mon.dex) ? size : 'm';
+    const z = this.sz = G.Sizes.BY[this.size];
     // Los grandes, algo más pequeños y con el choque de uno normal (ver sprites.js).
-    this.scale = G.Sprites.playerScale(mon.dex);
+    this.scale = G.Sprites.playerScale(mon.dex) * z.scale;
     this.anim = new G.Sprites.Animator(mon.dex, this.scale, this.shiny);
     this.x = 0; this.y = 0;
-    this.r = G.Sprites.playerRadius(mon.dex);
+    this.r = G.Sprites.playerRadius(mon.dex) * z.scale;
+    this.wallR = G.Sprites.playerRadius(mon.dex);
     this.bodyH = G.Sprites.bodyHeight(mon.dex, this.scale);
 
     this.atkMul = perks.atkMul || 1;
     this.spdMul = perks.spdMul || 1;
+    this.perkSpd = perks.spdMul || 1;    // Zancada y objeto: para el tope de velocidad de las tallas
+    this.itemSpd = 1;
     this.cdMul = perks.cdMul || 1;
     this.dmgReduce = perks.dmgReduce || 0;
     this.regenFlat = perks.regen || 0;
@@ -28,10 +37,10 @@ G.Player = class Player {
     this.xpMul = perks.xpMul || 1;
     this.coinMul = perks.coinMul || 1;
 
-    this.maxHp = mon.hp + (perks.hp || 0);
+    this.maxHp = (mon.hp + (perks.hp || 0)) * z.hp;
     this.hp = this.maxHp;
-    this.baseSpd = mon.spd;
-    this.baseAtk = mon.atk;
+    this.baseSpd = mon.spd * z.spd;
+    this.baseAtk = mon.atk * z.atk;
 
     this.moves = [];           // todos los movimientos aprendidos
     this.slots = [];           // huecos: cada uno, una lista de movimientos que se lanzan a la vez
@@ -88,6 +97,13 @@ G.Player = class Player {
     return Math.floor((8 + level * 6 + Math.pow(level, 1.75) * 1.6) * 4);
   }
 
+  /**
+   * Tope de velocidad de las tallas: talla × Zancada × objeto, como mucho ×1,8.
+   * La M llega como mucho a ×1,67 (1,24 × 1,35), así que no cambia nada; una XS
+   * con todo pasaría de ×1,96. Cartas de nivel, altares y buffs van aparte, como siempre.
+   */
+  static get SPD_CAP() { return 1.8; }
+
   cy() { return this.y; }
 
   // ---------------- stats efectivos ----------------
@@ -104,7 +120,9 @@ G.Player = class Player {
   static get MONO_K() { return 1.2; }
   monoType(type) { return this.mon.types.length === 1 && type === this.mon.types[0]; }
   get spd() {
-    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
+    const gear = this.sz.spd * this.perkSpd * this.itemSpd;
+    const cap = gear > Player.SPD_CAP ? Player.SPD_CAP / gear : 1;
+    const s = this.baseSpd * this.spdMul * cap * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
     const w = G.Weather.speedFor(this.mon.types);
     const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return G.Judgment && G.Judgment.active ? G.Judgment.capSpd(s * slow * w) : s * slow * w;
@@ -256,7 +274,8 @@ G.Player = class Player {
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
-    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
+    // Talla: los pequeños reciben un poco más de daño y los grandes un poco menos.
+    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close * this.sz.taken);
     this.hp -= d;
     this.invuln = 0.45;
     this.flash = 0.14;
@@ -309,7 +328,9 @@ G.Player = class Player {
   equip(id) {
     if (this.item) G.Items.BY[this.item].off(this);
     this.item = id;
+    const s0 = this.spdMul;
     if (id) G.Items.BY[id].on(this);
+    this.itemSpd = this.spdMul / s0;    // lo que sube la velocidad (Pañuelo Elección), para el tope de las tallas
   }
 
   /** Cascabel Concha: un poco de vida por el daño que haces (tope 4/s). */

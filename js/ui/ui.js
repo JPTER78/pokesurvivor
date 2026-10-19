@@ -212,7 +212,8 @@ G.UI = (() => {
    *                   Pokémon de una vista salen con el mismo píxel, aunque
    *                   los gigantes no quepan enteros
    *         hero      vista de un solo Pokémon: puede reducir la escala para
-   *                   que quepa, porque ahí no se compara con nada }
+   *                   que quepa, porque ahí no se compara con nada
+   *         size      talla (data/sizes.js): se dibuja más grande o más pequeño }
    */
   function sprite(cv, dex, opts = {}) {
     const prev = byCanvas.get(cv);
@@ -253,6 +254,8 @@ G.UI = (() => {
       const ay = m ? m.ay : 24;
       let k = s.opts.scale || 2;
       if (s.opts.hero) k = Math.max(1, Math.min(k, Math.floor(cv.height * 0.8 / ay)));
+      // La talla, sobre la escala de la M (así se ve la diferencia entre tallas).
+      if (s.opts.size && G.Sizes.BY[s.opts.size]) k *= G.Sizes.BY[s.opts.size].scale;
       s.a.scale = k / G.Sprites.PX;
       // Si no cabe de pie, se centra el cuerpo en el recuadro.
       const big = ay * k > cv.height * 0.8;

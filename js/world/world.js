@@ -287,9 +287,11 @@ G.World = (() => {
   /**
    * Empuja un círculo fuera de paredes y objetos sólidos (deslizando).
    * Devuelve true si ha chocado con algo.
+   * Usa e.wallR si lo tiene: las tallas grandes chocan con el terreno con el
+   * tamaño de la M, así caben por donde cabe ella (#9, #34).
    */
   function collide(e) {
-    const r = e.r;
+    const r = e.wallR || e.r;
     let hit = false;
     for (let pass = 0; pass < 2; pass++) {
       const t0x = tileOf(e.x - r), t1x = tileOf(e.x + r), t0y = tileOf(e.y - r), t1y = tileOf(e.y + r);

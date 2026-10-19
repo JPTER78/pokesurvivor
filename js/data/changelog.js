@@ -6,6 +6,16 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-20', title: ['Tallas', 'Sizes'], new: [
+    ['Tallas: cada Pokémon (menos los legendarios y singulares) puede ser XS, S, M, L o XL. Los pequeños son más rápidos y más difíciles de golpear, pero tienen menos vida; los grandes tienen más vida y pegan algo más, pero son más lentos y más fáciles de golpear. La M es la de siempre, y los grandes caben por los mismos sitios que ella.',
+     'Sizes: every Pokémon (except legendaries and mythicals) can be XS, S, M, L or XL. Small ones are faster and harder to hit, but have less HP; big ones have more HP and hit a bit harder, but are slower and easier to hit. M is the one you already had, and big ones fit through the same gaps as M.'],
+    ['Más o menos cada 5 minutos de partida sale uno de tus Pokémon con una talla que te falta (primero tu compañero), con un aura azul o roja y una flecha en el borde de la pantalla. Derrótalo y esa talla pasa a tu colección.',
+     'About every 5 minutes of a run, one of your Pokémon shows up in a size you are missing (your partner first), with a blue or red aura and an arrow at the edge of the screen. Defeat it and that size joins your collection.'],
+    ['Elige la talla de tu compañero en su ficha de la colección o debajo de él en el menú principal. La colección cuenta tus tallas, y hay logros nuevos con los títulos «Mini» y «Jumbo».',
+     'Pick your partner\'s size on its collection page or under it in the main menu. The collection counts your sizes, and there are new achievements with the titles "Mini" and "Jumbo".'],
+    ['En grupo también: cuando cae uno con talla, se la queda cada jugador que tenga ese Pokémon.',
+     'In co-op too: when a sized one is defeated, every player who owns that Pokémon gets the size.']
+  ] },
   { d: '2026-10-19', title: ['38 ataques nuevos', '38 new moves'], new: [
     ['38 ataques nuevos: ahora todos los tipos tienen 5 o más (Roca, Lucha, Dragón y Hada tenían sólo 2). Entre ellos Hiperrayo, Rayo Solar, Magnitud, Torbellino, Onda Trueno, Enfado, Carantoña, Golpe Bajo... cada uno con su evolución.',
      '38 new moves: every type now has 5 or more (Rock, Fighting, Dragon and Fairy had only 2). Among them Hyper Beam, Solar Beam, Magnitude, Whirlpool, Thunder Wave, Outrage, Play Rough, Sucker Punch... each with its evolution.'],
