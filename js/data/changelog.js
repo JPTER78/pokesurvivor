@@ -14,7 +14,9 @@ G.CHANGELOG = [
     ['Mejora nueva, Movimiento inicial: se compra una vez por Pokémon y luego eliges gratis con qué ataque empieza la partida.',
      'New upgrade, Starting move: buy it once per Pokémon and then choose for free which move it starts the run with.'],
     ['Idiomas nuevos: francés, italiano, portugués de Brasil, chino simplificado y chino tradicional, en Ajustes > Gráficos > Idioma. Gracias a quienes los tradujeron.',
-     'New languages: French, Italian, Brazilian Portuguese, Simplified Chinese and Traditional Chinese, in Settings > Graphics > Language. Thanks to everyone who translated them.']
+     'New languages: French, Italian, Brazilian Portuguese, Simplified Chinese and Traditional Chinese, in Settings > Graphics > Language. Thanks to everyone who translated them.'],
+    ['Cooperativo: al caer, la cámara sigue a un compañero en pie para que veas la partida mientras te levantan. Cambia de compañero con ← → (o tocando las flechas) y vuelve a tu Pokémon con Espacio (o tocando el nombre). Una flecha te indica dónde está tu Pokémon.',
+     'Co-op: when you go down, the camera follows a teammate who is still standing so you can watch the game while they revive you. Switch teammate with ← → (or by tapping the arrows) and go back to your Pokémon with Space (or by tapping the name). An arrow shows where your Pokémon is.']
   ], chg: [
     ['Los Pokémon de un solo tipo pegan un 20 % más con los ataques de su tipo, para compensar que tienen menos variedad.',
      'Single-type Pokémon deal 20% more damage with moves of their type, to make up for having less variety.'],

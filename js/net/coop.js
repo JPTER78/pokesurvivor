@@ -134,12 +134,22 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq];
+            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq, r1(G.Camera.x), r1(G.Camera.y)];
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], ch: a[13], ld: a[14] };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], ch: a[13], ld: a[14], cx: a[15], cy: a[16] };
+  }
+
+  /**
+   * Anfitrión: dónde mira un invitado. Caído puede estar viendo a otro
+   * compañero (espectador), y los enemigos se le mandan alrededor de su
+   * cámara, no de su Pokémon. Versiones viejas no la mandan: su Pokémon.
+   */
+  function viewOf(m) {
+    const n = m.pl.net;
+    return n && n.cx !== undefined ? { x: n.cx, y: n.cy } : m.pl;
   }
 
   // ---------------- envío ----------------
@@ -154,7 +164,8 @@ G.Coop = (() => {
   function emitNear(ev, x, y, except) {
     for (const m of mates.values()) {
       if (!m.connected || m.uid === except) continue;
-      if (G.U.dist2(m.pl.x, m.pl.y, x, y) > 700 * 700) continue;
+      const v = viewOf(m);
+      if (G.U.dist2(v.x, v.y, x, y) > 700 * 700) continue;
       if (m.q.length > 400) continue;
       m.q.push(ev);
     }
@@ -180,7 +191,7 @@ G.Coop = (() => {
     }
     const ev = m.q; m.q = [];
     const f = { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
-                p, e: enemyList(m.pl), ev };
+                p, e: enemyList(viewOf(m)), ev };
     const ja = G.Judgment.netState();       // Arceus en la Sentencia
     if (ja) f.ja = ja;
     // Siempre: quién está eligiendo y, si hay cartas de nivel, cuáles (ver arriba).

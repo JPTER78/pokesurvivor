@@ -155,6 +155,7 @@ G.Game = (() => {
     // Para el ranking: el servidor apunta cuándo empieza la partida (anti-trampas).
     if (!coop || G.Coop.isHost) G.Ranking.runStarted(coop ? 'g' : 's');
     deathT = 0;
+    watch = null; watchT = 0; watchSelf = false;
 
     state = 'playing';
   }
@@ -569,6 +570,13 @@ G.Game = (() => {
     }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
+    // Caído en grupo: ← → (A D, Q E) cambian de compañero; Espacio, a ti y vuelta.
+    if (G.Coop.active && pl.dead && !G.Rift.inArena) {
+      if (['keya', 'arrowleft', 'keyq'].some(k => G.Input.tap(k))) watchStep(-1);
+      if (['keyd', 'arrowright', 'keye', 'tab'].some(k => G.Input.tap(k))) watchStep(1);
+      if (G.Input.tap('space')) watchToggle();
+      return;
+    }
     for (let i = 0; i < 4; i++) {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
     }
@@ -669,7 +677,9 @@ G.Game = (() => {
       for (const p of G.Coop.puppets()) { p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time); }
       if (pl.dead) reviveTick(dt);
     }
-    G.Camera.follow(pl.x, pl.y, dt);
+    spectate(dt);
+    const fo = watch || pl;
+    G.Camera.follow(fo.x, fo.y, dt);
     G.World.update(dt, G.Camera);
 
     const all = everyone();
@@ -701,6 +711,34 @@ G.Game = (() => {
     const helper = G.Coop.puppets().some(p => !p.dead && G.U.dist2(p.x, p.y, pl.x, pl.y) < 56 * 56);
     pl.reviveT = helper ? (pl.reviveT || 0) + dt : Math.max(0, (pl.reviveT || 0) - dt * 0.5);
     if (pl.reviveT >= G.Player.REVIVE_TIME) pl.revive(0.5);
+  }
+
+  // ---------------- espectador (cooperativo) ----------------
+  // Caído en grupo, la cámara sigue a un compañero en pie (tras ver tu Faint).
+  // Si cae o se va, pasa al siguiente; al levantarte vuelve a ti.
+  let watch = null, watchT = 0, watchSelf = false;
+
+  function standing() { return G.Coop.puppets().filter(p => !p.dead); }
+
+  function spectate(dt) {
+    if (!G.Coop.active || !pl.dead || G.Rift.inArena) { watch = null; watchT = 0; watchSelf = false; return; }
+    watchT += dt;
+    const up = standing();
+    if (watchT < 1 || watchSelf || !up.length) { watch = null; return; }
+    if (!up.includes(watch)) watch = up[0];
+  }
+
+  function watchStep(d) {
+    const up = standing();
+    if (!up.length) return;
+    const i = up.indexOf(watch);
+    watch = i < 0 ? up[d > 0 ? 0 : up.length - 1] : up[(i + d + up.length) % up.length];
+    watchSelf = false; watchT = Math.max(watchT, 1);
+    G.Audio.sfx('click');
+  }
+
+  function watchToggle() {
+    if (watch) { watchSelf = true; watch = null; } else watchStep(1);
   }
 
   /** Anfitrión: si caéis todos, se acaba (tras ver caer al último). */
@@ -922,6 +960,8 @@ G.Game = (() => {
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
     debugLevelUp() { tampered = true; pl.level++; pendingLevels++; },
     toUI() { state = 'ui'; if (cv) cv.style.cursor = ''; Backdrop.restore(); },
+    /** Caído en grupo: a quién sigue la cámara (null = a ti) y para cambiarlo (HUD táctil). */
+    get watching() { return watch; }, watchStep, watchToggle,
     get state() { return state; }, get player() { return pl; }, st
   };
 })();

@@ -396,10 +396,10 @@ G.HUD = (() => {
    * - Vida de cada compañero debajo de la tuya.
    * - Flecha en el borde de la pantalla hacia los que no se ven, con su nombre
    *   y a cuántos metros están (roja y parpadeando si está caído).
-   * - Si has caído tú: aviso y barra de "te están levantando".
+   * - Si has caído tú: aviso y barra de "te están levantando", y el panel de
+   *   espectador (a quién sigue la cámara) con una flecha hacia tu Pokémon.
    */
   function drawCoop(ctx, w, h, pl, px, top) {
-    const cam = G.Camera;
     const t = performance.now() / 1000;
     let y = top;
     ctx.textAlign = 'left';
@@ -423,55 +423,112 @@ G.HUD = (() => {
     for (const m of G.Coop.mates) {
       if (!m.connected) continue;
       const o = m.pl;
-      const sx = (o.x - cam.left()) * cam.scale, sy = (o.y - o.bodyH * 0.5 - cam.top()) * cam.scale;
-      if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
-      const M = 42;
-      const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
-      const a = Math.atan2(sy - ey, sx - ex);
       const metres = Math.round(G.U.dist(pl.x, pl.y, o.x, o.y) / 32);
       const col = o.dead ? (Math.sin(t * 8) > 0 ? '#ff5f6d' : '#ffd0d5') : m.color;
-      ctx.save();
-      ctx.translate(ex, ey);
-      // Flecha
-      ctx.fillStyle = 'rgba(0,0,0,.55)';
-      ctx.beginPath(); ctx.arc(0, 0, 17, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = col;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a) * 28, Math.sin(a) * 28);
-      ctx.lineTo(Math.cos(a + 2.4) * 14, Math.sin(a + 2.4) * 14);
-      ctx.lineTo(Math.cos(a - 2.4) * 14, Math.sin(a - 2.4) * 14);
-      ctx.closePath(); ctx.fill();
-      // Inicial del compañero dentro del círculo
-      ctx.font = F(800, 14);
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#fff';
-      G.I18n.rawCanvas(ctx, 'fillText', m.name.charAt(0).toUpperCase(), 0, 5);
-      // Nombre y distancia: al lado contrario de la flecha, para que no se salga
-      const lx = -Math.cos(a) * 30, ly = -Math.sin(a) * 26 + 4;
-      ctx.font = F(800, 12);
-      const label = o.dead ? G.I18n.f('¡{x} necesita ayuda! · {x} m', m.name, metres) : m.name + ' · ' + metres + ' m';
-      ctx.textAlign = Math.cos(a) > 0.3 ? 'right' : Math.cos(a) < -0.3 ? 'left' : 'center';
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
-      G.I18n.rawCanvas(ctx, 'strokeText', label, lx, ly);
-      ctx.fillStyle = col;
-      G.I18n.rawCanvas(ctx, 'fillText', label, lx, ly);
-      ctx.restore();
+      edgeArrow(ctx, w, h, o, col, m.name.charAt(0).toUpperCase(),
+                o.dead ? G.I18n.f('¡{x} necesita ayuda! · {x} m', m.name, metres) : m.name + ' · ' + metres + ' m');
     }
 
     // Tú, caído.
     if (pl.dead) {
+      const watching = G.Game.watching;
+      const canWatch = !G.Rift.inArena && G.Coop.puppets().some(p => !p.dead);
+      // Viendo a otro: flecha hacia tu Pokémon (para ver si te están levantando).
+      if (watching) edgeArrow(ctx, w, h, pl, Math.sin(t * 8) > 0 ? '#ff5f6d' : '#ffd0d5', '!', G.I18n.t('Tu Pokémon'));
+      // Con el panel de espectador, el aviso baja para no tapar la acción.
+      const my = canWatch ? h * 0.7 : h * 0.62;
       ctx.save();
       ctx.textAlign = 'center';
       ctx.font = F(800, 20);
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.75)';
       const msg = G.Coop.players().every(p => p.dead) ? 'Habéis caído todos…' : 'Has caído: un compañero puede levantarte';
-      ctx.strokeText(msg, w / 2, h * 0.62);
+      ctx.strokeText(msg, w / 2, my);
       ctx.fillStyle = '#ffb0b8';
-      ctx.fillText(msg, w / 2, h * 0.62);
+      ctx.fillText(msg, w / 2, my);
       const f = (pl.reviveT || 0) / G.Player.REVIVE_TIME;
-      if (f > 0) bar(ctx, w / 2 - 110, h * 0.62 + 12, 220, 10, f, '#5fe08a');
+      if (f > 0) bar(ctx, w / 2 - 110, my + 12, 220, 10, f, '#5fe08a');
       ctx.restore();
+      if (canWatch) drawSpectator(ctx, w, my + 30, watching);
     }
+  }
+
+  /**
+   * Flecha en el borde de la pantalla hacia `o` si no se ve, con una letra
+   * dentro y un texto al lado (ya traducido: lleva nombres de jugadores).
+   */
+  function edgeArrow(ctx, w, h, o, col, letter, label) {
+    const cam = G.Camera;
+    const sx = (o.x - cam.left()) * cam.scale, sy = (o.y - o.bodyH * 0.5 - cam.top()) * cam.scale;
+    if (sx > 0 && sx < w && sy > 0 && sy < h) return;
+    const M = 42;
+    const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
+    const a = Math.atan2(sy - ey, sx - ex);
+    ctx.save();
+    ctx.translate(ex, ey);
+    // Flecha
+    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.beginPath(); ctx.arc(0, 0, 17, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * 28, Math.sin(a) * 28);
+    ctx.lineTo(Math.cos(a + 2.4) * 14, Math.sin(a + 2.4) * 14);
+    ctx.lineTo(Math.cos(a - 2.4) * 14, Math.sin(a - 2.4) * 14);
+    ctx.closePath(); ctx.fill();
+    // Letra dentro del círculo
+    ctx.font = F(800, 14);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff';
+    G.I18n.rawCanvas(ctx, 'fillText', letter, 0, 5);
+    // Texto: al lado contrario de la flecha, para que no se salga
+    const lx = -Math.cos(a) * 30, ly = -Math.sin(a) * 26 + 4;
+    ctx.font = F(800, 12);
+    ctx.textAlign = Math.cos(a) > 0.3 ? 'right' : Math.cos(a) < -0.3 ? 'left' : 'center';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+    G.I18n.rawCanvas(ctx, 'strokeText', label, lx, ly);
+    ctx.fillStyle = col;
+    G.I18n.rawCanvas(ctx, 'fillText', label, lx, ly);
+    ctx.restore();
+  }
+
+  /**
+   * Caído en grupo: panel "Viendo a …" con flechas para cambiar de compañero
+   * (también se tocan en el móvil; tocar el nombre vuelve a tu Pokémon).
+   */
+  function drawSpectator(ctx, w, y, watching) {
+    const touch = G.Touch.active;
+    const m = watching && G.Coop.mate(watching.uid);
+    const pw = 280, ph = 38, x = (w - pw) / 2, B = 38;
+    ctx.save();
+    roundRect(ctx, x, y, pw, ph, 10);
+    ctx.fillStyle = 'rgba(10,16,28,.75)'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = m ? m.color : 'rgba(244,248,255,.35)'; ctx.stroke();
+    // ◀ ▶ (dibujados: la fuente no trae esos símbolos)
+    ctx.fillStyle = '#f4f8ff';
+    const cy = y + ph / 2;
+    ctx.beginPath(); ctx.moveTo(x + 14, cy); ctx.lineTo(x + 26, cy - 8); ctx.lineTo(x + 26, cy + 8); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + pw - 14, cy); ctx.lineTo(x + pw - 26, cy - 8); ctx.lineTo(x + pw - 26, cy + 8); ctx.fill();
+    ctx.textAlign = 'center';
+    if (m) {
+      ctx.font = F(600, 9);
+      ctx.fillStyle = '#8fa3c4';
+      ctx.fillText('VIENDO A', w / 2, y + 12);
+      ctx.font = F(800, 13);
+      ctx.fillStyle = m.color;
+      G.I18n.rawCanvas(ctx, 'fillText', m.name, w / 2, y + 26);
+      bar(ctx, w / 2 - 60, y + 30, 120, 4, watching.hp / watching.maxHp, '#5fe08a');
+    } else {
+      ctx.font = F(800, 13);
+      ctx.fillStyle = '#eaf2ff';
+      ctx.fillText('Tu Pokémon', w / 2, y + 24);
+    }
+    ctx.font = F(600, 10);
+    ctx.fillStyle = 'rgba(180,200,230,.7)';
+    ctx.fillText(touch ? 'Toca las flechas para cambiar  ·  toca el nombre para verte a ti'
+                       : '← → cambiar de compañero  ·  Espacio: ver a tu Pokémon', w / 2, y + ph + 14);
+    ctx.restore();
+    G.Touch.addButton(x, y, B, ph, () => G.Game.watchStep(-1), 6);
+    G.Touch.addButton(x + pw - B, y, B, ph, () => G.Game.watchStep(1), 6);
+    G.Touch.addButton(x + B, y, pw - 2 * B, ph, () => G.Game.watchToggle(), 2);
   }
 
   return { draw, roundRect, bar };
