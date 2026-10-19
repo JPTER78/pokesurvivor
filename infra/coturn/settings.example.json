@@ -1,0 +1,19 @@
+{
+  "turnHost": "turn.example.com",
+  "apiHost": "ice.example.com",
+  "publicIp": "203.0.113.10",
+  "localIp": "203.0.113.10",
+  "acmeEmail": "admin@example.com",
+  "projectId": "pokesurvivor-free",
+  "origins": ["https://pokesurvivor.com"],
+  "allowedUids": [],
+  "allowAllAuthenticated": false,
+  "credentialTtl": 3600,
+  "tls": false,
+  "relayMinPort": 49160,
+  "relayMaxPort": 49559,
+  "totalQuota": 200,
+  "userQuota": 12,
+  "maxBps": 1048576,
+  "bpsCapacity": 20971520
+}
