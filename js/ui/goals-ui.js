@@ -170,12 +170,16 @@
 
       const titles = G.Progress.titles();
       box.insertAdjacentHTML('beforeend', `<h3 style="margin-top:14px">Título</h3>`);
-      const sel = document.createElement('select');
-      sel.className = 'field';
-      sel.style.maxWidth = '320px';
-      sel.innerHTML = `<option value="">(sin título)</option>` + titles.map(t => `<option value="${esc(t)}" ${t === P.title ? 'selected' : ''}>${esc(t)}</option>`).join('');
-      sel.onchange = () => { P.title = sel.value; save(); };
-      box.appendChild(sel);
+      const host = document.createElement('div');
+      host.id = 'profile-title';
+      host.style.maxWidth = '320px';
+      const select = G.SearchSelect.create(host, {
+        label: 'Título', placeholder: 'Buscar título…',
+        onChange(value) { P.title = value; save(); }
+      });
+      select.setOptions([{ value: '', label: '(sin título)' }, ...titles.map(t => ({ value: t, label: t }))],
+        titles.includes(P.title) ? P.title : '');
+      box.appendChild(host);
       if (!titles.length) box.insertAdjacentHTML('beforeend', '<p class="note">Consigue logros para desbloquear títulos.</p>');
 
       const prev = document.createElement('button');

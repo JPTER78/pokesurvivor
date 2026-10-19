@@ -72,6 +72,10 @@ G.CHANGELOG = [
     ['En el ranking ya salen en shiny los Pokémon de quien jugó con su shiny.',
      'The leaderboard now shows Pokémon in shiny form for players who played with their shiny.']
   ] },
+  { d: '2026-10-16', title: ['Busca tus Pokémon', 'Find your Pokémon'], new: [
+    ['Los selectores de Pokémon en Mejoras y Ranking, los atajos de movimientos y los títulos del perfil tienen búsqueda y el estilo del juego. Se conservan el buscador y los filtros combinables de la colección.',
+     'Pokémon selectors in Upgrades and Leaderboards, move shortcuts and profile titles now include search and match the game’s style. The collection search and combined filters are preserved.']
+  ] },
   { d: '2026-10-15', title: ['Actualizaciones obligatorias', 'Required updates'], chg: [
     ['Cuando una actualización sea obligatoria (por ejemplo, para arreglar un fallo importante), la partida en curso se termina tras un aviso de 10 s y el juego se recarga. No pierdes nada: las monedas, los tickets, los récords y el ranking de esa partida se guardan como al abandonarla.',
      'When an update is required (for example, to fix an important bug), your current run ends after a 10 s notice and the game reloads. You lose nothing: that run’s coins, tickets, records and leaderboard entry are saved as if you had quit.']

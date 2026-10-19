@@ -388,8 +388,7 @@
     <div class="filters" id="rk-period"></div>
     <div class="row rk-tools">
       <div class="filters" id="rk-scope" style="margin:0"></div>
-      <input id="rk-poke" class="field" list="rk-dl" placeholder="Filtrar por Pokémon (histórico)" spellcheck="false">
-      <datalist id="rk-dl"></datalist>
+      <div id="rk-poke"></div>
       <button id="rk-clear" class="btn small ghost hidden">Quitar filtro</button>
     </div>
     <div id="rk-list" class="rk-list"></div>
@@ -470,8 +469,8 @@
       <div class="grow">
         <p class="sub" style="margin:0">Cada Pokémon tiene sus propias mejoras: sólo cuentan cuando juegas con él.</p>
         <div class="row" style="margin-top:8px">
-          <label for="upg-mon" style="margin:0">Pokémon</label>
-          <select id="upg-mon" class="field" style="width:auto;min-width:220px"></select>
+          <span style="color:var(--muted);font-size:14px">Pokémon</span>
+          <div id="upg-mon"></div>
         </div>
       </div>
     </div>
@@ -565,6 +564,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=6c0b76538f"></script>
+<script defer src="js/app.min.js?v=21d5c0e593"></script>
 </body>
 </html>
