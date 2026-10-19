@@ -166,6 +166,34 @@ tipos se multiplican, con tope ×0,3–×2,4. Tus ataques usan el tipo del
 movimiento; los enemigos, su tipo principal (o el de su disparo). Número
 amarillo cuando es muy eficaz; gris si no (sin texto, para no cargar la pantalla).
 
+### 4.3 Pokémon aliados (solitario)
+Un par de veces por partida (el primero entre 2:30 y 3:30, luego cada 4:30-6:00)
+aparece un Pokémon de la **región de tu compañero** que quiere unirse: de tu
+colección si tienes alguno de allí; si no, uno salvaje en su forma básica. Lleva
+un «!» y una flecha en el borde; quédate 2,5 s a su lado y se une hasta el final
+(como mucho **2**; se va a los 90 s si no lo buscas). Nunca de la familia de tu
+compañero ni de la de otro aliado. No sale con un jefe vivo, en la grieta ni en
+la Sentencia.
+
+- **Postura** al unirse (una «build» hecha, se elige con 1-3):
+
+| Postura | Efecto |
+|---|---|
+| Atacante | Daño ×1,4, recarga ×0,85, vida ×0,8 |
+| Guardián | Vida ×2, recibe ×0,6, daño ×0,7; los enemigos a menos de 130 px van a por él, y las zonas con aviso también le dan |
+| Apoyo | Daño ×0,6; cada 3 s te cura un 4% si estás cerca |
+
+- **Experiencia del grupo:** va siempre a tu nivel. Su movimiento (el inicial de
+  su especie) sube 1 nivel cada 4 tuyos, y **evoluciona** a los niveles 10 y 20
+  (su 1ª y 2ª evolución en la partida; si hay varias, como Eevee, una al azar).
+  Datos en `js/data/evolutions.js` (`tools/fetch_evolutions.py`, PokeAPI).
+- Pega con tus mejoras de ataque, recarga y crítico, un 40% menos que tú (antes
+  de la postura). Te sigue en V detrás de ti, sin pisarse con el resto.
+- Lo dañan los enemigos que lo tocan y sus disparos. Si cae, quédate 3 s a su
+  lado para levantarlo (con la mitad de vida). Va contigo a la grieta y a la
+  Sentencia, también caído.
+- En cooperativo no hay aliados (habría que mandarlos por la red).
+
 ## 5. Enemigos
 
 - **De todas las generaciones.** 6 tramos por total de stats base; en cada run se
