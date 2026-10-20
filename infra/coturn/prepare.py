@@ -91,11 +91,14 @@ def render(c, secret):
     caddy = f'''{{
     email {c['acmeEmail']}
     admin off
+    servers {{
+        protocols h1 h2
+    }}
 }}
 {c['apiHost']} {{
     @api path /v1/ice
     handle @api {{
-        reverse_proxy 127.0.0.1:8088 {{
+        reverse_proxy credentials:8088 {{
             header_up X-Real-IP {{remote_host}}
         }}
     }}
@@ -117,12 +120,21 @@ def write_private(path, value):
 
 def prepare(settings, output=ROOT):
     c = validate(settings)
+    uid = os.getuid() if hasattr(os, 'getuid') else 1000
+    gid = os.getgid() if hasattr(os, 'getgid') else 1000
+    if uid == 0 or gid == 0:
+        raise ValueError('Run prepare.py as a non-root deployment user and group (without sudo)')
     output = Path(output)
     runtime = output / 'runtime'
     runtime.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(runtime, 0o700)
+    for name in ['caddy-data', 'caddy-config']:
+        directory = runtime / name
+        directory.mkdir(mode=0o700, exist_ok=True)
+        os.chmod(directory, 0o700)
     certs = output / 'certs'
     certs.mkdir(mode=0o700, exist_ok=True)
+    os.chmod(certs, 0o700)
     if c['tls'] and any(not (certs / name).is_file() for name in ['fullchain.pem', 'privkey.pem']):
         raise ValueError('TLS selected: install the TURN hostname certificate/key in certs/ first')
     secret_file = runtime / 'auth-secret'
@@ -133,8 +145,6 @@ def prepare(settings, output=ROOT):
         write_private(runtime / name, value)
     # Non-root containers use the owner of the files. Windows is for preparation
     # tests only: regenerate on the target Linux VPS before starting Compose.
-    uid = os.getuid() if hasattr(os, 'getuid') else 1000
-    gid = os.getgid() if hasattr(os, 'getgid') else 1000
     write_private(output / '.env', f'DEPLOY_UID={uid}\nDEPLOY_GID={gid}\n')
 
 

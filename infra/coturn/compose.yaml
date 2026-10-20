@@ -1,18 +1,20 @@
 name: pokesurvivor-turn
 services:
   coturn:
-    image: coturn/coturn:4.18.0-r0
-    entrypoint: [turnserver]
-    command: [-c, /etc/coturn/turnserver.conf]
+    build: ./turn
+    entrypoint: [/bin/sh, /run/run-unprivileged.sh]
+    command: [turnserver, -c, /etc/coturn/turnserver.conf]
     user: "${DEPLOY_UID:?Run prepare.py first}:${DEPLOY_GID:?Run prepare.py first}"
     network_mode: host
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
-    cap_add: [NET_BIND_SERVICE]
     security_opt: [no-new-privileges:true]
-    tmpfs: [/tmp, /var/lib/coturn]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+      - /var/lib/coturn:rw,noexec,nosuid,nodev,size=16m,mode=1777
     volumes:
+      - ./run-unprivileged.sh:/run/run-unprivileged.sh:ro
       - ./runtime/turnserver.conf:/etc/coturn/turnserver.conf:ro
       - ./certs:/certs:ro
     mem_limit: 512m
@@ -25,8 +27,10 @@ services:
       options: {max-size: 10m, max-file: "3"}
   credentials:
     build: ./broker
+    entrypoint: [/bin/sh, /run/run-unprivileged.sh]
+    command: [node, server.mjs]
     user: "${DEPLOY_UID:?Run prepare.py first}:${DEPLOY_GID:?Run prepare.py first}"
-    network_mode: host
+    networks: [api]
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
@@ -36,6 +40,7 @@ services:
       SECRET_FILE: /run/turn/auth-secret
       NODE_ENV: production
     volumes:
+      - ./run-unprivileged.sh:/run/run-unprivileged.sh:ro
       - ./runtime/broker.json:/run/turn/broker.json:ro
       - ./runtime/auth-secret:/run/turn/auth-secret:ro
     mem_limit: 256m
@@ -50,20 +55,36 @@ services:
       driver: json-file
       options: {max-size: 10m, max-file: "3"}
   https:
-    image: caddy:2.11.7-alpine
-    network_mode: host
+    build: ./https
+    entrypoint: [/bin/sh, /run/run-unprivileged.sh]
+    command: [caddy, run, --config, /etc/caddy/Caddyfile, --adapter, caddyfile]
+    user: "${DEPLOY_UID:?Run prepare.py first}:${DEPLOY_GID:?Run prepare.py first}"
+    networks: [api]
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+    # Scoped to this container's network namespace, never to the host.
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
     restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
     volumes:
+      - ./run-unprivileged.sh:/run/run-unprivileged.sh:ro
       - ./runtime/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./runtime/caddy-data:/data
+      - ./runtime/caddy-config:/config
     depends_on:
       credentials: {condition: service_healthy}
     mem_limit: 128m
+    cpus: 0.5
     pids_limit: 64
     logging:
       driver: json-file
       options: {max-size: 10m, max-file: "3"}
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  api:
+    driver: bridge
