@@ -107,6 +107,12 @@ test('existen los generadores y el reparto por bioma', () => {
   for (const id of ['plains', 'cave', 'plant', 'lava', 'marsh', 'islands', 'bog']) assert.ok(L.get(id), id);
   assert.equal(L.get('forest'), null);
   assert.equal(L.forBiome(0), 'plains');                // el bosque, con el campo de siempre
+  // Un bioma puede pedir su generador (G.Tiles: aquí, lo justo): el archipiélago, las islas.
+  G.Tiles = { BIOMES: { 5: { place: 'Gruta Marina' }, 22: { place: 'Archipiélago', layout: 'islands' } } };
+  assert.equal(L.forBiome(22), 'islands');
+  assert.equal(L.forBiome(5), 'plains');
+  assert.equal(L.forBiome(1), 'cave');
+  delete G.Tiles;
   assert.equal(L.forBiome(1), 'cave');
   assert.equal(L.forBiome(2), 'lava');
 });

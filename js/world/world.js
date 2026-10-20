@@ -751,12 +751,12 @@ G.World = (() => {
   }
 
   /**
-   * Bioma nuevo de la run (cada 4 min): la paleta y, si su generador es otro,
+   * Bioma i-ésimo de la run (cada 4 min): la paleta y, si su generador es otro,
    * el terreno nuevo, que se abre paso desde (x, y) detrás de la onda. En
    * cooperativo, sólo la paleta: ver arriba.
    */
   function changeBiome(i, x, y) {
-    const b = normBiome(i);
+    const b = G.Tiles.runBiome(i);                     // el i-ésimo de la run (G.Tiles.RUN)
     const layout = G.Coop.active ? cur.layout : G.Layouts.forBiome(b);
     // Mismo terreno, otra paleta: el líquido puede pasar a quemar (el agua de las charcas, lava): a mirar quién está dentro.
     if (layout === cur.layout) { setBiome(b); settling = true; return; }

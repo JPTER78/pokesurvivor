@@ -36,3 +36,16 @@ test('cada bioma trae su clima: los tres de siempre igual, los de las grietas el
   assert.ok(!calm.snow && !calm.sand, JSON.stringify(calm));
 });
 
+test('la run tiene su orden: la Gruta Marina sale como el archipiélago (la grieta de agua, igual)', () => {
+  const water = arena('water');
+  assert.equal(Tiles.RUN.length, Tiles.BIOMES.length - 1);    // todos menos el archipiélago, que va en su sitio
+  const isles = Tiles.BIOMES[Tiles.RUN[water]];
+  assert.equal(isles.place, 'Archipiélago');
+  assert.equal(isles.layout, 'islands');
+  assert.equal(isles.prop, 'tree');                           // árboles, no cristales
+  assert.ok(!Tiles.RUN.includes(water), 'la Gruta Marina ya no sale en el mapa');
+  Tiles.RUN.forEach((b, i) => { if (i !== water) assert.equal(b, i); });
+  assert.equal(Tiles.runBiome(water + Tiles.RUN.length), Tiles.RUN[water]);   // da la vuelta
+  assert.equal(Tiles.BIOMES[water].prop, 'crystal');          // la grieta de agua no cambia
+  assert.equal(top(Weather.weightsFor(Tiles.RUN[water])), 'rain');
+});

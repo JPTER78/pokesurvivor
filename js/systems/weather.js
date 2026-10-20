@@ -96,7 +96,8 @@ G.Weather = (() => {
   function weightsFor(biome) {
     const T = G.Tiles;
     if (biome < T.ARENA) return BIOME_W[biome] || CALM;
-    const kind = (T.ARENA_THEMES[T.ARENA_TYPES[biome - T.ARENA]] || {}).weather;
+    // El suyo (los biomas sólo del mapa, como el archipiélago) o el de su grieta.
+    const kind = (T.BIOMES[biome] || {}).weather || (T.ARENA_THEMES[T.ARENA_TYPES[biome - T.ARENA]] || {}).weather;
     if (!kind) return CALM;
     const w = { [kind]: OWN };
     for (const k in CALM) if (k !== kind && k !== OPPOSITE[kind]) w[k] = CALM[k];

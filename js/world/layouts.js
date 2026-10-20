@@ -621,9 +621,10 @@ G.Layouts = (() => {
   // Bioma de la run (G.Tiles.BIOMES) -> generador. Los colores de las grietas
   // que salen a partir del minuto 12 siguen con el campo abierto de momento.
   const BY_BIOME = ['plains', 'cave', 'lava'];       // el bosque, con el campo de siempre
-  /** Generador de un bioma (G.Tiles.BIOMES): el de la lista; si no, el campo. */
+  /** Generador de un bioma (G.Tiles.BIOMES): el que pida él (layout) o el de la lista; si no, el campo. */
   function forBiome(b) {
-    return BY_BIOME[b] || 'plains';
+    const B = G.Tiles && G.Tiles.BIOMES[b];
+    return (B && B.layout) || BY_BIOME[b] || 'plains';
   }
 
   return {
