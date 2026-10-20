@@ -82,7 +82,7 @@ function connectivity(lay, seed, R = 100, cx = 0, cy = 0, land = false) {
 }
 
 test('el terreno nuevo nace con el jugador en un sitio suyo: suelo alrededor y salida a lo lejos (sin empujar)', () => {
-  const ids = ['plains', 'cave', 'plant'];
+  const ids = ['plains', 'cave', 'plant', 'lava', 'marsh'];
   for (const id of ids) {
     // Con el ancla en el 0,0, igual que el de siempre.
     const base = L.get(id), at0 = L.make(id, { tx: 0, ty: 0 });
@@ -104,11 +104,11 @@ test('el terreno nuevo nace con el jugador en un sitio suyo: suelo alrededor y s
 });
 
 test('existen los generadores y el reparto por bioma', () => {
-  for (const id of ['plains', 'cave', 'plant']) assert.ok(L.get(id), id);
+  for (const id of ['plains', 'cave', 'plant', 'lava', 'marsh']) assert.ok(L.get(id), id);
   assert.equal(L.get('forest'), null);
   assert.equal(L.forBiome(0), 'plains');                // el bosque, con el campo de siempre
   assert.equal(L.forBiome(1), 'cave');
-  assert.equal(L.forBiome(2), 'plains');
+  assert.equal(L.forBiome(2), 'lava');
 });
 
 test('plains es exactamente la fórmula de siempre (world.js)', () => {
@@ -151,7 +151,7 @@ test('deterministas: misma semilla, mismo mapa; otra semilla, otro', () => {
 
 test('cada bioma nuevo se ve distinto: hay pared o líquido de verdad', () => {
   const liquid = {};
-  for (const id of ['cave']) {
+  for (const id of ['cave', 'lava', 'marsh']) {
     const lay = L.get(id);
     const n = [0, 0, 0];
     for (let ty = -80; ty < 80; ty++) for (let tx = -80; tx < 80; tx++) n[lay.terrain(tx, ty, 3)]++;
@@ -162,6 +162,8 @@ test('cada bioma nuevo se ve distinto: hay pared o líquido de verdad', () => {
     else assert.ok(n[WALL] / all > 0.25, `${id}: ${n}`);
     assert.ok(n[FLOOR] / all > 0.3, `${id} deja sitio para jugar: ${n}`);
   }
+  // El pantano: más ríos que el volcán.
+  assert.ok(liquid.marsh > liquid.lava * 1.3, JSON.stringify(liquid));
 });
 
 test('cueva: sin rendijas de una casilla (parecen paso y no se cabe) y con charcas', () => {
@@ -199,7 +201,7 @@ test('pasillos y pasos de tierra de ancho variado (no todos iguales, como hechos
 });
 
 test('conectados por tierra: pasillos de 4+ casillas y sin zonas cerradas', () => {
-  for (const id of ['cave', 'plant']) {
+  for (const id of ['cave', 'plant', 'lava', 'marsh']) {
     const lay = L.get(id);
     for (const seed of SEEDS) {
       // En varios sitios del mapa, no sólo alrededor del inicio.

@@ -4,7 +4,9 @@
  * (inspirado en Mundo Misterioso):
  *   plains  campo abierto con charcas y rocas (lo de siempre)
  *   cave    cueva de salas rectangulares al azar (se pisan) y pasillos rectos
+ *   marsh   pantano: ríos de agua que frena, más que los de lava
  *   plant   la cueva con las charcas lejos de las paredes (para la central: su líquido quema)
+ *   lava    ríos de lava serpenteantes con puentes de piedra
  *
  * Cada uno se hace con su ancla { tx, ty } (make): el sitio donde empieza, que
  * es parte de sus reglas, no un hueco a la fuerza: la sala, la isla o el trozo
@@ -316,7 +318,88 @@ G.Layouts = (() => {
    */
   const plant = A => caveOf(A, 1, false, { n: 3, r: [2.2, 4.2] });
 
-  const BUILD = { plains: plainsAt, cave, plant };
+  // ---------------- ríos: lava y pantano ----------------
+  /*
+   * La tierra son trozos de formas y tamaños al azar: cada celda de `cell`
+   * casillas tiene un punto en cualquier sitio, y cada casilla es del trozo del
+   * punto más cercano (un diagrama de Voronoi). Los ríos corren por las
+   * fronteras entre trozos: cada frontera lleva río o no (con `p`), así se
+   * juntan en Y y en T, unos largos y otros cortos, sin rejilla a la vista.
+   * Puentes: si ningún otro punto cae dentro del círculo que tiene por diámetro
+   * el segmento entre dos puntos vecinos (vecinos de Gabriel), el punto medio de
+   * ese segmento está en su frontera; ahí va un puente de 4+ de ancho. El grafo
+   * de Gabriel une todos los puntos, así que por tierra se llega a todas partes.
+   * Las coordenadas se tuercen con ruido para que los ríos serpenteen.
+   *   rocks  umbral de ruido para alguna roca suelta lejos de las fronteras (o null)
+   *   banks  probabilidad de hierba alta en la orilla
+   */
+  function rivers(o) {
+    const S = o.salt, C = o.cell, BRIDGE = 3.8, ROCK_AWAY = 5;    // puente: medio largo (torcido, deja 4+)
+    const A = o.anchor, ai = Math.floor(A.tx / C), aj = Math.floor(A.ty / C);
+    /**
+     * Punto de la celda (el "centro" de un trozo de tierra), en cualquier sitio de
+     * ella; el de la celda del ancla, en el ancla: así se empieza en mitad de un
+     * trozo de tierra, lo más lejos de los ríos (que van por las fronteras).
+     */
+    const spot = cellCache((i, j, s) => (i === ai && j === aj ? { i, j, x: A.tx + 0.5, y: A.ty + 0.5 }
+      : { i, j, x: (i + H(i, j, s + S + 1)) * C, y: (j + H(i, j, s + S + 2)) * C }));
+    /**
+     * Medio ancho del río de la frontera entre a y b (lo mismo se mire desde un
+     * lado o desde el otro), o 0 si no lleva: cada río, de 0,75 a 1,25 veces `half`.
+     */
+    function riverHalf(a, b, s) {
+      const [p, q] = a.i < b.i || (a.i === b.i && a.j < b.j) ? [a, b] : [b, a];
+      const x = (p.i * 73856093) ^ (q.i * 83492791), y = (p.j * 19349663) ^ (q.j * 2971215073);
+      return H(x, y, s + S + 3) < o.p ? o.half * (0.75 + 0.5 * H(x, y, s + S + 9)) : 0;
+    }
+    /** { wet: ¿río?, dist: a cuánto está de la frontera más cercana } */
+    function river(tx, ty, seed) {
+      const x = tx + (fbm(tx / 14, ty / 14, seed + S + 5) - 0.5) * o.warp * 2;
+      const y = ty + (fbm(tx / 14 - 30, ty / 14 + 30, seed + S + 6) - 0.5) * o.warp * 2;
+      const ci = Math.floor(x / C), cj = Math.floor(y / C);
+      // Los dos puntos más cercanos (con un punto por celda, están en las 5×5 de alrededor).
+      let a = null, b = null, da = Infinity, db = Infinity;
+      for (let j = cj - 2; j <= cj + 2; j++) for (let i = ci - 2; i <= ci + 2; i++) {
+        const q = spot(i, j, seed), d = (q.x - x) ** 2 + (q.y - y) ** 2;
+        if (d < da) { db = da; b = a; da = d; a = q; } else if (d < db) { db = d; b = q; }
+      }
+      const ab = Math.sqrt(d2(a, b));
+      const dist = (db - da) / (2 * ab);                        // distancia a la frontera (la mediatriz de a y b)
+      if (dist >= o.half * 1.25 || dist >= riverHalf(a, b, seed)) return { wet: false, dist };
+      // ¿En el puente? Junto al punto medio de a y b, a lo largo de la frontera.
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const along = ((x - mx) * -(b.y - a.y) + (y - my) * (b.x - a.x)) / ab;
+      return { wet: Math.abs(along) >= BRIDGE, dist };
+    }
+    const lay = {
+      liquidHurts: o.liquidHurts,
+      terrain(tx, ty, seed) {
+        const r = river(tx, ty, seed);
+        if (r.wet) return LIQUID;
+        // Rocas: sólo lejos de todas las fronteras (no tapan ríos ni puentes).
+        if (o.rocks != null && r.dist > ROCK_AWAY && fbm(tx / 6, ty / 6, seed + S + 7) > o.rocks) return WALL;
+        return FLOOR;
+      },
+      edgeProp: () => null
+    };
+    if (o.banks) {
+      lay.edgeProp = (tx, ty, seed, at = (x, y) => lay.terrain(x, y, seed)) => {
+        if (at(tx, ty) !== FLOOR) return null;
+        for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) {
+          if ((a || b) && at(tx + a, ty + b) === LIQUID) return H(tx, ty, seed + S + 8) < o.banks ? 'grass' : null;
+        }
+        return null;
+      };
+    }
+    return lay;
+  }
+
+  /** Volcán: ríos de lava (queman) con puentes de piedra y rocas de ceniza. */
+  const lava = A => rivers({ anchor: A, salt: 3100, cell: 18, p: 0.62, half: 1.6, warp: 5, rocks: 0.72, banks: 0, liquidHurts: true });
+  /** Pantano: más ríos que el volcán (casi todas las fronteras llevan) y más anchos, de agua que frena; juncos en la orilla. */
+  const marsh = A => rivers({ anchor: A, salt: 3300, cell: 14, p: 0.9, half: 2.2, warp: 4, rocks: null, banks: 0.35, liquidHurts: false });
+
+  const BUILD = { plains: plainsAt, cave, plant, lava, marsh };
   const IDS = Object.keys(BUILD);
   const ORIGIN = { tx: 0, ty: 0 };
   /**
@@ -339,7 +422,7 @@ G.Layouts = (() => {
   const get = id => (BUILD[id] ? atOrigin[id] || (atOrigin[id] = make(id)) : null);
   // Bioma de la run (G.Tiles.BIOMES) -> generador. Los colores de las grietas
   // que salen a partir del minuto 12 siguen con el campo abierto de momento.
-  const BY_BIOME = ['plains', 'cave'];       // el bosque, con el campo de siempre
+  const BY_BIOME = ['plains', 'cave', 'lava'];       // el bosque, con el campo de siempre
   /** Generador de un bioma (G.Tiles.BIOMES): el de la lista; si no, el campo. */
   function forBiome(b) {
     return BY_BIOME[b] || 'plains';
