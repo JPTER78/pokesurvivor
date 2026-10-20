@@ -18,6 +18,11 @@ service cloud.firestore {
     function me() { return request.auth.uid; }
     // Moderación (pantalla oculta del juego, js/ui/mod-ui.js): sólo esta cuenta.
     function admin() { return signedIn() && me() in ['rshaa5gKD3fXw6lE4PPXITbowaG2']; }
+    // Tope de escrituras (20-10-2026): un documento no se puede volver a escribir
+    // hasta pasados `secs` segundos desde `last` (su hora guardada). El juego
+    // escribe mucho menos que eso; esto sólo frena un bucle (un juego trucado o
+    // un fallo), y lo rechazado no se cobra como escritura.
+    function every(last, secs) { return !(last is timestamp) || request.time > last + duration.value(secs, 's'); }
 
     // ---------- partida guardada ----------
     // Sólo su dueño la lee y la escribe. Ya no se marca a nadie solo (14-10-2026:
@@ -32,7 +37,8 @@ service cloud.firestore {
       allow create: if signedIn() && me() == uid && validSaveDoc() && saneSave(request.resource.data.save)
         && request.resource.data.get('ban', false) == false;
       allow update: if signedIn() && me() == uid && validSaveDoc() && saneSave(request.resource.data.save)
-        && request.resource.data.get('ban', false) == resource.data.get('ban', false);
+        && request.resource.data.get('ban', false) == resource.data.get('ban', false)
+        && every(resource.data.updatedAt, 20);
       // El admin sólo puede banear o desbanear (y quitar la marca vieja).
       allow update: if admin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ban', 'sus'])
@@ -86,7 +92,8 @@ service cloud.firestore {
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
         && (!('best' in request.resource.data) || validBest(request.resource.data.best))
         && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
-        && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me();
+        && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me()
+        && (resource == null || every(resource.data.at, 20));
       allow delete: if signedIn() && me() == uid;
     }
 
@@ -121,9 +128,12 @@ service cloud.firestore {
     // Al empezar cada partida (en grupo, el anfitrión) el servidor apunta la hora.
     match /runs/{uid} {
       allow read, delete: if signedIn() && me() == uid;
+      // Como mucho cada 10 min: el juego lo escribe una vez por hora como mucho y una
+      // hora vieja sólo deja validEntry más holgada (era la colección que más escribía, 20-10-2026).
       allow create, update: if signedIn() && me() == uid
         && request.resource.data.keys().hasOnly(['startedAt', 'mode'])
-        && request.resource.data.startedAt == request.time;
+        && request.resource.data.startedAt == request.time
+        && (resource == null || every(resource.data.startedAt, 600));
     }
 
     // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
@@ -205,11 +215,9 @@ service cloud.firestore {
     // Presencia aproximada: "en línea" si at es de hace menos de unos minutos.
     match /pres/{uid} {
       allow read: if signedIn();
-      allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['at', 'room', 'play', 'on'])
-        && request.resource.data.at == request.time
-        && request.resource.data.room is string && request.resource.data.room.size() <= 40
-        && request.resource.data.play is bool && request.resource.data.on is bool;
+      // Quitado el 20-10-2026 (era 1/4 de las escrituras): nadie puede escribirlo,
+      // así tampoco gastan las versiones viejas del juego. Sólo se puede borrar.
+      allow create, update: if false;
       allow delete: if signedIn() && me() == uid;
     }
 

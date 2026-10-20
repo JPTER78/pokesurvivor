@@ -424,13 +424,14 @@ G.DB = (() => {
   // cada minuto). Al cerrar la pestaña se intenta subir lo pendiente, y para
   // no depender de eso está el botón Guardar de la barra de arriba (saveNow).
   // Desde el 19-10-2026 (para gastar aún menos), a la nube SÓLO se sube:
-  //   - cada 30 min, si hay algo sin subir (30 min después del primer cambio)
+  //   - cada hora, si hay algo sin subir (1 h después del primer cambio; era
+  //     30 min hasta el 20-10-2026: los guardados eran ~1/4 de las escrituras)
   //   - con el botón Guardar
   //   - al entrar, si lo de este aparato es más nuevo que lo de la nube
   //   - al cerrar o recargar la pestaña, y antes de recargar por una actualización
   // Nada más: ni al hacer gacha, ni al acabar una partida, ni al cambiar de
   // pestaña. Todo se guarda al momento en este navegador igualmente.
-  const PUSH_EVERY = 30 * 60 * 1000;
+  const PUSH_EVERY = 60 * 60 * 1000;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
 
@@ -767,7 +768,7 @@ G.DB = (() => {
 
   /**
    * Guarda la partida actual (no hace nada en modo invitado). En el navegador,
-   * al momento; en la nube, 30 min después del primer cambio sin subir (ver
+   * al momento; en la nube, 1 h después del primer cambio sin subir (ver
    * PUSH_EVERY). urgent ya no cambia nada (se queda por si vuelve a hacer falta).
    */
   function commit(urgent = false) {

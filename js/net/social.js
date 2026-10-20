@@ -124,15 +124,11 @@ G.Social = (() => {
     return { ok: true };
   }
 
-  /** Presencia (latido), amigos e invitaciones. Nada de esto usa la Realtime Database. */
+  /** Amigos e invitaciones. Nada de esto usa la Realtime Database. */
   function online() {
     if (beatT) return;                        // ya estaba en marcha
+    beatT = 1;
     if (fb.rtdb) fb.rtdb.goOffline();         // se conecta sólo al entrar en una sala
-    writeStatus();
-    clearInterval(beatT);
-    beatT = setInterval(() => { if (document.visibilityState === 'visible') writeStatus(); }, BEAT);
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('pagehide', onHide);
     listenFriends();
   }
 
@@ -151,16 +147,14 @@ G.Social = (() => {
   let playing = false, lastBeat = 0;
   /** ¿Hay alguien que pueda leer tu "en línea"? (sólo los amigos confirmados) */
   const hasFriends = () => [...friends.values()].some(f => f.status === 'ok');
-  function writeStatus(on = true) {
-    // Sin amigos nadie lo lee: no se gasta una escritura (cupo diario de Firebase).
-    if (!fb || !me || !hasFriends()) return;
-    lastBeat = Date.now();
-    fb.fs.collection('pres').doc(uid).set({ on, at: fts(), room: room ? room.id : '', play: playing }).catch(() => {});
-  }
-  function setPlaying(p) { if (playing !== !!p) { playing = !!p; writeStatus(); } }
-  // Al volver a la pestaña tras un rato, un latido; al cerrarla, "desconectado".
-  function onVisible() { if (document.visibilityState === 'visible' && Date.now() - lastBeat > BEAT) writeStatus(); }
-  function onHide() { writeStatus(false); }
+  // El "en línea" de los amigos se quitó el 20-10-2026: era 1/4 de todas las
+  // escrituras de Firestore (unas 2 millones al día). Ya no se escribe ni se lee
+  // pres/{uid}; se puede invitar a cualquier amigo (la invitación caduca sola).
+  // writeStatus y refreshPresence se quedan vacías para no tocar a quien las llama.
+  const presKey = () => 'ps.pres.' + uid;
+  function writeStatus() {}
+  function setPlaying(p) { playing = !!p; }
+  function onVisible() {}
 
   async function stop(why) {
     if (!started) return;
@@ -169,7 +163,7 @@ G.Social = (() => {
     if (unInv) { unInv(); unInv = null; }
     clearInterval(beatT); beatT = 0;
     document.removeEventListener('visibilitychange', onVisible);
-    window.removeEventListener('pagehide', onHide);
+    try { localStorage.removeItem(presKey()); } catch (e) { /* nada */ }
     if (me) await fb.fs.collection('pres').doc(uid).delete().catch(() => {});
     if (why === 'delete') {
       try { localStorage.removeItem('ps.nick.' + uid); } catch (e) { /* nada */ }
@@ -212,41 +206,15 @@ G.Social = (() => {
           online: false, play: false, room: '', seen: 0
         }, pres.get(other) || {}));
       });
-      // Un amigo nuevo (o recién aceptado): se mira si está en línea.
-      const added = [...next.values()].some(f => f.status === 'ok' && (!friends.has(f.uid) || friends.get(f.uid).status !== 'ok'));
-      const hadFriends = hasFriends();
       friends = next;
       emit('friends');
-      // Tu primer amigo: ahora sí hay quien lea tu "en línea" y quien te invite.
-      if (!hadFriends && hasFriends()) writeStatus();
+      // Con amigos ya te pueden invitar.
       if (hasFriends()) listenInvites();
-      // Se mira si está en línea un momento después: tu amigo también acaba de
-      // recibir la amistad y está apuntando su "en línea" a la vez.
-      if (added) setTimeout(() => { if (started) refreshPresence(true); }, 2500);
     }, e => console.warn('[Social] amigos:', e.code || e.message));
   }
 
-  /**
-   * Lee el "en línea" de tus amigos (1 lectura por amigo). Sólo se llama al
-   * abrir Amigos o la sala, y lo leído vale 1 min.
-   */
-  async function refreshPresence(force = false) {
-    if (!fb || (!force && Date.now() - presAt < PRES_TTL)) return;
-    presAt = Date.now();
-    const ok = [...friends.values()].filter(f => f.status === 'ok');
-    const docs = await Promise.all(ok.map(f => fb.fs.collection('pres').doc(f.uid).get().catch(() => null)));
-    const t = now();
-    ok.forEach((f, i) => {
-      const v = docs[i] && docs[i].exists ? docs[i].data() : null;
-      const on = !!(v && v.on && t - msOf(v.at) < ONLINE);
-      const p = { online: on, play: !!(on && v.play), room: on ? v.room : '', seen: v ? msOf(v.at) : 0 };
-      pres.set(f.uid, p);
-      // La lista de amigos puede haberse renovado mientras se leía: se aplica a la actual.
-      const cur = friends.get(f.uid);
-      if (cur) Object.assign(cur, p);
-    });
-    emit('presence');
-  }
+  /** (Quitado el 20-10-2026 con el "en línea": ya no lee nada.) */
+  async function refreshPresence() {}
 
   /** Envía una solicitud de amistad (o acepta la que ya te había mandado). */
   async function request(name) {

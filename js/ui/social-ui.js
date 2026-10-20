@@ -73,22 +73,13 @@
       if (t) G.Audio.sfx(bad ? 'error' : 'confirm');
     }
 
-    function open() { withNick(() => { G.UI.show('scr-friends', true); msg(''); render(); G.Social.refreshPresence(); }); }
+    function open() { withNick(() => { G.UI.show('scr-friends', true); msg(''); render(); }); }
 
-    /** "hace 5 min", "hace 2 h", "hace 3 días". */
-    function ago(t) {
-      const m = Math.max(1, Math.round((G.Social.now() - t) / 60000));
-      if (m < 60) return 'hace ' + m + ' min';
-      const h = Math.round(m / 60);
-      if (h < 48) return 'hace ' + h + ' h';
-      return 'hace ' + Math.round(h / 24) + ' días';
-    }
-
+    // (Sin "en línea" desde el 20-10-2026: costaba 1/4 de las escrituras de Firestore.)
     function stateText(f) {
       if (f.status === 'in') return 'Quiere ser tu amigo';
       if (f.status === 'out') return 'Solicitud enviada';
-      if (!f.online) return f.seen ? 'Visto ' + ago(f.seen) : 'Desconectado';
-      return f.play ? 'Jugando' : 'En línea';
+      return '';
     }
 
     function render() {
@@ -96,7 +87,7 @@
       $('fr-me').innerHTML = 'Tu apodo: <b class="gold" translate="no">' + esc(G.Social.me ? G.Social.me.name : '') + '</b> · dáselo a tus amigos para que te añadan.';
       $('fr-room').classList.toggle('hidden', !room);
       const list = G.Social.friends.sort((a, b) => {
-        const rank = f => f.status === 'in' ? 0 : f.status === 'ok' ? (f.online ? (f.play ? 2 : 1) : 3) : 4;
+        const rank = f => f.status === 'in' ? 0 : f.status === 'ok' ? 1 : 2;
         return rank(a) - rank(b) || a.name.localeCompare(b.name);
       });
       const box = $('fr-list');
@@ -108,7 +99,7 @@
       for (const f of list) {
         const el = document.createElement('div');
         el.className = 'fr-row';
-        const dot = f.status !== 'ok' ? 'pend' : !f.online ? 'off' : f.play ? 'play' : 'on';
+        const dot = f.status !== 'ok' ? 'pend' : 'on';
         const inRoom = room && room.members.some(m => m.uid === f.uid);
         el.innerHTML = `<i class="dot ${dot}"></i><b translate="no"><a href="#" class="plink" title="Ver su perfil">${esc(f.name)}</a></b><span class="st">${inRoom ? 'En tu sala' : stateText(f)}</span><span class="grow"></span>`;
         if (f.status === 'ok') el.querySelector('.plink').onclick = e => { e.preventDefault(); G.ProfileUI.show(f.uid); };
@@ -123,7 +114,7 @@
         } else if (f.status === 'out') {
           btn('Cancelar', 'ghost', () => G.Social.remove(f.uid));
         } else {
-          if (f.online && !f.play && !inRoom && (!room || room.isHost)) {
+          if (!inRoom && (!room || room.isHost)) {
             btn('Invitar', 'gold', async () => {
               const r = await G.Social.invite(f.uid);
               msg(r.ok ? r.msg : r.error, !r.ok);
@@ -172,7 +163,6 @@
     function open() {
       if (!G.Social.room) { G.MenuUI.open(); return; }
       G.Social.refreshMember();
-      G.Social.refreshPresence();
       G.UI.show('scr-lobby', true);
       membersKey = '';
       render();
@@ -228,12 +218,12 @@
       inv.classList.toggle('hidden', !canInvite);
       if (canInvite) {
         inv.innerHTML = '';
-        const free = G.Social.friends.filter(f => f.status === 'ok' && f.online && !ms.some(m => m.uid === f.uid));
-        if (!free.length) inv.innerHTML = '<p class="sub" style="margin:0">Ningún amigo en línea ahora mismo.</p>';
+        const free = G.Social.friends.filter(f => f.status === 'ok' && !ms.some(m => m.uid === f.uid));
+        if (!free.length) inv.innerHTML = '<p class="sub" style="margin:0">Aún no tienes amigos añadidos.</p>';
         for (const f of free) {
           const el = document.createElement('div');
           el.className = 'fr-row';
-          el.innerHTML = `<i class="dot ${f.play ? 'play' : 'on'}"></i><b translate="no">${esc(f.name)}</b><span class="st">${f.play ? 'Jugando' : 'En línea'}</span><span class="grow"></span>`;
+          el.innerHTML = `<i class="dot on"></i><b translate="no">${esc(f.name)}</b><span class="grow"></span>`;
           const b = document.createElement('button');
           b.className = 'btn small gold'; b.textContent = 'Invitar';
           b.onclick = async () => { const r = await G.Social.invite(f.uid); G.UI.toast(r.ok ? r.msg : r.error); };

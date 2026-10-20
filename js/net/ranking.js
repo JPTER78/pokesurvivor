@@ -46,6 +46,10 @@ G.Ranking = (() => {
   // importe y eran muchas lecturas y escrituras para nada: los que empiezan
   // mueren a menudo en el primer minuto; era 1 min hasta el 14-10-2026).
   const MIN_T = 120;
+  // En el histórico de cada Pokémon, 5 min: con casi mil tablas, la mayoría no
+  // llega a 50 marcas y aceptaban cualquier partida (2 escrituras cada vez; el
+  // ranking era ~1/5 de las escrituras de Firestore el 20-10-2026).
+  const MIN_T_MON = 300;
   const TTL = 30 * 60 * 1000;            // caché de lo leído (30 min: menos lecturas de Firestore)
 
   const fbx = () => G.DB.online ? G.DB.fb : null;
@@ -180,13 +184,23 @@ G.Ranking = (() => {
    * cada partida (14-10-2026: eran casi 150.000 escrituras al día de más; es
    * igual de seguro, porque la sesión siempre empieza antes que la partida).
    * Antes se espera a que acabe de subirse la marca de la partida anterior.
+   * Desde el 20-10-2026, además, como mucho una vez por hora aunque recargues
+   * (se recuerda en el navegador): cada recarga del móvil o por una
+   * actualización era otra escritura. Una hora más vieja sólo deja la regla
+   * más holgada, nunca rechaza una marca buena.
    */
   let busy = Promise.resolve(), runMarked = '';
+  const RUN_EVERY = 3600 * 1000;
   function runStarted(mode) {
     const fb = fbx();
     if (!fb || runMarked === fb.uid) return;
     runMarked = fb.uid;
+    const memo = 'ps.run.' + fb.uid;
+    let last = 0;
+    try { last = +localStorage.getItem(memo) || 0; } catch (e) { /* nada */ }
+    if (Date.now() - last < RUN_EVERY) return;
     const go = n => fb.fs.collection('runs').doc(fb.uid).set({ startedAt: now(), mode })
+      .then(() => { try { localStorage.setItem(memo, String(Date.now())); } catch (e) { /* nada */ } })
       .catch(e => {
         console.warn('[Ranking] inicio:', e.code || e.message);
         if (n < 2) setTimeout(() => go(n + 1), 15000); else runMarked = '';
@@ -276,7 +290,7 @@ G.Ranking = (() => {
     const ids = boardIds();
     const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
-    boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
+    if (r.t >= MIN_T_MON) boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
     const better = await store(boards, fb.uid, entry);
     announce(better);
     return better;
@@ -293,7 +307,7 @@ G.Ranking = (() => {
                     shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills };
     const ids = boardIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
-    for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
+    if (r.t >= MIN_T_MON) for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
     const better = await store(boards, id, entry);
     announce(better);
     return better;
