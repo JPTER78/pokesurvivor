@@ -32,7 +32,9 @@ G.Net = (() => {
   let qref = null;
   const peers = new Map();         // uid -> { pc, dc, mode, timer }
   const handlers = new Set(), peerHandlers = new Set();
-  let stats = { sent: 0, recv: 0, relaySent: 0 };
+  const stats = { sent: 0, recv: 0, relaySent: 0,
+    // Sólo los datos de la partida que se han mandado bien (sin ICE/SCTP/DTLS/TURN).
+    sentBytes: 0, jsonBytes: 0, recvBytes: 0, binarySent: 0, binaryRecv: 0, invalidBinary: 0 };
 
   function emitPeer(u) {
     const p = peers.get(u);
@@ -104,11 +106,33 @@ G.Net = (() => {
 
   function wireChannel(u, p, dc) {
     p.dc = dc;
-    dc.onopen = () => { clearTimeout(p.timer); p.mode = 'direct'; emitPeer(u); };
+    p.binaryVersion = 0;
+    dc.binaryType = 'arraybuffer';
+    dc.onopen = () => {
+      clearTimeout(p.timer); p.mode = 'direct';
+      // Aviso de que entendemos binario (las versiones viejas lo ignoran); hasta que el otro
+      // mande el suyo, se le habla en JSON.
+      try { dc.send(JSON.stringify({ k: 'net-cap', binary: G.NetCodec.version })); } catch (e) { /* el JSON sigue valiendo */ }
+      emitPeer(u);
+    };
     dc.onclose = () => { if (p.mode === 'direct') { p.mode = 'connecting'; useRelay(u); } };
     dc.onmessage = e => {
       let m;
-      try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (typeof e.data === 'string') {
+        try { m = JSON.parse(e.data); } catch (err) { return; }
+        if (m && m.k === 'net-cap') {
+          p.binaryVersion = m.binary === G.NetCodec.version ? m.binary : 0;
+          return;
+        }
+        stats.recvBytes += G.NetCodec.size(e.data);
+      } else {
+        try {
+          if (p.binaryVersion !== G.NetCodec.version) throw Error('unnegotiated binary');
+          m = G.NetCodec.decode(e.data);
+          if (!m || m.k !== 'f') throw Error('not a frame');
+        } catch (err) { stats.invalidBinary++; return; }
+        stats.recvBytes += e.data.byteLength; stats.binaryRecv++;
+      }
       deliver(u, m);
     };
   }
@@ -192,7 +216,17 @@ G.Net = (() => {
     const p = peers.get(to);
     stats.sent++;
     if (p && p.dc && p.dc.readyState === 'open') {
-      try { p.dc.send(JSON.stringify(msg)); return; } catch (e) { /* cae al relé */ }
+      try {
+        const json = JSON.stringify(msg), jsonBytes = G.NetCodec.size(json);
+        const packed = p.binaryVersion === G.NetCodec.version && msg && msg.k === 'f'
+          ? G.NetCodec.encode(msg) : null;
+        const binary = packed && packed.byteLength < jsonBytes;
+        p.dc.send(binary ? packed : json);
+        stats.sentBytes += binary ? packed.byteLength : jsonBytes;
+        stats.jsonBytes += jsonBytes;
+        if (binary) stats.binarySent++;
+        return;
+      } catch (e) { /* cae al relé */ }
     }
     // Sin relé, los datos de la partida no van por la base de datos (se pierden: esa
     // pareja no está conectada). Sólo pasa el aviso de empezar.
