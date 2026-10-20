@@ -300,7 +300,7 @@
       let terrainMul = 1;
       // (El legendario está en su casa: su arena no le afecta. Los de Arceus, tampoco.)
       if (!this.flying && !this.legend && !this.judge && G.World.isLiquid(this.x, this.y)) {
-        const le = G.World.liquidEffect(this.types);
+        const le = G.World.liquidEffect(this.types, this.x, this.y);
         if (le.dmg) {
           this.lavaTick -= dt;
           if (this.lavaTick <= 0) { this.lavaTick = le.every; this.hurt(6 + this.maxHp * 0.04, le.color); }

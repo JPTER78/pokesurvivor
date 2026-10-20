@@ -149,6 +149,16 @@ G.Events = (() => {
     return true;
   }
 
+  /** El terreno ha cambiado (world.js changeBiome): ni él ni su marca se quedan dentro de una pared. */
+  function resettle() {
+    if (!lost) return;
+    G.World.unstick(lost);
+    if (!G.World.isFree(lost.tx, lost.ty, 30)) {
+      const p = G.World.freeSpot(lost.tx, lost.ty, 30);
+      if (p) { lost.tx = p[0]; lost.ty = p[1]; }
+    }
+  }
+
   function makeLost(o) {
     const mon = G.DEX_BY[o.dex];
     lost = Object.assign({ name: mon ? mon.name : '', maxHp: 100, t: 0, hitCd: 0, netT: 0, follow: null,
@@ -347,7 +357,7 @@ G.Events = (() => {
   }
 
   return {
-    reset, update, bag, onNet, drawables, drawHud,
+    reset, update, bag, onNet, drawables, drawHud, resettle,
     get golden() { return !!cur && cur.id === 'gold'; },
     get current() { return cur ? cur.id : null; },
     /** Para pruebas. */
