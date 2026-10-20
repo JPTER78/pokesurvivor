@@ -1,7 +1,7 @@
 /* ============ ranking-ui.js — pantalla del ranking ============
  * Pestañas Solo / Grupo, periodo (diario ... histórico), todos o sólo amigos,
  * filtro por Pokémon (sólo en el histórico) y tu puesto abajo aunque no salgas
- * en el top. Lo leído se guarda 30 min (ver ranking.js).
+ * en el top. Lo leído se guarda 2 h (ver ranking.js).
  */
 G.RankingUI = (() => {
   const $ = G.UI.$;

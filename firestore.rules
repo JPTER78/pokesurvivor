@@ -31,8 +31,10 @@ service cloud.firestore {
     // (ban = true; el campo viejo "sus" ya no cuenta para nada). El jugador no
     // puede quitarse el baneo: si está, sus guardados tienen que llevarlo.
     match /saves/{uid} {
-      allow read, delete: if signedIn() && me() == uid;
+      allow read: if signedIn() && me() == uid;
       allow read: if admin();
+      // (Baneado no: sin documento, validEntry da por hecho que no hay baneo.)
+      allow delete: if signedIn() && me() == uid && resource.data.get('ban', false) == false;
 
       allow create: if signedIn() && me() == uid && validSaveDoc() && saneSave(request.resource.data.save)
         && request.resource.data.get('ban', false) == false;
@@ -125,33 +127,27 @@ service cloud.firestore {
 
     // ---------- ranking ----------
 
-    // Al empezar cada partida (en grupo, el anfitrión) el servidor apunta la hora.
+    // Hora de inicio de partida: se quitó el 20-10-2026 (era 1/3 de las escrituras
+    // y validEntry la leía en cada marca). Sólo se puede borrar lo que quede.
     match /runs/{uid} {
       allow read, delete: if signedIn() && me() == uid;
-      // Como mucho cada 10 min: el juego lo escribe una vez por hora como mucho y una
-      // hora vieja sólo deja validEntry más holgada (era la colección que más escribía, 20-10-2026).
-      allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['startedAt', 'mode'])
-        && request.resource.data.startedAt == request.time
-        && (resource == null || every(resource.data.startedAt, 600));
+      allow create, update: if false;
     }
 
     // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
-    //   - no puede durar más que el tiempo real desde que empezó tu partida
-    //     (runs/{uid}), con 30 s de margen; ni más de 45 min (desde el
-    //     18-10-2026 la Sentencia de Arceus deja KO de un toque hacia el
-    //     minuto 40; antes era 1 h y se llegaba huyendo)
+    //   - no más de 45 min (desde el 18-10-2026 la Sentencia de Arceus deja KO
+    //     de un toque hacia el minuto 40; antes era 1 h y se llegaba huyendo)
     //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
-    //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban)
+    //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban; si aún
+    //     no ha guardado nunca en la nube, no tiene documento y no está baneada)
     function validEntry(board, id) {
       let d = request.resource.data;
-      let run = get(/databases/$(database)/documents/runs/$(me())).data;
+      let sv = /databases/$(database)/documents/saves/$(me());
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
         && d.t is int && d.t > 0 && d.t <= 2700
-        && d.t <= (request.time - run.startedAt).seconds() + 30
         && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
-        && get(/databases/$(database)/documents/saves/$(me())).data.get('ban', false) == false
+        && (!exists(sv) || get(sv).data.get('ban', false) == false)
         && d.uids is list && me() in d.uids
         && d.names is list && d.names.size() == d.uids.size()
         && d.dex is list && d.dex.size() == d.uids.size()

@@ -73,7 +73,12 @@
       if (t) G.Audio.sfx(bad ? 'error' : 'confirm');
     }
 
-    function open() { withNick(() => { G.UI.show('scr-friends', true); msg(''); render(); }); }
+    function open() {
+      withNick(() => {
+        G.UI.show('scr-friends', true); msg(''); render();
+        G.Social.ensureFriends().then(() => { if (G.UI.isOpen('scr-friends')) render(); });
+      });
+    }
 
     // (Sin "en línea" desde el 20-10-2026: costaba 1/4 de las escrituras de Firestore.)
     function stateText(f) {
@@ -163,6 +168,7 @@
     function open() {
       if (!G.Social.room) { G.MenuUI.open(); return; }
       G.Social.refreshMember();
+      G.Social.ensureFriends().then(() => { if (G.UI.isOpen('scr-lobby')) { membersKey = ''; render(); } });
       G.UI.show('scr-lobby', true);
       membersKey = '';
       render();

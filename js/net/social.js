@@ -124,12 +124,30 @@ G.Social = (() => {
     return { ok: true };
   }
 
-  /** Amigos e invitaciones. Nada de esto usa la Realtime Database. */
+  /*
+   * Amigos e invitaciones. Nada de esto usa la Realtime Database.
+   * Desde el 20-10-2026 la lista de amigos NO se carga al entrar (1 lectura por
+   * amigo en cada carga de la página, para todos): sólo al abrir Amigos, la sala
+   * o el ranking de amigos (ensureFriends). Las invitaciones sí se escuchan desde
+   * el principio si este navegador sabe que tienes amigos (hasFrKey); el servidor
+   * ya comprueba que sean de un amigo.
+   */
+  const hasFrKey = () => 'ps.hasfr.' + uid;
   function online() {
     if (beatT) return;                        // ya estaba en marcha
     beatT = 1;
     if (fb.rtdb) fb.rtdb.goOffline();         // se conecta sólo al entrar en una sala
-    listenFriends();
+    let known = false;
+    try { known = localStorage.getItem(hasFrKey()) === '1'; } catch (e) { /* nada */ }
+    if (known) listenInvites();
+  }
+
+  /** Carga la lista de amigos (y la sigue escuchando) la primera vez que hace falta. */
+  let friendsReady = null;
+  function ensureFriends() {
+    if (!fb || !me) return Promise.resolve();
+    if (!friendsReady) friendsReady = new Promise(res => listenFriends(res));
+    return friendsReady;
   }
 
   /** Invitaciones a salas: sólo te pueden llegar de amigos, así que sin amigos no se escucha (lecturas). */
@@ -154,17 +172,14 @@ G.Social = (() => {
   const presKey = () => 'ps.pres.' + uid;
   function writeStatus() {}
   function setPlaying(p) { playing = !!p; }
-  function onVisible() {}
 
   async function stop(why) {
     if (!started) return;
     await leaveRoom().catch(() => {});
     if (unFriends) { unFriends(); unFriends = null; }
     if (unInv) { unInv(); unInv = null; }
-    clearInterval(beatT); beatT = 0;
-    document.removeEventListener('visibilitychange', onVisible);
+    clearInterval(beatT); beatT = 0; friendsReady = null;
     try { localStorage.removeItem(presKey()); } catch (e) { /* nada */ }
-    if (me) await fb.fs.collection('pres').doc(uid).delete().catch(() => {});
     if (why === 'delete') {
       try { localStorage.removeItem('ps.nick.' + uid); } catch (e) { /* nada */ }
       await deleteAll().catch(e => console.warn('[Social] borrar:', e));
@@ -184,6 +199,7 @@ G.Social = (() => {
     await step('invitaciones', () => del(fb.fs.collection('inv').where('to', '==', uid)));
     await step('marcas', () => del(fb.fs.collectionGroup('e').where('uids', 'array-contains', uid)));
     await step('partida en curso', () => fb.fs.collection('runs').doc(uid).delete());
+    await step('en línea', () => fb.fs.collection('pres').doc(uid).delete());
     await step('apodo', async () => {
       const prof = await fb.fs.collection('profiles').doc(uid).get();
       const lower = prof.exists ? prof.data().lower : me && me.name.toLowerCase();
@@ -194,7 +210,7 @@ G.Social = (() => {
 
   // ---------------- amigos ----------------
 
-  function listenFriends() {
+  function listenFriends(ready) {
     unFriends = fb.fs.collection('friendships').where('users', 'array-contains', uid).onSnapshot(snap => {
       const next = new Map();
       snap.forEach(d => {
@@ -208,9 +224,11 @@ G.Social = (() => {
       });
       friends = next;
       emit('friends');
-      // Con amigos ya te pueden invitar.
+      // Con amigos ya te pueden invitar (y este navegador lo recuerda para la próxima vez).
+      try { if (hasFriends()) localStorage.setItem(hasFrKey(), '1'); else localStorage.removeItem(hasFrKey()); } catch (e) { /* nada */ }
       if (hasFriends()) listenInvites();
-    }, e => console.warn('[Social] amigos:', e.code || e.message));
+      if (ready) { ready(); ready = null; }
+    }, e => { console.warn('[Social] amigos:', e.code || e.message); if (ready) { ready(); ready = null; } });
   }
 
   /** (Quitado el 20-10-2026 con el "en línea": ya no lee nada.) */
@@ -501,7 +519,7 @@ G.Social = (() => {
 
   return {
     start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence, ensureFriends,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

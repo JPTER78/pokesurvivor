@@ -22,7 +22,7 @@
  *   id = tu uid (solitario) o los uid del equipo ordenados y unidos con "_".
  *
  * Ahorros:
- *   - Lo leído se guarda 30 min en el navegador (cambiar de pestaña y volver: 0).
+ *   - Lo leído se guarda 2 h en el navegador (cambiar de pestaña y volver: 0).
  *   - Tus mejores marcas se recuerdan en el navegador: al acabar una partida
  *     no hay que leer nada para saber si has mejorado, y sólo se escribe
  *     donde mejoras.
@@ -50,7 +50,9 @@ G.Ranking = (() => {
   // llega a 50 marcas y aceptaban cualquier partida (2 escrituras cada vez; el
   // ranking era ~1/5 de las escrituras de Firestore el 20-10-2026).
   const MIN_T_MON = 300;
-  const TTL = 30 * 60 * 1000;            // caché de lo leído (30 min: menos lecturas de Firestore)
+  // Caché de lo leído: 2 h (era 30 min hasta el 20-10-2026). Tu marca nueva se
+  // ve al momento igual (al subirla se guarda en la caché lo que se escribió).
+  const TTL = 2 * 3600 * 1000;
 
   const fbx = () => G.DB.online ? G.DB.fb : null;
 
@@ -177,35 +179,55 @@ G.Ranking = (() => {
 
   // ---------------- anti-trampas ----------------
 
-  /**
-   * Al empezar la PRIMERA partida de la sesión (en grupo, el anfitrión) el
-   * servidor apunta la hora: ninguna marca puede durar más que el tiempo real
-   * desde entonces (firestore.rules, validEntry). Una vez por sesión y no en
-   * cada partida (14-10-2026: eran casi 150.000 escrituras al día de más; es
-   * igual de seguro, porque la sesión siempre empieza antes que la partida).
-   * Antes se espera a que acabe de subirse la marca de la partida anterior.
-   * Desde el 20-10-2026, además, como mucho una vez por hora aunque recargues
-   * (se recuerda en el navegador): cada recarga del móvil o por una
-   * actualización era otra escritura. Una hora más vieja sólo deja la regla
-   * más holgada, nunca rechaza una marca buena.
+  /*
+   * Hasta el 20-10-2026, al empezar a jugar se apuntaba la hora en runs/{uid}
+   * y ninguna marca podía durar más que el tiempo real desde entonces. Era lo
+   * que más escribía en Firestore (1/3) y la regla lo leía en cada marca, para
+   * una protección que se esquivaba esperando una vez: se quitó. Quedan el tope
+   * de 45 min, nivel y derrotados con sentido y el baneo (firestore.rules).
    */
-  let busy = Promise.resolve(), runMarked = '';
-  const RUN_EVERY = 3600 * 1000;
-  function runStarted(mode) {
+  let busy = Promise.resolve();
+  /** Al empezar a jugar: sube las marcas del histórico que esperaban (ver DEFER). */
+  function runStarted() { flushDeferred(); }
+
+  /*
+   * Tu marca del histórico FUERA del top 50 (20-10-2026): nadie la ve, sólo
+   * sirve para tu puesto exacto, que ya se mira cada 6 h (RANK_TTL). Así que se
+   * sube como mucho cada DEFER; mientras, la mejor espera en el navegador y
+   * sale al acabar o empezar otra partida pasado ese tiempo. Si entras en el
+   * top 50 se sube al momento, como siempre.
+   */
+  const DEFER = 6 * 3600 * 1000, DEF = 'ps.rk.def';
+  const defKey = () => DEF + '.' + (fbx() ? fbx().uid : '');
+  function deferred() { try { return JSON.parse(localStorage.getItem(defKey()) || '{}'); } catch (e) { return {}; } }
+  function saveDeferred(d) { try { localStorage.setItem(defKey(), JSON.stringify(d)); } catch (e) { /* lleno */ } }
+  /** ¿Toca subirla ya (hace DEFER que no) o se deja esperando? → true si hay que subirla. */
+  function dueOrDefer(b, id, entry) {
+    const d = deferred(), k = b + ':' + id, up = (d[k] && d[k].up) || 0;
+    if (Date.now() - up >= DEFER) { d[k] = { up: Date.now() }; saveDeferred(d); return true; }
+    d[k] = { up, e: entry }; saveDeferred(d);
+    return false;
+  }
+  function flushDeferred() {
     const fb = fbx();
-    if (!fb || runMarked === fb.uid) return;
-    runMarked = fb.uid;
-    const memo = 'ps.run.' + fb.uid;
-    let last = 0;
-    try { last = +localStorage.getItem(memo) || 0; } catch (e) { /* nada */ }
-    if (Date.now() - last < RUN_EVERY) return;
-    const go = n => fb.fs.collection('runs').doc(fb.uid).set({ startedAt: now(), mode })
-      .then(() => { try { localStorage.setItem(memo, String(Date.now())); } catch (e) { /* nada */ } })
-      .catch(e => {
-        console.warn('[Ranking] inicio:', e.code || e.message);
-        if (n < 2) setTimeout(() => go(n + 1), 15000); else runMarked = '';
-      });
-    busy.then(() => go(0));
+    if (!fb) return;
+    const d = deferred();
+    let changed = false;
+    for (const [k, v] of Object.entries(d)) {
+      if (!v || !v.e) { if (v && Date.now() - (v.up || 0) > DEFER) { delete d[k]; changed = true; } continue; }
+      if (Date.now() - (v.up || 0) < DEFER) continue;
+      const i = k.indexOf(':'), b = k.slice(0, i), id = k.slice(i + 1);
+      d[k] = { up: Date.now() }; changed = true;
+      // (Si ya hay una mejor en la nube, las reglas la rechazan: no pasa nada.)
+      col(b).doc(id).set(Object.assign({}, v.e, { at: now() })).catch(() => {});
+      mem.delete('r:' + b); try { localStorage.removeItem('ps.rk.c.r:' + b); } catch (e) { /* nada */ }
+    }
+    if (changed) saveDeferred(d);
+  }
+  /** Ya se ha subido por otro camino (entró en el top): nada que esperar. */
+  function clearDeferred(b, id) {
+    const d = deferred(), k = b + ':' + id;
+    if (d[k] && d[k].e) { d[k] = { up: Date.now() }; saveDeferred(d); }
   }
   /** La subida de una marca (para que la partida siguiente espere a que acabe). */
   function track(p) { busy = p.catch(() => {}); return p; }
@@ -235,9 +257,12 @@ G.Ranking = (() => {
         // Si la tabla ya está llena y no llegas al top 50, no hace falta tocar el resumen
         // (y en diario, semanal y mensual, ni siquiera se guarda la marca).
         const cached = cacheGet('s:' + b);
+        let waiting = false;
         if (thr && entry.t <= thr && !(cached && id in cached)) {
-          if (!topOnly) await col(b).doc(id).set(data);
-          else { known[key] = entry.t; return; }
+          if (topOnly) { known[key] = entry.t; return; }
+          // Histórico fuera del top 50: como mucho cada DEFER (ver arriba).
+          if (dueOrDefer(b, id, entry)) await col(b).doc(id).set(data);
+          else waiting = true;
         } else {
           let entered = true;
           let newTop = null;
@@ -265,10 +290,12 @@ G.Ranking = (() => {
           });
           if (newTop) { cacheSet('s:' + b, newTop); noteTop(b, newTop); }
           if (topOnly && !entered) { known[key] = entry.t; return; }
+          if (!topOnly) clearDeferred(b, id);
         }
         known[key] = entry.t;
         if (b.startsWith('g_')) known[b + ':*'] = Math.max(known[b + ':*'] || 0, entry.t);
-        mem.delete('r:' + b); try { localStorage.removeItem('ps.rk.c.r:' + b); } catch (e) { /* nada */ }
+        // (Si la marca espera para subir, tu puesto en la nube aún no ha cambiado.)
+        if (!waiting) { mem.delete('r:' + b); try { localStorage.removeItem('ps.rk.c.r:' + b); } catch (e) { /* nada */ } }
         if (period && period !== 'p' && !better.includes(period)) better.push(period);
       } catch (e) { console.warn('[Ranking] no se pudo guardar en', b, e.code || e.message); }
     }));
@@ -287,6 +314,7 @@ G.Ranking = (() => {
   async function submitSoloNow(r) {
     const fb = fbx();
     if (!fb || !G.Social.me || r.t < MIN_T) return [];
+    flushDeferred();
     const ids = boardIds();
     const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
@@ -315,7 +343,7 @@ G.Ranking = (() => {
 
   // ---------------- leer ----------------
 
-  /** El top 50 de una tabla (1 lectura, o 0 si se leyó hace menos de 30 min). */
+  /** El top 50 de una tabla (1 lectura, o 0 si se leyó hace menos de 2 h). */
   const inflight = new Map();             // tabla -> lectura en curso (la lista y tu puesto la comparten)
   async function summary(b) {
     const c = cacheGet('s:' + b);
@@ -341,11 +369,12 @@ G.Ranking = (() => {
     const b = board(mode, period, dex);
     const rows = sorted(await summary(b));
     if (!friendsOnly) return rows.slice(0, TOP);
+    await G.Social.ensureFriends();          // (la lista de amigos ya no se carga al entrar)
     const circle = [fb.uid, ...G.Social.friends.filter(f => f.status === 'ok').map(f => f.uid)].slice(0, 30);
     const inTop = rows.filter(r => r.uids.some(u => circle.includes(u)));
     // En diario, semanal, mensual y por Pokémon no hay marcas fuera del top 50.
     if (TOP_ONLY.has(period) || dex) return inTop;
-    // Los amigos que no están en el top 50: se buscan aparte (y se guardan 30 min).
+    // Los amigos que no están en el top 50: se buscan aparte (y se guardan 2 h).
     const ck = 'f:' + b + ':' + circle.slice().sort().join(',');
     let extra = cacheGet(ck);
     if (extra === undefined) {

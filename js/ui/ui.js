@@ -32,18 +32,17 @@ G.UI = (() => {
     $('coins').textContent = s ? s.coins.toLocaleString(G.I18n.locale) : '0';
     const t = (s && s.tickets) || { t1: 0, t10: 0 };
     $('tickets-pill').innerHTML = `${G.Icons.html('ticket', 18)} ${t.t1} &nbsp;${G.Icons.html('ticket10', 18)} ${t.t10}`;
-    // Punto de sincronización: verde = guardado en la nube, amarillo = guardando,
-    // rojo = sin conexión (se guarda en local y se sube al volver).
+    // Punto de sincronización: verde = guardado en la nube, amarillo = hay cambios
+    // sin subir (sólo se suben con Guardar, desde el 20-10-2026), rojo = sin conexión.
     const st = G.DB.guest ? 'guest' : G.DB.syncState;
-    const TIP = { ok: 'Guardado en la nube', syncing: 'Guardando…', pending: 'Guardando…',
-                  offline: 'Sin conexión: se subirá al volver', local: 'Guardado sólo en este navegador', guest: 'Invitado: no se guarda' };
+    const TIP = { ok: 'Guardado en la nube', syncing: 'Guardando…', pending: 'Sin guardar en la nube: pulsa Guardar',
+                  offline: 'Sin conexión: pulsa Guardar cuando vuelva', local: 'Guardado sólo en este navegador', guest: 'Invitado: no se guarda' };
     $('user-pill').innerHTML = G.Icons.html(G.DB.guest ? 'user' : 'crown', 18) + ' <span translate="no">' + (G.DB.guest ? G.T('Invitado') : (G.DB.user || '')) + '</span>' +
       `<i class="sync ${st}" title="${TIP[st] || ''}"></i>`;
     $('user-pill').title = TIP[st] || '';
     // Botón Guardar: sólo con cuenta en la nube (en local ya se guarda al momento).
     const sb = $('btn-save');
-    sb.classList.toggle('hidden', G.DB.guest || G.DB.mode !== 'cloud');
-  }
+    sb.classList.toggle('hidden', G.DB.guest || G.DB.mode !== 'cloud');  }
 
   let toastEl = null, toastT = 0;
   function toast(msg, ms = 2200) {
