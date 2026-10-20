@@ -1,0 +1,7 @@
+.env
+settings.json
+runtime/
+certs/
+*.pem
+*.key
+node_modules/

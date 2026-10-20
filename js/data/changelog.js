@@ -29,7 +29,9 @@ G.CHANGELOG = [
     ['Los Pokémon de un solo tipo pegan un 20 % más con los ataques de su tipo, para compensar que tienen menos variedad.',
      'Single-type Pokémon deal 20% more damage with moves of their type, to make up for having less variety.'],
     ['Al aprender un ataque nuevo ya no se cambia solo a él: sigues con el que estabas usando y cambias cuando tú quieras.',
-     'Learning a new move no longer switches to it on its own: you keep the one you were using and switch whenever you want.']
+     'Learning a new move no longer switches to it on its own: you keep the one you were using and switch whenever you want.'],
+    ['El juego sólo se puede jugar en su web oficial, pokesurvivor.com: si otra web lo mete dentro de la suya (por ejemplo, para ponerle anuncios alrededor), sale un aviso con un botón para ir a la oficial.',
+     'The game can only be played on its official website, pokesurvivor.com: if another site embeds it in its own page (for example, to put ads around it), a notice appears with a button to go to the official one.']
   ], fix: [
     ['Movimiento inicial: ya se puede volver al ataque de serie aunque no sea de su tipo (por ejemplo Confusión en Psyduck).',
      'Starting move: you can now go back to the default move even if it is not of its type (for example Confusion on Psyduck).'],

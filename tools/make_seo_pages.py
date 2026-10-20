@@ -111,6 +111,7 @@ def page(pid, lang, title, desc, body, ld=None):
 <link rel="icon" type="image/png" sizes="144x144" href="{up}assets/icons/icon-144.png">
 <link rel="apple-touch-icon" href="{up}assets/icons/icon-180.png">
 <link rel="stylesheet" href="{up}css/pages.css">
+<script src="{up}js/noframe.js"></script>
 {ldj}
 </head>
 <body>
