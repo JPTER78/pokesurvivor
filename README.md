@@ -7,6 +7,15 @@ shinies y gacha por región. Música y efectos compuestos para el juego.
 HTML + CSS + JavaScript vanilla sobre Canvas 2D. Sin build, sin dependencias y
 **todo local**: no necesita internet para jugar.
 
+> **Autoría / Authorship**
+>
+> PokéSurvivor (su código y su música original) lo ha escrito y es de
+> **Jonathan Piera Torregrosa**, dueño de esta cuenta (JPTER78) y de pokesurvivor.com.
+> The source code and original music of PokéSurvivor are written and owned by
+> **Jonathan Piera Torregrosa**, owner of this GitHub account (JPTER78) and of
+> pokesurvivor.com. Google copyright removal request **4-2352000042234**
+> (against pokesurvivor.co) was submitted by me.
+
 > **Aviso sobre criptomonedas / Crypto disclaimer**
 >
 > PokéSurvivor **no tiene ninguna criptomoneda, token ni NFT oficial**, y yo no

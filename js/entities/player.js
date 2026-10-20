@@ -296,9 +296,11 @@ G.Player = class Player {
 
   /** Devuelve cuántos niveles ha subido (pueden ser varios de golpe). */
   gainXp(amount) {
-    this.xp += amount * this.xpMul;
+    const add = amount * this.xpMul;
+    if (!Number.isFinite(add) || add <= 0) return 0;     // una experiencia infinita no acababa nunca de subir niveles
+    this.xp += add;
     let leveled = 0;
-    while (this.xp >= this.xpNext) {
+    while (this.xp >= this.xpNext && leveled < 50) {
       this.xp -= this.xpNext;
       this.level++;
       this.xpNext = Player.xpFor(this.level);
