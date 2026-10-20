@@ -117,11 +117,15 @@ G.Tiles = (() => {
     return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
   }
 
-  /** Paleta completa de bioma a partir de los pocos colores de una arena. */
+  /**
+   * Paleta completa de bioma a partir de los pocos colores de una arena.
+   * name: en la grieta ("Grieta · ..."); place: el sitio a secas, para cuando
+   * sale como bioma del mapa (desde el minuto 12, ver world.js biomeName).
+   */
   function arenaBiome(th) {
     const f = th.floor, w = th.wall, L = th.liq;
     return {
-      name: 'Grieta · ' + th.name, liquid: th.liquid,
+      name: 'Grieta · ' + th.name, place: th.name, liquid: th.liquid,
       floor: [f, shade(f, 0.05), shade(f, -0.06)], dirt: [shade(f, -0.16), shade(f, -0.12), shade(f, -0.2)],
       speck: shade(f, -0.25), light: shade(f, 0.22), flowers: th.flowers,
       wallTop: [w, shade(w, 0.07), shade(w, -0.07)], wallLight: shade(w, 0.32), wallEdge: shade(w, -0.7),

@@ -574,7 +574,14 @@ G.World = (() => {
     images = new Map();
   }
 
-  function biomeName() { return G.Tiles.BIOMES[biome].name; }
+  /**
+   * En la grieta o en la Sentencia, el nombre de la arena; en el mapa, el del sitio.
+   * (No vale mirar `arena`: al volver de la grieta se queda puesta.)
+   */
+  function biomeName() {
+    const B = G.Tiles.BIOMES[biome];
+    return G.Rift.inArena || G.Judgment.active ? B.name : (B.place || B.name);
+  }
 
   /** Viñeta en coordenadas de pantalla. */
   function drawVignette(ctx, w, h) {
