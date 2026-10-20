@@ -618,13 +618,24 @@ G.Layouts = (() => {
   /** El de cada id con el ancla en el 0,0 (el del principio de la run; también para las pruebas). */
   const atOrigin = {};
   const get = id => (BUILD[id] ? atOrigin[id] || (atOrigin[id] = make(id)) : null);
-  // Bioma de la run (G.Tiles.BIOMES) -> generador. Los colores de las grietas
-  // que salen a partir del minuto 12 siguen con el campo abierto de momento.
+  // Bioma de la run (G.Tiles.BIOMES) -> generador: los tres del principio por su sitio
+  // en la lista, los demás por lo que pidan (layout) o por su tipo (BY_TYPE).
   const BY_BIOME = ['plains', 'cave', 'lava'];       // el bosque, con el campo de siempre
-  /** Generador de un bioma (G.Tiles.BIOMES): el que pida él (layout) o el de la lista; si no, el campo. */
+  /*
+   * Los colores de las grietas (a partir del minuto 12), por su tipo: su líquido
+   * con el generador que le va (veneno o descarga en las islas y en la cueva,
+   * arenas movedizas en los ríos del desierto...).
+   */
+  const BY_TYPE = {
+    fire: 'lava', dragon: 'lava', ground: 'lava', grass: 'marsh', ice: 'islands', poison: 'bog',
+    electric: 'plant', fighting: 'cave', psychic: 'cave', rock: 'cave', dark: 'cave', steel: 'cave'
+  };
+  /** Generador de un bioma (G.Tiles.BIOMES): el que pida él (layout), el de la lista o el de su tipo; si no, el campo. */
   function forBiome(b) {
-    const B = G.Tiles && G.Tiles.BIOMES[b];
-    return (B && B.layout) || BY_BIOME[b] || 'plains';
+    const T = G.Tiles, B = T && T.BIOMES[b];
+    if (B && B.layout) return B.layout;
+    if (BY_BIOME[b]) return BY_BIOME[b];
+    return (T && T.ARENA != null && b >= T.ARENA && BY_TYPE[T.ARENA_TYPES[b - T.ARENA]]) || 'plains';
   }
 
   return {

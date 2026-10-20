@@ -104,7 +104,7 @@ test('el terreno nuevo nace con el jugador en un sitio suyo: suelo alrededor y s
 });
 
 test('existen los generadores y el reparto por bioma', () => {
-  for (const id of ['plains', 'cave', 'plant', 'lava', 'marsh', 'islands', 'bog']) assert.ok(L.get(id), id);
+  for (const id of ['plains', 'cave', 'plant', 'lava', 'islands', 'bog', 'marsh']) assert.ok(L.get(id), id);
   assert.equal(L.get('forest'), null);
   assert.equal(L.forBiome(0), 'plains');                // el bosque, con el campo de siempre
   // Un bioma puede pedir su generador (G.Tiles: aquí, lo justo): el archipiélago, las islas.
@@ -112,6 +112,13 @@ test('existen los generadores y el reparto por bioma', () => {
   assert.equal(L.forBiome(22), 'islands');
   assert.equal(L.forBiome(5), 'plains');
   assert.equal(L.forBiome(1), 'cave');
+  // Los colores de las grietas (desde el minuto 12), por su tipo: su líquido con el generador que le va.
+  const TYPES = ['normal', 'fire', 'water', 'grass', 'electric', 'ice', 'fighting', 'poison', 'ground', 'flying',
+                 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy', 'judgment'];
+  G.Tiles = { ARENA: 3, ARENA_TYPES: TYPES, BIOMES: {} };
+  const want = { fire: 'lava', dragon: 'lava', ground: 'lava', grass: 'marsh', ice: 'islands', poison: 'bog',
+                 electric: 'plant', fighting: 'cave', psychic: 'cave', rock: 'cave', dark: 'cave', steel: 'cave' };
+  TYPES.forEach((t, i) => assert.equal(L.forBiome(3 + i), want[t] || 'plains', t));
   delete G.Tiles;
   assert.equal(L.forBiome(1), 'cave');
   assert.equal(L.forBiome(2), 'lava');
