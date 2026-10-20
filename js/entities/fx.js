@@ -216,7 +216,8 @@ G.FX = (() => {
 
   function drawRing(ctx, r) {
     const k = r.t / r.life;
-    const rad = G.U.lerp(r.r0, r.r1, k);
+    // Con tope: un radio enorme (o que no es número) colgaba la pestaña dibujando millones de puntos.
+    const rad = Math.min(4000, G.U.lerp(r.r0, r.r1, k)) || 0;
     const n = Math.max(10, Math.ceil(rad * 6.2832 / (PX * 2)));
     const size = r.width >= 4 ? PX * 2 : PX;
     ctx.globalAlpha = step(1 - k);

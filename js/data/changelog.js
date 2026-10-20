@@ -14,6 +14,10 @@ G.CHANGELOG = [
     ['Objeto nuevo, Pulsera Z: todos tus movimientos se lanzan a la vez.',
      'New item, Z-Ring: all your moves fire at once.']
   ] },
+  { d: '2026-10-20', title: ['Cooperativo más seguro', 'Safer co-op'], fix: [
+    ['Cooperativo: un jugador con el juego trucado ya no puede colgar la partida de los demás mandando números imposibles (una experiencia infinita dejaba congelado al anfitrión y un efecto gigante, a los invitados).',
+     'Co-op: a player with a tampered game can no longer freeze the others by sending impossible numbers (infinite experience froze the host and a giant effect froze the guests).']
+  ] },
   { d: '2026-10-19', title: ['38 ataques nuevos', '38 new moves'], new: [
     ['38 ataques nuevos: ahora todos los tipos tienen 5 o más (Roca, Lucha, Dragón y Hada tenían sólo 2). Entre ellos Hiperrayo, Rayo Solar, Magnitud, Torbellino, Onda Trueno, Enfado, Carantoña, Golpe Bajo... cada uno con su evolución.',
      '38 new moves: every type now has 5 or more (Rock, Fighting, Dragon and Fairy had only 2). Among them Hyper Beam, Solar Beam, Magnitude, Whirlpool, Thunder Wave, Outrage, Play Rough, Sucker Punch... each with its evolution.'],
