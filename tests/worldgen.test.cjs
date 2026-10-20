@@ -82,7 +82,7 @@ function connectivity(lay, seed, R = 100, cx = 0, cy = 0, land = false) {
 }
 
 test('el terreno nuevo nace con el jugador en un sitio suyo: suelo alrededor y salida a lo lejos (sin empujar)', () => {
-  const ids = ['plains'];
+  const ids = ['plains', 'cave', 'plant'];
   for (const id of ids) {
     // Con el ancla en el 0,0, igual que el de siempre.
     const base = L.get(id), at0 = L.make(id, { tx: 0, ty: 0 });
@@ -104,10 +104,10 @@ test('el terreno nuevo nace con el jugador en un sitio suyo: suelo alrededor y s
 });
 
 test('existen los generadores y el reparto por bioma', () => {
-  for (const id of ['plains']) assert.ok(L.get(id), id);
+  for (const id of ['plains', 'cave', 'plant']) assert.ok(L.get(id), id);
   assert.equal(L.get('forest'), null);
   assert.equal(L.forBiome(0), 'plains');                // el bosque, con el campo de siempre
-  assert.equal(L.forBiome(1), 'plains');
+  assert.equal(L.forBiome(1), 'cave');
   assert.equal(L.forBiome(2), 'plains');
 });
 
@@ -146,6 +146,72 @@ test('deterministas: misma semilla, mismo mapa; otra semilla, otro', () => {
     }
     assert.ok(same, id);
     assert.ok(diff > 50, id + ' cambia con la semilla');
+  }
+});
+
+test('cada bioma nuevo se ve distinto: hay pared o líquido de verdad', () => {
+  const liquid = {};
+  for (const id of ['cave']) {
+    const lay = L.get(id);
+    const n = [0, 0, 0];
+    for (let ty = -80; ty < 80; ty++) for (let tx = -80; tx < 80; tx++) n[lay.terrain(tx, ty, 3)]++;
+    const all = n[0] + n[1] + n[2];
+    liquid[id] = n[LIQUID] / all;
+    if (id === 'lava' || id === 'marsh') assert.ok(n[LIQUID] / all > 0.08, `${id}: ${n}`);
+    else if (id === 'islands') assert.ok(n[LIQUID] / all > 0.3 && n[WALL] / all < 0.05, `islands: ${n}`);
+    else assert.ok(n[WALL] / all > 0.25, `${id}: ${n}`);
+    assert.ok(n[FLOOR] / all > 0.3, `${id} deja sitio para jugar: ${n}`);
+  }
+});
+
+test('cueva: sin rendijas de una casilla (parecen paso y no se cabe) y con charcas', () => {
+  const lay = L.get('cave');
+  let slits = 0, floor = 0, liquid = 0;
+  for (const seed of SEEDS) for (let ty = -300; ty < -180; ty++) for (let tx = 400; tx < 520; tx++) {
+    const t = lay.terrain(tx, ty, seed);
+    if (t === LIQUID) liquid++;
+    if (t === WALL) continue;
+    floor++;
+    const w = (a, b) => lay.terrain(tx + a, ty + b, seed) === WALL;
+    if ((w(-1, 0) && w(1, 0)) || (w(0, -1) && w(0, 1))) slits++;
+  }
+  assert.equal(slits, 0, `${slits} casillas de suelo entre dos paredes`);
+  assert.ok(liquid / (floor + 1) > 0.02, `pocas charcas (${(liquid / floor * 100).toFixed(1)}%)`);
+});
+
+test('pasillos y pasos de tierra de ancho variado (no todos iguales, como hechos a mano)', () => {
+  // Ancho de cada tramo recto: en cada fila, las rachas de suelo entre dos "no suelo".
+  for (const [id, other] of [['cave', WALL]]) {
+    const lay = L.get(id), widths = new Map();
+    for (const seed of SEEDS) for (let ty = -400; ty < -200; ty += 3) {
+      let run = 0;
+      for (let tx = 300; tx < 600; tx++) {
+        const t = lay.terrain(tx, ty, seed);
+        if (t === FLOOR) { run++; continue; }
+        if (t === other && run >= 3 && run <= 12) widths.set(run, (widths.get(run) || 0) + 1);
+        run = 0;
+      }
+    }
+    const total = [...widths.values()].reduce((a, b) => a + b, 0);
+    const top = Math.max(...widths.values());
+    assert.ok(widths.size >= 6 && top / total < 0.3, `${id}: anchos ${JSON.stringify([...widths].sort((a, b) => a[0] - b[0]))}`);
+  }
+});
+
+test('conectados por tierra: pasillos de 4+ casillas y sin zonas cerradas', () => {
+  for (const id of ['cave', 'plant']) {
+    const lay = L.get(id);
+    for (const seed of SEEDS) {
+      // En varios sitios del mapa, no sólo alrededor del inicio.
+      for (const [cx, cy] of [[0, 0], [517, -233], [-1200, 900]]) {
+        // Por tierra: el líquido puede ser veneno o descarga (los colores de las grietas), y los ríos tienen
+        // puentes. Menos en la cueva de agua (sus charcas pisan los pasillos) y en las islas (hay vados): se vadean.
+        const { total, lost, mid } = connectivity(lay, seed, 90, cx, cy, id !== 'cave' && id !== 'islands');
+        assert.ok(total > 2000, `${id} seed ${seed} @${cx},${cy}: pocas casillas libres (${total})`);
+        assert.ok(lost / total < 0.01, `${id} seed ${seed} @${cx},${cy}: ${lost}/${total} casillas en zonas cerradas`);
+        if (cx === 0 && cy === 0) assert.ok(mid >= 0, `${id}: el inicio tiene sitio`);
+      }
+    }
   }
 });
 
