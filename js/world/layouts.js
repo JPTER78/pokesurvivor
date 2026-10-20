@@ -4,6 +4,8 @@
  * (inspirado en Mundo Misterioso):
  *   plains  campo abierto con charcas y rocas (lo de siempre)
  *   cave    cueva de salas rectangulares al azar (se pisan) y pasillos rectos
+ *   islands islas grandes y pequeñas unidas por puentes cortos, islotes de paso o vados
+ *   bog     las mismas islas, todo unido por puentes (el pantano venenoso: nada de vadear)
  *   marsh   pantano: ríos de agua que frena, más que los de lava
  *   plant   la cueva con las charcas lejos de las paredes (para la central: su líquido quema)
  *   lava    ríos de lava serpenteantes con puentes de piedra
@@ -318,6 +320,202 @@ G.Layouts = (() => {
    */
   const plant = A => caveOf(A, 1, false, { n: 3, r: [2.2, 4.2] });
 
+  // ---------------- islas ----------------
+  /*
+   * Islas grandes y pequeñas (elipses de tamaño, forma y giro al azar, que a veces
+   * se pisan) en el agua, con la orilla suave. Cada celda de `cell` casillas tiene
+   * una (con `keep`), en cualquier punto de ella; una de cada tantas (`big`),
+   * grande (y alguna, enorme: más que la celda; se pisa con las vecinas).
+   * Qué islas se unen: el grafo de vecindad relativa de sus centros (dos se unen
+   * si no hay una tercera más cerca de las dos que ellas entre sí), que las une
+   * todas. Para cada par, el agua que las separa en la recta entre sus centros:
+   *   hasta `wade` casillas    nada: se vadea
+   *   hasta `maxBridge`        un puente corto y recto de orilla a orilla (`bridge`
+   *                            de ancho), o (con `stones`) uno o dos islotes de
+   *                            paso, con 1–2 casillas de agua entre uno y otro
+   *   más                      uno o dos islotes de paso, más grandes cuanto más
+   *                            lejos (un puente así de largo parecería un pasillo);
+   *                            sin `stones`, un puente igualmente
+   * Así siempre se llega a todas partes andando o vadeando como mucho dos casillas.
+   * Con wade = 0 y stones = 0 (el pantano venenoso), todo se une por tierra.
+   */
+  const ISLE_BLOCK = 16;
+  function archipelago(o) {
+    const S = o.salt, C = o.cell, A = o.anchor, ai = Math.floor(A.tx / C), aj = Math.floor(A.ty / C);
+    /** Isla de la celda (i, j), o null: centro, semiejes y giro. La del principio, grande y en el ancla. */
+    const isle = cellCache((i, j, s) => {
+      if (i === ai && j === aj) return { i, j, x: A.tx + 0.5, y: A.ty + 0.5, rx: 9, ry: 8, c: 1, sn: 0 };
+      if (H(i, j, s + S + 1) > o.keep) return null;
+      // Grandes (de vez en cuando, enormes: el tamaño va al cuadrado) o pequeñas.
+      const big = H(i, j, s + S + 2) < o.big, [r0, r1] = big ? o.bigR : o.smallR;
+      const h = H(i, j, s + S + 3), r = r0 + (big ? h * h : h) * (r1 - r0);
+      const asp = Math.pow(o.aspect, H(i, j, s + S + 4) * 2 - 1);
+      const th = H(i, j, s + S + 5) * Math.PI;
+      return { i, j, x: (i + 0.1 + H(i, j, s + S + 6) * 0.8) * C, y: (j + 0.1 + H(i, j, s + S + 7) * 0.8) * C,
+               rx: r * asp, ry: r / asp, c: Math.cos(th), sn: Math.sin(th) };
+    });
+    /** Radio de la isla en la dirección (ux, uy). */
+    const radius = (a, ux, uy) => {
+      const u = (ux * a.c + uy * a.sn) / a.rx, v = (-ux * a.sn + uy * a.c) / a.ry;
+      return 1 / Math.sqrt(u * u + v * v);
+    };
+    /** Cuánto le falta a (x, y) para entrar en la isla (≤ 0 dentro): a lo largo del radio. */
+    function outside(a, x, y) {
+      const dx = x - a.x, dy = y - a.y, d = Math.hypot(dx, dy);
+      return d < 1e-6 ? -Math.min(a.rx, a.ry) : d - radius(a, dx / d, dy / d);
+    }
+
+    function around(i, j, k, s) {
+      const out = [];
+      for (let b = j - k; b <= j + k; b++) for (let a = i - k; a <= i + k; a++) {
+        const q = isle(a, b, s);
+        if (q) out.push(q);
+      }
+      return out;
+    }
+
+    /**
+     * Lo que une a dos islas vecinas (de orilla a orilla en la recta entre sus
+     * centros): nada, un puente { ax, ay, bx, by, half } o islotes { stones: [x, y, r]... }.
+     */
+    function link(a, b, k, s) {
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d;
+      const ra = radius(a, ux, uy), rb = radius(b, -ux, -uy), gap = d - ra - rb;
+      if (gap <= o.wade) return null;
+      // Las dos orillas (una casilla hacia dentro, para que el puente empiece en tierra).
+      const ax = a.x + ux * (ra - 1), ay = a.y + uy * (ra - 1), bx = b.x - ux * (rb - 1), by = b.y - uy * (rb - 1);
+      // Puente sólo si es corto (más largo parecería un pasillo): si no, islotes.
+      if (!(o.stones && (gap > o.maxBridge || H(k, 21, s + S + 21) < o.stones))) {
+        const half = (o.bridge[0] + H(k, 22, s + S + 22) * (o.bridge[1] - o.bridge[0])) / 2;
+        return box({ ax, ay, bx, by, half }, Math.min(ax, bx) - half, Math.min(ay, by) - half, Math.max(ax, bx) + half, Math.max(ay, by) + half);
+      }
+      // Islotes de paso: uno o dos (nunca una ristra), con no más de MAXW casillas de
+      // agua entre uno y otro y con las orillas. Si con dos de los pequeños no basta,
+      // los dos más grandes (islitas), con WADE de agua entre cada uno.
+      const MAXW = 2.2, WADE = 1.6;
+      let sr = 1.7 + H(k, 23, s + S + 23) * 0.6;
+      const n = gap - MAXW <= 2 * sr + MAXW ? 1 : 2;
+      if (gap - 2 * sr * n > (n + 1) * MAXW) sr = (gap - (n + 1) * WADE) / (2 * n);
+      const w = (gap - 2 * sr * n) / (n + 1);                        // agua entre cada dos
+      const stones = [];
+      for (let m = 0; m < n; m++) {
+        const t = ra + w * (m + 1) + sr * (2 * m + 1);
+        stones.push([a.x + ux * t, a.y + uy * t, sr]);
+      }
+      return box({ stones }, Math.min(ax, bx) - sr, Math.min(ay, by) - sr, Math.max(ax, bx) + sr, Math.max(ay, by) + sr);
+    }
+    function box(e, x0, y0, x1, y1) { return Object.assign(e, { x0, y0, x1, y1 }); }
+
+    /** Uniones de la isla de la celda con las de celdas "mayores" (así cada una se guarda una vez). */
+    const links = cellCache((i, j, s) => {
+      const p = isle(i, j, s);
+      if (!p) return [];
+      const near = around(i, j, o.reach + 1, s), out = [];
+      for (const q of near) {
+        if (q.j < j || (q.j === j && q.i <= i)) continue;
+        if (Math.abs(q.i - i) > o.reach || Math.abs(q.j - j) > o.reach) continue;
+        const pq = d2(p, q);
+        let rng = true;
+        for (const r of near) {
+          if (r !== p && r !== q && d2(p, r) < pq && d2(q, r) < pq) { rng = false; break; }
+        }
+        if (!rng) continue;
+        const e = link(p, q, (i * 73856093) ^ (j * 19349663) ^ (q.i * 83492791) ^ (q.j * 2971215073), s);
+        if (e) out.push(e);
+      }
+      return out;
+    }, 2048);
+
+    /** Lo que puede tocar un bloque de ISLE_BLOCK casillas (un chunk de world.js). */
+    const block = cellCache((bi, bj, s) => {
+      const B = ISLE_BLOCK, M = o.grow + 1;
+      const x0 = bi * B - M, y0 = bj * B - M, x1 = (bi + 1) * B + M, y1 = (bj + 1) * B + M;
+      const reach = o.reach + 1, isles = [], ways = [];
+      for (let j = Math.floor(y0 / C) - reach; j <= Math.floor(y1 / C) + reach; j++) {
+        for (let i = Math.floor(x0 / C) - reach; i <= Math.floor(x1 / C) + reach; i++) {
+          const a = isle(i, j, s), r = a && Math.max(a.rx, a.ry);
+          if (a && a.x + r > x0 && a.x - r < x1 && a.y + r > y0 && a.y - r < y1) isles.push(a);
+          for (const e of links(i, j, s)) if (e.x1 > x0 && e.x0 < x1 && e.y1 > y0 && e.y0 < y1) ways.push(e);
+        }
+      }
+      return { isles, ways };
+    });
+
+    /** Tierra o agua, antes de la pasada final. */
+    function rawTile(tx, ty, seed) {
+      const blk = block(Math.floor(tx / ISLE_BLOCK), Math.floor(ty / ISLE_BLOCK), seed);
+      const x = tx + 0.5, y = ty + 0.5;
+      // La orilla se ensancha poco a poco con un ruido ancho (sólo crece: las distancias de los vados, como mucho, encogen).
+      const e = fbm(tx / 7, ty / 7, seed + S + 30) * o.grow;
+      for (const a of blk.isles) {
+        const out = outside(a, x, y);
+        if (out > e) continue;
+        // Dentro, lejos de la orilla, alguna roca suelta.
+        return out < -3 && fbm(tx / 2.4, ty / 2.4, seed + S + 31) > 0.82 ? WALL : FLOOR;
+      }
+      for (const w of blk.ways) {
+        if (x < w.x0 - 1 || x > w.x1 + 1 || y < w.y0 - 1 || y > w.y1 + 1) continue;
+        if (w.stones) {
+          for (const [sx, sy, sr] of w.stones) if (Math.hypot(x - sx, y - sy) < sr) return FLOOR;
+          continue;
+        }
+        const dx = w.bx - w.ax, dy = w.by - w.ay, l2 = dx * dx + dy * dy;
+        const u = l2 ? G.U.clamp(((x - w.ax) * dx + (y - w.ay) * dy) / l2, 0, 1) : 0;
+        if (Math.hypot(x - w.ax - dx * u, y - w.ay - dy * u) < w.half) return FLOOR;
+      }
+      return LIQUID;
+    }
+
+    /**
+     * La pasada final, por bloques (y guardada): la tierra metida en el agua (5+
+     * de agua alrededor) se hunde y los charquitos casi rodeados de tierra (7+)
+     * se rellenan. Los canales de 1–2 casillas entre islas se quedan.
+     */
+    const B = ISLE_BLOCK, BW = B + 2, SPIKE = 5, HOLE = 7;
+    const finalBlock = cellCache((bi, bj, seed) => {
+      const g = new Uint8Array(BW * BW), out = new Uint8Array(B * B);
+      const x0 = bi * B - 1, y0 = bj * B - 1;
+      for (let j = 0; j < BW; j++) for (let i = 0; i < BW; i++) g[j * BW + i] = rawTile(x0 + i, y0 + j, seed);
+      for (let j = 0; j < B; j++) for (let i = 0; i < B; i++) {
+        const t = g[(j + 1) * BW + i + 1];
+        let other = 0;
+        if (t !== WALL) {
+          for (let b = 0; b <= 2; b++) for (let a = 0; a <= 2; a++) {
+            const u = (a !== 1 || b !== 1) && g[(j + b) * BW + i + a];
+            if ((a !== 1 || b !== 1) && u !== WALL && u !== t) other++;
+          }
+        }
+        out[j * B + i] = t === FLOOR && other >= SPIKE ? LIQUID : t === LIQUID && other >= HOLE ? FLOOR : t;
+      }
+      return out;
+    }, 1024);
+
+    const lay = {
+      liquidHurts: false,
+      terrain(tx, ty, seed) {
+        const bi = Math.floor(tx / B), bj = Math.floor(ty / B);
+        return finalBlock(bi, bj, seed)[(ty - bj * B) * B + (tx - bi * B)];
+      },
+      /** Para las pruebas: las uniones que guarda la celda (i, j). */
+      _links: (i, j, seed) => links(i, j, seed)
+    };
+    // En la orilla, algún matojo de hierba alta.
+    lay.edgeProp = (tx, ty, seed, at = (x, y) => lay.terrain(x, y, seed)) => {
+      if (at(tx, ty) !== FLOOR) return null;
+      for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) {
+        if ((a || b) && at(tx + a, ty + b) === LIQUID) return H(tx, ty, seed + S + 32) < 0.12 ? 'grass' : null;
+      }
+      return null;
+    };
+    return lay;
+  }
+
+  const ISLES = { salt: 2200, cell: 20, keep: 0.92, big: 0.4, bigR: [7, 24], smallR: [2.5, 6], aspect: 1.6, reach: 3, grow: 1.3 };
+  /** Islas: se vadean los estrechos de hasta 2 casillas; puentes de 3–4 o islotes de paso (la mitad de las veces). */
+  const islands = A => archipelago(Object.assign({ anchor: A }, ISLES, { wade: 2, stones: 0.5, maxBridge: 7, bridge: [3.2, 4.4] }));
+  /** Pantano venenoso: las mismas islas, todo unido por puentes anchos (su agua quema: nada de vadear; anchos para que, en diagonal, quepan 4). */
+  const bog = A => archipelago(Object.assign({ anchor: A }, ISLES, { wade: 0, stones: 0, maxBridge: Infinity, bridge: [6.5, 8] }));
+
   // ---------------- ríos: lava y pantano ----------------
   /*
    * La tierra son trozos de formas y tamaños al azar: cada celda de `cell`
@@ -399,7 +597,7 @@ G.Layouts = (() => {
   /** Pantano: más ríos que el volcán (casi todas las fronteras llevan) y más anchos, de agua que frena; juncos en la orilla. */
   const marsh = A => rivers({ anchor: A, salt: 3300, cell: 14, p: 0.9, half: 2.2, warp: 4, rocks: null, banks: 0.35, liquidHurts: false });
 
-  const BUILD = { plains: plainsAt, cave, plant, lava, marsh };
+  const BUILD = { plains: plainsAt, cave, plant, lava, islands, bog, marsh };
   const IDS = Object.keys(BUILD);
   const ORIGIN = { tx: 0, ty: 0 };
   /**
