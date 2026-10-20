@@ -47,11 +47,21 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
     function tk(s, k) { return s.get('tickets', {}).get(k, 0); }
-    // Sólo que los números tengan sentido (el juego ya los limpia al cargar).
+    // Que los números tengan sentido (el juego ya los limpia al cargar) y que
+    // no crezcan más de lo que da el juego entre dos guardados: base + ritmo
+    // por segundo desde el anterior. Margen holgado (partidas largas, fundir
+    // varios aparatos). AJUSTAR con lo máximo que da una partida real.
+    function prevNum(k) { return resource == null ? 0 : resource.data.save.get(k, 0); }
+    function prevTk(k) { return resource == null ? 0 : tk(resource.data.save, k); }
+    function since() { return resource == null ? 0 : (request.time - resource.data.updatedAt).seconds(); }
+    function grows(cur, prev, base, rate) { return cur <= prev + base + rate * since(); }
     function saneSave(s) {
       return s.get('coins', 0) is number && s.get('coins', 0) >= 0
+        && grows(s.get('coins', 0), prevNum('coins'), 100000, 30)
         && tk(s, 't1') is number && tk(s, 't1') >= 0
-        && tk(s, 't10') is number && tk(s, 't10') >= 0;
+        && grows(tk(s, 't1'), prevTk('t1'), 2000, 1)
+        && tk(s, 't10') is number && tk(s, 't10') >= 0
+        && grows(tk(s, 't10'), prevTk('t10'), 2000, 1);
     }
 
     // ---------- apodos ----------
@@ -128,19 +138,24 @@ service cloud.firestore {
 
     // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
     //   - no puede durar más que el tiempo real desde que empezó tu partida
-    //     (runs/{uid}), con 30 s de margen; ni más de 45 min (desde el
-    //     18-10-2026 la Sentencia de Arceus deja KO de un toque hacia el
-    //     minuto 40; antes era 1 h y se llegaba huyendo)
-    //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
+    //     (runs/{uid}), con 30 s de margen; ni más de 41 min (la Sentencia de
+    //     Arceus deja KO hacia el minuto 40; con 45 min las marcas imposibles
+    //     se amontonaban en el tope). AJUSTAR con la mejor marca legal.
+    //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno), y
+    //     coherentes entre sí: la experiencia sale de derrotar enemigos, así
+    //     que un nivel muy alto con pocos derrotados no es posible. AJUSTAR.
     //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban)
+    //   - en solitario, el nombre es tu apodo (profiles/{uid}): nadie sube
+    //     una marca con el nombre de otro
     function validEntry(board, id) {
       let d = request.resource.data;
       let run = get(/databases/$(database)/documents/runs/$(me())).data;
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
-        && d.t is int && d.t > 0 && d.t <= 2700
+        && d.t is int && d.t > 0 && d.t <= 2460
         && d.t <= (request.time - run.startedAt).seconds() + 30
-        && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
+        && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
+        && d.lv <= 10 + d.kills / 8
         && get(/databases/$(database)/documents/saves/$(me())).data.get('ban', false) == false
         && d.uids is list && me() in d.uids
         && d.names is list && d.names.size() == d.uids.size()
@@ -148,7 +163,8 @@ service cloud.firestore {
         && d.shiny is list && d.shiny.size() == d.uids.size()
         && d.at == request.time
         && (board.matches('s_.*')
-              ? (d.uids.size() == 1 && id == me())
+              ? (d.uids.size() == 1 && id == me()
+                 && d.names[0] == get(/databases/$(database)/documents/profiles/$(me())).data.name)
               : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')))
         && (resource == null || d.t > resource.data.t);
     }
