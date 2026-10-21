@@ -319,10 +319,13 @@ G.Coop = (() => {
   /** Invitado: se para (o sigue) según si el anfitrión está. */
   function updateAway() { if (api.away) api.away(hostAway || stalled ? nameOf(hostUid) : null); }
 
-  // Anfitrión: al irse de la pestaña avisa a todos al momento (después ya no
-  // podrá mandar nada) y al volver, que sigue.
+  // Anfitrión en el móvil: al irse de la app avisa a todos al momento (el
+  // sistema congela la página y ya no podrá mandar nada) y al volver, que
+  // sigue. En el ordenador no hace falta: la partida sigue con la pestaña
+  // oculta (bgTicker en game.js) y, si aun así se parase, los invitados lo
+  // notan solos a los STALL_MS.
   document.addEventListener('visibilitychange', () => {
-    if (!active || !host) return;
+    if (!active || !host || !G.Touch.active) return;
     emit(['ha', document.hidden ? 1 : 0]);
     flushAll();
   });

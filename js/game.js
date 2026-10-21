@@ -40,7 +40,7 @@ G.Game = (() => {
     if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(cv);
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
-    document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); bgTicker(); });
     G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
     Backdrop.init();
     last = performance.now();
@@ -617,6 +617,10 @@ G.Game = (() => {
   let loopErrs = 0, errRun = 0;
   function loop(ts) {
     requestAnimationFrame(loop);
+    if (!bgWorker) safeFrame(ts);
+  }
+
+  function safeFrame(ts) {
     try { frame(ts); errRun = 0; }
     catch (e) {
       if (loopErrs++ < 5) console.error('[Game] fallo en un fotograma:', e);
@@ -631,11 +635,29 @@ G.Game = (() => {
     }
   }
 
+  // ---------------- con la pestaña oculta (cooperativo) ----------------
+  // Con la pestaña oculta (Alt+Tab que tapa la ventana, minimizar, otra
+  // pestaña) el navegador deja de llamar a requestAnimationFrame y el juego se
+  // paraba: si era el anfitrión, para todos. En grupo se sigue con el reloj de
+  // un Worker (a ese no lo frena), sin dibujar. Al volver, el de siempre.
+  let bgWorker = null;
+  function bgTicker() {
+    const want = document.hidden && G.Coop.active;
+    if (want && !bgWorker) {
+      try { bgWorker = new Worker('js/core/tick-worker.js'); }
+      catch (e) { console.error('[Game] sin reloj en segundo plano:', e); return; }
+      bgWorker.onmessage = () => safeFrame(performance.now());
+    } else if (!want && bgWorker) {
+      bgWorker.terminate(); bgWorker = null;
+    }
+  }
+
   function frame(ts) {
     const real = (ts - last) / 1000 || 0;
     const dt = Math.min(1 / 30, real) * speedK;
     last = ts;
-    if (state === 'playing') G.Settings.sample(real);
+    // Oculta va a 30 por segundo (bgTicker): no cuenta para la calidad automática.
+    if (state === 'playing' && !document.hidden) G.Settings.sample(real);
     fpsAcc += real; fpsN++;
     if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
     frameDt = state === 'playing' ? dt : 0;
@@ -648,7 +670,8 @@ G.Game = (() => {
     // La red se atiende siempre (también con las cartas de nivel abiertas).
     if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
 
-    if (pl && state !== 'ui') render(); else Backdrop.render(ctx, w, h, dpr, dt);
+    if (document.hidden) { /* no se ve: no se dibuja */ }
+    else if (pl && state !== 'ui') render(); else Backdrop.render(ctx, w, h, dpr, dt);
     G.UI.tick(dt);
 
     G.Input.endFrame();
