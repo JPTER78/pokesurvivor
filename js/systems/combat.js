@@ -29,11 +29,23 @@ G.Combat = (() => {
 
     m.t -= dt;
     if (m.t > 0) return;
-    // Los ataques que necesitan blanco esperan a tenerlo (no gastes animación al aire).
-    if (needsTarget(m, pl) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
-      m.t = 0.05;
-      return;
+    // Cada movimiento fusionado busca un objetivo a SU alcance sin cambiar
+    // permanentemente el blanco de los demás movimientos del mismo hueco.
+    const retarget = m.kind === 'melee' && !pl.manualAim &&
+      (!pl.target || pl.target.dead || G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) > m.radius)
+      ? G.Projectiles.nearest(G.EnemyMgr.all(), pl.x, pl.y, m.radius) : null;
+    const previousTarget = pl.target, previousAim = pl.aim;
+    if (retarget) {
+      pl.target = retarget;
+      pl.aim = Math.atan2(retarget.y - pl.y, retarget.x - pl.x);
     }
+    try {
+      // Los ataques que necesitan blanco esperan a tenerlo.
+      if (needsTarget(m, pl) && !(pl.target && !pl.target.dead &&
+          G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
+        m.t = 0.05;
+        return;
+      }
     // (Bromista: los potenciadores se recargan antes, ver data/ability-fx.js.)
     m.t = Math.max(0.05, m.cd * pl.cdMul * (m.kind === 'buff' && pl.abil && pl.abil.statusCd || 1));
     pl.cast(m);
@@ -43,6 +55,9 @@ G.Combat = (() => {
     m.castAt = performance.now();
 
     run(pl, m);
+    } finally {
+      if (retarget) { pl.target = previousTarget; pl.aim = previousAim; }
+    }
   }
 
   function run(pl, m) {

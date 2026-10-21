@@ -437,7 +437,10 @@ G.Player = class Player {
     const ranged = !!m && (m.kind === 'projectile' || m.kind === 'beam');
     const threat = G.Projectiles.nearest(all, this.x, this.y, this.r + 24);
     const boss = all.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
-    const tg = (ranged ? boss || threat : threat || boss)
+    // Un golpe melee debe apuntar a un enemigo alcanzable antes que al jefe distante.
+    const melee = m && m.kind === 'melee'
+      ? G.Projectiles.nearest(all, this.x, this.y, m.radius) : null;
+    const tg = melee || (ranged ? boss || threat : threat || boss)
             || G.Projectiles.nearest(all, this.x, this.y, 520)
             || G.World.nearestBreakable(this.x, this.y, 200);
     // Apuntar a mano (Ajustes > Accesibilidad): hacia el ratón o el stick derecho.
