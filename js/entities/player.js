@@ -439,7 +439,7 @@ G.Player = class Player {
     const boss = all.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
     // Un golpe melee debe apuntar a un enemigo alcanzable antes que al jefe distante.
     const melee = m && m.kind === 'melee'
-      ? G.Projectiles.nearest(all, this.x, this.y, m.radius) : null;
+      ? G.Combat.meleeTarget(all, this.x, this.y, m.radius) : null;
     const tg = melee || (ranged ? boss || threat : threat || boss)
             || G.Projectiles.nearest(all, this.x, this.y, 520)
             || G.World.nearestBreakable(this.x, this.y, 200);

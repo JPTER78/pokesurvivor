@@ -16,7 +16,7 @@ G.Combat = (() => {
   let ghost = false;
   let fields = [];
 
-  // ---------------- ejecutar el movimiento activo ----------------
+  // Usa el mismo solapamiento de círculos que EnemyMgr.queryCircle:\n  // cuenta el radio físico del enemigo, no sólo su distancia al centro.\n  function meleeTarget(enemies, x, y, radius) {\n    let best = null, bestDist = Infinity;\n    for (const e of enemies) {\n      if (e.dead) continue;\n      const distance = G.U.dist2(x, y, e.x, e.y);\n      const reach = radius + (e.r || 0);\n      if (distance <= reach * reach && distance < bestDist) {\n        best = e; bestDist = distance;\n      }\n    }\n    return best;\n  }\n\n  // ---------------- ejecutar el movimiento activo ----------------
 
   function tick(dt, pl, now) {
     if (pl.dead) return;
@@ -31,11 +31,17 @@ G.Combat = (() => {
     if (m.t > 0) return;
     // Cada movimiento fusionado busca un objetivo a SU alcance sin cambiar
     // permanentemente el blanco de los demás movimientos del mismo hueco.
-    const retarget = m.kind === 'melee' && !pl.manualAim &&
-      (!pl.target || pl.target.dead || G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) > m.radius)
-      ? G.Projectiles.nearest(G.EnemyMgr.all(), pl.x, pl.y, m.radius) : null;
+    const retarget = m.kind === 'melee' && !pl.manualAim
+      ? meleeTarget(G.EnemyMgr.all(), pl.x, pl.y, m.radius) : null;
+    // El margen de apuntado es mayor que el área real de impacto.
+    // No consumas la recarga si ningún enemigo puede recibir el golpe.
+    if (m.kind === 'melee' && !pl.manualAim && !retarget &&
+        (!pl.target || pl.target.hurt)) {
+      m.t = 0.05;
+      return;
+    }
     const previousTarget = pl.target, previousAim = pl.aim;
-    if (retarget) {
+    if (retarget && retarget !== pl.target) {
       pl.target = retarget;
       pl.aim = Math.atan2(retarget.y - pl.y, retarget.x - pl.x);
     }
@@ -56,7 +62,7 @@ G.Combat = (() => {
 
     run(pl, m);
     } finally {
-      if (retarget) { pl.target = previousTarget; pl.aim = previousAim; }
+      if (retarget && retarget !== previousTarget) { pl.target = previousTarget; pl.aim = previousAim; }
     }
   }
 
@@ -154,7 +160,7 @@ G.Combat = (() => {
 
   function inArc(px, py, x, y, aim, half) {
     const a = Math.atan2(y - py, x - px);
-    return Math.abs(((a - aim + Math.PI * 3) % 6.2832) - Math.PI) <= half;
+    return Math.abs(((a - aim + Math.PI * 3) % (Math.PI * 2)) - Math.PI) <= half + 1e-9;
   }
 
   function melee(pl, m) {
@@ -914,6 +920,6 @@ G.Combat = (() => {
     }
   }
 
-  return { tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
+  return { tick, meleeTarget, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
            get fieldCount() { return fields.length; } };
 })();
