@@ -361,6 +361,14 @@ G.MenuUI = (() => {
     $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     const box = $('upg-list');
     box.innerHTML = '';
+    // Abrir o cerrar un panel no vuelve a pintar toda la lista de mejoras: sólo
+    // se cambia el panel. Antes cada clic reconstruía toda la pantalla y se notaba
+    // el tirón en móvil.
+    const syncPickers = (host, lvl) => {
+      box.querySelectorAll('.ban-picker').forEach(p => p.remove());
+      if (banOpen) host.insertAdjacentElement('afterend', banPicker(lvl));
+      else if (startOpen) host.insertAdjacentElement('afterend', startPicker());
+    };
     for (const u of G.Upgrades.LIST) {
       const lvl = levels[u.id] || 0;
       const maxed = lvl >= u.max;
@@ -378,8 +386,8 @@ G.MenuUI = (() => {
           ${u.id === 'start' && lvl > 0 ? `<button class="btn small" data-start>Elegir: ${G.Moves.BY_ID[G.startMoveOf(upgDex)].name}</button>` : ''}
           <button class="btn small ${maxed ? '' : 'gold'}" data-buy data-sfx="none" ${maxed || s.coins < cost ? 'disabled' : ''}>
           ${maxed ? 'Máx.' : `<span class="coin"></span> ${cost}`}</button></div>`;
-      if (u.id === 'ban' && lvl > 0) el.querySelector('[data-ban]').onclick = () => { banOpen = !banOpen; renderUpgrades(); };
-      if (u.id === 'start' && lvl > 0) el.querySelector('[data-start]').onclick = () => { startOpen = !startOpen; renderUpgrades(); };
+      if (u.id === 'ban' && lvl > 0) el.querySelector('[data-ban]').onclick = () => { banOpen = !banOpen; if (banOpen) startOpen = false; syncPickers(el, lvl); };
+      if (u.id === 'start' && lvl > 0) el.querySelector('[data-start]').onclick = () => { startOpen = !startOpen; if (startOpen) banOpen = false; syncPickers(el, lvl); };
       el.querySelector('[data-buy]').onclick = () => {
         // Se vuelve a leer todo al pulsar (la partida puede haber cambiado desde que se dibujó).
         const sv = G.DB.save, lv = G.DB.upgradesOf(upgDex), now = lv[u.id] || 0;
@@ -434,16 +442,52 @@ G.MenuUI = (() => {
     return el;
   }
 
+  // ---------------- ficha de un movimiento (Movimiento inicial y Veto) ----------------
+  /*
+   * Antes las dos pantallas sólo enseñaban el nombre y el icono: no había forma
+   * de saber qué hace cada ataque, de qué tipo es, si es físico o especial ni
+   * cuánto rinde con ese Pokémon antes de elegirlo. Aquí se pinta la misma
+   * información que en las cartas de subir de nivel, para elegir con criterio.
+   */
+  function moveFicha(id, { on = false, bad = false, serie = false, full = false, mon } = {}) {
+    const d = G.Moves.BY_ID[id];
+    const dueño = mon || G.DEX_BY[upgDex];
+    const col = G.U.TYPE_COLOR[d.type];
+    const tags = [`<span class="tag-chip" style="background:${col}">${G.U.TYPE_NAME[d.type]}</span>`];
+    if (d.cat) tags.push(`<span class="tag-chip mc-cat">${G.Stats.NAME[d.cat]}</span>`);
+    const fit = d.cat ? G.Stats.fit(dueño, d.cat) : 1;
+    if (fit < 0.995) tags.push(`<span class="tag-chip mc-fit">Rinde ${Math.round(fit * 100)} %</span>`);
+    if (serie) tags.push('<span class="mc-serie">de serie</span>');
+    const facts = [];
+    if (d.kind === 'buff') facts.push('No hace daño');
+    else if (d.dmg) facts.push('Daño ' + d.dmg);
+    if (d.count > 1) facts.push('×' + d.count);
+    if (d.cd) facts.push('Recarga ' + d.cd.toFixed(2).replace('.', ',') + ' s');
+    if (d.dur) facts.push('Duración ' + d.dur + ' s');
+    else if (d.radius && d.kind !== 'melee') facts.push('Alcance ' + Math.round(d.radius));
+    const cls = 'move-card' + (on ? ' on' : '') + (bad ? ' bad' : '') + (full ? ' full' : '');
+    return `<button type="button" class="${cls}" data-id="${id}">
+      <span class="mc-ico" style="background:${col}33">${G.Icons.html('move:' + id, 28)}</span>
+      <span class="mc-body">
+        <span class="mc-top"><b>${G.T(d.name, 'move')}</b>${tags.join('')}</span>
+        <span class="mc-facts">${facts.map(f => `<span>${f}</span>`).join('')}</span>
+        <span class="mc-desc">${d.desc}</span>
+      </span>
+      ${bad ? `<span class="mc-mark">${G.Icons.html('ban', 16)}</span>` : on ? '<span class="mc-mark">✓</span>' : ''}
+    </button>`;
+  }
+
   // ---------------- movimiento inicial (Mejoras → Movimiento inicial) ----------------
   let startOpen = false;
   function startPicker() {
     const s = G.DB.save, cur = G.startMoveOf(upgDex), base = G.baseStartOf(upgDex);
+    const mon = G.DEX_BY[upgDex];
     const ids = G.startChoices(upgDex).sort((a, b) => G.Moves.BY_ID[a].name.localeCompare(G.Moves.BY_ID[b].name, 'es'));
     const el = document.createElement('div');
     el.className = 'panel ban-picker';
     el.innerHTML = `<p class="sub" style="margin:0 0 8px">Elige con qué ataque empieza. Lo puedes cambiar cuando quieras, gratis.</p>
-      <div class="ban-moves">${ids.map(id => { const d = G.Moves.BY_ID[id];
-        return `<button class="chip ${id === cur ? 'on' : ''}" data-id="${id}">${G.Icons.html('move:' + id, 16)} ${d.name}${id === base ? ' <small>(de serie)</small>' : ''}</button>`; }).join('')}</div>`;
+      <p class="sub" style="margin:0 0 8px">Cada ficha dice el tipo, el daño, la recarga, el alcance y cuánto rinde con tu Pokémon.</p>
+      <div class="move-list">${ids.map(id => moveFicha(id, { on: id === cur, serie: id === base, mon })).join('')}</div>`;
     el.querySelectorAll('[data-id]').forEach(b => {
       b.onclick = () => {
         const id = b.dataset.id;
@@ -454,7 +498,7 @@ G.MenuUI = (() => {
         if (i >= 0) l.splice(i, 1);
         G.DB.commit();
         G.Audio.sfx('select');
-        G.UI.toast(G.DEX_BY[upgDex].name + ' empezará con ' + G.Moves.BY_ID[id].name);
+        G.UI.toast(mon.name + ' empezará con ' + G.T(G.Moves.BY_ID[id].name, 'move'));
         renderUpgrades();
       };
     });
@@ -475,11 +519,12 @@ G.MenuUI = (() => {
     const ids = G.Moves.poolFor(mon).filter(id => id !== start)
       .sort((a, b) => G.Moves.BY_ID[a].name.localeCompare(G.Moves.BY_ID[b].name, 'es'));
     const list = banList();
+    const full = list.length >= max;
     const el = document.createElement('div');
     el.className = 'panel ban-picker';
     el.innerHTML = `<p class="sub" style="margin:0 0 8px">Toca los movimientos que no quieres que te salgan en las cartas (${list.length}/${max}). El movimiento de inicio no se puede vetar.</p>
-      <div class="ban-moves">${ids.map(id => { const d = G.Moves.BY_ID[id]; const on = list.includes(id);
-        return `<button class="chip ${on ? 'on ban' : ''}" data-id="${id}">${G.Icons.html('move:' + id, 16)} ${G.T(d.name, 'move')}${on ? ' ' + G.Icons.html('ban', 14) : ''}</button>`; }).join('')}</div>`;
+      <p class="sub" style="margin:0 0 8px">Cada ficha dice el tipo y cuánto rinde con tu Pokémon.</p>
+      <div class="move-list">${ids.map(id => moveFicha(id, { bad: list.includes(id), full: full && !list.includes(id), mon })).join('')}</div>`;
     el.querySelectorAll('[data-id]').forEach(b => {
       b.onclick = () => {
         const l = banList(), id = b.dataset.id, i = l.indexOf(id);
