@@ -1,41 +1,44 @@
-# Healer balance experiment
+# Balance de curanderos: pruebas y comparación
 
-## Summary
+## Objetivo del ajuste
 
-Groups of support Pokémon can repeatedly heal the same enemy, sometimes faster than the player can deal damage. This change caps **combined healing from normal enemy healers at 12% of each target's maximum HP per 3.5 seconds of gameplay**.
+Cuando coinciden varios Pokémon curanderos, sus curaciones pueden acumularse sobre el mismo enemigo hasta superar el daño del jugador. Esta propuesta introduce un **límite compartido del 12 % de la vida máxima por objetivo cada 3,5 segundos de juego** para enemigos normales.
 
-A single healer still applies its standard healing when below the shared limit. At sufficiently high player attack multipliers, the cap can also reduce a single healer's heal. Bosses keep their existing damage-per-second-based healing limit.
+- **Curandero individual:** mantiene su curación habitual del 7 % mientras no alcance el límite. Con multiplicadores de ataque muy altos, el límite también puede afectarlo.
+- **Varios curanderos:** consumen el mismo presupuesto por enemigo.
+- **Pausas:** la ventana utiliza el reloj de partida y no el tiempo real.
+- **Jefes:** conservan el límite previo basado en el daño recibido por segundo.
+- **Otros parámetros:** no se modifican vida, daño, apariciones, experiencia ni recompensas.
 
-Enemy health, damage, spawn frequency, experience and rewards are not changed.
+## Reproducir tests y benchmark
 
-## Verify the changes
-
-From the repository directory on Windows PowerShell:
+En PowerShell, desde la raíz del repositorio:
 
 ```powershell
 git fetch origin
 git switch fix/healer-stacking-benchmark
 git pull --ff-only origin fix/healer-stacking-benchmark
-
 node --test tests/*.test.cjs
 node tools/bench-healers.cjs --baseline=origin/main --iterations=20000
 ```
 
-Use `node tools/bench-healers.cjs --help` to view the benchmark options. Its output reports healed HP for 1, 2 and 3 healers at three attack multipliers, plus median CPU time per healer cast. **These are not gameplay FPS or survival-rate measurements.** CPU timing differences at the nanosecond scale can be noisy.
+Consulta `node tools/bench-healers.cjs --help` para ver las opciones. El benchmark ejecuta ambas versiones con los mismos escenarios y presenta los **PV recuperados** y el **coste de CPU por curación** como mediana de cinco muestras.
 
-## Try it as a guest
+**Importante:** es una prueba de lógica y un microbenchmark; no mide FPS ni porcentaje de victorias. Las pequeñas diferencias de tiempo pueden variar entre equipos.
 
-1. Run `py -m http.server 8000` from the repository directory.
-2. Open `http://localhost:8000/dev.html` and use guest mode, not your official cloud account.
-3. Compare against the unmodified `main` version, playing sequentially with the same Pokémon, moves, upgrades and graphics settings.
-4. Record survival time, level, enemies and bosses defeated, average FPS, and whether groups of healers can be killed.
+## Comprobarlo jugando como invitado
 
-Suggested checkpoints: minutes 3, 5, 6 and 10. Several runs per version are recommended because enemy spawns and upgrades vary.
+1. Ejecuta `py -m http.server 8000` desde la raíz.
+2. Abre `http://localhost:8000/dev.html` y utiliza **modo invitado**.
+3. Compara con `main` sin modificar, manteniendo el mismo Pokémon, movimientos, mejoras y ajustes gráficos; juega cada versión por separado.
+4. Anota supervivencia, nivel, enemigos y jefes derrotados, FPS aproximados y grupos de curanderos difíciles de eliminar.
 
-## Benefits and trade-offs
+Revisa especialmente los minutos **3, 5, 6 y 10**. Conviene jugar varias partidas por versión porque aparecen enemigos y mejoras de forma aleatoria.
 
-**Benefits:** Multiple healers no longer multiply recovery without a shared target limit. Pausing does not advance the healing window. Boss healing behavior remains unchanged.
+## Ventajas, riesgos y limitaciones
 
-**Trade-offs:** Support-heavy groups may become easier, potentially increasing XP gain and survival time. The 12% cap is an initial tuning value, not a final balance target. Regular enemies still have substantial HP scaling near minutes 5–6, so this adjustment alone may not resolve every difficulty spike.
+**Ventajas:** menor acumulación de curaciones, respeto a las pausas y mantenimiento del comportamiento de los jefes.
 
-The proposed change does not require any changes to cloud saves, rankings, or Firebase rules.
+**Inconvenientes potenciales:** los grupos con muchos curanderos pueden resultar más fáciles y aumentar indirectamente la experiencia y la supervivencia. El 12 % es un valor experimental. La vida de los enemigos sigue escalando mucho hacia los minutos 5–6, así que esta corrección no elimina todos los picos de dificultad.
+
+No requiere cambios en guardados, clasificaciones ni reglas de Firebase.

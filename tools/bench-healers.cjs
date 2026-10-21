@@ -1,28 +1,33 @@
 #!/usr/bin/env node
-// Deterministic simulation and CPU microbenchmark, not a measure of in-game FPS.
+// Compara la curación y el coste de CPU; no mide los FPS reales del juego.
 "use strict";
 
 const { execFileSync } = require("node:child_process");
 const { performance } = require("node:perf_hooks");
 const { source, scenario, FILE } = require("../tests/helpers/healer-harness.cjs");
 
-function usage() {
-  console.log("Usage: node tools/bench-healers.cjs [--baseline=origin/main] [--iterations=20000]");
-  console.log("Compares original and modified healing using the same deterministic scenarios.");
+const CPU_SAMPLES = 5;
+
+function showHelp() {
+  console.log("Uso: node tools/bench-healers.cjs [--baseline=origin/main] [--iterations=20000]");
+  console.log("Compara la curación original y la modificada en los mismos escenarios.");
 }
-function argumentsFrom(argv) {
-  const options = { baseline: "main", iterations: 20000 };
+
+function parseArguments(argv) {
+  const options = { baseline: "main", iterations: 20_000 };
   for (const arg of argv) {
     if (arg === "--help" || arg === "-h") {
-      usage();
+      showHelp();
       process.exit(0);
     }
     const match = /^--(baseline|iterations)=(.+)$/.exec(arg);
-    if (!match) throw new Error(`Unknown argument: ${arg}. Run --help for usage.`);
-    options[match[1]] = match[1] === "iterations" ? Number(match[2]) : match[2];
+    if (!match) throw new Error(`Argumento desconocido: ${arg}. Consulta --help.`);
+    const [, key, value] = match;
+    options[key] = key === "iterations" ? Number(value) : value;
   }
-  if (!Number.isSafeInteger(options.iterations) || options.iterations < 100 || options.iterations > 1_000_000) {
-    throw new Error("Iterations must be a whole number between 100 and 1,000,000.");
+  if (!Number.isSafeInteger(options.iterations) ||
+      options.iterations < 100 || options.iterations > 1_000_000) {
+    throw new Error("Las iteraciones deben ser un entero entre 100 y 1.000.000.");
   }
   return options;
 }
@@ -30,70 +35,77 @@ function argumentsFrom(argv) {
 function loadBaseline(ref) {
   try {
     return execFileSync("git", ["show", `${ref}:${FILE}`], {
-      encoding: "utf8",
-      maxBuffer: 4_000_000,
-      stdio: ["ignore", "pipe", "ignore"],
+      encoding: "utf8", maxBuffer: 4_000_000, stdio: ["ignore", "pipe", "ignore"],
     });
   } catch {
-    console.error(`Cannot read baseline "${ref}". Run "git fetch origin" and use --baseline=origin/main.`);
+    console.error(`No se encontró la base «${ref}». Ejecuta git fetch origin y usa --baseline=origin/main.`);
     process.exit(1);
   }
 }
+
 function healedHp(js, healerCount, attackMultiplier) {
   const run = scenario(js, { power: attackMultiplier });
   run.cast(healerCount);
   return run.victims[0].hp;
 }
+
 function nsPerCast(js, healerCount, iterations) {
   const run = scenario(js);
-  const measure = count => {
-    const start = performance.now();
-    for (let i = 0; i < count; i++) {
-      run.clock.time = i * 3.51;
+  function measure(count) {
+    const startedAt = performance.now();
+    for (let index = 0; index < count; index++) {
+      run.clock.time = index * 3.51;
       run.victims[0].hp = 0;
       run.cast(healerCount);
     }
-    return (performance.now() - start) * 1_000_000 / (count * healerCount);
-  };
-  measure(Math.min(iterations, 4000));
-  return Array.from({ length: 5 }, () => measure(iterations)).sort((a, b) => a - b)[2];
+    return (performance.now() - startedAt) * 1_000_000 / (count * healerCount);
+  }
+  measure(Math.min(iterations, 4000)); // Calentamiento del motor de JavaScript.
+  const samples = Array.from({ length: CPU_SAMPLES }, () => measure(iterations));
+  return samples.sort((a, b) => a - b)[Math.floor(CPU_SAMPLES / 2)];
 }
-function table(headings, rows) {
+
+function printTable(headings, rows) {
   const widths = headings.map((heading, column) =>
     Math.max(heading.length, ...rows.map(row => String(row[column]).length)));
-  const display = row => row.map((cell, i) => String(cell).padEnd(widths[i])).join("  |  ");
-  console.log(display(headings));
+  const format = row => row.map((cell, index) => String(cell).padEnd(widths[index])).join("  |  ");
+  console.log(format(headings));
   console.log(widths.map(width => "-".repeat(width)).join("--+--"));
-  for (const row of rows) console.log(display(row));
+  for (const row of rows) console.log(format(row));
 }
-const { baseline, iterations } = argumentsFrom(process.argv.slice(2));
-const before = loadBaseline(baseline), after = source();
-const reduction = (oldValue, newValue) => ((1 - newValue / oldValue) * 100).toFixed(1) + "%";
-const cpuChange = (oldValue, newValue) => {
-  const change = (newValue / oldValue - 1) * 100;
+
+const { baseline, iterations } = parseArguments(process.argv.slice(2));
+const before = loadBaseline(baseline);
+const after = source();
+const reduction = (original, updated) => ((1 - updated / original) * 100).toFixed(1) + "%";
+const cpuChange = (original, updated) => {
+  const change = (updated / original - 1) * 100;
   return (change >= 0 ? "+" : "") + change.toFixed(1) + "%";
 };
-console.log("HEALER BALANCE: BEFORE / AFTER");
-console.log(`Baseline: ${baseline} | Test iterations: ${iterations.toLocaleString("en-US")} | CPU samples: 5 (median)`);
-console.log("Scenario: target starts at 0 / 2,000 HP; healing is measured over one 3.5-second window.");
-console.log("");
-console.log("HEALING PER WINDOW (HP recovered; lower means less stacked healing)");
+
+console.log("CURACIÓN DE ENEMIGOS: ANTES Y DESPUÉS");
+console.log(`Base: ${baseline} | Iteraciones: ${iterations.toLocaleString("es-ES")} | Muestras de CPU: ${CPU_SAMPLES} (mediana)`);
+console.log("Escenario: objetivo con 0 / 2.000 PV; ventana de curación de 3,5 segundos.\n");
+
 const healingRows = [];
 const cpuRows = [];
-for (const count of [1, 2, 3]) {
-  for (const multiplier of [1, 1.4, 3]) {
-    const oldHp = healedHp(before, count, multiplier);
-    const newHp = healedHp(after, count, multiplier);
-    healingRows.push([count, multiplier.toFixed(1) + "x", oldHp.toFixed(1), newHp.toFixed(1), reduction(oldHp, newHp)]);
+for (const healerCount of [1, 2, 3]) {
+  for (const attackMultiplier of [1, 1.4, 3]) {
+    const originalHp = healedHp(before, healerCount, attackMultiplier);
+    const updatedHp = healedHp(after, healerCount, attackMultiplier);
+    healingRows.push([
+      healerCount, `${attackMultiplier.toFixed(1)}x`, originalHp.toFixed(1),
+      updatedHp.toFixed(1), reduction(originalHp, updatedHp),
+    ]);
   }
-  const oldCost = nsPerCast(before, count, iterations);
-  const newCost = nsPerCast(after, count, iterations);
-  cpuRows.push([count, oldCost.toFixed(0), newCost.toFixed(0), cpuChange(oldCost, newCost)]);
+  const originalCost = nsPerCast(before, healerCount, iterations);
+  const updatedCost = nsPerCast(after, healerCount, iterations);
+  cpuRows.push([healerCount, originalCost.toFixed(0), updatedCost.toFixed(0), cpuChange(originalCost, updatedCost)]);
 }
-table(["Healers", "Player ATK", "Before (HP)", "After (HP)", "Healing reduction"], healingRows);
-console.log("");
-console.log("CPU COST PER HEALER CAST (nanoseconds; smaller is faster)");
-table(["Healers", "Before (ns)", "After (ns)", "CPU time change"], cpuRows);
-console.log("");
-console.log("Note: This is a CPU microbenchmark, not an FPS, gameplay or multiplayer test.");
-console.log("Timing differences of a few hundred nanoseconds may vary across runs and devices.");
+
+console.log("CURACIÓN POR VENTANA (PV recuperados)");
+printTable(["Curanderos", "Ataque", "Antes (PV)", "Después (PV)", "Reducción"], healingRows);
+console.log("\nCOSTE POR CURACIÓN (nanosegundos; menor es más rápido)");
+printTable(["Curanderos", "Antes (ns)", "Después (ns)", "Cambio CPU"], cpuRows);
+console.log("\nAviso: este microbenchmark no mide FPS, supervivencia ni partidas multijugador.");
+console.log("Los resultados de CPU pueden variar entre ejecuciones y equipos.");
