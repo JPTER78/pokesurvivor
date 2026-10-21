@@ -266,9 +266,12 @@ G.Game = (() => {
         G.Spawner.say(awayBy ? awayText() : '', awayBy ? 999 : 0, true);
       }
     },
-    /** Grupo (invitado): el anfitrión se ha ido de la pestaña o no responde: todo parado. */
-    away(name) {
-      awayBy = name || null;
+    /**
+     * Grupo: todo parado porque el anfitrión se ha ido de la pestaña o no
+     * responde (ofHost), o porque alguien ha salido de la ventana (pauseAway).
+     */
+    away(name, ofHost) {
+      awayBy = name || null; awayHost = !!ofHost;
       if (awayBy) {
         if (state === 'playing') state = 'held';
         G.Spawner.say(awayText(), 999, true);
@@ -278,8 +281,9 @@ G.Game = (() => {
       }
     }
   };
-  let awayBy = null;
-  const awayText = () => 'Pausa: esperando a ' + awayBy + ' (anfitrión)…';
+  let awayBy = null, awayHost = false;
+  const awayText = () => awayHost ? 'Pausa: esperando a ' + awayBy + ' (anfitrión)…'
+                                  : 'Pausa: ' + awayBy + ' ha salido de la ventana…';
 
   /** Has llevado a casa a un Pokémon perdido y se une a ti (events.js). */
   G.onRescue = (dex, name) => {
@@ -640,9 +644,11 @@ G.Game = (() => {
   // pestaña) el navegador deja de llamar a requestAnimationFrame y el juego se
   // paraba: si era el anfitrión, para todos. En grupo se sigue con el reloj de
   // un Worker (a ese no lo frena), sin dibujar. Al volver, el de siempre.
+  // Si el anfitrión eligió en la sala pausar al salir de la ventana, no: allí
+  // se para todo hasta que vuelva (coop.js).
   let bgWorker = null;
   function bgTicker() {
-    const want = document.hidden && G.Coop.active;
+    const want = document.hidden && G.Coop.active && !G.Coop.pauseAway;
     if (want && !bgWorker) {
       try { bgWorker = new Worker('js/core/tick-worker.js'); }
       catch (e) { console.error('[Game] sin reloj en segundo plano:', e); return; }
