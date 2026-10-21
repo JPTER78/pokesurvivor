@@ -5,12 +5,12 @@ const { source, scenario } = require("./helpers/healer-harness.cjs");
 const js = source();
 const near = (a, b) =>
   assert.ok(Math.abs(a - b) < 1e-6, `expected ${b}, got ${a}`);
-test("one healer retains 7% normal healing", () => {
+test("A single healer restores the normal 7% of maximum HP", () => {
   const s = scenario(js, { hp: 1000, power: 1 });
   s.cast(1);
   near(s.victims[0].hp, 70);
 });
-test("multiple healers share 12% per-target budget", () => {
+test("Multiple healers share a 12% healing limit per target", () => {
   for (const n of [2, 3, 5]) {
     const s = scenario(js, { hp: 1000 });
     s.cast(n);
@@ -18,7 +18,7 @@ test("multiple healers share 12% per-target budget", () => {
     assert.equal(s.effects.bursts, 2);
   }
 });
-test("budget advances with simulated play, not paused wall time", () => {
+test("The healing limit resets after 3.5 seconds of game time", () => {
   const s = scenario(js, { hp: 1000 });
   s.cast(3);
   s.clock.time = 3.49;
@@ -28,7 +28,7 @@ test("budget advances with simulated play, not paused wall time", () => {
   s.cast(3);
   near(s.victims[0].hp, 240);
 });
-test("damage cannot reset budget in a window", () => {
+test("Taking damage does not reset the healing limit early", () => {
   const s = scenario(js, { hp: 1000 });
   s.cast(3);
   s.victims[0].hp = 60;
@@ -36,7 +36,7 @@ test("damage cannot reset budget in a window", () => {
   s.cast(3);
   near(s.victims[0].hp, 60);
 });
-test("full, dead, and nearly full targets are treated correctly", () => {
+test("Full-health, defeated and nearly full targets receive only valid healing", () => {
   const a = { x: 0, y: 0, hp: 1000, maxHp: 1000, dead: false, bodyH: 16 },
     b = { x: 0, y: 0, hp: 0, maxHp: 1000, dead: true, bodyH: 16 },
     c = { x: 0, y: 0, hp: 995, maxHp: 1000, dead: false, bodyH: 16 };
@@ -50,12 +50,12 @@ test("full, dead, and nearly full targets are treated correctly", () => {
   s.cast(3);
   near(c.hp, 915);
 });
-test("boss DPS-based healing remains unchanged", () => {
+test("Boss healing keeps its existing damage-per-second limit", () => {
   const s = scenario(js, { boss: true, hp: 2000, rd: 120 });
   s.cast(3);
   near(s.victims[0].hp, 24);
 });
-test("clock reset starts a fresh window", () => {
+test("Resetting the game clock starts a new healing window", () => {
   const s = scenario(js, { hp: 1000 });
   s.clock.time = 60;
   s.cast(3);

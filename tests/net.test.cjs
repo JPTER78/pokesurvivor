@@ -12,14 +12,14 @@ function codec() {
 }
 const C = codec();
 
-test("host/client frames, events, pauses and Unicode round-trip exactly", () => {
+test("Host and client frames preserve events, pauses and Unicode in a round trip", () => {
   for (const f of [client(), frame(0, 0), frame(100, 40), frame(600, 400)]) {
     const b = C.encode(f);
     assert.ok(b);
     assert.deepEqual(C.decode(b), f);
   }
 });
-test("integer limits and decimals retain exact JS values, including high HP", () => {
+test("Integer limits, decimals and high HP values survive encoding unchanged", () => {
   const values = [
     0,
     127,
@@ -39,7 +39,7 @@ test("integer limits and decimals retain exact JS values, including high HP", ()
   ];
   assert.deepEqual(C.decode(C.encode(values)), values);
 });
-test("unsupported values safely fall back rather than silently changing data", () => {
+test("Unsupported values use safe fallback instead of silently changing data", () => {
   const cycle = [];
   cycle.push(cycle);
   for (const v of [undefined, 1n, new Date(), cycle, "\ud800", "\udc00"]) {
@@ -47,7 +47,7 @@ test("unsupported values safely fall back rather than silently changing data", (
   }
   assert.equal(C.encode("x".repeat(C.MAX_BYTES)), null);
 });
-test("-0, NaN, Infinity and undefined arrive exactly as they would through JSON", () => {
+test("Special JavaScript values match JSON serialization behavior", () => {
   const r2 = (v) => Math.round(v * 100) / 100;
   for (const v of [
     -0,
@@ -65,7 +65,7 @@ test("-0, NaN, Infinity and undefined arrive exactly as they would through JSON"
     assert.equal(JSON.stringify(got), JSON.stringify(v));
   }
 });
-test("object keys cannot mutate prototypes", () => {
+test("Decoded object keys cannot modify object prototypes", () => {
   const value = JSON.parse(
     '{"__proto__":{"polluted":true},"constructor":"safe"}',
   );
@@ -74,7 +74,7 @@ test("object keys cannot mutate prototypes", () => {
   assert.equal({}.polluted, undefined);
   assert.equal(Object.getPrototypeOf(decoded), Object.prototype);
 });
-test("truncation, trailing bytes, versions, tags, UTF-8 and lengths are rejected", () => {
+test("Invalid payload lengths, versions, tags and UTF-8 are rejected", () => {
   const b = new Uint8Array(C.encode(frame(3, 2)));
   for (let i = 0; i < b.length; i++)
     assert.throws(() => C.decode(b.slice(0, i).buffer));
@@ -92,7 +92,7 @@ test("truncation, trailing bytes, versions, tags, UTF-8 and lengths are rejected
   assert.throws(() => C.decode(new ArrayBuffer(C.MAX_BYTES + 1)));
   assert.throws(() => C.decode("not binary"));
 });
-test("bounded deterministic random numeric payloads round-trip", () => {
+test("Deterministic random numeric payloads survive encoding unchanged", () => {
   let seed = 1234;
   const rand = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0);
   for (let i = 0; i < 500; i++) {
@@ -166,7 +166,7 @@ function network() {
     dc.onmessage({ data: JSON.stringify({ k: "net-cap", binary: 1 }) });
   return { N: G.Net, pcs, relay, cap };
 }
-test("negotiation is per peer; old clients and unknown versions keep JSON", () => {
+test("Each peer negotiates independently; older or unknown versions keep JSON", () => {
   const { N, pcs, cap } = network(),
     [a, b] = pcs.map((p) => p.dc),
     f = frame();
@@ -186,7 +186,7 @@ test("negotiation is per peer; old clients and unknown versions keep JSON", () =
   N.send("a", { k: "f", ev: [undefined] });
   assert.deepEqual(C.decode(a.sent.at(-1)), { k: "f", ev: [null] });
 });
-test("mixed formats arrive unchanged; capabilities and corrupt packets never reach gameplay", () => {
+test("Mixed formats are preserved and corrupt packets never reach gameplay", () => {
   const { N, pcs, cap } = network(),
     dc = pcs[0].dc,
     got = [];
@@ -206,7 +206,7 @@ test("mixed formats arrive unchanged; capabilities and corrupt packets never rea
   assert.equal(N.stats.binaryRecv, 1);
   assert.equal(N.stats.invalidBinary, 3);
 });
-test("byte counters count successful payloads; failed frames never enable database relay", () => {
+test("Byte counters track successful payloads without enabling relay after failures", () => {
   const { N, pcs, cap, relay } = network(),
     dc = pcs[0].dc,
     f = frame();
@@ -223,7 +223,7 @@ test("byte counters count successful payloads; failed frames never enable databa
   N.send("a", { k: "start", seed: 1 });
   assert.equal(relay.length, 1);
 });
-test("reconnect resets capability, so a replaced/old peer never receives binary", () => {
+test("Reconnecting resets binary support for replaced or older peers", () => {
   const { N, pcs, cap } = network();
   cap(pcs[0].dc);
   N.close();
@@ -234,7 +234,7 @@ test("reconnect resets capability, so a replaced/old peer never receives binary"
   N.send("a", frame());
   assert.equal(typeof dc.sent.at(-1), "string");
 });
-test("representative busy host payload saves at least 30%; all savings are lossless", () => {
+test("Busy host payloads save at least 30% of bytes without losing data", () => {
   for (const n of [30, 100, 300, 600]) {
     const f = frame(n),
       b = C.encode(f),
@@ -244,7 +244,7 @@ test("representative busy host payload saves at least 30%; all savings are lossl
   }
 });
 
-test("real Coop.tick frames pass through the codec without changing gameplay fields", () => {
+test("Real cooperative frames preserve gameplay data through the codec", () => {
   for (const host of [true, false]) {
     const sent = [],
       G = {};
@@ -451,7 +451,7 @@ const goodTurn = () =>
     ],
   });
 
-test("own TURN: first try is direct only; a failed pair retries at once with clean TURN servers", async () => {
+test("TURN fallback starts only after a failed direct connection", async () => {
   const { N, pcs, calls, signals } = turnNetwork(goodTurn);
   N.open("room", true, "host");
   N.syncMembers(["host", "a", "b"]);
@@ -479,7 +479,7 @@ test("own TURN: first try is direct only; a failed pair retries at once with cle
   assert.equal(offers.at(-1)[1].sig.t, 1);
   assert.equal(pcs.length, 3, "only the failed pair reserves TURN");
 });
-test("own TURN: refused or broken answers retry with STUN only and then wait as before", async () => {
+test("Unavailable TURN credentials fall back safely to STUN", async () => {
   for (const respond of [
     () => turnReply({ error: "user_denied" }, 403),
     () => {
@@ -503,7 +503,7 @@ test("own TURN: refused or broken answers retry with STUN only and then wait as 
     assert.equal(calls.length, 1);
   }
 });
-test("own TURN: guests use it only when the host asks for it", async () => {
+test("Guests request TURN only when the host requires it", async () => {
   const { N, pcs, calls, offer } = turnNetwork(goodTurn, {
     user: { uid: "guest", getIdToken: async () => "token" },
     host: false,
@@ -518,7 +518,7 @@ test("own TURN: guests use it only when the host asks for it", async () => {
   assert.equal(calls.length, 1);
   assert.equal(pcs[1].cfg.iceServers.length, 2);
 });
-test("own TURN: players without an account never ask and keep the old retry", async () => {
+test("Guest accounts retain the original retry behavior without requesting TURN", async () => {
   for (const user of [null, { uid: "anon", isAnonymous: true }]) {
     const { N, pcs, calls, timers } = turnNetwork(
       () => assert.fail("no request"),
@@ -534,7 +534,7 @@ test("own TURN: players without an account never ask and keep the old retry", as
     assert.equal(timers.at(-1), 15000);
   }
 });
-test("own TURN: a pair that needed it starts with it next time, and after 2 such guests everyone does", async () => {
+test("Reconnects reuse TURN when needed and expand fallback after repeated failures", async () => {
   const { N, pcs } = turnNetwork(goodTurn);
   N.open("room", true, "host");
   N.syncMembers(["host", "a"]);

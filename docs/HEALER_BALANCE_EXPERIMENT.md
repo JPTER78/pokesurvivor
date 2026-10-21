@@ -1,25 +1,41 @@
 # Healer balance experiment
 
-Scope: only normal-enemy stacked healing. A single healer keeps its current 7% base heal (up to the 12% shared cap). Multiple healers share one 12%-of-max-HP budget per target per 3.5 seconds of gameplay time. Bosses retain the existing received-DPS cap. Enemy HP, damage, spawn frequency, coins and XP are unchanged.
+## Summary
 
-## Try locally
+Groups of support Pokémon can repeatedly heal the same enemy, sometimes faster than the player can deal damage. This change caps **combined healing from normal enemy healers at 12% of each target's maximum HP per 3.5 seconds of gameplay**.
 
-1. Check out `fix/healer-stacking-benchmark`.
-2. Run `python -m http.server 8000` (or `py -m http.server 8000` on Windows).
-3. Open `http://localhost:8000/dev.html` and select guest mode. Avoid your real cloud account.
-4. Test your usual Pokemon and moves on the 3-, 5-, 6- and 10-minute marks. Keep the same equipment and settings for before/after. Use the unmodified `main` branch for the baseline.
-5. Record death time, level, kills, boss kills, mean FPS and any healer groups that were impossible to kill.
+A single healer still applies its standard healing when below the shared limit. At sufficiently high player attack multipliers, the cap can also reduce a single healer's heal. Bosses keep their existing damage-per-second-based healing limit.
 
-## Automated verification
+Enemy health, damage, spawn frequency, experience and rewards are not changed.
 
-```sh
+## Verify the changes
+
+From the repository directory on Windows PowerShell:
+
+```powershell
+git fetch origin
+git switch fix/healer-stacking-benchmark
+git pull --ff-only origin fix/healer-stacking-benchmark
+
 node --test tests/*.test.cjs
-node tools/bench-healers.cjs --baseline=main --iterations=20000
+node tools/bench-healers.cjs --baseline=origin/main --iterations=20000
 ```
 
-Benchmark output compares both *actual versions* of `Enemy.healAround()` in a deterministic sandbox; numbers describe healing and the routine's CPU cost, **not real FPS or win-rate changes**. Run it on the same computer without other heavy load, ideally multiple times.
+Use `node tools/bench-healers.cjs --help` to view the benchmark options. Its output reports healed HP for 1, 2 and 3 healers at three attack multipliers, plus median CPU time per healer cast. **These are not gameplay FPS or survival-rate measurements.** CPU timing differences at the nanosecond scale can be noisy.
 
-## Trade-offs
+## Try it as a guest
 
-Benefits: fewer immortal support groups, supports normal gameplay clock and pause, boss balance remains intact.
-Risks: support squads become easier and XP gain may accelerate; the 12% cap is an experimental tuning value. The HP scaling at minutes 5-6 is deliberately untouched, so surviving longer is not guaranteed.
+1. Run `py -m http.server 8000` from the repository directory.
+2. Open `http://localhost:8000/dev.html` and use guest mode, not your official cloud account.
+3. Compare against the unmodified `main` version, playing sequentially with the same Pokémon, moves, upgrades and graphics settings.
+4. Record survival time, level, enemies and bosses defeated, average FPS, and whether groups of healers can be killed.
+
+Suggested checkpoints: minutes 3, 5, 6 and 10. Several runs per version are recommended because enemy spawns and upgrades vary.
+
+## Benefits and trade-offs
+
+**Benefits:** Multiple healers no longer multiply recovery without a shared target limit. Pausing does not advance the healing window. Boss healing behavior remains unchanged.
+
+**Trade-offs:** Support-heavy groups may become easier, potentially increasing XP gain and survival time. The 12% cap is an initial tuning value, not a final balance target. Regular enemies still have substantial HP scaling near minutes 5–6, so this adjustment alone may not resolve every difficulty spike.
+
+The proposed change does not require any changes to cloud saves, rankings, or Firebase rules.

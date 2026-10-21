@@ -85,7 +85,7 @@ const save = [
   "儲存",
 ];
 for (const [i, lang] of langs.entries()) {
-  test(`${lang}: isolated dictionary, templates, loading locale, canvas, new save notice`, () => {
+  test(`Locale ${lang}: Loads an isolated dictionary, templates, Canvas text and save notice`, () => {
     const b = boot(lang),
       I = b.G.I18n;
     assert.equal(I.lang, lang);
@@ -174,7 +174,7 @@ for (const [i, lang] of langs.entries()) {
     assert.equal(b.G.LoginUI.updateNotices(), false);
   });
   if (lang === "es") continue;
-  test(`${lang}: current English-key coverage and placeholder contracts`, () => {
+  test(`Locale ${lang}: Covers English translation keys and preserves placeholders`, () => {
     const { G, load } = boot(lang);
     if (lang !== "en") {
       // Todo lo que tiene inglés (lang-en.js y los datos del juego) tiene también este idioma.
@@ -203,7 +203,7 @@ for (const [i, lang] of langs.entries()) {
       }
   });
 }
-test("locale precedence, aliases and blocked storage", () => {
+test("Locale selection handles preferences, aliases and unavailable storage", () => {
   for (const [input, expected] of [
     ["zh-TW", "zh-Hant"],
     ["zh-HK", "zh-Hant"],
@@ -225,7 +225,7 @@ test("locale precedence, aliases and blocked storage", () => {
   assert.equal(boot(null, "fr-FR", "/", true).G.I18n.lang, "fr");
   assert.equal(boot(null, "es-MX").G.I18n.lang, "es");
 });
-test("switching language writes only the preference and validates input", () => {
+test("Changing language validates input and saves only the preference", () => {
   const b = boot("es");
   b.storage["ps.cloud.fake"] = '{"coins":42}';
   b.G.I18n.set("invalid");
@@ -235,7 +235,7 @@ test("switching language writes only the preference and validates input", () => 
   assert.equal(b.storage["ps.cloud.fake"], '{"coins":42}');
   assert.deepEqual(b.calls, ["reload"]);
 });
-test("specific templates and later overrides beat generic patterns", () => {
+test("Specific templates and later overrides take precedence over generic patterns", () => {
   const { G } = boot("fr");
   G.I18n.add({ "Bonjour {x}": "Ancien {x}", "{x}).": "{x}）。" }, "fr");
   G.I18n.add(
@@ -245,7 +245,7 @@ test("specific templates and later overrides beat generic patterns", () => {
   assert.equal(G.T("Bonjour 5"), "Nouveau 5");
   assert.equal(G.T("Le résultat (42)."), "Résultat : 42");
 });
-test("Chinese move context is distinct from type; all species have names", () => {
+test("Chinese move translations differ from type names, and all species have names", () => {
   for (const lang of ["zh-Hans", "zh-Hant"]) {
     const b = boot(lang);
     b.load("js/data/pokedex.js");
@@ -254,7 +254,7 @@ test("Chinese move context is distinct from type; all species have names", () =>
   }
 });
 
-test("external boot follows the shared locale without inline executable scripts", () => {
+test("External boot scripts follow the shared locale without inline JavaScript", () => {
   const html = source("dev.html");
   assert.ok(
     html.indexOf('src="js/core/locales.js"') < html.indexOf('src="js/boot.js"'),
