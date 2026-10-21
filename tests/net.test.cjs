@@ -150,3 +150,55 @@ test('real Coop.tick frames pass through the codec without changing gameplay fie
     else { assert.equal(sent[0].p.length, 15); }
   }
 });
+
+function turnNetwork(respond, user = { uid: 'host', getIdToken: async () => 'token' }) {
+  const configs = [], calls = [], G = { NetCodec: codec(), DB: { fb: { uid: 'host', auth: { currentUser: user }, rtdb: {
+    ref: () => ({ on() {}, off() {}, push: () => Promise.resolve() })
+  } } } };
+  class PC {
+    constructor(cfg) { configs.push(cfg); }
+    createDataChannel() { return this.dc = { readyState: 'connecting', send() {}, close() {} }; }
+    createOffer() { return Promise.resolve({ type: 'offer' }); }
+    setLocalDescription() { this.localDescription = { toJSON: () => ({ type: 'offer' }) }; return Promise.resolve(); }
+    close() {}
+  }
+  const fetch = async (url, opt) => { calls.push([url, opt]); return respond(); };
+  new Function('G', 'RTCPeerConnection', 'setTimeout', 'clearTimeout', 'fetch', source('js/net/net.js'))(G, PC, () => 1, () => {}, fetch);
+  return { N: G.Net, configs, calls };
+}
+const settle = () => new Promise(r => setImmediate(r));
+const turnReply = (body, status = 200) => ({ ok: status === 200, status, json: async () => body });
+
+test('own TURN: authorised account adds only clean turn.pokesurvivor.com servers, asked once', async () => {
+  const { N, configs, calls } = turnNetwork(() => turnReply({ expiresAt: Date.now() / 1000 + 7200, iceServers: [
+    { urls: ['turn:turn.pokesurvivor.com:3478?transport=udp', 'turn:evil.example:3478', 'stun:x'], username: 'u', credential: 'c' },
+    { urls: ['turn:turn.pokesurvivor.com:3478?transport=tcp'], username: '', credential: 'c' }] }));
+  N.open('room', true, 'host'); await settle();
+  N.syncMembers(['host', 'a', 'b']); await settle();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'https://ice.pokesurvivor.com/v1/ice');
+  assert.equal(calls[0][1].method, 'POST'); assert.equal(calls[0][1].headers.Authorization, 'Bearer token');
+  assert.equal(configs.length, 2);
+  for (const cfg of configs) {
+    assert.equal(cfg.iceServers[0].urls[0], 'stun:stun.l.google.com:19302');
+    assert.deepEqual(cfg.iceServers.slice(1), [{ urls: ['turn:turn.pokesurvivor.com:3478?transport=udp'], username: 'u', credential: 'c' }]);
+  }
+});
+test('own TURN: refused, broken or missing answers fall back to STUN without retrying each peer', async () => {
+  for (const respond of [() => turnReply({ error: 'user_denied' }, 403), () => { throw Error('offline'); },
+    () => turnReply({ expiresAt: 1, iceServers: [] })]) {
+    const { N, configs, calls } = turnNetwork(respond);
+    N.open('room', true, 'host'); await settle();
+    N.syncMembers(['host', 'a', 'b']); await settle();
+    assert.equal(calls.length, 1);
+    assert.equal(configs.length, 2);
+    for (const cfg of configs) assert.equal(cfg.iceServers.length, 1);
+  }
+});
+test('own TURN: guests without an account never ask and connect at once', () => {
+  for (const user of [null, { uid: 'anon', isAnonymous: true }]) {
+    const { N, configs, calls } = turnNetwork(() => assert.fail('no request'), user);
+    N.open('room', true, 'host'); N.syncMembers(['host', 'a']);
+    assert.equal(calls.length, 0); assert.equal(configs.length, 1); assert.equal(configs[0].iceServers.length, 1);
+  }
+});
