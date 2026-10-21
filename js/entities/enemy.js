@@ -32,6 +32,20 @@
   const RD_TAU = 6, BOSS_HEAL_S = 0.4, BOSS_SHIELD_S = 1.2;
   const bossDps = e => e.rd / RD_TAU;
 
+  // Shared healing budget per target. All healers draw from the same 3.5s window.
+  // The gameplay clock freezes on pause. Bosses retain their existing DPS cap.
+  const SUPPORT_HEAL_WINDOW = 3.5, SUPPORT_HEAL_MAX_HP = 0.12;
+  function supportHealAmount(e, amount, now) {
+    if (e.supportHealAt == null || now < e.supportHealAt || now - e.supportHealAt >= SUPPORT_HEAL_WINDOW) {
+      e.supportHealAt = now;
+      e.supportHealUsed = 0;
+    }
+    const budget = Math.max(0, e.maxHp * SUPPORT_HEAL_MAX_HP - e.supportHealUsed);
+    const healed = Math.max(0, Math.min(amount, budget, e.maxHp - e.hp));
+    e.supportHealUsed += healed;
+    return healed;
+  }
+
   /*
    * Veneno (18-10-2026): quita un % de la vida, pero con muchísima vida (los
    * legendarios de la Sentencia, que doblan cada 5 s) ese % se aplica a una
@@ -632,12 +646,15 @@
       // mucho ×2,5. (Como los enemigos que tienen más vida si haces más daño.)
       const pow = Math.max(1, ...G.Game.everyone().map(p => (p.atk > 0 && p.baseAtk > 0 ? p.atk / p.baseAtk : 1)));
       const k = 0.07 * Math.min(2.5, Math.pow(pow, 0.35));
+      const now = G.Game.st.time;
       let n = 0;
       for (const e of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
         if (e.dead || e.hp >= e.maxHp) continue;
-        // A un jefe, como mucho lo que le quitas en 0,4 s: así nunca se vuelve inmatable.
         const heal = e.maxHp * k;
-        e.hp = Math.min(e.maxHp, e.hp + (e.boss ? Math.min(heal, bossDps(e) * BOSS_HEAL_S) : heal));
+        const amount = e.boss ? Math.min(heal, bossDps(e) * BOSS_HEAL_S)
+                              : supportHealAmount(e, heal, now);
+        if (amount <= 0) continue;
+        e.hp = Math.min(e.maxHp, e.hp + amount);
         G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#7dffb0', 5, 60);
         n++;
       }
