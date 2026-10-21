@@ -3,7 +3,9 @@
  * la huella de js/app.min.js), todos los jugadores la reciben sin perder nada:
  *
  *   - Cada 5 min (y al volver a la pestaña) se mira version.json (lo sirve
- *     GitHub Pages: no cuesta nada).
+ *     GitHub Pages: no cuesta nada). Con la pestaña oculta no se mira (22-10-2026:
+ *     eran 12 consultas por hora de cada pestaña olvidada en segundo plano);
+ *     al volver a ella se mira en el momento.
  *   - Si NO está en partida: aviso "actualizando en 5 s…" y se recarga.
  *     Si está en el gacha, la tienda de mejoras, los ajustes o escribiendo en
  *     un campo, espera a que termine. En una sala de cooperativo, se recarga
@@ -95,7 +97,7 @@ G.Updater = (() => {
     if (pending && forced && !counting && inRun()) { forceEnd(); return; }
     if (pending && forced && !counting && G.Game && G.Game.state === 'over') { reload(); return; }   // resumen: ya está guardado
     if (pending && !counting && safe()) countdown();
-    if (!pending && Date.now() - lastCheck > EVERY) check();
+    if (!pending && !document.hidden && Date.now() - lastCheck > EVERY) check();
   }
 
   function init() {

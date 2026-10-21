@@ -15,11 +15,16 @@
  * esperando a otro para siempre (pasaba en 2026-10).
  *
  * Mensajes (por net.js, unas 15 veces por segundo; 5 si va por el relé):
- *   invitado -> anfitrión  { k:'f', p:[estado], ev:[eventos] }
+ *   invitado -> anfitrión  { k:'f', p:[estado], ev:[eventos], cv }
  *   anfitrión -> invitado  { k:'f', t, lv, xp, xn, ki, bo, co, p:{uid:[estado]},
  *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos],
  *                            ja:[x,y,anim,dir] (Arceus, sólo en la Sentencia) }
  *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny}] }
+ *
+ * cv (versión del cooperativo, 22-10-2026): el invitado que manda cv >= 2
+ * recibe los enemigos en compacto (e2 en vez de e, ver rows.js) y los estados
+ * con su número de jugador en la sala en vez del uid (p:{'0':[estado]}). Con
+ * versiones viejas, en ambos sentidos, todo sigue como antes.
  */
 G.Coop = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
@@ -29,6 +34,7 @@ G.Coop = (() => {
   const RATE_FAST = 1 / 15, RATE_SLOW = 1 / 3;
   const rateFor = u => (G.Net.slow(u) ? RATE_SLOW : RATE_FAST);
   const NEAR = 950;                     // radio de enemigos que se mandan a cada uno
+  const CV = 2;                         // versión del cooperativo que entiende este juego (ver arriba)
 
   let active = false, host = false, me = null, hostUid = null;
   let local = null;                     // tu Player
@@ -191,15 +197,20 @@ G.Coop = (() => {
     return out;
   }
 
+  /** Clave de un jugador en f.p: su número en la sala para quien lo entiende (cv >= 2), si no su uid. */
+  const pKey = (m, u) => (m.cv >= 2 ? String(members.findIndex(x => x.uid === u)) : u);
+
   function hostFrame(m) {
     const st = api.team();
-    const p = { [me]: myState() };
+    const p = { [pKey(m, me)]: myState() };
     for (const o of mates.values()) {
-      if (o.connected && o.uid !== m.uid && o.state) p[o.uid] = o.state;
+      if (o.connected && o.uid !== m.uid && o.state) p[pKey(m, o.uid)] = o.state;
     }
     const ev = m.q; m.q = [];
-    const f = { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
-                p, e: enemyList(viewOf(m)), ev };
+    const view = viewOf(m), rows = enemyList(view);
+    const f = { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10], p, ev };
+    if (m.cv >= 2) f.e2 = G.NetRows.encode(rows, view, m.rows || (m.rows = G.NetRows.memo()));
+    else f.e = rows;
     const ja = G.Judgment.netState();       // Arceus en la Sentencia
     if (ja) f.ja = ja;
     // Siempre: quién está eligiendo y, si hay cartas de nivel, cuáles (ver arriba).
@@ -212,7 +223,7 @@ G.Coop = (() => {
 
   function flushClient(force) {
     if (!force && !outEv.length && flushT > 0) return;
-    G.Net.toHost({ k: 'f', p: myState(), ev: outEv });
+    G.Net.toHost({ k: 'f', p: myState(), ev: outEv, cv: CV });
     outEv = [];
   }
 
@@ -232,7 +243,7 @@ G.Coop = (() => {
       flushT -= dt;
       if (flushT <= 0) {
         flushT = rateFor(hostUid);
-        G.Net.toHost({ k: 'f', p: myState(), ev: outEv });
+        G.Net.toHost({ k: 'f', p: myState(), ev: outEv, cv: CV });
         outEv = [];
       }
     }
@@ -269,6 +280,7 @@ G.Coop = (() => {
   function onClientFrame(from, msg) {
     const m = mates.get(from);
     if (!m || !m.connected) return;
+    m.cv = num(msg.cv, 0, 0, 99);
     if (msg.p) { m.state = msg.p; m.pl.net = readState(msg.p); m.xpMul = m.pl.net.xpMul || 1; reconcile(from, m.pl.net); }
     for (const ev of msg.ev || []) {
       switch (ev[0]) {
@@ -346,24 +358,37 @@ G.Coop = (() => {
     }
     api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
                    t1: (msg.tk || [])[0], t10: (msg.tk || [])[1] });
-    for (const u in msg.p || {}) {
+    for (const k in msg.p || {}) {
+      // Con cv >= 2 la clave es el número de jugador en la sala (ver hostFrame).
+      const u = /^\d$/.test(k) && members[+k] ? members[+k].uid : k;
       const m = mates.get(u);
-      if (m) m.pl.net = readState(msg.p[u]);
+      if (m) m.pl.net = readState(msg.p[k]);
     }
     const now = performance.now();
-    for (const a of msg.e || []) {
-      const e = G.EnemyMgr.get(a[0]);
-      if (!e || !e.remote || e.dead) continue;
-      const n = e.net;
-      const dts = (now - (n.last || now)) / 1000;
-      if (dts > 0.02 && dts < 1) {
-        n.vx = G.U.clamp((a[1] - n.x) / dts, -600, 600);
-        n.vy = G.U.clamp((a[2] - n.y) / dts, -600, 600);
-      } else { n.vx = 0; n.vy = 0; }
-      n.x = a[1]; n.y = a[2]; n.age = 0; n.last = now;
-      e.hp = Math.min(e.maxHp, a[3]);
-      n.anim = a[4]; n.dir = a[5]; n.st = a[6];
-    }
+    if (msg.e2) G.NetRows.decode(msg.e2, (id, x, y, hp, anim, dir, st) => enemyRow(now, id, x, y, hp, anim, dir, st));
+    else for (const a of msg.e || []) enemyRow(now, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+  }
+
+  /**
+   * Invitado: posición, vida, animación, dirección y estados de un enemigo del
+   * anfitrión. Sin vida (fila corta de e2), x e y son lo que se ha movido desde
+   * la última posición recibida y lo demás no ha cambiado.
+   */
+  function enemyRow(now, id, x, y, hp, anim, dir, st) {
+    const e = G.EnemyMgr.get(id);
+    if (!e || !e.remote || e.dead) return;
+    const n = e.net;
+    if (hp === undefined) { x = n.x + num(x, 0, -1e6, 1e6); y = n.y + num(y, 0, -1e6, 1e6); }
+    x = num(x, n.x, -1e6, 1e6); y = num(y, n.y, -1e6, 1e6);
+    const dts = (now - (n.last || now)) / 1000;
+    if (dts > 0.02 && dts < 1) {
+      n.vx = G.U.clamp((x - n.x) / dts, -600, 600);
+      n.vy = G.U.clamp((y - n.y) / dts, -600, 600);
+    } else { n.vx = 0; n.vy = 0; }
+    n.x = x; n.y = y; n.age = 0; n.last = now;
+    if (hp === undefined) return;                          // fila corta: lo demás no ha cambiado
+    e.hp = num(hp, e.hp, 0, e.maxHp);
+    n.anim = anim; n.dir = dir; n.st = st;
   }
 
   function applyHostEvent(ev) {
