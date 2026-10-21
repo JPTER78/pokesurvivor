@@ -25,6 +25,31 @@ G.HUD = (() => {
     }
   }
 
+  /**
+   * Con el ratón encima de un vínculo: el nombre de cada movimiento que lleva,
+   * uno por línea con su icono y en el color de su tipo, encima de la ranura.
+   */
+  function drawBondTooltip(ctx, w, tip, color) {
+    const I = 16, LH = 20, PAD = 8;
+    ctx.save();
+    ctx.font = F(700, 11);
+    const names = tip.g.map(m => G.T(m.name, 'move'));
+    const tw = Math.max(...names.map(s => ctx.measureText(s).width));
+    const bw = PAD * 2 + I + 6 + tw, bh = PAD * 2 + (names.length - 1) * LH + I;
+    const bx = G.U.clamp(tip.x + tip.s / 2 - bw / 2, 6, w - bw - 6), by = tip.y - bh - 8;
+    roundRect(ctx, bx, by, bw, bh, 8);
+    ctx.fillStyle = 'rgba(10,16,28,.92)'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = color; ctx.stroke();
+    ctx.textAlign = 'left';
+    tip.g.forEach((m, k) => {
+      const ly = by + PAD + k * LH;
+      G.Icons.draw(ctx, 'move:' + m.id, bx + PAD, ly, I);
+      ctx.fillStyle = G.U.TYPE_COLOR[m.type];
+      ctx.fillText(names[k], bx + PAD + I + 6, ly + 12);
+    });
+    ctx.restore();
+  }
+
   function draw(ctx, w, h, pl, st) {
     ctx.save();
     ctx.textBaseline = 'alphabetic';
@@ -259,6 +284,9 @@ G.HUD = (() => {
     }
     const BOND = '#ff8ad8';
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
+    // Con el ratón encima de un vínculo se ven los nombres (en el móvil no: tocar cambia de movimiento).
+    const mouse = !touch && G.Input.mouse();
+    let tip = null;
 
     for (let i = 0; i < n; i++) {
       const g = pl.slots[i] || [];
@@ -267,6 +295,8 @@ G.HUD = (() => {
       const on = i === pl.active;
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
+      const hover = fused && mouse && mouse.x >= x && mouse.x < x + S && mouse.y >= y && mouse.y < y + S;
+      if (hover) tip = { g, x, y, s: S };
       // Tocar (o hacer clic en) un icono activa ese movimiento.
       if (m) G.Touch.addButton(x, y, S, S, () => { if (G.Game.state === 'playing' && pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); } }, GAP / 2 + 3);
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
@@ -325,14 +355,15 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       ctx.fillText(String(i + 1), x + 3, y + 10);
 
-      // nombre encima del activo (con un vínculo: "Ascuas +2")
-      if (on) {
+      // nombre encima del activo (con un vínculo: "Ascuas +2"; con el ratón encima, la lista entera)
+      if (on && !hover) {
         ctx.font = F(700, 10);
         ctx.textAlign = 'center';
         ctx.fillStyle = fused ? BOND : col;
         ctx.fillText(fused ? G.T(m.name, 'move') + ' +' + (g.length - 1) : G.T(m.name, 'move'), x + S / 2, y - 7);
       }
     }
+    if (tip) drawBondTooltip(ctx, w, tip, BOND);
 
     // ---------- vínculo guardado (aún no hay dos movimientos sueltos) ----------
     if (pl.bonds > 0) {
