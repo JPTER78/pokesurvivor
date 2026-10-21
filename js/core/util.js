@@ -71,3 +71,5 @@ G.U = {
     steel: 'Acero', fairy: 'Hada'
   }
 };
+
+window.G = G;
