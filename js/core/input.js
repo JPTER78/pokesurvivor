@@ -9,7 +9,7 @@ G.Input = (() => {
     left: ['keya', 'arrowleft'], right: ['keyd', 'arrowright']
   };
 
-  function code(e) { return (e.code || e.key).toLowerCase(); }
+  function code(e) { return (e && typeof e === 'string') ? e.toLowerCase() : (e?.code || e?.key || '').toLowerCase(); }
 
   addEventListener('keydown', e => {
     const c = code(e);
