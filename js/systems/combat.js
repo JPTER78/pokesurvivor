@@ -16,7 +16,22 @@ G.Combat = (() => {
   let ghost = false;
   let fields = [];
 
-  // Usa el mismo solapamiento de círculos que EnemyMgr.queryCircle:\n  // cuenta el radio físico del enemigo, no sólo su distancia al centro.\n  function meleeTarget(enemies, x, y, radius) {\n    let best = null, bestDist = Infinity;\n    for (const e of enemies) {\n      if (e.dead) continue;\n      const distance = G.U.dist2(x, y, e.x, e.y);\n      const reach = radius + (e.r || 0);\n      if (distance <= reach * reach && distance < bestDist) {\n        best = e; bestDist = distance;\n      }\n    }\n    return best;\n  }\n\n  // ---------------- ejecutar el movimiento activo ----------------
+  // La selección de objetivos debe utilizar el mismo solapamiento circular
+  // que EnemyMgr.queryCircle: incluye el radio físico de cada enemigo.
+  function meleeTarget(enemies, x, y, radius) {
+    let best = null, bestDist = Infinity;
+    for (const e of enemies) {
+      if (e.dead) continue;
+      const distance = G.U.dist2(x, y, e.x, e.y);
+      const overlap = radius + (e.r || 0);
+      if (distance <= overlap * overlap && distance < bestDist) {
+        best = e; bestDist = distance;
+      }
+    }
+    return best;
+  }
+
+  // ---------------- ejecutar el movimiento activo ----------------
 
   function tick(dt, pl, now) {
     if (pl.dead) return;
@@ -29,40 +44,41 @@ G.Combat = (() => {
 
     m.t -= dt;
     if (m.t > 0) return;
-    // Cada movimiento fusionado busca un objetivo a SU alcance sin cambiar
-    // permanentemente el blanco de los demás movimientos del mismo hueco.
+    // Un movimiento fusionado melee usa su propia zona de impacto, sin
+    // cambiar permanentemente la dirección de los demás movimientos.
     const retarget = m.kind === 'melee' && !pl.manualAim
       ? meleeTarget(G.EnemyMgr.all(), pl.x, pl.y, m.radius) : null;
-    // El margen de apuntado es mayor que el área real de impacto.
-    // No consumas la recarga si ningún enemigo puede recibir el golpe.
+    // Un enemigo fuera de la hitbox no debe consumir la recarga por el
+    // margen de búsqueda del apuntado automático (radio + 30).
     if (m.kind === 'melee' && !pl.manualAim && !retarget &&
         (!pl.target || pl.target.hurt)) {
       m.t = 0.05;
       return;
     }
     const previousTarget = pl.target, previousAim = pl.aim;
-    if (retarget && retarget !== pl.target) {
+    if (retarget) {
       pl.target = retarget;
+      // Recalcular el ángulo incluso cuando sigue siendo el mismo enemigo:
+      // puede haberse movido al otro lado desde Player.update().
       pl.aim = Math.atan2(retarget.y - pl.y, retarget.x - pl.x);
     }
     try {
-      // Los ataques que necesitan blanco esperan a tenerlo.
-      if (needsTarget(m, pl) && !(pl.target && !pl.target.dead &&
-          G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
+      // Los impactos melee válidos utilizan solapamiento de hitboxes;
+      // los demás movimientos mantienen su alcance habitual.
+      if (needsTarget(m, pl) && !(retarget || (pl.target && !pl.target.dead &&
+          G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m)))) {
         m.t = 0.05;
         return;
       }
-    // (Bromista: los potenciadores se recargan antes, ver data/ability-fx.js.)
-    m.t = Math.max(0.05, m.cd * pl.cdMul * (m.kind === 'buff' && pl.abil && pl.abil.statusCd || 1));
-    pl.cast(m);
-    if (G.Coop.active) G.Coop.cast(pl, m);
-    // Vínculo: su icono destella en el HUD al lanzarse (uno que explota pegado al
-    // enemigo, como Ascuas tras Ataque Rápido, casi no se ve).
-    m.castAt = performance.now();
-
-    run(pl, m);
+      // (Bromista: los potenciadores se recargan antes, ver ability-fx.js.)
+      m.t = Math.max(0.05, m.cd * pl.cdMul * (m.kind === 'buff' && pl.abil && pl.abil.statusCd || 1));
+      pl.cast(m);
+      if (G.Coop.active) G.Coop.cast(pl, m);
+      // Vínculo: su icono destella al lanzar ataques simultáneos.
+      m.castAt = performance.now();
+      run(pl, m);
     } finally {
-      if (retarget && retarget !== previousTarget) { pl.target = previousTarget; pl.aim = previousAim; }
+      if (retarget) { pl.target = previousTarget; pl.aim = previousAim; }
     }
   }
 

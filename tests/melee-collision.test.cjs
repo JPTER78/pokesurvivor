@@ -40,3 +40,17 @@ test('Fused ranged and melee attacks keep their independent aim',()=>{const boss
 test('Cooperative casts send the correct individual angle for fused moves',()=>{const boss=enemy(220,0,10,true),e=enemy(0,50),s=scenario([boss,e],[ranged(),melee(70)],{coop:true});s.attack();assert.equal(s.network.length,2);assert.equal(s.network[0].aim,0);assert.ok(Math.abs(s.network[1].aim-Math.PI/2)<1e-8);});
 test('A cooperative broadcast exception restores targeting state',()=>{const boss=enemy(220,0,10,true),e=enemy(0,50),s=scenario([boss,e],[ranged(),melee(70)],{coop:true});let n=0;s.G.Coop.cast=()=>{if(++n===2)throw Error('network');};assert.throws(()=>s.attack(),/network/);assert.equal(s.pl.target,boss);assert.equal(s.pl.aim,0);});
 test('Stressed targeting remains stable with the 64-enemy crowd cap',()=>{const crowded=Array.from({length:64},(_,i)=>enemy(1000+i,0));const e=enemy(30,0),m=melee(60),s=scenario([...crowded,e],[m]);for(let i=0;i<100;i++){m.t=0;s.attack();}assert.equal(s.casts.length,100);});
+
+test('Huge enemy hitboxes remain hittable beyond the legacy center-distance margin',()=>{
+  const target=enemy(110,0,55),s=scenario([target],[melee(60)]);
+  assert.equal(s.pl.target,target);s.attack();
+  assert.equal(s.casts.length,1);assert.equal(target.hp,90);
+});
+test('Melee updates its aim when the same enemy changes direction before casting',()=>{
+  const target=enemy(30,0),s=scenario([target],[melee(70)]);
+  target.x=-40;s.attack();
+  assert.equal(s.casts.length,1);
+  assert.ok(Math.abs(Math.abs(s.casts[0].aim)-Math.PI)<1e-8);
+  assert.equal(target.hp,90);
+  assert.equal(s.pl.aim,0);
+});
