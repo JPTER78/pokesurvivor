@@ -188,6 +188,8 @@
         <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
+        <button class="menu-item" data-go="shop">Tienda Kecleon<small>Mentas, Cápsulas y MT</small></button>
+        <button class="menu-item" data-go="bag">Mochila<small id="menu-bag-sub">Vacía</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
         <button class="menu-item" data-go="friends">Amigos<small id="menu-friends-sub">Juega en grupo, hasta 4</small></button>
@@ -468,6 +470,36 @@
   </div>
 </section>
 
+<!-- ====== Tienda Kecleon (20-10-2026, del PR #236 de TheAdro7) ====== -->
+<section id="scr-shop" class="scr dim hidden">
+  <div class="box wide shop-box">
+    <!-- El puesto: cae, se despliega el toldo, sube la persiana y salen los dos Kecleon (ver shop-ui.js). -->
+    <div class="shop-stall" id="shop-stall">
+      <!-- Todo el puesto (paisaje, toldo, estanterías, persiana, farolillos y los dos
+           Kecleon) se dibuja en pixel art en este lienzo: ver Scene en shop-ui.js. -->
+      <canvas id="shop-scene" class="shop-scene"></canvas>
+      <div class="shop-sign" id="shop-sign"><span>Tienda Kecleon</span></div>
+      <div class="shop-bubble hide" id="shop-bubble"></div>
+    </div>
+    <div class="shop-inner">
+      <div class="row between">
+        <h2 style="margin:0">Tienda Kecleon</h2>
+        <button class="btn small ghost" data-back>Volver</button>
+      </div>
+      <p class="sub" style="margin:8px 0 0" id="shop-hello">¡Bienvenido! Mentas, Cápsulas y MT. Lo que compres va a tu Mochila (en el menú principal); úsalo desde la ficha de cada Pokémon en la colección.</p>
+      <div id="shop-body"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== Mochila (desde el menú principal, sin entrar en la tienda) ====== -->
+<section id="scr-bag" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Mochila</h2><button class="btn small ghost" data-back>Volver</button></div>
+    <div id="bag-body"></div>
+  </div>
+</section>
+
 <!-- ====== Mejoras ====== -->
 <section id="scr-upgrades" class="scr dim hidden">
   <div class="box wide">
@@ -600,11 +632,15 @@
 <script defer src="js/core/camera.js"></script>
 <!-- datos de juego -->
 <script defer src="js/data/moves.js"></script>
+<script defer src="js/data/natures.js"></script>
+<script defer src="js/data/abilities.js"></script>
+<script defer src="js/data/tms.js"></script>
 <script defer src="js/data/types.js"></script>
 <script defer src="js/data/starters.js"></script>
 <script defer src="js/data/enemies.js"></script>
 <script defer src="js/data/upgrades.js"></script>
 <script defer src="js/data/items.js"></script>
+<script defer src="js/data/shop.js"></script>
 <script defer src="js/data/missions.js"></script>
 <script defer src="js/data/achievements.js"></script>
 <script defer src="js/data/funding.js"></script>
@@ -621,6 +657,8 @@
 <script defer src="js/entities/player.js"></script>
 <!-- sistemas -->
 <script defer src="js/systems/stats.js"></script>
+<script defer src="js/systems/mons.js"></script>
+<script defer src="js/data/ability-fx.js"></script>
 <script defer src="js/systems/combat.js"></script>
 <script defer src="js/systems/spawner.js"></script>
 <script defer src="js/systems/levelup.js"></script>
@@ -649,6 +687,7 @@
 <script defer src="js/ui/menu.js"></script>
 <script defer src="js/ui/slots.js"></script>
 <script defer src="js/ui/gacha-ui.js"></script>
+<script defer src="js/ui/shop-ui.js"></script>
 <script defer src="js/ui/run-ui.js"></script>
 <script defer src="js/ui/social-ui.js"></script>
 <script defer src="js/ui/ranking-ui.js"></script>

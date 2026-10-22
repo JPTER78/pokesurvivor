@@ -9,7 +9,8 @@
  *            móviles), el TURN propio turn.pokesurvivor.com hace de puente.
  *            Sus credenciales caducan y se piden a
  *            ice.pokesurvivor.com con la sesión de Firebase; si no las da, se
- *            sigue sólo con STUN. El navegador prefiere siempre la vía directa.
+ *            sigue sólo con STUN. Sólo se usa al reintentar una pareja que no
+ *            conectó directa, y aun así el navegador prefiere la vía directa.
  *   relé     (APAGADO) los mensajes irían por la Realtime Database:
  *            rooms/{sala}/q/{destinatario}/{id}, a 1 $ el GB.
  *
@@ -23,7 +24,10 @@
 G.Net = (() => {
   const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
   const TURN_API = 'https://ice.pokesurvivor.com/v1/ice';
-  const DIRECT_TIMEOUT = 15000;    // ms para conseguir canal (por TURN tarda algo más)
+  // Primero se intenta sin TURN (lo normal es conectar directo) y sólo si falla se
+  // reintenta al momento con él: el navegador reserva un hueco en el TURN por cada
+  // conexión que lo lleve, aunque luego vaya directa, y así los huecos llegan para todos.
+  const DIRECT_TIMEOUT = 9000, TURN_TIMEOUT = 15000;   // ms para conseguir canal
   // Relé por la Realtime Database APAGADO (12-10-2026): a 1 $ el GB era lo que más
   // costaba del cooperativo. Sin conexión directa, esa pareja no puede jugar
   // junta ('failed') y el anfitrión lo reintenta cada RETRY_MS. Por la base de datos
@@ -34,16 +38,23 @@ G.Net = (() => {
   let rtdb = null, uid = null, roomId = null, isHost = false, hostUid = null;
   let qref = null;
   const peers = new Map();         // uid -> { pc, dc, mode, timer }
+  // Anfitrión: invitados con los que ya falló la vía directa. Se recuerda toda la
+  // sesión (no sólo la sala) para no perder otra vez la espera sin TURN; y si ha
+  // fallado con 2 o más, el problema será la red propia: TURN desde el principio.
+  const needTurn = new Set();
   const handlers = new Set(), peerHandlers = new Set();
   const stats = { sent: 0, recv: 0, relaySent: 0,
     // Sólo los datos de la partida que se han mandado bien (sin ICE/SCTP/DTLS/TURN).
     sentBytes: 0, jsonBytes: 0, recvBytes: 0, binarySent: 0, binaryRecv: 0, invalidBinary: 0 };
 
   // ---------------- TURN propio ----------------
-  // Credenciales temporales (2 h) por cuenta. Se guardan hasta 10 min antes de
-  // caducar; si el servidor no las da (cuenta no autorizada, caído, sin red), no
-  // se vuelve a preguntar en un rato y se juega sólo con STUN.
+  // Credenciales temporales (2 h) por cuenta. Una conexión por el TURN deja de
+  // funcionar cuando caducan las suyas (el servidor ya no le renueva el hueco), así
+  // que sólo se reutilizan si les queda más que una partida larga (TURN_KEEP); si
+  // el servidor no las da (cuenta no autorizada, caído, sin red), no se vuelve a
+  // preguntar en un rato y se juega sólo con STUN.
   let turn = null, turnUid = null, turnAsk = null, turnRetry = 0;
+  const TURN_KEEP = 80 * 60000;
 
   function cleanIce(list) {
     if (!Array.isArray(list)) return [];
@@ -64,7 +75,7 @@ G.Net = (() => {
   function turnNow() {
     const user = turnUser();
     if (!user) return [];
-    if (turn && turnUid === user.uid && turn.expiresAt * 1000 - Date.now() > 600000) return turn.iceServers;
+    if (turn && turnUid === user.uid && turn.expiresAt * 1000 - Date.now() > TURN_KEEP) return turn.iceServers;
     return Date.now() < turnRetry ? [] : null;
   }
 
@@ -115,7 +126,6 @@ G.Net = (() => {
     const fb = G.DB.fb;
     rtdb = fb.rtdb; uid = fb.uid;
     roomId = id; isHost = host; hostUid = hostId;
-    turnServers();                 // se piden ya: así están listas al conectar
     qref = rtdb.ref('rooms/' + id + '/q/' + uid);
     qref.on('child_added', s => {
       const raw = s.val();
@@ -130,7 +140,7 @@ G.Net = (() => {
     // oferta). Así, si no llega nunca, se sigue por el relé y se sabe cuándo se va.
     if (!isHost) {
       const p = { pc: null, dc: null, mode: 'connecting', timer: 0 };
-      p.timer = setTimeout(() => { if (p.mode === 'connecting') { p.mode = ALLOW_RELAY ? 'relay' : 'failed'; emitPeer(hostId); } }, DIRECT_TIMEOUT + 3000);
+      p.timer = setTimeout(() => { if (p.mode === 'connecting') { p.mode = ALLOW_RELAY ? 'relay' : 'failed'; emitPeer(hostId); } }, DIRECT_TIMEOUT + TURN_TIMEOUT + 3000);
       peers.set(hostId, p);
     }
   }
@@ -140,6 +150,8 @@ G.Net = (() => {
     if (qref) { qref.off(); qref = null; }
     roomId = null; isHost = false; hostUid = null;
   }
+
+  const turnFirst = u => needTurn.has(u) || needTurn.size >= 2;
 
   /** El anfitrión llama a esto cuando cambian los miembros de la sala. */
   function syncMembers(uids) {
@@ -155,7 +167,7 @@ G.Net = (() => {
   // ---------------- WebRTC ----------------
 
   function newPeer(u, turnIce) {
-    const p = { pc: null, dc: null, mode: 'connecting', timer: 0, viaTurn: false };
+    const p = { pc: null, dc: null, mode: 'connecting', timer: 0, viaTurn: false, turn: !!(turnIce && turnIce.length) };
     peers.set(u, p);
     // Sin WebRTC (navegador antiguo o bloqueado): directamente por el relé.
     let pc;
@@ -166,7 +178,7 @@ G.Net = (() => {
       if (pc.connectionState === 'failed' && p.mode !== 'closed') useRelay(u);
     };
     // Si en unos segundos no hay canal directo, se sigue por el relé.
-    p.timer = setTimeout(() => { if (p.mode === 'connecting') useRelay(u); }, DIRECT_TIMEOUT);
+    p.timer = setTimeout(() => { if (p.mode === 'connecting') useRelay(u); }, p.turn ? TURN_TIMEOUT : DIRECT_TIMEOUT);
     emitPeer(u);
     return p;
   }
@@ -214,13 +226,17 @@ G.Net = (() => {
     p.mode = 'failed';
     try { if (p.pc) p.pc.close(); } catch (e) { /* nada */ }
     emitPeer(u);
-    if (isHost) p.timer = setTimeout(() => { if (peers.get(u) === p && p.mode === 'failed' && roomId) { drop(u, true); connect(u); } }, RETRY_MS);
+    if (!isHost) return;
+    // Primer fallo sin TURN: se reintenta ya, esta vez con él (si la cuenta lo tiene).
+    const withTurn = !p.turn && !needTurn.has(u) && !!turnUser();
+    if (withTurn) needTurn.add(u);
+    p.timer = setTimeout(() => { if (peers.get(u) === p && p.mode === 'failed' && roomId) { drop(u, true); connect(u); } }, withTurn ? 0 : RETRY_MS);
   }
 
   /** Anfitrión: abre conexión con un invitado. */
   async function connect(u) {
     if (!roomId || peers.has(u)) return;
-    let turnIce = turnNow();
+    let turnIce = turnFirst(u) ? turnNow() : [];
     if (!turnIce) {
       const room = roomId; turnIce = await turnServers();
       if (roomId !== room || peers.has(u)) return;
@@ -231,7 +247,8 @@ G.Net = (() => {
     try {
       const offer = await p.pc.createOffer();
       await p.pc.setLocalDescription(offer);
-      signal(u, { sdp: p.pc.localDescription.toJSON() });
+      // t: el invitado también usa el TURN en este intento (las versiones viejas lo ignoran).
+      signal(u, p.turn ? { sdp: p.pc.localDescription.toJSON(), t: 1 } : { sdp: p.pc.localDescription.toJSON() });
     } catch (e) { useRelay(u); }
   }
 
@@ -242,7 +259,7 @@ G.Net = (() => {
     try {
       if (sig.sdp && sig.sdp.type === 'offer') {
         if (isHost) return;
-        let turnIce = turnNow();
+        let turnIce = sig.t ? turnNow() : [];
         if (!turnIce) {
           const room = roomId; turnIce = await turnServers();
           if (roomId !== room) return;

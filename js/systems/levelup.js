@@ -61,7 +61,11 @@ G.LevelUp = (() => {
         out.push({
           w: 10, type: 'new', key: 'new:' + id,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: G.U.TYPE_NAME[d.type] + (d.cat ? ' · ' + G.Stats.NAME[d.cat] : ''),
+          // (Físico o especial va en su propia etiqueta, con borde: ver run-ui.js. Los
+          // potenciadores no tienen categoría, pero Danza Espada y Danza Dragón suben el
+          // ataque físico y Maquinación el especial: llevan la del lado que suben.)
+          tag: G.U.TYPE_NAME[d.type],
+          cat: G.Stats.NAME[d.cat || (d.stat === 'patk' ? 'physical' : d.stat === 'satk' ? 'special' : '')] || '',
           title: G.T(d.name, 'move'), desc: d.desc + fitNote(pl.mon, d.cat),
           apply: p => p.addMove(id)
         });

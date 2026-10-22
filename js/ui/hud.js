@@ -471,6 +471,21 @@ G.HUD = (() => {
       ctx.fillText(msg, w / 2, h * 0.62);
       const f = (pl.reviveT || 0) / G.Player.REVIVE_TIME;
       if (f > 0) bar(ctx, w / 2 - 110, h * 0.62 + 12, 220, 10, f, '#5fe08a');
+      // Mirar a un compañero vivo mientras tanto (botón, Q / E o LB / RB).
+      const w0 = G.Game.watching;
+      if (w0 || G.Coop.puppets().some(p => !p.dead)) {
+        const m = w0 && G.Coop.mates.find(x => x.pl === w0);
+        const label = (m ? G.I18n.f('Viendo a {x}', m.name) + ' · ' + G.I18n.t('cambiar') : G.I18n.t('Ver a un compañero'))
+          + (G.Touch.active ? '' : '  (E)');
+        ctx.font = F(800, 13);
+        const bw = ctx.measureText(label).width + 28, bh = 28, bx = w / 2 - bw / 2, by = h * 0.62 + 32;
+        roundRect(ctx, bx, by, bw, bh, 8);
+        ctx.fillStyle = 'rgba(10,16,28,.75)'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = m ? m.color : 'rgba(244,248,255,.8)'; ctx.stroke();
+        ctx.fillStyle = '#f4f8ff';
+        G.I18n.rawCanvas(ctx, 'fillText', label, w / 2, by + 19);
+        G.Touch.addButton(bx, by, bw, bh, () => G.Game.cycleWatch(1), 8);
+      }
       ctx.restore();
     }
   }

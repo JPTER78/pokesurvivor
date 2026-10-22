@@ -223,6 +223,20 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .stat { display: grid; grid-template-columns: 90px 1fr 34px; gap: 8px; align-items: center; font-size: 14px; margin: 5px 0; }
 .stat .bar { height: 8px; background: rgba(0,0,0,.35); border-radius: 6px; overflow: hidden; }
 .stat .bar i { display: block; height: 100%; background: var(--gold); }
+/* Naturaleza (20-10-2026): el stat que sube en verde y el que baja en rojo. */
+.stat.nat-up > span:first-child, .stat.nat-up > span:last-child { color: #7fe8a0; }
+.stat.nat-up .bar i { background: #5fe08a; }
+.stat.nat-down > span:first-child, .stat.nat-down > span:last-child { color: #ff9aa5; }
+.stat.nat-down .bar i { background: #ff7a86; }
+/* Naturaleza, habilidad y MT en la ficha de la colección. */
+.mon-extra { margin: 10px 0 4px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.18); font-size: 14px; }
+.mon-extra .mx-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 4px 0; }
+.mon-extra .mx-row > span:first-child { color: var(--muted); min-width: 84px; }
+.mon-extra .mx-row small { color: var(--muted); }
+.mon-extra .mx-row .btn { margin-left: auto; }
+.mon-extra .mx-row .btn + .btn { margin-left: 0; }
+.mon-extra .mx-desc { margin: 0 0 6px; font-size: 13px; }
+.mon-extra .ban-picker { margin-top: 6px; }
 .type {
   display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;
   color: #10131a; text-shadow: none; margin-right: 4px;
@@ -414,6 +428,58 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .pcard b { display: block; font-size: 16px; }
 .pcard .tag { font-size: 12px; margin-top: 2px; }
 .pcard .new { color: var(--gold); font-weight: 700; }
+.pcard .pmon { font-size: 11px; color: var(--muted); line-height: 1.2; }
+
+/* ---------- Tienda Kecleon: el puesto (20-10-2026) ----------
+ * El puesto entero se dibuja en pixel art en #shop-scene (Scene, shop-ui.js);
+ * aquí sólo el lienzo, el cartel (para que se traduzca), el bocadillo, el
+ * objeto que vuela a la Mochila y la aparición del contenido. */
+#scr-shop .shop-box { overflow-x: hidden; }
+.shop-stall { position: relative; margin: -22px -24px 14px; height: 294px; border-radius: 9px 9px 0 0; overflow: hidden; background: #6fb8f0; }
+.shop-scene { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; cursor: default; }
+.shop-stall.opening .shop-scene { cursor: pointer; }
+/* Cartel colgado del toldo; cae balanceándose y se encienden sus bombillas. */
+.shop-sign { position: absolute; z-index: 2; left: 50%; top: 6px; padding: 3px 16px; font-size: 18px; color: #3a1f08; text-shadow: none; white-space: nowrap;
+  background: #e2b26a; border: 3px solid #5a3412; border-radius: 4px; box-shadow: 0 3px 0 #5a3412; transform: translateX(-50%); transform-origin: 50% -14px;
+  opacity: 0; }
+.shop-sign.show { opacity: 1; animation: shopSign 1.1s ease-out both; }
+.shop-sign.shown { opacity: 1; }
+@keyframes shopSign { 0% { transform: translate(-50%, -70px) rotate(-18deg); } 30% { transform: translate(-50%, 0) rotate(12deg); }
+  55% { transform: translate(-50%, 0) rotate(-7deg); } 78% { transform: translate(-50%, 0) rotate(3deg); } 100% { transform: translate(-50%, 0); } }
+.shop-sign::before, .shop-sign::after { content: ''; position: absolute; left: 4px; right: 4px; height: 4px;
+  background: radial-gradient(circle, #6b4a20 0 1.6px, transparent 2px) 0 0 / 10px 4px repeat-x; }
+.shop-sign::before { top: 2px; } .shop-sign::after { bottom: 2px; }
+.shop-sign.lit::before, .shop-sign.lit::after { animation: shopBulbs .5s steps(1) infinite; }
+.shop-sign.lit::after { animation-delay: .25s; }
+.shop-sign.lit { box-shadow: 0 3px 0 #5a3412, 0 0 16px rgba(255,210,63,.55); }
+@keyframes shopBulbs {
+  0% { background-image: radial-gradient(circle, #fff4b0 0 1.8px, transparent 2.2px); }
+  50% { background-image: radial-gradient(circle, #ff8a3d 0 1.8px, transparent 2.2px); }
+}
+/* El bocadillo sigue al Kecleon morado (lo coloca shop-ui.js) y se va solo. */
+.shop-bubble { position: absolute; z-index: 3; left: 0; top: 0; max-width: 60%; padding: 6px 10px; white-space: nowrap;
+  font-size: 13px; color: #1b1528; text-shadow: none; background: #f4f8ff; border: 3px solid #1b1528; border-radius: 10px;
+  transition: opacity .3s, transform .3s; transform-origin: 100% 60%; }
+.shop-bubble::after { content: ''; position: absolute; right: -11px; top: 9px; border: 7px solid transparent; border-left-color: #1b1528; }
+.shop-bubble.hide { opacity: 0; transform: scale(.6); }
+.shop-bubble.pop { animation: shopBubble .35s ease-out both; }
+@keyframes shopBubble { from { transform: scale(0); } 70% { transform: scale(1.08); } to { transform: none; } }
+/* El objeto comprado vuela a su fila de la lista, que bota al recibirlo. */
+.shop-fly { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.shop-fly img { width: 32px; height: 32px; }
+#shop-body .ic.bump { animation: shopBump .4s ease-out; }
+@keyframes shopBump { 30% { transform: scale(1.25); } 60% { transform: scale(.92); } }
+@keyframes shopFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.shop-stall.opening ~ .shop-inner { animation: shopFade .5s 1.8s ease-out both; }
+@media (max-height: 520px) {                 /* (ahí la caja tiene 10px 14px de relleno) */
+  .shop-stall { margin: -10px -14px 10px; height: 200px; }
+  .shop-sign { font-size: 14px; top: 3px; }
+}
+@media (max-width: 640px) {
+  .shop-stall { height: 220px; }
+  .shop-sign { font-size: 14px; }
+  .shop-bubble { font-size: 11px; }
+}
 .pcard.r5 { animation: pop .3s ease-out both, legend 1.4s ease-in-out infinite alternate; }
 @keyframes legend { to { box-shadow: 0 0 40px var(--rc), 0 0 80px var(--rc); } }
 
@@ -431,6 +497,8 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .card .ds { color: var(--muted); font-size: 14px; }
 .card .key { font-size: 13px; color: var(--muted); border: 2px solid rgba(244,248,255,.3); border-radius: 6px; padding: 2px 8px; }
 .tag-chip { font-size: 11px; padding: 2px 7px; border-radius: 5px; color: #10131a; text-shadow: none; font-weight: 700; }
+/* Físico / Especial en las cartas de nivel: aparte del tipo, oscura y con borde. */
+.tag-chip.cat { background: rgba(10,20,48,.55); color: #f4f8ff; border: 1.5px solid rgba(170,195,255,.5); padding: 1px 7px; }
 
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 18px; }
 .stats > div { background: rgba(0,0,0,.22); border-radius: 9px; padding: 8px 10px; }

@@ -86,6 +86,7 @@ G.Coop = (() => {
   }
 
   function end() {
+    for (const u of [...graceT.keys()]) stopGrace(u);
     active = false; host = false; local = null;
     mates.clear(); outEv = []; waiting = new Set(); holds = new Set();
   }
@@ -134,7 +135,7 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq];
+            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq, api.watching ? api.watching() : ''];
   }
 
   /** Número que llega por la red: si no es un número de verdad vale `def`, y si se pasa se queda en el tope. */
@@ -147,7 +148,17 @@ G.Coop = (() => {
              hp: num(a[4], 0, 0, 1e6), maxHp: num(a[5], 1, 1, 1e6), dead: a[6] ? 1 : 0,
              mv: typeof a[7] === 'string' ? a[7].slice(0, 40) : '', ml: num(a[8], 1, 1, 99),
              mag: num(a[9], 0, 0, 5000), aim: num(a[10], 0, -10, 10), xpMul: num(a[11], 1, 0.1, 20),
-             rev: num(a[12], 0, 0, 60), ch: a[13] === undefined ? undefined : a[13] ? 1 : 0, ld: num(a[14], 0, 0, 1e9) };
+             rev: num(a[12], 0, 0, 60), ch: a[13] === undefined ? undefined : a[13] ? 1 : 0, ld: num(a[14], 0, 0, 1e9),
+             wa: typeof a[15] === 'string' ? a[15].slice(0, 64) : '' };
+  }
+
+  /** Anfitrión: dónde mira un invitado (él mismo, o el compañero vivo que mira estando caído). */
+  function viewOf(m) {
+    const w = m.pl.dead && m.pl.net && m.pl.net.wa;
+    if (!w) return m.pl;
+    if (w === me) return local.dead ? m.pl : local;
+    const o = mates.get(w);
+    return o && o.connected && !o.pl.dead ? o.pl : m.pl;
   }
 
   // ---------------- envío ----------------
@@ -162,7 +173,8 @@ G.Coop = (() => {
   function emitNear(ev, x, y, except) {
     for (const m of mates.values()) {
       if (!m.connected || m.uid === except) continue;
-      if (G.U.dist2(m.pl.x, m.pl.y, x, y) > 700 * 700) continue;
+      const v = viewOf(m);
+      if (G.U.dist2(v.x, v.y, x, y) > 700 * 700) continue;
       if (m.q.length > 400) continue;
       m.q.push(ev);
     }
@@ -188,7 +200,7 @@ G.Coop = (() => {
     }
     const ev = m.q; m.q = [];
     const f = { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
-                p, e: enemyList(m.pl), ev };
+                p, e: enemyList(viewOf(m)), ev };
     const ja = G.Judgment.netState();       // Arceus en la Sentencia
     if (ja) f.ja = ja;
     // Siempre: quién está eligiendo y, si hay cartas de nivel, cuáles (ver arriba).
@@ -236,11 +248,51 @@ G.Coop = (() => {
     if (host) onClientFrame(from, msg); else if (from === hostUid) onHostFrame(msg);
   });
 
+  /*
+   * Cortes de la conexión directa en plena partida (22-10-2026). Antes, al
+   * primer fallo del canal (un bache de la wifi o de los datos), al invitado se
+   * le acababa la partida al momento, aunque el anfitrión ya lo estuviera
+   * reintentando. Ahora se espera GRACE_MS a que vuelva: el invitado se queda
+   * en pausa («esperando al anfitrión») y el anfitrión sigue jugando.
+   */
+  const GRACE_MS = 45000;
+  const graceT = new Map();             // uid -> temporizador de la espera
+
+  function stopGrace(u) { clearTimeout(graceT.get(u)); graceT.delete(u); }
+
   G.Net.onPeer((u, mode) => {
-    if (!active || (mode !== 'closed' && mode !== 'failed')) return;
+    if (!active) return;
+    if (mode === 'direct') {
+      if (!graceT.has(u)) return;
+      stopGrace(u);
+      const m = mates.get(u);
+      if (host && m && m.connected) G.Spawner.say(m.name + ' ha vuelto', 2);
+      return;
+    }
+    if (mode !== 'closed' && mode !== 'failed') return;
+    const ours = host ? !!(mates.get(u) && mates.get(u).connected) : u === hostUid;
+    if (mode === 'failed' && ours) {
+      if (graceT.has(u)) return;                  // ya se le está esperando
+      if (host) G.Spawner.say(nameOf(u) + ': reconectando…', 3);
+      graceT.set(u, setTimeout(() => {
+        graceT.delete(u);
+        if (!active || G.Net.mode(u) === 'direct' || (host && !keeps(u))) return;   // volvió, o se fue ('bye')
+        if (host) G.Social.dropMember(u);         // no volvió: fuera de la sala
+        gone(u);
+      }, GRACE_MS));
+      return;
+    }
+    gone(u);
+  });
+
+  function gone(u) {
+    stopGrace(u);
     if (host) mateGone(u);
     else if (u === hostUid) { const cb = api.lost; end(); if (cb) cb('Se ha perdido la conexión con el anfitrión.'); }
-  });
+  }
+
+  /** Anfitrión: ¿`u` sigue en esta partida (aunque se esté reconectando)? */
+  function keeps(u) { const m = active && host && mates.get(u); return !!(m && m.connected); }
 
   function mateGone(u) {
     const m = mates.get(u);
@@ -507,7 +559,7 @@ G.Coop = (() => {
   }
 
   return {
-    ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
+    ANIMS, COLORS, begin, end, leave, keeps, tick, players, puppets, xpFactor, scaleRate, scaleHp,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
     propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,
     /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */

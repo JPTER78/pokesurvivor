@@ -642,10 +642,14 @@
     BY_ID[m.id] = m;
   }
 
-  /** Movimientos que este Pokémon puede aprender (sus tipos + normal). */
-  function poolFor(mon) {
+  /**
+   * Movimientos que este Pokémon puede aprender (sus tipos + normal) y, salvo
+   * con `natural`, los que ha aprendido con MT (Tienda Kecleon, ver G.Mons).
+   */
+  function poolFor(mon, natural) {
     const ids = new Set(POOL.normal);
     for (const t of mon.types) for (const id of (POOL[t] || [])) ids.add(id);
+    if (!natural && G.Mons && mon.dex) for (const id of G.Mons.taught(mon.dex)) ids.add(id);
     return [...ids];
   }
 

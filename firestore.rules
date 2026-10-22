@@ -37,18 +37,31 @@ service cloud.firestore {
       allow delete: if signedIn() && me() == uid && resource.data.get('ban', false) == false;
 
       allow create: if signedIn() && me() == uid && validSaveDoc() && saneSave(request.resource.data.save)
-        && request.resource.data.get('ban', false) == false;
+        && request.resource.data.get('ban', false) == false
+        && request.resource.data.get('rev', 0) is int;
       allow update: if signedIn() && me() == uid && validSaveDoc() && saneSave(request.resource.data.save)
         && request.resource.data.get('ban', false) == resource.data.get('ban', false)
-        && every(resource.data.updatedAt, 20);
+        && every(resource.data.updatedAt, 20) && revOk();
       // El admin sólo puede banear o desbanear (y quitar la marca vieja).
       allow update: if admin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ban', 'sus'])
         && request.resource.data.get('ban', false) is bool;
     }
 
+    // Versión de la partida (21-10-2026): cada subida trae rev + 1 de la que vio
+    // el aparato. Si otro aparato subió entre medias, la nube ya va por delante y
+    // se rechaza (el juego lee, junta y vuelve a subir): una copia vieja ya no
+    // pisa lo guardado en otro aparato. Mirar resource aquí no cuesta lecturas.
+    // Las versiones del juego de antes no mandan rev (se queda igual): pueden
+    // seguir guardando sólo mientras ningún aparato nuevo haya subido esa partida.
+    function revOk() {
+      let had = resource.data.get('rev', 0);
+      let now = request.resource.data.get('rev', 0);
+      return now is int && (now == had + 1 || (had == 0 && now == 0));
+    }
+
     function validSaveDoc() {
-      return request.resource.data.keys().hasOnly(['save', 'updatedAt', 'v', 'sus', 'ban'])
+      return request.resource.data.keys().hasOnly(['save', 'updatedAt', 'v', 'sus', 'ban', 'rev'])
         && request.resource.data.save is map
         && request.resource.data.v is int
         && request.resource.data.get('ban', false) is bool

@@ -66,6 +66,17 @@ G.startMoveOf = dex => {
   return G.baseStartOf(dex);
 };
 
+/**
+ * Segundo movimiento con el que empieza (Mejoras → Segundo movimiento inicial,
+ * con Repertorio comprado), o null si toca al azar como siempre.
+ */
+G.startMove2Of = dex => {
+  const s = G.DB && G.DB.save, pick = s && s.pstart2 && s.pstart2[dex], up = s && s.pupg && s.pupg[dex];
+  if (!pick || !up || !up.start2 || !up.moves) return null;
+  if (pick === G.startMoveOf(dex) || !G.startChoices(dex).includes(pick)) return null;
+  return pick;
+};
+
 /** Descripción corta de cada rasgo, para la pantalla de resultado. */
 G.TRAIT_TEXT = {
   valiente:  'No te lo piensas dos veces cuando alguien necesita ayuda.',

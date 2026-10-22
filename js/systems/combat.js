@@ -34,7 +34,8 @@ G.Combat = (() => {
       m.t = 0.05;
       return;
     }
-    m.t = Math.max(0.05, m.cd * pl.cdMul);
+    // (Bromista: los potenciadores se recargan antes, ver data/ability-fx.js.)
+    m.t = Math.max(0.05, m.cd * pl.cdMul * (m.kind === 'buff' && pl.abil && pl.abil.statusCd || 1));
     pl.cast(m);
     if (G.Coop.active) G.Coop.cast(pl, m);
     // Vínculo: su icono destella en el HUD al lanzarse (uno que explota pegado al
@@ -732,17 +733,31 @@ G.Combat = (() => {
   const CRIT_MUL = 1.5;
   const isCrit = pl => !ghost && pl.critChance > 0 && Math.random() < pl.critChance;
 
+  // Habilidad de quien pega (data/ability-fx.js): × al daño, crítico, estados y
+  // lo que hace al golpear. (Los compañeros no la llevan aquí: pegan en su ordenador.)
+  const abilOut = (pl, m, e) => (pl.abil && pl.abil.out && m ? pl.abil.out(pl, m, e) : 1);
+  const critMul = pl => (pl.abil && pl.abil.critMul) || CRIT_MUL;
+  /** × a quemaduras, venenos, frenazos y empujones: Potencia Bruta los quita, Dicha los dobla. */
+  const statusK = pl => (!pl.abil ? 1 : pl.abil.sheer ? 0 : pl.abil.serene ? 2 : 1);
+  function afterHit(pl, e, m) {
+    const a = pl.abil;
+    if (!a || e.dead) return;
+    if (a.hit) a.hit(pl, e, m);
+    if (a.touchPoison && m && (m.kind === 'melee' || m.kind === 'dash')) e.applyPoison(1);
+  }
+
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
-    const k = typeK(m.type, e) * G.Stats.taken(e.mon, m.cat);
-    const crit = isCrit(pl);
-    dmg *= k * (crit ? CRIT_MUL : 1);
-    e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
+    const k = typeK(m.type, e) * G.Stats.taken(e.mon, m.cat) * abilOut(pl, m, e);
+    const crit = isCrit(pl), sk = statusK(pl);
+    dmg *= k * (crit ? critMul(pl) : 1);
+    e.hurt(dmg, col, dx, dy, sk ? knock : 0, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
     m.dealt = (m.dealt || 0) + dmg;               // por ataque, para el resumen de la pausa
-    if (m.burn) e.applyBurn(m.burn);
-    if (m.poison) e.applyPoison(m.poison);
-    if (m.slow) e.applySlow(m.slow);
+    if (m.burn && sk) e.applyBurn(m.burn * sk);
+    if (m.poison && sk) e.applyPoison(m.poison * sk);
+    if (m.slow && sk) e.applySlow(Math.min(0.8, m.slow * sk));
+    afterHit(pl, e, m);
   }
 
   // ---------------- colisiones ----------------
@@ -851,20 +866,21 @@ G.Combat = (() => {
           break;
         }
 
-        // Los disparos de un aliado cuentan para él (crítico, daño hecho, Beso Drenaje).
+        // Los disparos de un aliado cuentan para él (crítico, daño hecho, Beso Drenaje; sin habilidad).
         const own = p.owner && p.owner.ally ? p.owner : pl;
-        const crit = isCrit(own);
-        const k = (p.mtype ? typeK(p.mtype, e) : 1) * G.Stats.taken(e.mon, p.mcat) * (crit ? CRIT_MUL : 1);
-        e.hurt(p.dmg * k, p.color, p.vx || (e.x - own.x), p.vy || (e.y - own.y), p.knock,
+        const crit = isCrit(own), sk = statusK(own);
+        const k = (p.mtype ? typeK(p.mtype, e) : 1) * G.Stats.taken(e.mon, p.mcat) * (crit ? critMul(own) : 1) * abilOut(own, p.src, e);
+        e.hurt(p.dmg * k, p.color, p.vx || (e.x - own.x), p.vy || (e.y - own.y), sk ? p.knock : 0,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
         own.dmgDealt += p.dmg * k;
         if (p.src) p.src.dealt = (p.src.dealt || 0) + p.dmg * k;
         own.onDealt(p.dmg * k);
-        if (p.burn) e.applyBurn(p.burn);
-        if (p.poison) e.applyPoison(p.poison);
-        if (p.slow) e.applySlow(p.slow);
+        if (p.burn && sk) e.applyBurn(p.burn * sk);
+        if (p.poison && sk) e.applyPoison(p.poison * sk);
+        if (p.slow && sk) e.applySlow(Math.min(0.8, p.slow * sk));
         if (p.drain) own.heal(p.drain);                   // Beso Drenaje
+        afterHit(own, e, p.src);
 
         if (!p.orb && rebound(p, e)) break;
         if (!p.orb) {
@@ -887,6 +903,7 @@ G.Combat = (() => {
       e.strike(pl);
       pl.hurt(e.dmg, e.atkType, false, e.cat);
       if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
+      if (pl.abil && pl.abil.contact && !pl.dead && !e.dead) pl.abil.contact(pl, e);     // Elec. Estática, Cuerpo Llama...
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;
     }
