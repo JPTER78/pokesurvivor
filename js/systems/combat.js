@@ -34,6 +34,9 @@ G.Combat = (() => {
       m.t = 0.05;
       return;
     }
+    // Embestida: mientras te mueves no te lleva hacia el enemigo (te quitaría el
+    // control); espera a que pares. Los demás del vínculo siguen a su ritmo.
+    if (m.kind === 'dash' && pl.walking) { m.t = 0.05; return; }
     // (Bromista: los potenciadores se recargan antes, ver data/ability-fx.js.)
     m.t = Math.max(0.05, m.cd * pl.cdMul * (m.kind === 'buff' && pl.abil && pl.abil.statusCd || 1));
     pl.cast(m);
