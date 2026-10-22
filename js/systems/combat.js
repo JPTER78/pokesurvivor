@@ -16,19 +16,21 @@ G.Combat = (() => {
   let ghost = false;
   let fields = [];
 
-  // La selección de objetivos debe utilizar el mismo solapamiento circular
-  // que EnemyMgr.queryCircle: incluye el radio físico de cada enemigo.
+  // Coincide con la intersección circular de EnemyMgr.queryCircle:
+  // se tiene en cuenta el radio del enemigo, no sólo la distancia a su centro.
   function meleeTarget(enemies, x, y, radius) {
-    let best = null, bestDist = Infinity;
-    for (const e of enemies) {
-      if (e.dead) continue;
-      const distance = G.U.dist2(x, y, e.x, e.y);
-      const overlap = radius + (e.r || 0);
-      if (distance <= overlap * overlap && distance < bestDist) {
-        best = e; bestDist = distance;
+    let nearestEnemy = null;
+    let nearestDistance = Infinity;
+    for (const enemy of enemies) {
+      if (enemy.dead) continue;
+      const distance = G.U.dist2(x, y, enemy.x, enemy.y);
+      const collisionRadius = radius + (enemy.r || 0);
+      if (distance <= collisionRadius * collisionRadius && distance < nearestDistance) {
+        nearestEnemy = enemy;
+        nearestDistance = distance;
       }
     }
-    return best;
+    return nearestEnemy;
   }
 
   // ---------------- ejecutar el movimiento activo ----------------
@@ -39,46 +41,53 @@ G.Combat = (() => {
     for (const m of pl.activeGroup()) tickMove(dt, pl, m, now);
   }
 
-  function tickMove(dt, pl, m, now) {
-    if (m.kind === 'orbit') { orbit(pl, m, dt, now); return; }
+  function tickMove(dt, player, move, now) {
+    if (move.kind === 'orbit') { orbit(player, move, dt, now); return; }
 
-    m.t -= dt;
-    if (m.t > 0) return;
-    // Un movimiento fusionado melee usa su propia zona de impacto, sin
-    // cambiar permanentemente la dirección de los demás movimientos.
-    const retarget = m.kind === 'melee' && !pl.manualAim
-      ? meleeTarget(G.EnemyMgr.all(), pl.x, pl.y, m.radius) : null;
-    // Un enemigo fuera de la hitbox no debe consumir la recarga por el
-    // margen de búsqueda del apuntado automático (radio + 30).
-    if (m.kind === 'melee' && !pl.manualAim && !retarget &&
-        (!pl.target || pl.target.hurt)) {
-      m.t = 0.05;
+    move.t -= dt;
+    if (move.t > 0) return;
+
+    // Los ataques fusionados tienen alcances independientes. El cambio de
+    // blanco sólo es temporal, para no desviar los demás movimientos.
+    const automaticMelee = move.kind === 'melee' && !player.manualAim;
+    const targetInReach = automaticMelee
+      ? meleeTarget(G.EnemyMgr.all(), player.x, player.y, move.radius) : null;
+
+    // Evita gastar una recarga completa contra enemigos fuera de la hitbox.
+    // Los objetos destructibles conservan la selección y el alcance existentes.
+    if (automaticMelee && !targetInReach && (!player.target || player.target.hurt)) {
+      move.t = 0.05;
       return;
     }
-    const previousTarget = pl.target, previousAim = pl.aim;
-    if (retarget) {
-      pl.target = retarget;
-      // Recalcular el ángulo incluso cuando sigue siendo el mismo enemigo:
-      // puede haberse movido al otro lado desde Player.update().
-      pl.aim = Math.atan2(retarget.y - pl.y, retarget.x - pl.x);
+
+    const previousTarget = player.target;
+    const previousAim = player.aim;
+    if (targetInReach) {
+      player.target = targetInReach;
+      // Recalcula la dirección si el enemigo se ha movido desde el último frame.
+      player.aim = Math.atan2(targetInReach.y - player.y, targetInReach.x - player.x);
     }
+
     try {
-      // Los impactos melee válidos utilizan solapamiento de hitboxes;
-      // los demás movimientos mantienen su alcance habitual.
-      if (needsTarget(m, pl) && !(retarget || (pl.target && !pl.target.dead &&
-          G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m)))) {
-        m.t = 0.05;
+      const validTarget = targetInReach || (player.target && !player.target.dead &&
+        G.U.dist(player.x, player.y, player.target.x, player.target.y) <= reach(move));
+      if (needsTarget(move, player) && !validTarget) {
+        move.t = 0.05;
         return;
       }
-      // (Bromista: los potenciadores se recargan antes, ver ability-fx.js.)
-      m.t = Math.max(0.05, m.cd * pl.cdMul * (m.kind === 'buff' && pl.abil && pl.abil.statusCd || 1));
-      pl.cast(m);
-      if (G.Coop.active) G.Coop.cast(pl, m);
-      // Vínculo: su icono destella al lanzar ataques simultáneos.
-      m.castAt = performance.now();
-      run(pl, m);
+
+      // La habilidad Bromista reduce la recarga de potenciadores.
+      move.t = Math.max(0.05, move.cd * player.cdMul *
+        (move.kind === 'buff' && player.abil && player.abil.statusCd || 1));
+      player.cast(move);
+      if (G.Coop.active) G.Coop.cast(player, move);
+      move.castAt = performance.now();
+      run(player, move);
     } finally {
-      if (retarget) { pl.target = previousTarget; pl.aim = previousAim; }
+      if (targetInReach) {
+        player.target = previousTarget;
+        player.aim = previousAim;
+      }
     }
   }
 

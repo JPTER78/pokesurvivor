@@ -432,16 +432,16 @@ G.Player = class Player {
     // Con una horda encima casi siempre te toca algo; si eso ganara siempre,
     // los ataques a distancia no le darían nunca al jefe.
     // Sin enemigos, apunta a la roca o cofre más cercano.
-    const all = G.EnemyMgr.all();
-    const m = this.activeMove();
-    const ranged = !!m && (m.kind === 'projectile' || m.kind === 'beam');
-    const threat = G.Projectiles.nearest(all, this.x, this.y, this.r + 24);
-    const boss = all.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
-    // Un golpe melee debe apuntar a un enemigo alcanzable antes que al jefe distante.
-    const melee = m && m.kind === 'melee'
-      ? G.Combat.meleeTarget(all, this.x, this.y, m.radius) : null;
-    const tg = melee || (ranged ? boss || threat : threat || boss)
-            || G.Projectiles.nearest(all, this.x, this.y, 520)
+    const enemies = G.EnemyMgr.all();
+    const activeMove = this.activeMove();
+    const ranged = !!activeMove && (activeMove.kind === 'projectile' || activeMove.kind === 'beam');
+    const threat = G.Projectiles.nearest(enemies, this.x, this.y, this.r + 24);
+    const boss = enemies.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
+    // El cuerpo a cuerpo prioriza un objetivo alcanzable frente a un jefe lejano.
+    const reachableEnemy = activeMove && activeMove.kind === 'melee'
+      ? G.Combat.meleeTarget(enemies, this.x, this.y, activeMove.radius) : null;
+    const tg = reachableEnemy || (ranged ? boss || threat : threat || boss)
+            || G.Projectiles.nearest(enemies, this.x, this.y, 520)
             || G.World.nearestBreakable(this.x, this.y, 200);
     // Apuntar a mano (Ajustes > Accesibilidad): hacia el ratón o el stick derecho.
     // El blanco (para la cadena) es el enemigo que hay en esa dirección; si no
@@ -450,7 +450,7 @@ G.Player = class Player {
     this.manualAim = hand != null;
     if (hand != null) {
       this.aim = hand;
-      this.target = this.enemyAlong(all, hand) || tg;
+      this.target = this.enemyAlong(enemies, hand) || tg;
     } else {
       this.target = tg;
       if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);

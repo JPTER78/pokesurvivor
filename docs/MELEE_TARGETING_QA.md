@@ -1,23 +1,24 @@
-# Melee targeting: regression and gameplay checklist
+# Apuntado cuerpo a cuerpo: validación y regresiones
 
-This change addresses cases where a distant boss takes targeting priority while
-a nearby enemy is within the active melee move's reach.
+## Motivo
 
-## Scope
+Cuando hay un jefe cerca del jugador pero fuera del alcance del movimiento activo, el apuntado automático puede priorizarlo e impedir que el Pokémon golpee a enemigos que tiene al lado. Esto afecta especialmente a las configuraciones de **cuerpo a cuerpo**.
 
-- Melee targeting considers the enemy's physical collision radius.
-- Each fused melee move checks its own reach before casting and temporarily
-  adjusts the aim without changing the aim of the other fused attacks.
-- Automatic melee attacks do not spend a full cooldown on targets outside their
-  actual impact range.
-- Manual aim, ranged boss priority and the existing wall rules are preserved.
+Relacionado con las incidencias **#186** y **#208**.
 
-No changes are intended to enemy statistics, weapon damage, attack frequency,
-level scaling or reward calculations.
+## Qué cambia
 
-## Automated tests
+- **Objetivos alcanzables:** los movimientos cuerpo a cuerpo priorizan enemigos cuya zona de colisión se solapa con el radio del golpe.
+- **Vínculos:** cada movimiento fusionado comprueba su alcance y utiliza un objetivo temporal, sin modificar el apuntado de los otros ataques.
+- **Recargas:** no se consume la recarga completa si el apuntado automático sólo encuentra enemigos fuera de la zona de impacto.
+- **Movimiento:** el ángulo se recalcula cuando un enemigo cambia de posición entre fotogramas.
+- **Comportamiento conservado:** se mantiene el apuntado manual, la prioridad de los jefes para ataques a distancia y la selección de objetos destructibles.
 
-On Windows PowerShell, from the branch checkout:
+No se alteran el daño, las estadísticas, las oleadas, las recompensas ni la duración normal de las recargas.
+
+## Pruebas automatizadas
+
+Ejecutar desde la raíz del repositorio:
 
 ```powershell
 node --check js/entities/player.js
@@ -26,41 +27,22 @@ node --test tests/melee-targeting.test.cjs tests/melee-collision.test.cjs
 node --test tests/*.test.cjs
 ```
 
-The combat tests execute the actual `player.js` and `combat.js` files inside
-a deterministic Node.js VM with lightweight substitutes for rendering, input
-and world systems. They cover:
+Los tests utilizan los módulos reales `player.js` y `combat.js` en un entorno aislado de Node.js, con simulaciones deterministas de colisiones, movimiento y efectos. Cubren el alcance, los radios de los enemigos, las fronteras de los arcos, la entrada y salida de enemigos, los cambios de dirección, las fusiones, las recargas, el apuntado manual, el cooperativo y los objetos destructibles.
 
-- Collision boundaries, enemy hitbox sizes, target death and movement between
-  aiming and casting.
-- Moving toward/away from an enemy, blocked movement and immobilization.
-- Switching between ranged and melee slots, manual aim changes, target loss
-  and recovery, and cooldown cadence.
-- Fused attacks, cooperative aim messages, exceptions, and crowd stress.
+**Alcance de la validación:** estas pruebas verifican la lógica, no sustituyen las partidas en navegador ni permiten concluir que los FPS o la conexión multijugador no se vean afectados.
 
-These are **logic-level tests**, not browser end-to-end tests. Passing them
-does not establish real FPS, multiplayer reliability or absence of all gameplay
-regressions.
+## Comprobación manual como invitado
 
-## Manual guest-mode smoke test
+Desde la raíz, ejecutar `py -m http.server 8000` y abrir `http://localhost:8000/dev.html`.
 
-Run `py -m http.server 8000` and open
-`http://localhost:8000/dev.html` in your browser. Use guest mode.
+1. Elegir un Pokémon con un ataque cuerpo a cuerpo, acercarse y alejarse de grupos de enemigos y comprobar que no se queda sin atacar al entrar en alcance.
+2. Enfrentarse a un jefe rodeado de enemigos normales: cuerpo a cuerpo debe seguir golpeando a objetivos próximos.
+3. Alternar movimientos a distancia y cuerpo a cuerpo durante la partida y comprobar la prioridad de cada uno.
+4. Moverse junto a paredes, pasillos y objetos destructibles; revisar que las colisiones y el daño al entorno se mantienen.
+5. Probar el apuntado manual y volver al automático, sin direcciones bloqueadas.
+6. Cuando sea posible, repetir con movimientos fusionados y una partida cooperativa.
+7. Revisar posibles ataques vacíos, recargas anómalas y tirones en oleadas con muchos enemigos.
 
-1. With a melee Pokémon, approach and back away from ordinary enemies.
-   Confirm attacks resume immediately when a target enters range.
-2. Encounter a boss with nearby enemies. Confirm melee attacks the nearby
-   targets while ranged moves retain their existing boss preference.
-3. Walk into map obstacles and move around corners. Check that melee doesn't
-   repeatedly attack distant enemies while the player is blocked.
-4. Switch between melee and ranged slots while moving, including quick
-   changes of direction.
-5. Toggle manual aiming and then return to automatic targeting.
-6. If available, repeat with fused melee/ranged moves and in cooperative play.
-7. Watch for stopped attacks, unexpectedly shortened cooldowns, repeated
-   empty swings and new FPS hitches during crowded encounters.
+## Lo que deliberadamente no cambia
 
-## Deliberately unchanged
-
-Melee attacks currently use an area/arc overlap check without the beam's
-wall-blocking logic. This PR does not add wall occlusion to melee damage;
-that would be a separate gameplay change rather than a targeting bug fix.
+Los ataques cuerpo a cuerpo utilizan una intersección circular y un arco, sin comprobar si una pared bloquea el golpe. Esta PR no introduce una nueva mecánica de oclusión: sería una modificación de combate independiente de la corrección del apuntado.
