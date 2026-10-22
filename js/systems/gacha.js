@@ -5,8 +5,8 @@
  * Probabilidades por tirada:  1★ 45% · 2★ 30% · 3★ 17% · 4★ 6.5% · 5★ 1.5%
  * Garantías:
  *   - la tirada ×10 trae al menos un 4★ o superior
- *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
- * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
+ *   - a las 40 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
+ * Shiny: 3 de cada 100 tiradas sale en su versión shiny.
  * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
  *
  * Se tira con TICKETS (se consiguen jugando):
@@ -22,8 +22,8 @@ G.Gacha = (() => {
     return t.t1 >= n ? { t1: n, t10: 0 } : null;
   }
   const RATES = [[1, 45], [2, 30], [3, 17], [4, 6.5], [5, 1.5]];
-  const PITY_5 = 70;
-  const SHINY_RATE = 1 / 100;
+  const PITY_5 = 40;
+  const SHINY_RATE = 3 / 100;
   const REFUND = { 1: 15, 2: 30, 3: 60, 4: 120, 5: 300 };
   let forceShiny = 0;           // para pruebas y vídeos: las N próximas salen shiny
 
