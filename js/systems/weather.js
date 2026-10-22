@@ -9,7 +9,9 @@
  *   nieve    Hielo ×1,5; los demás pierden un poco de vida y van algo más lentos
  *   niebla   Fantasma, Hada y Psíquico ×1,3
  *
- * Cada bioma tiene sus climas más probables (el volcán, sol y arena...).
+ * Cada bioma tiene sus climas más probables (el volcán, sol y arena...). Los
+ * colores de las grietas que salen en el mapa (desde el minuto 12), el clima
+ * de su tipo (ARENA_THEMES[tipo].weather) y a veces uno suave; ver weightsFor.
  * Lo visual es suave a propósito: un tinte leve y pocas partículas.
  *
  * Cooperativo: lo decide el anfitrión y lo manda con 'wx'.
@@ -82,8 +84,28 @@ G.Weather = (() => {
     cur.dur = Math.min(cur.dur, cur.t + 3);
   }
 
+  // Los suaves (no quitan vida) y el que va en contra de cada uno.
+  const CALM = { rain: 1, sun: 1, fog: 1 };
+  const OPPOSITE = { sun: 'rain', rain: 'sun', snow: 'sun' };
+  const OWN = 4;
+
+  /**
+   * Probabilidad de cada clima en el bioma (G.Tiles.BIOMES). Antes, los de las
+   * grietas iban por bioma % 3: nieve en el volcán, sol en el glaciar...
+   */
+  function weightsFor(biome) {
+    const T = G.Tiles;
+    if (biome < T.ARENA) return BIOME_W[biome] || CALM;
+    // El suyo (los biomas sólo del mapa, como el archipiélago) o el de su grieta.
+    const kind = (T.BIOMES[biome] || {}).weather || (T.ARENA_THEMES[T.ARENA_TYPES[biome - T.ARENA]] || {}).weather;
+    if (!kind) return CALM;
+    const w = { [kind]: OWN };
+    for (const k in CALM) if (k !== kind && k !== OPPOSITE[kind]) w[k] = CALM[k];
+    return w;
+  }
+
   function pick(biome) {
-    const w = BIOME_W[biome % BIOME_W.length];
+    const w = weightsFor(biome);
     let r = Math.random() * Object.values(w).reduce((a, b) => a + b, 0);
     for (const k in w) { r -= w[k]; if (r <= 0) return k; }
     return 'rain';
@@ -168,7 +190,7 @@ G.Weather = (() => {
     return { x: Math.random() * w, y: anywhere ? Math.random() * h : h + 5, vx: G.U.rand(-8, 8), vy: -G.U.rand(15, 30), a: 0.45, c: '#fff1b0', t: 0, life: 12 };
   }
 
-  return {
+  return { weightsFor,
     KINDS, reset, update, draw, mult, speedFor, hurts, onEvent,
     get current() { return cur && level() > 0 ? Object.assign({ left: Math.max(0, cur.dur - cur.t) }, cur, KINDS[cur.kind]) : null; },
     get vignette() { return cur && cur.kind === 'fog' ? level() : 0; },

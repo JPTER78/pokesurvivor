@@ -125,6 +125,8 @@ G.Game = (() => {
     G.Hazards.clear();
     G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
     G.World.setBiome(0, true);
+    // El terreno del primer bioma, antes de crear al jugador (en cooperativo, el campo de siempre: ver world.js).
+    G.World.setLayout(coop ? 'plains' : G.Layouts.forBiome(G.World.biome));
     biome = 0;
     time = 0; pendingLevels = 0;
     runReal = performance.now(); tampered = false;
@@ -459,6 +461,17 @@ G.Game = (() => {
     if (laterItems.length) offerItem(laterItems.shift());
   }
 
+  /**
+   * Mientras el terreno nuevo se abre paso (world.js changeBiome): nadie se
+   * queda dentro de una pared, y los enemigos recalculan por dónde ir.
+   */
+  function settle() {
+    G.World.unstick(pl);
+    for (const e of G.EnemyMgr.all()) if (!e.flying && !e.remote && !e.dead) G.World.unstick(e);
+    G.Events.resettle();
+    if (G.World.settled()) G.Path.clear();
+  }
+
   /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
@@ -683,7 +696,7 @@ G.Game = (() => {
     const b = Math.floor(time / 240);
     if (b !== biome && !G.Rift.inArena && !G.Judgment.active) {
       biome = b;
-      G.World.setBiome(b);
+      G.World.changeBiome(b, pl.x, pl.y);                // paleta y, si toca, el terreno nuevo tras la onda
       G.Audio.sfx('biome');
       G.Spawner.say('— ' + G.World.biomeName() + ' —', 3);
       G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#ffffff', 0.7, 6);
@@ -698,6 +711,7 @@ G.Game = (() => {
     const view = watched() || pl;
     G.Camera.follow(view.x, view.y, dt);
     G.World.update(dt, G.Camera);
+    if (G.World.settling) settle();
 
     const all = everyone();
     if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time); }

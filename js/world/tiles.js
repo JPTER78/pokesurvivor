@@ -117,11 +117,15 @@ G.Tiles = (() => {
     return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
   }
 
-  /** Paleta completa de bioma a partir de los pocos colores de una arena. */
+  /**
+   * Paleta completa de bioma a partir de los pocos colores de una arena.
+   * name: en la grieta ("Grieta · ..."); place: el sitio a secas, para cuando
+   * sale como bioma del mapa (desde el minuto 12, ver world.js biomeName).
+   */
   function arenaBiome(th) {
     const f = th.floor, w = th.wall, L = th.liq;
     return {
-      name: 'Grieta · ' + th.name, liquid: th.liquid,
+      name: 'Grieta · ' + th.name, place: th.name, liquid: th.liquid,
       floor: [f, shade(f, 0.05), shade(f, -0.06)], dirt: [shade(f, -0.16), shade(f, -0.12), shade(f, -0.2)],
       speck: shade(f, -0.25), light: shade(f, 0.22), flowers: th.flowers,
       wallTop: [w, shade(w, 0.07), shade(w, -0.07)], wallLight: shade(w, 0.32), wallEdge: shade(w, -0.7),
@@ -135,6 +139,32 @@ G.Tiles = (() => {
   }
   for (const t of ARENA_TYPES) BIOMES.push(arenaBiome(ARENA_THEMES[t]));
   BIOMES[ARENA + ARENA_TYPES.indexOf('judgment')].name = ARENA_THEMES.judgment.name;
+
+  /*
+   * Biomas sólo del mapa (no son de ninguna grieta). Pueden pedir su generador
+   * de terreno (layout, ver world/layouts.js) y su clima (weather).
+   *   Archipiélago  islas de arena con algún claro de hierba entre agua clara (en
+   *                 vez de la Gruta Marina, que con sus cristales parecía una
+   *                 cueva de hielo). Al revés que los demás: el suelo es la arena
+   *                 y las manchas ("dirt") son la hierba
+   */
+  const ISLES = BIOMES.length;
+  BIOMES.push(Object.assign(arenaBiome({
+    name: 'Archipiélago', floor: '#d8c288', wall: '#8c8270', liquid: 'water', liq: '#2c93d8', foam: '#e6faff', prop: 'tree',
+    leaf: '#3f9a3a', trunk: '#7a5130', flowers: ['#f4d65c', '#ffffff', '#ff9ec4'], grass: '#62ad46', rock: '#a29d8e'
+  }), {
+    name: 'Archipiélago', place: 'Archipiélago', layout: 'islands', weather: 'rain',
+    dirt: ['#6fa850', '#65a048', '#78b058'], shore: '#e8d7a4'          // claros de hierba; orilla de arena clara
+  }));
+
+  /**
+   * Orden de los biomas en la run (cada 4 min, ver game.js): el de la lista, salvo
+   * donde un bioma del mapa ocupa el sitio de uno de grieta (la Gruta Marina,
+   * el archipiélago). Las grietas siguen usando su color de siempre.
+   */
+  const RUN = BIOMES.slice(0, ISLES).map((_, i) => i);
+  RUN[ARENA + ARENA_TYPES.indexOf('water')] = ISLES;
+  const runBiome = i => RUN[((i % RUN.length) + RUN.length) % RUN.length];
 
   // ---------------- utilidades de color / píxel ----------------
 
@@ -626,7 +656,7 @@ G.Tiles = (() => {
 
   function clearProps() { propCache.clear(); }
 
-  return { T, BIOMES, NORMAL, ARENA, ARENA_THEMES, ARENA_TYPES, paintChunk, propSprite, clearProps,
+  return { T, BIOMES, NORMAL, ARENA, ARENA_THEMES, ARENA_TYPES, RUN, runBiome, paintChunk, propSprite, clearProps,
            /** Índice de bioma de la arena de un tipo. */
            arenaBiome: type => ARENA + Math.max(0, ARENA_TYPES.indexOf(type)) };
 })();

@@ -232,7 +232,11 @@ G.Rift = (() => {
     // van y de los del mapa que vuelven; si el invitado terminaba su cuenta
     // atrás un poco más tarde (pasa casi siempre), borraba los que acababan de
     // volver y no se veían hasta que caían (sólo sus ataques).
-    if (authority()) G.EnemyMgr.restore();
+    if (authority()) {
+      G.EnemyMgr.restore();
+      // Si el terreno cambió justo al entrar (world.js changeBiome), que nadie vuelva dentro de una pared.
+      for (const e of G.EnemyMgr.all()) if (!e.flying && !e.remote) G.World.unstick(e);
+    }
     G.Projectiles.clear();
     G.Combat.clearFields();
     G.Hazards.clear();

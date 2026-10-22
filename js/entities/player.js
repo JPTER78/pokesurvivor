@@ -118,7 +118,7 @@ G.Player = class Player {
     const ab = this.abil || {}, stuck = this.slowT > 0 && !ab.steady;
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (stuck ? 0.5 : 1) * (ab.speed ? ab.speed(this) : 1);
     const w = G.Weather.speedFor(this.mon.types);
-    const slow = this.inLiquid && !ab.steady ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
+    const slow = this.inLiquid && !ab.steady ? G.World.liquidEffect(this.mon.types, this.x, this.y).slow || 1 : 1;
     return G.Judgment && G.Judgment.active ? G.Judgment.capSpd(s * slow * w) : s * slow * w;
   }
   get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
@@ -400,7 +400,7 @@ G.Player = class Player {
     this.walking = ax !== 0 || ay !== 0;
     const s = this.spd;
     // Hielo: resbalas (la velocidad cambia despacio).
-    const slide = this.inLiquid && G.World.liquidEffect(this.mon.types).slide;
+    const slide = this.inLiquid && G.World.liquidEffect(this.mon.types, this.x, this.y).slide;
     this.svx = slide ? G.U.damp(this.svx || 0, ax * s * 1.15, 1.6, dt) : ax * s;
     this.svy = slide ? G.U.damp(this.svy || 0, ay * s * 1.15, 1.6, dt) : ay * s;
     this.x += this.svx * dt;
@@ -412,7 +412,7 @@ G.Player = class Player {
     // (Levitación: flota por encima del agua y la lava.)
     this.inLiquid = !(this.abil && this.abil.levitate) && G.World.isLiquid(this.x, this.y);
     if (this.inLiquid) {
-      const le = G.World.liquidEffect(this.mon.types);
+      const le = G.World.liquidEffect(this.mon.types, this.x, this.y);
       if (le.dmg && !(this.abil && this.abil.lavaProof)) {
         this.lavaTick -= dt;
         if (this.lavaTick <= 0) {
