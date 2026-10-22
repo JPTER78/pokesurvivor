@@ -38,7 +38,13 @@ test('Cada movimiento cuerpo a cuerpo fusionado comprueba su propio alcance',()=
   s.attack();assert.equal(s.casts.length,1);assert.equal(s.casts[0].m.radius,90);
   assert.equal(s.casts[0].target,near);assert.equal(s.pl.target,boss);
 });
-test('El apuntado automático descarta enemigos derrotados',()=>{
-  const near=enemy(50,0),s=scene([enemy(10,0,false,true),near],[melee(90)]);
-  assert.equal(s.pl.target,near);s.attack();assert.equal(s.casts.length,1);
+test('El apuntado automático descarta enemigos derrotados', () => {
+  const defeated = enemy(10, 0, false, true);
+  const nearby = enemy(50, 0);
+  assert.equal(defeated.dead, true, 'El enemigo del test debe estar derrotado');
+
+  const run = scene([defeated, nearby], [melee(90)]);
+  assert.equal(run.pl.target, nearby);
+  run.attack();
+  assert.equal(run.casts.length, 1);
 });

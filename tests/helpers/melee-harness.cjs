@@ -2,7 +2,14 @@
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'../..',p),'utf8');
 let id=0;
-const enemy=(x,y,r=10,boss=false)=>({id:++id,x,y,r,boss,dead:false,hp:100,types:['normal'],mon:{},bodyH:20,cy(){return this.y;},hurt(n){this.hp-=n;}});
+function enemy(x, y, radius = 10, boss = false, dead = false) {
+  return {
+    id: ++id, x, y, r: radius, boss, dead, hp: 100,
+    types: ['normal'], mon: {}, bodyH: 20,
+    cy() { return this.y; },
+    hurt(damage) { this.hp -= damage; },
+  };
+}
 const melee=(radius=60,arc=Math.PI)=>({kind:'melee',radius,arc,cd:1,t:0,dmg:10,type:'normal'});
 const ranged=()=>({kind:'projectile',radius:100,speed:250,life:1,size:5,count:1,cd:1,t:0,dmg:10,type:'normal'});
 const d2=(x,y,a,b)=>(x-a)**2+(y-b)**2;
