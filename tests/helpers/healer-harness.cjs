@@ -28,7 +28,7 @@ function scenario(
     Audio: { sfx() {} },
   };
 
-  vm.runInNewContext(js, { G, Math, Map, Set, console }, { filename: FILE });
+  vm.runInNewContext(js, { G, Math, Map, Set }, { filename: FILE });
   G.EnemyMgr.queryCircle = () => victims;
 
   const healer = { x: 0, y: 0, bodyH: 16, anim: { play() {} } };

@@ -9,8 +9,10 @@ const { source, scenario, FILE } = require("../tests/helpers/healer-harness.cjs"
 const CPU_SAMPLES = 5;
 
 function showHelp() {
-  console.log("Uso: node tools/bench-healers.cjs [--baseline=origin/main] [--iterations=20000]");
-  console.log("Compara la curación original y la modificada en los mismos escenarios.");
+  process.stdout.write(
+    "Uso: node tools/bench-healers.cjs [--baseline=origin/main] [--iterations=20000]\n" +
+    "Compara la curación original y la modificada en los mismos escenarios.\n"
+  );
 }
 
 function parseArguments(argv) {
@@ -38,7 +40,9 @@ function loadBaseline(ref) {
       encoding: "utf8", maxBuffer: 4_000_000, stdio: ["ignore", "pipe", "ignore"],
     });
   } catch {
-    console.error(`No se encontró la base «${ref}». Ejecuta git fetch origin y usa --baseline=origin/main.`);
+    process.stderr.write(
+      `No se encontró la base «${ref}». Ejecuta git fetch origin y usa --baseline=origin/main.\n`
+    );
     process.exit(1);
   }
 }
@@ -65,13 +69,17 @@ function nsPerCast(js, healerCount, iterations) {
   return samples.sort((a, b) => a - b)[Math.floor(CPU_SAMPLES / 2)];
 }
 
-function printTable(headings, rows) {
+function formatTable(headings, rows) {
   const widths = headings.map((heading, column) =>
     Math.max(heading.length, ...rows.map(row => String(row[column]).length)));
-  const format = row => row.map((cell, index) => String(cell).padEnd(widths[index])).join("  |  ");
-  console.log(format(headings));
-  console.log(widths.map(width => "-".repeat(width)).join("--+--"));
-  for (const row of rows) console.log(format(row));
+  const formatRow = row => row.map((cell, index) =>
+    String(cell).padEnd(widths[index])).join("  |  ");
+
+  return [
+    formatRow(headings),
+    widths.map(width => "-".repeat(width)).join("--+--"),
+    ...rows.map(formatRow),
+  ].join("\n");
 }
 
 const { baseline, iterations } = parseArguments(process.argv.slice(2));
@@ -83,9 +91,12 @@ const cpuChange = (original, updated) => {
   return (change >= 0 ? "+" : "") + change.toFixed(1) + "%";
 };
 
-console.log("CURACIÓN DE ENEMIGOS: ANTES Y DESPUÉS");
-console.log(`Base: ${baseline} | Iteraciones: ${iterations.toLocaleString("es-ES")} | Muestras de CPU: ${CPU_SAMPLES} (mediana)`);
-console.log("Escenario: objetivo con 0 / 2.000 PV; ventana de curación de 3,5 segundos.\n");
+const report = [
+  "CURACIÓN DE ENEMIGOS: ANTES Y DESPUÉS",
+  `Base: ${baseline} | Iteraciones: ${iterations.toLocaleString("es-ES")} | Muestras de CPU: ${CPU_SAMPLES} (mediana)`,
+  "Escenario: objetivo con 0 / 2.000 PV; ventana de curación de 3,5 segundos.",
+  "",
+];
 
 const healingRows = [];
 const cpuRows = [];
@@ -103,9 +114,14 @@ for (const healerCount of [1, 2, 3]) {
   cpuRows.push([healerCount, originalCost.toFixed(0), updatedCost.toFixed(0), cpuChange(originalCost, updatedCost)]);
 }
 
-console.log("CURACIÓN POR VENTANA (PV recuperados)");
-printTable(["Curanderos", "Ataque", "Antes (PV)", "Después (PV)", "Reducción"], healingRows);
-console.log("\nCOSTE POR CURACIÓN (nanosegundos; menor es más rápido)");
-printTable(["Curanderos", "Antes (ns)", "Después (ns)", "Cambio CPU"], cpuRows);
-console.log("\nAviso: este microbenchmark no mide FPS, supervivencia ni partidas multijugador.");
-console.log("Los resultados de CPU pueden variar entre ejecuciones y equipos.");
+report.push(
+  "CURACIÓN POR VENTANA (PV recuperados)",
+  formatTable(["Curanderos", "Ataque", "Antes (PV)", "Después (PV)", "Reducción"], healingRows),
+  "",
+  "COSTE POR CURACIÓN (nanosegundos; menor es más rápido)",
+  formatTable(["Curanderos", "Antes (ns)", "Después (ns)", "Cambio CPU"], cpuRows),
+  "",
+  "Aviso: este microbenchmark no mide FPS, supervivencia ni partidas multijugador.",
+  "Los resultados de CPU pueden variar entre ejecuciones y equipos."
+);
+process.stdout.write(`${report.join("\n")}\n`);
