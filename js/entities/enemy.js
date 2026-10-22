@@ -32,6 +32,28 @@
   const RD_TAU = 6, BOSS_HEAL_S = 0.4, BOSS_SHIELD_S = 1.2;
   const bossDps = e => e.rd / RD_TAU;
 
+  // Todos los curanderos comparten un límite por enemigo y ventana de tiempo.
+  // Se usa el reloj de juego: durante una pausa no avanza la recuperación.
+  // Los jefes conservan su límite de curación basado en el daño recibido.
+  const SUPPORT_HEAL_WINDOW = 3.5;
+  const SUPPORT_HEAL_MAX_HP = 0.12;
+
+  function supportHealAmount(enemy, requestedHealing, gameTime) {
+    const windowExpired = enemy.supportHealAt == null ||
+      gameTime < enemy.supportHealAt ||
+      gameTime - enemy.supportHealAt >= SUPPORT_HEAL_WINDOW;
+
+    if (windowExpired) {
+      enemy.supportHealAt = gameTime;
+      enemy.supportHealUsed = 0;
+    }
+
+    const remainingBudget = Math.max(0, enemy.maxHp * SUPPORT_HEAL_MAX_HP - enemy.supportHealUsed);
+    const appliedHealing = Math.max(0, Math.min(requestedHealing, remainingBudget, enemy.maxHp - enemy.hp));
+    enemy.supportHealUsed += appliedHealing;
+    return appliedHealing;
+  }
+
   /*
    * Veneno (18-10-2026): quita un % de la vida, pero con muchísima vida (los
    * legendarios de la Sentencia, que doblan cada 5 s) ese % se aplica a una
@@ -630,21 +652,31 @@
       // pegabas), y más cuanto más fuerte pegas, pero cada vez menos: con el
       // doble de ataque cura un 27 % más, con 10 veces más un 124 %, y como
       // mucho ×2,5. (Como los enemigos que tienen más vida si haces más daño.)
-      const pow = Math.max(1, ...G.Game.everyone().map(p => (p.atk > 0 && p.baseAtk > 0 ? p.atk / p.baseAtk : 1)));
-      const k = 0.07 * Math.min(2.5, Math.pow(pow, 0.35));
-      let n = 0;
-      for (const e of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
-        if (e.dead || e.hp >= e.maxHp) continue;
-        // A un jefe, como mucho lo que le quitas en 0,4 s: así nunca se vuelve inmatable.
-        const heal = e.maxHp * k;
-        e.hp = Math.min(e.maxHp, e.hp + (e.boss ? Math.min(heal, bossDps(e) * BOSS_HEAL_S) : heal));
-        G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#7dffb0', 5, 60);
-        n++;
+      const attackMultiplier = Math.max(1, ...G.Game.everyone().map(p =>
+        p.atk > 0 && p.baseAtk > 0 ? p.atk / p.baseAtk : 1));
+      const healingRatio = 0.07 * Math.min(2.5, Math.pow(attackMultiplier, 0.35));
+      const gameTime = G.Game.st.time;
+      let healedTargets = 0;
+
+      for (const enemy of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
+        if (enemy.dead || enemy.hp >= enemy.maxHp) continue;
+
+        const requestedHealing = enemy.maxHp * healingRatio;
+        // Los jefes siguen limitados por el daño recibido; solo los enemigos
+        // normales consumen el presupuesto de curación compartido.
+        const appliedHealing = enemy.boss
+          ? Math.min(requestedHealing, bossDps(enemy) * BOSS_HEAL_S)
+          : supportHealAmount(enemy, requestedHealing, gameTime);
+        if (appliedHealing <= 0) continue;
+
+        enemy.hp = Math.min(enemy.maxHp, enemy.hp + appliedHealing);
+        G.FX.burst(enemy.x, enemy.y - enemy.bodyH * 0.6, '#7dffb0', 5, 60);
+        healedTargets++;
       }
       this.anim.play('Charge');
       G.FX.ring(this.x, this.y, 8, 150, '#5fe08a', 0.5, 3);
       if (G.Coop.isHost) G.Coop.broadcast(['fxr', Math.round(this.x), Math.round(this.y), 150, '#5fe08a']);
-      if (n && G.Camera.sees(this.x, this.y, 0)) G.Audio.sfx('heal');
+      if (healedTargets && G.Camera.sees(this.x, this.y, 0)) G.Audio.sfx('heal');
     }
 
     castShields() {
