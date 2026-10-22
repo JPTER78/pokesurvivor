@@ -171,7 +171,20 @@ G.Social = (() => {
   // writeStatus y refreshPresence se quedan vacías para no tocar a quien las llama.
   const presKey = () => 'ps.pres.' + uid;
   function writeStatus() {}
-  function setPlaying(p) { playing = !!p; }
+  function setPlaying(p) {
+    playing = !!p;
+    if (!room || !fb || !fb.rtdb) return;
+    if (!room.isHost) {
+      const mRef = fb.rtdb.ref('rooms/' + room.id + '/m/' + uid);
+      if (playing) {
+        mRef.onDisconnect().cancel().catch(() => {});
+        mRef.child('dc').onDisconnect().set(ts()).catch(() => {});
+      } else {
+        mRef.child('dc').onDisconnect().cancel().catch(() => {});
+        mRef.onDisconnect().remove().catch(() => {});
+      }
+    }
+  }
 
   async function stop(why) {
     if (!started) return;
@@ -323,6 +336,24 @@ G.Social = (() => {
       return { ok: false, error: 'La sala está llena (máximo ' + MAX_PLAYERS + ').' };
     }
     enterRoom(id, host);
+    return { ok: true };
+  }
+
+  async function rejoinRoom(id, hostUid) {
+    if (room && room.id === id) return { ok: true };
+    if (room) await leaveRoom();
+    rtOn();
+    let host = null;
+    try {
+      host = (await fb.rtdb.ref('rooms/' + id + '/host').get()).val();
+    } catch (e) { /* sala borrada */ }
+    if (!host || host !== hostUid) {
+      rtOff();
+      return { ok: false, error: 'La partida de esa sala ya no existe.' };
+    }
+    try { await fb.rtdb.ref('rooms/' + id + '/m/' + uid + '/dc').remove(); } catch (e) { /* nada */ }
+    enterRoom(id, host);
+    setPlaying(true);
     return { ok: true };
   }
 
@@ -519,7 +550,7 @@ G.Social = (() => {
 
   return {
     start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence, ensureFriends,
+    createRoom, joinRoom, rejoinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence, ensureFriends,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

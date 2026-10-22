@@ -235,3 +235,96 @@ test('own TURN: a pair that needed it starts with it next time, and after 2 such
   N.syncMembers(['host', 'a', 'b', 'c']); await settle();
   assert.equal(pcs.at(-1).cfg.iceServers.length, 2, 'two failures: own network needs TURN');
 });
+
+test('co-op reconnect: disconnected mate enters grace period, stays in mates, and recovers with 5s immunity', async () => {
+  const sent = [], G = {};
+  let onPeerCb = null, onNetCb = null;
+  G.Net = {
+    uid: 'host',
+    on(fn) { onNetCb = fn; },
+    onPeer(fn) { onPeerCb = fn; },
+    slow: () => false,
+    send: (uid, f) => sent.push({ to: uid, f }),
+    toHost: f => sent.push({ to: 'host', f }),
+    reconnectPeer() {}
+  };
+  G.Player = class { constructor() { this.maxHp = 300; this.invuln = 0; } };
+  G.DEX_BY = { 25: { dex: 25 } };
+  G.baseStartOf = () => 'thundershock';
+  G.Sprites = { preload() {} };
+  G.U = { dist2: (x, y, a, b) => (x - a) ** 2 + (y - b) ** 2, clamp: (v, l, h) => Math.max(l, Math.min(h, v)) };
+  G.EnemyMgr = { all: () => [] };
+  G.Judgment = { netState: () => null };
+  G.Spawner = { say() {} };
+  G.Projectiles = { clearOrbs() {} };
+
+  new Function('G', 'document', source('js/net/coop.js'))(G, { addEventListener() {} });
+  const local = { x: 0, y: 0, moveAngle: 1.5, walking: false, hp: 250, maxHp: 300, magnet: 78, aim: 0, xpMul: 1, reviveT: 0, invuln: 0, activeGroup: () => [] };
+  G.Coop.begin({ seed: 9999, host: 'host', members: [{ uid: 'host', name: 'Host', dex: 25 }, { uid: 'guest', name: 'Guest', dex: 25 }] }, local, {
+    team: () => ({ time: 100, level: 5, xp: 50, xpNext: 150, kills: 10, bosses: 1, coins: 20 }),
+    syncTeam() {}
+  });
+
+  const mate = G.Coop.mate('guest');
+  assert.ok(mate);
+  assert.equal(mate.connected, true);
+
+  // Connection drops (network glitch)
+  onPeerCb('guest', 'closed');
+  assert.equal(mate.connected, false, 'mate is marked disconnected');
+  assert.ok(mate.dcTimer, 'grace timer is active');
+  assert.equal(G.Coop.players().length, 1, 'disconnected mate excluded from active players during grace period');
+
+  // Rejoin packet arrives within grace period
+  onNetCb('guest', { k: 'rejoin', uid: 'guest', p: [0, 0, 1.5, 0, 250, 300, 0, 'thundershock', 1, 78, 0, 1, 0, 0, 0, ''] });
+  assert.equal(mate.connected, true, 'mate is reconnected');
+  assert.equal(mate.dcTimer, null, 'grace timer cleared');
+  assert.equal(mate.pl.invuln, 5, 'remote puppet gets 5 seconds immunity');
+
+  const rejoinOk = sent.find(s => s.to === 'guest' && s.f.k === 'rejoin-ok');
+  assert.ok(rejoinOk, 'host sent rejoin-ok to returning guest');
+  assert.equal(rejoinOk.f.seed, 9999);
+});
+
+test('co-op reconnect: guest client applies 5s immunity upon rejoin-ok', async () => {
+  const sent = [], G = {};
+  let onNetCb = null;
+  G.Net = {
+    uid: 'guest',
+    on(fn) { onNetCb = fn; },
+    onPeer() {},
+    slow: () => false,
+    send: (uid, f) => sent.push({ to: uid, f }),
+    toHost: f => sent.push({ to: 'host', f }),
+    reconnectPeer() {}
+  };
+  G.Player = class { constructor() { this.maxHp = 300; this.invuln = 0; } };
+  G.DEX_BY = { 25: { dex: 25 } };
+  G.baseStartOf = () => 'thundershock';
+  G.Sprites = { preload() {} };
+  G.U = { dist2: (x, y, a, b) => (x - a) ** 2 + (y - b) ** 2, clamp: (v, l, h) => Math.max(l, Math.min(h, v)) };
+  G.EnemyMgr = { all: () => [] };
+  G.Judgment = { netState: () => null };
+  G.Spawner = { say() {} };
+  G.Projectiles = { clearOrbs() {} };
+  G.FX = { ring() {} };
+  G.Audio = { sfx() {} };
+  G.UI = { toast() {} };
+
+  new Function('G', 'document', source('js/net/coop.js'))(G, { addEventListener() {} });
+  const local = { x: 0, y: 0, moveAngle: 1.5, walking: false, hp: 200, maxHp: 300, magnet: 78, aim: 0, xpMul: 1, reviveT: 0, invuln: 0, activeGroup: () => [] };
+  let teamSynced = false;
+  G.Coop.begin({ seed: 9999, host: 'host', members: [{ uid: 'host', name: 'Host', dex: 25 }, { uid: 'guest', name: 'Guest', dex: 25 }] }, local, {
+    team: () => ({ time: 100, level: 5 }),
+    syncTeam() { teamSynced = true; }
+  });
+
+  G.Coop.startReconnecting();
+  assert.equal(G.Coop.reconnecting, true);
+
+  // Receive rejoin-ok from host
+  onNetCb('host', { k: 'rejoin-ok', seed: 9999, team: { time: 120, level: 6 } });
+  assert.equal(G.Coop.reconnecting, false, 'reconnecting state resolved');
+  assert.equal(local.invuln, 5, 'local player receives exactly 5 seconds immunity');
+  assert.equal(teamSynced, true, 'team state was synchronized');
+});

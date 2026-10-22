@@ -102,6 +102,132 @@ G.Game = (() => {
   // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
+    let coopSaveT = 0;
+  function saveCoopSession() {
+    if (!G.Coop.active || !pl) return;
+    try {
+      const room = G.Social.room;
+      const data = {
+        roomId: room ? room.id : '',
+        hostUid: G.Coop.hostUid || (room ? room.host : ''),
+        seed: G.Coop.seed || 0,
+        members: G.Coop.members || [],
+        time,
+        savedAt: Date.now(),
+        player: {
+          dex: pl.mon.dex,
+          shiny: !!pl.shiny,
+          hp: pl.hp,
+          maxHp: pl.maxHp,
+          level: pl.level,
+          xp: pl.xp,
+          xpNext: pl.xpNext,
+          x: Math.round(pl.x),
+          y: Math.round(pl.y),
+          moves: pl.moves.map(m => ({ id: m.id, lvl: m.lvl, evolved: !!m.evolved, since: m.since || 0 })),
+          slots: pl.slots.map(g => g.map(m => m.id)),
+          active: pl.active,
+          item: pl.item || null,
+          bonds: pl.bonds || 0,
+          coins: pl.coins || 0,
+          t1: pl.t1 || 0,
+          t10: pl.t10 || 0,
+          kills: pl.kills || 0,
+          bosses: pl.bosses || 0,
+          statsTaken: Object.assign({}, pl.statsTaken || {})
+        }
+      };
+      localStorage.setItem('ps.active_coop', JSON.stringify(data));
+    } catch (e) { /* nada */ }
+  }
+
+  function clearCoopSession() {
+    try { localStorage.removeItem('ps.active_coop'); } catch (e) { /* nada */ }
+  }
+
+  function restoreCoopRun(saved) {
+    holdBy = []; awayBy = null;
+    const save = G.DB.save;
+    const sp = saved.player;
+    const mon = G.DEX_BY[sp.dex] || G.Mons.monFor(save.partner);
+    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+
+    G.UI.hideAll();
+    G.UI.chrome(false);
+    G.FX.clear();
+    G.Projectiles.clear();
+    G.Combat.clearFields();
+    G.EnemyMgr.clear();
+    G.Pickups.clear();
+    G.Spawner.reset();
+    G.Rift.reset();
+    G.Judgment.reset();
+    G.Events.reset();
+    G.Weather.reset();
+    G.Path.clear();
+    G.Hazards.clear();
+    G.World.reset(saved.seed || 0);
+    G.World.setBiome(0, true);
+    biome = 0;
+    time = (saved.time || 0); pendingLevels = 0;
+    runReal = performance.now(); tampered = false;
+
+    pl = new G.Player(mon, perks, !!sp.shiny && G.DB.ownsShiny(mon.dex));
+    pl.setAbility(G.Mons.abilityOf(mon.dex).id);
+    pl.hp = G.U.clamp(sp.hp || pl.maxHp, 1, sp.maxHp || pl.maxHp);
+    pl.maxHp = sp.maxHp || pl.maxHp;
+    pl.level = sp.level || 1;
+    pl.xp = sp.xp || 0;
+    pl.xpNext = sp.xpNext || G.Player.xpFor(pl.level);
+    pl.x = sp.x || 0; pl.y = sp.y || 0;
+    pl.coins = sp.coins || 0;
+    pl.t1 = sp.t1 || 0; pl.t10 = sp.t10 || 0;
+    pl.kills = sp.kills || 0; pl.bosses = sp.bosses || 0;
+    pl.bonds = sp.bonds || 0;
+    pl.statsTaken = Object.assign({}, sp.statsTaken || {});
+    pl.moves = [];
+    pl.slots = [];
+    if (sp.slots && sp.slots.length) {
+      sp.slots.forEach(grp => {
+        const moveGrp = [];
+        grp.forEach(id => {
+          const info = (sp.moves || []).find(m => m.id === id) || { id, lvl: 1 };
+          const inst = G.Moves.instance(id, info.lvl || 1);
+          inst.since = info.since || 0;
+          if (info.evolved) G.Moves.evolve(inst);
+          pl.moves.push(inst);
+          moveGrp.push(inst);
+        });
+        if (moveGrp.length) pl.slots.push(moveGrp);
+      });
+    } else {
+      pl.addMove(G.startMoveOf(mon.dex));
+    }
+    pl.active = Math.min(pl.slots.length - 1, Math.max(0, sp.active || 0));
+    if (sp.item && G.Items.BY[sp.item]) pl.equip(sp.item);
+
+    // 5 segundos de inmunidad garantizados al reconectarse
+    pl.invuln = 5;
+
+    banked = { t1: pl.t1, t10: pl.t10 };
+    caught = [];
+
+    const cfg = {
+      seed: saved.seed,
+      host: saved.hostUid,
+      members: saved.members || []
+    };
+    G.Coop.begin(cfg, pl, coopApi, true);
+    G.Social.setPlaying(true);
+
+    G.Camera.x = pl.x; G.Camera.y = pl.y; G.Camera.shake = 0;
+    G.Sprites.preload([mon.dex], 8000, pl.shiny);
+    G.Audio.music(G.BIOME_MUSIC[0]);
+    deathT = 0;
+
+    state = 'playing';
+  }
+
   function startRun(coop = null) {
     holdBy = []; awayBy = null;
     const save = G.DB.save;
@@ -165,6 +291,7 @@ G.Game = (() => {
   }
 
   function quitRun() {
+    clearCoopSession();
     if (G.Coop.active) G.Coop.leave();
     endRun(false);
   }
@@ -248,6 +375,10 @@ G.Game = (() => {
       if (d && d.why === 'host') G.UI.toast('El anfitrión ha terminado la partida', 3200);
       endRun(!(d && d.why === 'host'));
     },
+    reconnecting(active, secs) {
+      if (active) G.Spawner.say('⚠ Conexión perdida. Reconectando... (' + secs + ' s)', 999, true);
+      else G.Spawner.say('', 0, true);
+    },
     lost(msg) { G.UI.toast(msg, 3600); endRun(false); },
     item(id) { offerItem(id); },
     mateLeft() {},
@@ -305,6 +436,7 @@ G.Game = (() => {
   };
 
   function endRun(dead = true) {
+    clearCoopSession();
     if (state === 'over' || !pl) return;
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
     const wasHost = !!pl.coopHost;
@@ -656,6 +788,13 @@ G.Game = (() => {
 
   function update(dt) {
     const coop = G.Coop.active;
+    if (coop && pl) {
+      coopSaveT -= dt;
+      if (coopSaveT <= 0) {
+        coopSaveT = 1.5;
+        saveCoopSession();
+      }
+    }
     if (flashT > 0) flashT -= dt;
     // La Sentencia de Arceus: mientras dura la animación, todo lo demás se para.
     if (G.Judgment.cinematic) {
@@ -938,7 +1077,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond,
+    init, startRun, restoreCoopRun, saveCoopSession, clearCoopSession, everyone, levelXp, flash, offerBond,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { tampered = true; time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

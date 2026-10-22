@@ -82,7 +82,7 @@
 </script>
 
 <link rel="stylesheet" href="css/style.css?v=7ec35e9cc4">
-<script src="js/core/locales.js?v=23650f5e5d"></script>
+<script src="js/core/locales.js?v=8f636d73c1"></script>
 <script src="js/noframe.js"></script>
 </head>
 <body>
@@ -184,6 +184,7 @@
   <div class="menu-right">
     <div class="box">
       <div class="menu-list">
+        <button class="menu-item play reconnect hidden" id="menu-btn-reconnect" data-go="reconnect" style="background:linear-gradient(135deg, #1d6e42, #2ecc71);border-color:#5fe08a">Reconectarse<small id="menu-reconnect-sub">Partida en grupo en curso</small></button>
         <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
@@ -236,6 +237,19 @@
       <button class="btn ghost" id="rec-later" type="button">Ahora no</button>
     </div>
     <p class="note center"><a href="#" id="rec-never">No volver a preguntar</a></p>
+  </div>
+</section>
+
+<!-- ====== Reconexión a partida cooperativa en curso ====== -->
+<section id="scr-reconnect" class="scr dim hidden">
+  <div class="box" style="width:min(440px,100%)">
+    <h2>Partida en curso</h2>
+    <p id="reconnect-text">Se ha detectado una partida cooperativa en curso con tus amigos. ¿Deseas volver a entrar?</p>
+    <p class="note center" id="reconnect-timer" style="color:#5fe08a;font-weight:bold;margin:10px 0;"></p>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button class="btn gold grow" id="btn-reconnect-yes" type="button">Reconectarse a la partida</button>
+      <button class="btn ghost" id="btn-reconnect-no" type="button">Abandonar</button>
+    </div>
   </div>
 </section>
 
@@ -603,6 +617,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=9c81bc64df"></script>
+<script defer src="js/app.min.js?v=51d0fdf35b"></script>
 </body>
 </html>

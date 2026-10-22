@@ -29,6 +29,7 @@ G.Coop = (() => {
   const RATE_FAST = 1 / 15, RATE_SLOW = 1 / 3;
   const rateFor = u => (G.Net.slow(u) ? RATE_SLOW : RATE_FAST);
   const NEAR = 950;                     // radio de enemigos que se mandan a cada uno
+  const RECONNECT_GRACE_MS = 60000;     // tiempo de gracia para reconectar (60 s)
 
   let active = false, host = false, me = null, hostUid = null;
   let local = null;                     // tu Player
@@ -48,6 +49,8 @@ G.Coop = (() => {
   let levelSeq = 0, levelNow = 1, seenSeq = 0, doneSeq = 0, lastHo = '';
   const STALL_MS = 2500;
   let members = [];
+  let cfgSeed = 0;
+  let reconnecting = false, reconnectDeadline = 0, reconnectSecs = 60, reconnectPingTimer = null;
 
   // ---------------- escalado de dificultad ----------------
 
@@ -61,7 +64,8 @@ G.Coop = (() => {
    * @param pl    tu Player (ya creado)
    * @param cb    { levelStart(lv), resume(), waiting(names), over(data), lost(msg), team(t), shiny(dex) }
    */
-  function begin(cfg, pl, cb) {
+  function begin(cfg, pl, cb, isReconnect = false) {
+    cfgSeed = cfg.seed || 0;
     active = true;
     me = G.Net.uid; hostUid = cfg.host;
     host = me === hostUid;
@@ -72,6 +76,10 @@ G.Coop = (() => {
     outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
     hostAway = false; stalled = false; lastHostAt = performance.now();
     levelSeq = 0; levelNow = 1; seenSeq = 0; doneSeq = 0; lastHo = '';
+    if (isReconnect && !host) {
+      pl.invuln = 5;
+      startReconnecting();
+    }
     cfg.members.forEach((m, i) => {
       const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
       if (m.uid === me) { pl.x = x; pl.y = y; pl.uid = me; pl.coopHost = host; pl.tagColor = COLORS[i]; return; }
@@ -87,6 +95,12 @@ G.Coop = (() => {
 
   function end() {
     active = false; host = false; local = null;
+    reconnecting = false;
+    if (reconnectPingTimer) { clearInterval(reconnectPingTimer);
+      reconnectPingTimer = null; }
+    for (const m of mates.values()) {
+      if (m.dcTimer) { clearTimeout(m.dcTimer); m.dcTimer = null; }
+    }
     mates.clear(); outEv = []; waiting = new Set(); holds = new Set();
   }
 
@@ -228,6 +242,13 @@ G.Coop = (() => {
         G.Net.send(m.uid, hostFrame(m));
       }
     } else {
+      if (reconnecting) {
+        reconnectSecs = Math.max(0, Math.ceil((reconnectDeadline - performance.now()) / 1000));
+        if (performance.now() > reconnectDeadline) {
+          cancelReconnecting('Tiempo de espera agotado (60 s). No se pudo reconectar con el anfitrión.');
+          return;
+        }
+      }
       if (!stalled && performance.now() - lastHostAt > STALL_MS) { stalled = true; updateAway(); }
       flushT -= dt;
       if (flushT <= 0) {
@@ -243,25 +264,123 @@ G.Coop = (() => {
   G.Net.on((from, msg) => {
     if (!msg) return;
     if (msg.k === 'start') { if (G.Flow.startCoop) G.Flow.startCoop(msg); return; }
+    if (msg.k === 'reconnect-req') {
+      if (active && host) G.Net.reconnectPeer(from);
+      return;
+    }
+    if (msg.k === 'rejoin') {
+      if (active && host) mateReconnected(from, msg.p);
+      return;
+    }
+    if (msg.k === 'rejoin-ok') {
+      if (active && !host && from === hostUid) onRejoinOk(msg);
+      return;
+    }
     if (!active || msg.k !== 'f') return;
     if (host) onClientFrame(from, msg); else if (from === hostUid) onHostFrame(msg);
   });
 
   G.Net.onPeer((u, mode) => {
-    if (!active || (mode !== 'closed' && mode !== 'failed')) return;
-    if (host) mateGone(u);
-    else if (u === hostUid) { const cb = api.lost; end(); if (cb) cb('Se ha perdido la conexión con el anfitrión.'); }
+    if (!active) return;
+    if (mode === 'direct') {
+      if (!host && u === hostUid && reconnecting) {
+        G.Net.send(hostUid, { k: 'rejoin', uid: me, p: myState() });
+      }
+      return;
+    }
+    if (mode !== 'closed' && mode !== 'failed') return;
+    if (host) mateDisconnected(u);
+    else if (u === hostUid) startReconnecting();
   });
 
-  function mateGone(u) {
+  function mateDisconnected(u) {
     const m = mates.get(u);
     if (!m || !m.connected) return;
     m.connected = false;
+    m.dcAt = performance.now();
+    G.Projectiles.clearOrbs(m.pl);
+    G.Spawner.say(m.name + ' se ha desconectado. Esperando reconexión (60 s)...', 4);
+    if (waiting.has(u)) picked(u);
+    if (holds.has(u)) holdOff(u);
+    if (m.dcTimer) clearTimeout(m.dcTimer);
+    m.dcTimer = setTimeout(() => {
+      if (!m.connected) mateGonePermanent(u);
+    }, RECONNECT_GRACE_MS);
+    if (api.mateDisconnected) api.mateDisconnected(m);
+  }
+
+  function mateGonePermanent(u) {
+    const m = mates.get(u);
+    if (!m) return;
+    m.connected = false;
+    if (m.dcTimer) { clearTimeout(m.dcTimer); m.dcTimer = null; }
     G.Projectiles.clearOrbs(m.pl);
     G.Spawner.say(m.name + ' ha dejado la partida', 2.6);
     if (waiting.has(u)) picked(u);
     if (holds.has(u)) holdOff(u);
     if (api.mateLeft) api.mateLeft(m);
+  }
+
+  function mateReconnected(u, pState) {
+    const m = mates.get(u);
+    if (!m) return;
+    if (m.dcTimer) { clearTimeout(m.dcTimer); m.dcTimer = null; }
+    m.connected = true;
+    m.pl.invuln = 5;
+    if (pState) {
+      m.state = pState;
+      m.pl.net = readState(pState);
+    }
+    G.Spawner.say(m.name + ' se ha reconectado. ¡5 s de inmunidad!', 4);
+    const st = api.team ? api.team() : {};
+    G.Net.send(u, {
+      k: 'rejoin-ok',
+      t: st.time,
+      team: st,
+      seed: cfgSeed,
+      lu: waiting.size ? [levelSeq, levelNow] : null,
+      ja: G.Judgment ? G.Judgment.netState() : null
+    });
+    emit(['say', m.name + ' se ha reconectado', 3], u);
+    if (api.mateReconnected) api.mateReconnected(m);
+  }
+
+  function startReconnecting() {
+    if (reconnecting || !active || host) return;
+    reconnecting = true;
+    reconnectDeadline = performance.now() + RECONNECT_GRACE_MS;
+    reconnectSecs = 60;
+    G.Spawner.say('⚠ Conexión perdida. Reconectando... (60 s)', 999, true);
+    if (api.reconnecting) api.reconnecting(true, 60);
+    G.Net.reconnectPeer(hostUid);
+    if (reconnectPingTimer) clearInterval(reconnectPingTimer);
+    reconnectPingTimer = setInterval(() => {
+      if (reconnecting && active && !host) {
+        G.Net.reconnectPeer(hostUid);
+      }
+    }, 2500);
+  }
+
+  function onRejoinOk(msg) {
+    reconnecting = false;
+    if (reconnectPingTimer) { clearInterval(reconnectPingTimer); reconnectPingTimer = null; }
+    if (api.reconnecting) api.reconnecting(false);
+    if (msg.team && api.syncTeam) api.syncTeam(msg.team);
+    if (local) {
+      local.invuln = 5;
+      if (G.FX && G.FX.ring) G.FX.ring(local.x, local.y, 8, 80, '#5fc8ff', 0.8, 4);
+    }
+    if (G.Audio && G.Audio.sfx) G.Audio.sfx('heal');
+    G.Spawner.say('¡Reconectado con éxito! 5 s de inmunidad', 4, true);
+    if (G.UI && G.UI.toast) G.UI.toast('¡Reconectado con éxito! Inmunidad de 5 s activa.', 3500);
+  }
+
+  function cancelReconnecting(msg) {
+    reconnecting = false;
+    if (reconnectPingTimer) { clearInterval(reconnectPingTimer); reconnectPingTimer = null; }
+    const cb = api.lost;
+    end();
+    if (cb) cb(msg || 'Desconectado de la partida.');
   }
 
   // --- en el anfitrión ---
@@ -301,7 +420,7 @@ G.Coop = (() => {
         case 'hs': holdOn(from); break;
         case 'he': holdOff(from); break;
         case 're': G.Rift.enterRequest(); break;
-        case 'bye': mateGone(from); break;
+        case 'bye': mateGonePermanent(from); break;
       }
     }
   }
@@ -529,6 +648,12 @@ G.Coop = (() => {
     get members() { return members; },
     get active() { return active; },
     get isHost() { return active && host; },
+    get reconnecting() { return reconnecting; },
+    get reconnectSecs() { return reconnectSecs; },
+    get hostUid() { return hostUid; },
+    get seed() { return cfgSeed; },
+    startReconnecting,
+    cancelReconnecting,
     get local() { return local; }
   };
 })();

@@ -11,9 +11,37 @@ G.MenuUI = (() => {
 
   function init() {
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
+    const recBtn = $('menu-btn-reconnect');
+    if (recBtn) {
+      recBtn.onclick = () => {
+        const raw = localStorage.getItem('ps.active_coop');
+        if (!raw) return;
+        try { G.Flow.reconnectCoop(JSON.parse(raw)); } catch (e) { localStorage.removeItem('ps.active_coop'); }
+      };
+    }
+    const btnRecYes = $('btn-reconnect-yes'), btnRecNo = $('btn-reconnect-no');
+    if (btnRecYes) {
+      btnRecYes.onclick = () => {
+        if (reconnectCheckT) { clearInterval(reconnectCheckT); reconnectCheckT = null; }
+        G.UI.hide('scr-reconnect');
+        const raw = localStorage.getItem('ps.active_coop');
+        if (!raw) return;
+        try { G.Flow.reconnectCoop(JSON.parse(raw)); } catch (e) { localStorage.removeItem('ps.active_coop'); }
+      };
+    }
+    if (btnRecNo) {
+      btnRecNo.onclick = () => {
+        if (reconnectCheckT) { clearInterval(reconnectCheckT); reconnectCheckT = null; }
+        G.UI.hide('scr-reconnect');
+        const btn = $('menu-btn-reconnect');
+        if (btn) btn.classList.add('hidden');
+        localStorage.removeItem('ps.active_coop');
+      };
+    }
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
+
       b.onclick = () => {
         const go = b.dataset.go;
         if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
@@ -39,7 +67,56 @@ G.MenuUI = (() => {
 
   // ---------------- menú principal ----------------
 
+  
+  let reconnectCheckT = null;
+  function checkReconnect() {
+    const raw = localStorage.getItem('ps.active_coop');
+    const btn = $('menu-btn-reconnect');
+    if (!raw) {
+      if (btn) btn.classList.add('hidden');
+      return;
+    }
+    let saved = null;
+    try { saved = JSON.parse(raw); } catch (e) { return; }
+    if (!saved || !saved.roomId || !saved.savedAt) return;
+    const elapsed = Date.now() - saved.savedAt;
+    if (elapsed > 60000) {
+      localStorage.removeItem('ps.active_coop');
+      if (btn) btn.classList.add('hidden');
+      return;
+    }
+    const leftSecs = Math.max(0, Math.ceil((60000 - elapsed) / 1000));
+    if (btn) {
+      btn.classList.remove('hidden');
+      const sub = $('menu-reconnect-sub');
+      if (sub) sub.textContent = 'Partida en grupo (' + leftSecs + ' s)';
+    }
+
+    if (!G.UI.isOpen('scr-reconnect') && !G.UI.isOpen('scr-lobby')) {
+      const timerEl = $('reconnect-timer');
+      if (timerEl) timerEl.textContent = 'Tiempo de reconexión: ' + leftSecs + ' s';
+      G.UI.show('scr-reconnect');
+      if (reconnectCheckT) clearInterval(reconnectCheckT);
+      reconnectCheckT = setInterval(() => {
+        const curLeft = Math.max(0, Math.ceil((60000 - (Date.now() - saved.savedAt)) / 1000));
+        if (timerEl) timerEl.textContent = 'Tiempo de reconexión: ' + curLeft + ' s';
+        if (btn) {
+          const sub = $('menu-reconnect-sub');
+          if (sub) sub.textContent = 'Partida en grupo (' + curLeft + ' s)';
+        }
+        if (curLeft <= 0) {
+          clearInterval(reconnectCheckT);
+          reconnectCheckT = null;
+          G.UI.hide('scr-reconnect');
+          if (btn) btn.classList.add('hidden');
+          localStorage.removeItem('ps.active_coop');
+        }
+      }, 1000);
+    }
+  }
+
   function open() {
+    checkReconnect();
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);

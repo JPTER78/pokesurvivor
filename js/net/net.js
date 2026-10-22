@@ -254,6 +254,13 @@ G.Net = (() => {
   async function onSignal(from, sig) {
     let p = peers.get(from);
     try {
+      if (sig.reconnect) {
+        if (isHost) {
+          drop(from, true);
+          connect(from);
+        }
+        return;
+      }
       if (sig.sdp && sig.sdp.type === 'offer') {
         if (isHost) return;
         let turnIce = sig.t ? turnNow() : [];
@@ -323,9 +330,19 @@ G.Net = (() => {
     }
     // Sin relé, los datos de la partida no van por la base de datos (se pierden: esa
     // pareja no está conectada). Sólo pasa el aviso de empezar.
-    if (!ALLOW_RELAY && !(msg && msg.k === 'start')) return;
+    const isControl = msg && (msg.k === 'start' || msg.k === 'reconnect-req' || msg.k === 'reconnect-ack' || msg.k === 'rejoin-ping');
+    if (!ALLOW_RELAY && !isControl) return;
     stats.relaySent++;
     relayPush(to, { f: uid, d: msg });
+  }
+
+  function reconnectPeer(u) {
+    if (!roomId) return;
+    const target = u || hostUid;
+    if (!target) return;
+    drop(target, true);
+    if (isHost) connect(target);
+    else signal(target, { reconnect: 1 });
   }
 
   function toHost(msg) { if (!isHost && hostUid) send(hostUid, msg); }
@@ -337,7 +354,7 @@ G.Net = (() => {
   }
 
   return {
-    open, close, syncMembers, send, toHost, broadcast,
+    open, close, syncMembers, send, toHost, broadcast, reconnectPeer,
     on(fn) { handlers.add(fn); }, off(fn) { handlers.delete(fn); },
     onPeer(fn) { peerHandlers.add(fn); },
     mode(u) { const p = peers.get(u); return p ? p.mode : 'closed'; },

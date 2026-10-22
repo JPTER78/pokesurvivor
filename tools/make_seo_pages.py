@@ -557,7 +557,7 @@ you can make a <b>voluntary donation</b>. <b>All the money goes to the servers a
 <table class="list"><tbody>{rows}</tbody></table>
 <p>The servers store saves and accounts, the leaderboards and group games: the more people play, the more they cost.</p>
 <h2>How to support</h2>
-<p>{btns or 'You\'ll be able to donate from here very soon.'}</p>
+<p>{btns or "You'll be able to donate from here very soon."}</p>
 <p>Sharing the game with your friends, recommending it and reporting bugs helps a lot too, and it\'s free.</p>
 {cta(pid, lang, 'Back to the game')}</article>"""
         title, desc = 'Support PokéSurvivor: donations for the servers', 'PokéSurvivor is free and ad-free. Voluntary donations only pay for the servers and the domain.'

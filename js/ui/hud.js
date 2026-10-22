@@ -84,6 +84,21 @@ G.HUD = (() => {
     ctx.font = F(600, 10);
     ctx.fillStyle = '#8fa3c4';
     ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
+    if (G.Coop && G.Coop.reconnecting) {
+      const left = G.Coop.reconnectSecs || 60;
+      const txt = '⚠ Reconectando con el anfitrión... (' + left + ' s)';
+      ctx.font = F(700, 11);
+      const tw = ctx.measureText(txt).width;
+      const rbx = w / 2 - tw / 2 - 14, rby = 68;
+      roundRect(ctx, rbx, rby, tw + 28, 20, 10);
+      ctx.fillStyle = 'rgba(230, 80, 0, 0.9)';
+      ctx.fill();
+      ctx.strokeStyle = '#ffb366';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(txt, w / 2, rby + 14);
+    }
 
     // ---------- clima (arriba a la derecha) ----------
     const wx = G.Weather.current;

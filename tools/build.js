@@ -38,18 +38,20 @@ fs.writeFileSync(tmp, joined);
 const outJs = path.join(ROOT, 'js', 'app.min.js');
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const shell = process.platform === 'win32';
-execFileSync(npx, ['--yes', 'terser@5', tmp, '--compress', 'passes=1', '--mangle', '--comments', 'false', '--ecma', '2020', '-o', outJs],
-  { stdio: 'inherit', shell });
+const relTmp = path.relative(ROOT, tmp);
+const relOut = path.relative(ROOT, outJs);
+execFileSync(npx, ['--yes', 'terser@5', relTmp, '--compress', 'passes=1', '--mangle', '--comments', 'false', '--ecma', '2020', '-o', relOut],
+  { cwd: ROOT, stdio: 'inherit', shell });
 // Y ofuscado: el código queda ilegible y se rompe solo si lo reformatean para
 // tocarlo. Las cadenas, en una tabla codificada (sólo una parte, para no frenar
 // el juego). Semilla fija: el mismo código da siempre el mismo archivo.
 if (!EXPOSE) {
-  execFileSync(npx, ['--yes', 'javascript-obfuscator@4.1.1', outJs, '--output', outJs,
+  execFileSync(npx, ['--yes', 'javascript-obfuscator@4.1.1', relOut, '--output', relOut,
     '--compact', 'true', '--self-defending', 'true', '--seed', '7',
     '--string-array', 'true', '--string-array-encoding', 'base64', '--string-array-threshold', '0.1',
     '--identifier-names-generator', 'hexadecimal', '--rename-globals', 'false', '--transform-object-keys', 'false',
     '--split-strings', 'false', '--control-flow-flattening', 'false', '--dead-code-injection', 'false',
-    '--unicode-escape-sequence', 'false', '--target', 'browser'], { stdio: 'inherit', shell });
+    '--unicode-escape-sequence', 'false', '--target', 'browser'], { cwd: ROOT, stdio: 'inherit', shell });
 }
 const min = fs.readFileSync(outJs);
 // La huella cuenta también el CSS: un cambio sólo de estilos es versión nueva (version.json).
