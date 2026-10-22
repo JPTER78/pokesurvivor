@@ -382,7 +382,9 @@ G.MenuUI = (() => {
 
   function wireExtras(dex, box) {
     box.querySelectorAll('[data-extra]').forEach(b => {
-      b.onclick = () => { extraOpen = extraOpen === b.dataset.extra ? '' : b.dataset.extra; G.Audio.sfx('select'); showDetail(dex); };
+      b.onclick = () => {
+        if (b.dataset.extra === 'nat') { extraOpen = ''; box.querySelector('#mx-picker').replaceChildren(); G.Audio.sfx('select'); openNaturePicker(dex, b); return; }
+        extraOpen = extraOpen === b.dataset.extra ? '' : b.dataset.extra; G.Audio.sfx('select'); showDetail(dex); };
     });
     const host = box.querySelector('#mx-picker');
     if (!host || !extraOpen) return;
@@ -392,14 +394,7 @@ G.MenuUI = (() => {
       host.querySelectorAll('[data-v]').forEach(c => { c.onclick = () => onPick(c.dataset.v); });
     };
     const done = msg => { extraOpen = ''; G.DB.commit(); G.Audio.sfx('buy'); G.UI.toast(msg, 2600); showDetail(dex); };
-    if (extraOpen === 'nat' && G.Shop.count('mint')) {
-      const cur = G.Mons.natureOf(dex).id;
-      chips(G.NATURES.filter(n => n.id !== cur).map(n => ({ v: n.id, html: `<b translate="no">${G.Mons.name(n.n)}</b> <small>${natLine(n)}</small>` })), '', id => {
-        if (!G.Shop.take('mint')) return;
-        G.Mons.setNature(dex, id);
-        done(G.I18n.f('{x} ahora tiene naturaleza {x}', mon.name, G.Mons.name(G.NATURE_BY[id].n)));
-      });
-    } else if ((extraOpen === 'cap' || extraOpen === 'caph') && G.Shop.count(extraOpen)) {
+    if ((extraOpen === 'cap' || extraOpen === 'caph') && G.Shop.count(extraOpen)) {
       const l = G.Mons.slots(dex);
       chips(G.Mons.abilityChoices(dex, extraOpen === 'caph').map(i => ({ v: i, html: `<b translate="no">${G.Mons.abilityName(l[i])}</b>${i === 2 ? ` <small class="gold">${G.T('oculta')}</small>` : ''}` })), '', v => {
         if (!G.Shop.take(extraOpen)) return;
@@ -413,6 +408,37 @@ G.MenuUI = (() => {
         done(G.I18n.f('¡{x} ha aprendido {x}!', mon.name, G.T(G.Moves.BY_ID[id].name, 'move')));
       });
     }
+  }
+
+  // Native modal keeps the collection layout fixed and traps keyboard focus.
+  function openNaturePicker(dex, trigger) {
+    if (!G.Shop.count('mint') || document.querySelector('.nature-dialog')) return;
+    const current = G.Mons.natureOf(dex).id;
+    const dialog = document.createElement('dialog');
+    dialog.className = 'nature-dialog';
+    dialog.setAttribute('aria-labelledby', 'nature-dialog-title');
+    dialog.innerHTML = `<header class="nature-header"><div><h2 id="nature-dialog-title">${G.T('Naturaleza')}</h2><span translate="no">${G.DEX_BY[dex].name}</span> · ${G.T('Menta')} ×${G.Shop.count('mint')}</div><button class="btn small" data-close aria-label="${G.T('Cerrar')}">×</button></header>
+      <div class="nature-grid">${G.NATURES.map(n => `<button class="chip nature-option${n.id === current ? ' current' : ''}" data-nature="${n.id}" ${n.id === current ? 'disabled aria-current="true"' : ''}><b translate="no">${G.Mons.name(n.n)}${n.id === current ? ' ✓' : ''}</b><small>${natLine(n)}</small></button>`).join('')}</div>`;
+    const close = () => dialog.close();
+    dialog.querySelector('[data-close]').onclick = close;
+    dialog.addEventListener('click', e => { if (e.target === dialog) { const r = dialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) close(); } });
+    dialog.addEventListener('keydown', e => { e.stopPropagation(); });
+    dialog.addEventListener('close', () => { dialog.remove(); if (trigger.isConnected) trigger.focus({ preventScroll: true }); }, { once: true });
+    dialog.querySelectorAll('[data-nature]:not([disabled])').forEach(button => {
+      button.onclick = () => {
+        const id = button.dataset.nature;
+        if (!G.Shop.take('mint')) { close(); return; }
+        G.Mons.setNature(dex, id);
+        G.DB.commit();
+        G.Audio.sfx('buy');
+        G.UI.toast(G.I18n.f('{x} ahora tiene naturaleza {x}', G.DEX_BY[dex].name, G.Mons.name(G.NATURE_BY[id].n)), 2600);
+        close();
+        showDetail(dex);
+        document.querySelector('[data-extra="nat"]')?.focus({ preventScroll: true });
+      };
+    });
+    document.body.appendChild(dialog);
+    dialog.showModal();
   }
 
   // ---------------- mejoras ----------------

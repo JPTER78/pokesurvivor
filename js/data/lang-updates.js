@@ -8,6 +8,9 @@
 (() => {
   const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
   const rows = [
+    ["Selector de naturaleza", "Sélecteur de nature", "Selettore della natura", "Seletor de natureza", "性格选择", "性格選擇"],
+    ["Las Mentas abren una ventana compacta con las naturalezas y sus efectos, sin alargar la ficha del Pokémon.", "Les Aromates ouvrent une fenêtre compacte avec les natures et leurs effets, sans allonger la fiche du Pokémon.", "Le Mente aprono una finestra compatta con le nature e i loro effetti, senza allungare la scheda del Pokémon.", "As Mints abrem uma janela compacta com as naturezas e seus efeitos, sem alongar a ficha do Pokémon.", "薄荷现在会打开一个紧凑窗口，显示性格及其效果，不再拉长宝可梦详情。", "薄荷現在會開啟一個精簡視窗，顯示性格及其效果，不再拉長寶可夢詳情。"],
+
     ["Tipo", "Type", "Tipo", "Tipo", "属性", "屬性"],
     ["Nuevo", "Nouveau", "Novità", "Novidades", "新增", "新增"],
     ["Cambios", "Modifications", "Modifiche", "Alterações", "变更", "變更"],

@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-22', title: ['Selector de naturaleza', 'Nature picker'], chg: [
+    ['Las Mentas abren una ventana compacta con las naturalezas y sus efectos, sin alargar la ficha del Pokémon.',
+     'Mints now open a compact window with natures and their effects, keeping the Pokémon details panel compact.']
+  ]},
   { d: '2026-10-22', title: ['Cooperativo sin salas que se cierran solas', 'Co-op without rooms closing on their own'], fix: [
     ['Cooperativo: a los invitados ya no les sale «La sala se ha cerrado» a mitad de partida (a veces a los pocos minutos o al entrar en una grieta) mientras los demás seguían jugando. Pasaba cuando su conexión con el servidor de las salas se cortaba un momento; ahora la partida sigue y la sala se recupera sola.',
      'Co-op: guests no longer get "The room has been closed" in the middle of a run (sometimes after a few minutes or when entering a rift) while the others kept playing. It happened when their connection to the rooms server dropped for a moment; now the run goes on and the room recovers on its own.']
