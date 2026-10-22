@@ -149,6 +149,7 @@
       $('lobby-menu').onclick = () => G.MenuUI.open();
       $('lobby-start').onclick = start;
       $('lobby-start').dataset.sfx = 'confirm';
+      $('lobby-pause').onclick = () => { G.Settings.set('coopPause', !G.Settings.get('coopPause')); render(); };
       // Conecta / desconecta la red al entrar o salir de una sala.
       G.Social.on(what => {
         const room = G.Social.room;
@@ -240,6 +241,12 @@
         }
       }
 
+      // Pausar si alguien sale de la ventana (sólo lo elige el anfitrión; va en el 'start').
+      $('lobby-pause-row').classList.toggle('hidden', !room.isHost);
+      const pause = !!G.Settings.get('coopPause');
+      $('lobby-pause').textContent = pause ? 'Sí' : 'No';
+      $('lobby-pause').classList.toggle('gold', pause);
+
       const btn = $('lobby-start');
       btn.classList.toggle('hidden', !room.isHost);
       const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
@@ -256,7 +263,7 @@
       const room = G.Social.room;
       if (!room || !room.isHost || room.members.length < 2) return;
       const cfg = {
-        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host,
+        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pauseAway: !!G.Settings.get('coopPause'),
         members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny }))
       };
       G.Social.setOpen(false);

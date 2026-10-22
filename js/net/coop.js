@@ -19,7 +19,11 @@
  *   anfitrión -> invitado  { k:'f', t, lv, xp, xn, ki, bo, co, p:{uid:[estado]},
  *                            e:[[id,x,y,vida,anim,dir,estados]], ev:[eventos],
  *                            ja:[x,y,anim,dir] (Arceus, sólo en la Sentencia) }
- *   anfitrión -> todos     { k:'start', seed, host, members:[{uid,name,dex,shiny}] }
+ *   anfitrión -> todos     { k:'start', seed, host, pauseAway, members:[{uid,name,dex,shiny}] }
+ *
+ * pauseAway (lo elige el anfitrión en la sala): si alguien sale de la ventana
+ * (Alt+Tab, minimizar), la partida se para para todos hasta que vuelva. Si no,
+ * sigue en segundo plano (bgTicker en game.js).
  */
 G.Coop = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
@@ -43,6 +47,9 @@ G.Coop = (() => {
   // todo se para para todos. Antes los enemigos se quedaban quietos y los demás
   // seguían jugando con una ventaja enorme.
   let hostAway = false, stalled = false, lastHostAt = 0;
+  // Con pauseAway: invitados fuera de la ventana (anfitrión) y sus nombres tal
+  // como los manda el anfitrión (invitado).
+  let pauseAway = false, aways = new Set(), mateAway = [], lastAw = '';
   // Cartas de nivel: número de la ronda (anfitrión), la última que te ha llegado
   // y la última que has elegido (invitado). Y el último "quién elige" aplicado.
   let levelSeq = 0, levelNow = 1, seenSeq = 0, doneSeq = 0, lastHo = '';
@@ -57,7 +64,7 @@ G.Coop = (() => {
   // ---------------- arranque / fin ----------------
 
   /**
-   * @param cfg   { seed, host, members }
+   * @param cfg   { seed, host, pauseAway, members }
    * @param pl    tu Player (ya creado)
    * @param cb    { levelStart(lv), resume(), waiting(names), over(data), lost(msg), team(t), shiny(dex) }
    */
@@ -71,6 +78,7 @@ G.Coop = (() => {
     mates.clear();
     outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
     hostAway = false; stalled = false; lastHostAt = performance.now();
+    pauseAway = !!cfg.pauseAway; aways = new Set(); mateAway = []; lastAw = '';
     levelSeq = 0; levelNow = 1; seenSeq = 0; doneSeq = 0; lastHo = '';
     cfg.members.forEach((m, i) => {
       const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
@@ -135,7 +143,8 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq, api.watching ? api.watching() : ''];
+            r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq, api.watching ? api.watching() : '',
+            document.hidden ? 1 : 0];
   }
 
   /** Número que llega por la red: si no es un número de verdad vale `def`, y si se pasa se queda en el tope. */
@@ -149,7 +158,7 @@ G.Coop = (() => {
              mv: typeof a[7] === 'string' ? a[7].slice(0, 40) : '', ml: num(a[8], 1, 1, 99),
              mag: num(a[9], 0, 0, 5000), aim: num(a[10], 0, -10, 10), xpMul: num(a[11], 1, 0.1, 20),
              rev: num(a[12], 0, 0, 60), ch: a[13] === undefined ? undefined : a[13] ? 1 : 0, ld: num(a[14], 0, 0, 1e9),
-             wa: typeof a[15] === 'string' ? a[15].slice(0, 64) : '' };
+             wa: typeof a[15] === 'string' ? a[15].slice(0, 64) : '', hd: a[16] ? 1 : 0 };
   }
 
   /** Anfitrión: dónde mira un invitado (él mismo, o el compañero vivo que mira estando caído). */
@@ -205,6 +214,7 @@ G.Coop = (() => {
     if (ja) f.ja = ja;
     // Siempre: quién está eligiendo y, si hay cartas de nivel, cuáles (ver arriba).
     f.ho = holdNames();
+    if (pauseAway) f.gw = awayNames();     // quién ha salido de la ventana (ídem)
     if (waiting.size) f.lu = [levelSeq, levelNow];
     return f;
   }
@@ -302,6 +312,7 @@ G.Coop = (() => {
     G.Spawner.say(m.name + ' ha dejado la partida', 2.6);
     if (waiting.has(u)) picked(u);
     if (holds.has(u)) holdOff(u);
+    if (aways.has(u)) setAway(u, false);
     if (api.mateLeft) api.mateLeft(m);
   }
 
@@ -349,6 +360,7 @@ G.Coop = (() => {
 
   /** Anfitrión: lo que dice cada envío del invitado manda sobre avisos que se hayan perdido. */
   function reconcile(from, n) {
+    if (pauseAway) setAway(from, !!n.hd);
     if (n.ch === undefined) return;                        // versión vieja del juego
     if (n.ch && !holds.has(from)) holdOn(from);
     else if (!n.ch && holds.has(from)) holdOff(from);
@@ -357,15 +369,40 @@ G.Coop = (() => {
 
   // --- en el invitado ---
 
-  /** Invitado: se para (o sigue) según si el anfitrión está. */
-  function updateAway() { if (api.away) api.away(hostAway || stalled ? nameOf(hostUid) : null); }
+  /**
+   * Se para (o sigue) según si el anfitrión está (invitado) y, con pauseAway,
+   * si algún invitado ha salido de la ventana (todos).
+   */
+  function updateAway() {
+    if (!api.away) return;
+    if (!host && (hostAway || stalled)) { api.away(nameOf(hostUid), true); return; }
+    const names = host ? awayNames() : mateAway;
+    api.away(names.length ? names.join(', ') : null, false);
+  }
 
-  // Anfitrión: al irse de la pestaña avisa a todos al momento (después ya no
-  // podrá mandar nada) y al volver, que sigue.
+  /** Invitado: quién ha salido de la ventana, según el anfitrión. */
+  function setMateAway(list) {
+    if (!Array.isArray(list)) return;
+    const k = list.join('|');
+    if (k === lastAw) return;
+    lastAw = k; mateAway = list.filter(s => typeof s === 'string').map(s => s.slice(0, 40));
+    updateAway();
+  }
+
+  // Al salir o volver a la ventana:
+  // - Anfitrión con pauseAway, o en el móvil (allí el sistema congela la página
+  //   y no puede seguir): avisa a todos al momento, después ya no podrá mandar
+  //   nada. Sin pauseAway en el ordenador no hace falta: la partida sigue con
+  //   la pestaña oculta (bgTicker en game.js) y, si aun así se parase, los
+  //   invitados lo notan solos a los STALL_MS.
+  // - Invitado con pauseAway: manda ya su estado, que dice si está oculta.
   document.addEventListener('visibilitychange', () => {
-    if (!active || !host) return;
-    emit(['ha', document.hidden ? 1 : 0]);
-    flushAll();
+    if (!active) return;
+    if (host) {
+      if (!pauseAway && !G.Touch.active) return;
+      emit(['ha', document.hidden ? 1 : 0]);
+      flushAll();
+    } else if (pauseAway) flushClient(true);
   });
 
   function onHostFrame(msg) {
@@ -385,6 +422,7 @@ G.Coop = (() => {
       if (msg.lu && msg.lu[0] > doneSeq && (msg.lu[0] > seenSeq || !showing)) { seenSeq = msg.lu[0]; api.levelStart(msg.lu[1]); }
       else if (!msg.lu && showing) api.resume();
     }
+    if (msg.gw) setMateAway(msg.gw);
     api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
                    t1: (msg.tk || [])[0], t10: (msg.tk || [])[1] });
     for (const u in msg.p || {}) {
@@ -437,6 +475,7 @@ G.Coop = (() => {
       case 'lr': api.resume(); break;
       case 'hp': lastHo = (ev[1] || []).join('|'); api.hold && api.hold(ev[1]); break;
       case 'ha': hostAway = !!ev[1]; updateAway(); break;
+      case 'gw': setMateAway(ev[1]); break;
       case 'sh': api.shiny(ev[1]); break;
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
@@ -526,6 +565,15 @@ G.Coop = (() => {
   // la partida se para para todos, como con las cartas de nivel.
 
   function holdNames() { return [...holds].map(nameOf); }
+  function awayNames() { return [...aways].map(nameOf); }
+
+  /** Anfitrión (con pauseAway): `u` sale de la ventana o vuelve. Se para todo mientras tanto. */
+  function setAway(u, on) {
+    if (on === aways.has(u)) return;
+    if (on) aways.add(u); else aways.delete(u);
+    emit(['gw', awayNames()]); flushAll();
+    updateAway();
+  }
 
   /** Anfitrión: `u` empieza a elegir. */
   function holdOn(u) {
@@ -570,6 +618,8 @@ G.Coop = (() => {
     get members() { return members; },
     get active() { return active; },
     get isHost() { return active && host; },
+    /** Pausar si alguien sale de la ventana (lo eligió el anfitrión en la sala). */
+    get pauseAway() { return active && pauseAway; },
     get local() { return local; }
   };
 })();

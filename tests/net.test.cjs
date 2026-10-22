@@ -147,7 +147,11 @@ test('real Coop.tick frames pass through the codec without changing gameplay fie
     assert.equal(sent.length, 1);
     assert.deepEqual(C.decode(C.encode(sent[0])), sent[0]);
     if (host) { assert.deepEqual(sent[0].e, [[123, 50, -10, 126, 1, 3, 1]]); assert.ok('ho' in sent[0]); }
-    else { assert.equal(sent[0].p.length, 16); assert.equal(sent[0].p[15], ''); }   // 16.º: a quién mira estando caído
+    else {
+      assert.equal(sent[0].p.length, 17);
+      assert.equal(sent[0].p[15], '');   // 16.º: a quién mira estando caído
+      assert.equal(sent[0].p[16], 0);    // 17.º: si ha salido de la ventana (pauseAway)
+    }
   }
 });
 
