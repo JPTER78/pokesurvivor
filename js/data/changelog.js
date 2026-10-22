@@ -62,7 +62,9 @@ G.CHANGELOG = [
     ['Idiomas nuevos: francés, italiano, portugués de Brasil, chino simplificado y chino tradicional, en Ajustes > Gráficos > Idioma. Gracias a quienes los tradujeron.',
      'New languages: French, Italian, Brazilian Portuguese, Simplified Chinese and Traditional Chinese, in Settings > Graphics > Language. Thanks to everyone who translated them.'],
     ['Una frase de broma en el título del menú principal, como las de Minecraft.',
-     'A joke line on the main menu title, like the ones in Minecraft.']
+     'A joke line on the main menu title, like the ones in Minecraft.'],
+    ['Pokémon aliados: un par de veces por partida, un Pokémon de la región de tu compañero (de tu colección, si tienes alguno) aparece en el mapa y quiere unirse a ti. Quédate a su lado unos segundos y luchará contigo hasta el final (como mucho 2). Al unirse eliges su postura: Atacante (pega más), Guardián (aguanta y los enemigos van a por él) o Apoyo (te cura). La experiencia es del grupo: van siempre a tu nivel y evolucionan a los niveles 10 y 20. Si uno cae, quédate a su lado para levantarlo. Sólo en solitario.',
+     'Allied Pokémon: a couple of times per run, a Pokémon from your partner’s region (from your collection, if you have any) shows up on the map and wants to join you. Stay by its side for a few seconds and it fights with you until the end (up to 2). When it joins you choose its stance: Attacker (hits harder), Guardian (tough, and enemies go after it) or Support (heals you). Experience is shared by the group: they are always at your level and evolve at levels 10 and 20. If one faints, stay by its side to revive it. Solo only.']
   ], chg: [
     ['Los Pokémon de un solo tipo pegan un 20 % más con los ataques de su tipo, para compensar que tienen menos variedad.',
      'Single-type Pokémon deal 20% more damage with moves of their type, to make up for having less variety.'],

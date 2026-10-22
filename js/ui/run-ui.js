@@ -177,6 +177,25 @@ G.RunUI = (() => {
     guard(box);
   }
 
+  /** Un aliado se ha unido: ¿con qué postura lucha? (ver systems/allies.js) */
+  function showStance(ally, stances, cb) {
+    $('stance-title').textContent = '¡' + ally.mon.name + ' se une al grupo!';
+    const box = $('stance-cards');
+    box.innerHTML = '';
+    Object.entries(stances).forEach(([id, s], i) => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `<div class="ico">${G.Icons.html(s.icon, 36)}</div>
+        <div class="txt"><div class="nm" style="color:${s.color}">${s.name}</div><div class="ds">${s.desc}</div></div>
+        <div class="key">${i + 1}</div>`;
+      el.dataset.sfx = 'none';             // suena el 'confirm' al elegir (no el clic, ni con la carta aún apagada)
+      el.onclick = () => { if (guarded()) return; G.UI.hide('scr-stance'); cb(id); };
+      box.appendChild(el);
+    });
+    G.UI.show('scr-stance');
+    guard(box);
+  }
+
   // ---------------- vínculo: qué movimientos se fusionan ----------------
 
   let bond = null;          // { opt, cb, first, list }
@@ -299,5 +318,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, reroll, showItemChoice, showStance, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
 })();

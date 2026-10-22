@@ -919,8 +919,12 @@
       }
     }
 
-    /** El jugador vivo más cercano (los caídos no atraen a nadie). */
+    /**
+     * El jugador vivo más cercano (los caídos no atraen a nadie). Un aliado
+     * Guardián (allies.js) provoca: quien esté a menos de su `tauntR` va a por él.
+     */
     function nearestPlayer(players, x, y) {
+      for (const p of players) if (p.tauntR && !p.dead && G.U.dist2(x, y, p.x, p.y) < p.tauntR * p.tauntR) return p;
       let best = null, bd = Infinity;
       for (const p of players) {
         if (p.dead) continue;

@@ -946,5 +946,16 @@ G.I18n.add({
   // ---------------- Tienda Kecleon, naturalezas y habilidades (20-10-2026) ----------------
   "Objetos: {x} · MT: {x}": "Items: {x} · TMs: {x}",
   // ---------------- Cooperativo: mirar a un compañero estando caído (21-10-2026) ----------------
-  "Ver a un compañero": "Watch a teammate", "Viendo a {x}": "Watching {x}", "cambiar": "switch"
+  "Ver a un compañero": "Watch a teammate", "Viendo a {x}": "Watching {x}", "cambiar": "switch",
+  // Pokémon aliados (allies.js)
+  '¡{x} quiere unirse a ti! Quédate a su lado': '{x} wants to join you! Stay by its side',
+  '¡{x} se une a ti hasta el final de la partida!': '{x} joins you until the end of the run!',
+  '¡{x} se ha debilitado! Quédate a su lado para levantarlo': '{x} fainted! Stay by its side to revive it',
+  '¡{x} ha evolucionado en {x}!': '{x} evolved into {x}!',
+  'Atacante': 'Attacker', 'Guardián': 'Guardian', 'Apoyo': 'Support', '¿Cómo va a luchar? ·': 'How will it fight? ·',
+  'Pega un 40 % más fuerte y ataca más rápido, pero tiene menos vida.': 'Hits 40% harder and attacks faster, but has less HP.',
+  'El doble de vida y recibe menos daño, pero pega menos. Los enemigos que tiene cerca van a por él en vez de a por ti.': 'Twice the HP and takes less damage, but hits weaker. Enemies near it go after it instead of you.',
+  '¡{x} quiere unirse! · {x} m': '{x} wants to join! · {x} m', '¡{x} se ha debilitado! · {x} m': '{x} fainted! · {x} m',
+  '¡{x} se une al grupo!': '{x} joins the team!',
+  'Pega menos, pero cada 3 s te cura un poco si estás cerca.': 'Hits weaker, but heals you a little every 3 s if you are close.'
 });
