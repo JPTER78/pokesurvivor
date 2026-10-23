@@ -14,7 +14,9 @@ G.CHANGELOG = [
     ["Sentencia de Arceus: ahora se le puede pegar. Es invencible y sólo recibe una pequeña parte del daño (cada vez menos), y los ataques le apuntan cuando no queda ningún legendario.",
      "Arceus's Judgment: you can now hit it. It is invincible and only takes a small part of the damage (less and less over time), and your attacks aim at it when no legendary is left."],
     ["Tablas: en cada partida Arceus lleva una al azar, que le da su tipo (se avisa al entrar en la arena). Ya no hay un tipo de ataque que sea siempre el mejor.",
-     "Plates: in every run Arceus holds a random one, which gives it its type (you are told when you enter the arena). No move type is always the best anymore."]
+     "Plates: in every run Arceus holds a random one, which gives it its type (you are told when you enter the arena). No move type is always the best anymore."],
+    ["Colección: nuevos filtros «Físico» y «Especial» para encontrar al instante los Pokémon orientados al ataque físico o especial según sus estadísticas.",
+     "Collection: new \"Physical\" and \"Special\" filters to instantly find Pokémon tailored for physical or special attacks according to their stats."]
   ], chg: [
     ["En el minuto 35, Arceus rompe el objeto de todos (Banda Focus incluida).",
      "At minute 35, Arceus breaks everyone's item (Focus Sash included)."],

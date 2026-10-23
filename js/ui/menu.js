@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexGen = 1, dexSel = null;
   // Filtros de la colección (se combinan): tengo / me faltan, rarezas (varias),
   // shiny, favoritos, tipo y búsqueda; y el orden. Duran mientras no recargas.
-  const DEX0 = () => ({ status: 'all', rar: new Set(), shiny: false, fav: false, type: '', q: '', sort: 'num' });
+  const DEX0 = () => ({ status: 'all', rar: new Set(), shiny: false, fav: false, type: '', q: '', sort: 'num', atk: 'all' });
   let dexF = DEX0();
   const SORTS = [['num', 'Nº'], ['name', 'Nombre'], ['rar', 'Rareza'], ['new', 'Recién conseguidos'], ['used', 'Más usados']];
 
@@ -150,6 +150,9 @@ G.MenuUI = (() => {
     for (const [k, label] of [['all', 'Todos'], ['own', 'Tengo'], ['miss', 'Me faltan']]) chip(label, dexF.status === k, () => { dexF.status = k; });
     chip(G.Icons.html('shiny', 12) + ' Shiny', dexF.shiny, () => { dexF.shiny = !dexF.shiny; });
     chip(G.Icons.html('star', 12) + ' Favoritos', dexF.fav, () => { dexF.fav = !dexF.fav; });
+    for (const [k, label] of [['phys', 'Físico'], ['spec', 'Especial']]) {
+      chip(label, dexF.atk === k, () => { dexF.atk = dexF.atk === k ? 'all' : k; });
+    }
     for (const r of [5, 4, 3, 2, 1]) {
       chip(G.Icons.rarity(r, 12) + ' ' + G.Gacha.RARITY_NAME[r], dexF.rar.has(r), () => { dexF.rar.has(r) ? dexF.rar.delete(r) : dexF.rar.add(r); });
     }
@@ -203,6 +206,8 @@ G.MenuUI = (() => {
       if (f.fav && !G.DB.isFav(p.dex)) return false;
       if (f.rar.size && !f.rar.has(p.rarity)) return false;
       if (f.type && !(own && p.types.includes(f.type))) return false;
+      if (f.atk === 'phys' && !(p.pa > p.sa)) return false;
+      if (f.atk === 'spec' && !(p.sa > p.pa)) return false;
       return true;
     });
     const at = p => (s.owned[p.dex] && s.owned[p.dex].at) || 0, used = p => +(s.pused || {})[p.dex] || 0;
@@ -231,7 +236,7 @@ G.MenuUI = (() => {
     grid.innerHTML = '';
     gridList = dexList();
     gridShown = 0;
-    const f = dexF, busy = f.q || f.status !== 'all' || f.shiny || f.fav || f.rar.size || f.type || f.sort !== 'num';
+    const f = dexF, busy = f.q || f.status !== 'all' || f.shiny || f.fav || f.rar.size || f.type || f.atk !== 'all' || f.sort !== 'num';
     $('dex-count').textContent = gridList.length === 1 ? '1 Pokémon' : gridList.length + ' Pokémon';
     $('dex-clear').classList.toggle('hidden', !busy);
     if (!gridList.length) { grid.innerHTML = '<p class="sub" style="grid-column:1/-1">Ninguno con estos filtros.</p>'; return; }

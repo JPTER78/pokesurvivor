@@ -1018,5 +1018,7 @@ G.I18n.add({
   "Ranking de daño a Arceus y Tablas": "Arceus damage ranking and Plates",
   "EN DIRECTO": "LIVE",
   "Mi canal de YouTube": "My YouTube channel",
-  "¡Estoy en directo! Pulsa para verlo": "I'm live! Click to watch"
+  "¡Estoy en directo! Pulsa para verlo": "I'm live! Click to watch",
+  "Físico": "Physical",
+  "Especial": "Special"
 });
