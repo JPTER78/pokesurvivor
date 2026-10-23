@@ -8,6 +8,8 @@
 (() => {
   const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
   const rows = [
+    ["Curación de apoyo", "Soins de soutien", "Cure di supporto", "Cura de apoio", "支援治疗", "支援治療"],
+    ["Los curanderos comparten un límite del 12 % de vida máxima por enemigo normal en ventanas de 3,5 segundos de juego. Los jefes conservan su límite anterior.", "Les soigneurs partagent une limite de 12 % des PV maximum par ennemi normal sur des périodes de 3,5 secondes de jeu. Les boss conservent leur limite précédente.", "I guaritori condividono un limite del 12% dei PS massimi per nemico normale in intervalli di 3,5 secondi di gioco. I boss mantengono il limite precedente.", "Os curandeiros compartilham um limite de 12% dos PV máximos por inimigo normal em intervalos de 3,5 segundos de jogo. Os chefes mantêm o limite anterior.", "治疗者对每个普通敌人的治疗共享上限：每个3.5秒游戏时间窗口内最多恢复其最大生命值的12%。首领保留原有上限。", "治療者對每個普通敵人的治療共享上限：每個3.5秒遊戲時間區間內最多恢復其最大生命值的12%。首領保留原有上限。"],
     ["Tipo", "Type", "Tipo", "Tipo", "属性", "屬性"],
     ["Nuevo", "Nouveau", "Novità", "Novidades", "新增", "新增"],
     ["Cambios", "Modifications", "Modifiche", "Alterações", "变更", "變更"],

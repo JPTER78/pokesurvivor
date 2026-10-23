@@ -1,31 +1,42 @@
-"use strict";
+'use strict';
 
-const fs = require("node:fs");
-const path = require("node:path");
-const vm = require("node:vm");
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
-const FILE = "js/entities/enemy.js";
+const FILE = 'js/entities/enemy.js';
 
 function source() {
-  return fs.readFileSync(path.join(__dirname, "../..", FILE), "utf8");
+  return fs.readFileSync(path.join(__dirname, '../..', FILE), 'utf8');
 }
 
 // Ejecuta el código real del enemigo con los sistemas mínimos necesarios.
 function scenario(
   js,
-  { hp = 2000, power = 1.4, boss = false, rd = 120, targets = null } = {},
+  {
+    hp = 2000,
+    power = 1.4,
+    boss = false,
+    rd = 120,
+    targets = null,
+    visible = false,
+    host = false,
+  } = {}
 ) {
   const clock = { time: 0 };
-  const effects = { bursts: 0 };
+  const effects = { bursts: 0, sounds: 0, rings: 0, broadcasts: [] };
   const victims = targets || [
     { x: 0, y: 0, bodyH: 16, hp: 0, maxHp: hp, dead: false, boss, rd },
   ];
   const G = {
     Game: { st: clock, everyone: () => [{ atk: 100 * power, baseAtk: 100 }] },
-    FX: { burst: () => effects.bursts++, ring() {} },
-    Coop: { isHost: false },
-    Camera: { sees: () => false },
-    Audio: { sfx() {} },
+    FX: { burst: () => effects.bursts++, ring: () => effects.rings++ },
+    Coop: {
+      isHost: host,
+      broadcast: (event) => effects.broadcasts.push(event),
+    },
+    Camera: { sees: () => visible },
+    Audio: { sfx: () => effects.sounds++ },
   };
 
   vm.runInNewContext(js, { G, Math, Map, Set }, { filename: FILE });
