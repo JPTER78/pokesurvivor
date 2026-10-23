@@ -175,6 +175,9 @@ python tools/fetch_credits.py    # CREDITS.md
 - **Iconos.** Mapas de caracteres convertidos a canvas y data URLs; siempre a
   múltiplos enteros de su tamaño para que el píxel quede limpio.
 
+## Reporte de Bugs
+Reporte de bugs encontrados, y documentados en [Excel](https://drive.google.com/drive/folders/1Lr9yVS1s1zafzCq9e70OTz3YdLlEf85v?usp=sharing) mediante testing de exploración. 
+
 ## Créditos y licencia
 
 Sprites de [SpriteCollab](https://github.com/PMDCollab/SpriteCollab) bajo
