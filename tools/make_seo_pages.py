@@ -158,28 +158,32 @@ FAQ = {
  'es': [
   ('¿PokéSurvivor es gratis?', 'Sí, totalmente. Es un juego de fans sin ánimo de lucro: no tiene anuncios ni compras. Si quieres, puedes apoyarlo con una donación voluntaria, que se usa sólo para los servidores y no da ventajas.'),
   ('¿Hay que descargar algo?', 'No. Se juega en el navegador, en PC, tablet o móvil. Si quieres, puedes instalarlo como app con «Añadir a pantalla de inicio».'),
-  ('¿Se puede jugar en el móvil?', 'Sí, en horizontal. Pon el dedo en cualquier parte de la pantalla y arrastra para moverte (el joystick aparece donde tocas), toca un ataque para cambiarlo y el botón de arriba a la derecha para pausar.'),
-  ('¿Está en inglés?', 'Sí: el juego sale en español o en inglés según el idioma de tu navegador, y se puede cambiar en Ajustes.'),
+  ('¿Se puede jugar en el móvil?', 'Sí, en horizontal. Pon el dedo en cualquier parte de la pantalla y arrastra para moverte (el joystick aparece donde tocas), toca un ataque para cambiarlo, una esfera para usarla y el botón de arriba a la derecha para pausar. En Ajustes > Controles puedes colocar los botones a tu gusto.'),
+  ('¿Se puede jugar con mando?', 'Sí: con cualquier mando de Xbox, PlayStation o Switch conectado al PC. Stick o cruceta para moverte, LB / RB para cambiar de ataque, X para usar una esfera e Y para cambiar de esfera, y Start para pausar. En los menús, A pulsa y B vuelve.'),
+  ('¿En qué idiomas está?', 'En 7: español, inglés, francés, italiano, portugués de Brasil y chino simplificado y tradicional. Sale en el de tu navegador y se puede cambiar en Ajustes.'),
   ('¿Puedo jugar con mis amigos?', 'Sí: el modo cooperativo online admite hasta 4 jugadores. Añade a tus amigos por su apodo, invítalos a tu sala y empezad la partida. La experiencia se comparte y podéis revivir a un compañero caído quedándoos a su lado.'),
   ('¿Cuántos Pokémon hay?', f'{N} Pokémon de las 9 regiones (de Kanto a Paldea), todos jugables como compañero y con su versión shiny cuando existe.'),
-  ('¿Cómo consigo más Pokémon?', 'Con el gacha, que funciona con tickets que se ganan jugando: los Pokémon normales sueltan tickets de vez en cuando, y los jefes y los legendarios de las grietas, a veces, tickets ×10. No se pueden comprar con dinero real.'),
+  ('¿Cómo consigo más Pokémon?', 'Con el gacha, que funciona con tickets que se ganan jugando: los Pokémon normales sueltan tickets de vez en cuando, y los jefes y los legendarios de las grietas, a veces, tickets ×10. Se tira de 10 en 10 o de 100 en 100, cada región tiene su banner y, si completas la Pokédex de una región, te dan su Amuleto Iris (en su banner, el doble de shiny). Los tickets no se pueden comprar con dinero real.'),
+  ('¿Qué hay en la Tienda Kecleon?', 'Se compra con las Pokémonedas que ganas jugando: Mentas (cambian la naturaleza de un Pokémon), Cápsulas Habilidad (cambian su habilidad) y 8 MT nuevas cada día, que enseñan para siempre un ataque de fuera de sus tipos si lo aprende en los juegos. Lo comprado va a la Mochila.'),
   ('¿Qué son las grietas?', 'Portales misteriosos que aparecen muy de vez en cuando. Si entras, luchas contra un Pokémon legendario en una arena de su tipo (hay 18 distintas). Si ganas, te llevas premio; si caes, vuelves al mapa.'),
   ('¿Se guarda mi progreso?', 'Con una cuenta (nombre y contraseña o Google) tu partida se guarda en la nube y la puedes seguir en cualquier dispositivo. Como invitado se juega al momento, pero no se guarda.'),
   ('¿Es un juego oficial de Pokémon?', 'No. Es un proyecto hecho por fans, gratuito y sin ánimo de lucro, sin relación con Nintendo, GAME FREAK ni The Pokémon Company.')],
  'en': [
   ('Is PokéSurvivor free?', 'Yes, completely. It\'s a non-profit fan game with no ads or purchases. If you like, you can support it with a voluntary donation, which only pays for the servers and gives no advantages.'),
   ('Do I need to download anything?', 'No. You play in your browser on PC, tablet or phone. If you like, you can install it as an app with “Add to Home Screen”.'),
-  ('Can I play on my phone?', 'Yes, in landscape. Put your finger anywhere on the screen and drag to move (the joystick appears where you touch), tap a move to switch to it and the top-right button to pause.'),
-  ('Is it in English?', 'Yes: the game shows up in English or Spanish depending on your browser language, and you can change it in Settings.'),
+  ('Can I play on my phone?', 'Yes, in landscape. Put your finger anywhere on the screen and drag to move (the joystick appears where you touch), tap a move to switch to it, an orb to use it and the top-right button to pause. In Settings > Controls you can place the buttons wherever you like.'),
+  ('Can I play with a controller?', 'Yes: any Xbox, PlayStation or Switch controller connected to your PC. Stick or D-pad to move, LB / RB to switch moves, X to use an orb and Y to pick another one, and Start to pause. In menus, A presses and B goes back.'),
+  ('Which languages is it in?', 'Seven: English, Spanish, French, Italian, Brazilian Portuguese and Simplified and Traditional Chinese. It uses your browser language and you can change it in Settings.'),
   ('Can I play with my friends?', 'Yes: online co-op supports up to 4 players. Add your friends by nickname, invite them to your room and start the game. Experience is shared and you can revive a fallen teammate by standing next to them.'),
   ('How many Pokémon are there?', f'{N} Pokémon from all 9 regions (Kanto to Paldea), all playable as your partner, with their shiny form when one exists.'),
-  ('How do I get more Pokémon?', 'From the gacha, which uses tickets you earn by playing: regular Pokémon drop tickets now and then, and bosses and rift legendaries sometimes drop ×10 tickets. They can\'t be bought with real money.'),
+  ('How do I get more Pokémon?', 'From the gacha, which uses tickets you earn by playing: regular Pokémon drop tickets now and then, and bosses and rift legendaries sometimes drop ×10 tickets. You pull 10 or 100 at a time, each region has its own banner and, if you complete a region\'s Pokédex, you get its Shiny Charm (twice the shiny odds in its banner). Tickets can\'t be bought with real money.'),
+  ('What is in the Kecleon Shop?', 'You buy with the PokéCoins you earn by playing: Mints (change a Pokémon\'s nature), Ability Capsules (change its ability) and 8 new TMs every day, which permanently teach a move outside its types if it learns it in the games. What you buy goes to your Bag.'),
   ('What are rifts?', 'Mysterious portals that open very rarely. If you go in, you fight a legendary Pokémon in an arena of its type (there are 18). Win and you get a reward; fall and you\'re sent back to the map.'),
   ('Is my progress saved?', 'With an account (name and password, or Google) your game is saved in the cloud and you can continue on any device. Guests can play right away, but nothing is saved.'),
   ('Is this an official Pokémon game?', 'No. It\'s a free, non-profit fan project, unrelated to Nintendo, GAME FREAK or The Pokémon Company.')]}
 
 def guide(lang):
-    pid = 'guide'; me = PATH[lang][pid]
+    pid = 'guide'; me = PATH[lang][pid]; NA = len(D['achievements'])
     lk = lambda p: rel(me, PATH[lang][p])
     if lang == 'es':
         body = f'''<article class="doc">
@@ -190,24 +194,27 @@ navegador: eliges un compañero, te mueves por un mapa infinito y tus ataques sa
 {cta(pid, lang, 'Jugar gratis ahora')}
 <h2>Cómo se juega</h2>
 <ul>
-<li><b>En PC:</b> muévete con <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o las flechas. Cambia de ataque con <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> o haciendo clic en su icono. Pausa con <kbd>Esc</kbd>.</li>
-<li><b>En móvil o tablet (horizontal):</b> arrastra el dedo en cualquier parte para moverte, toca un ataque para cambiarlo y el botón de arriba a la derecha para pausar.</li>
+<li><b>En PC:</b> muévete con <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o las flechas. Cambia de ataque con <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> o haciendo clic en su icono. Usa las esferas con <kbd>5</kbd>–<kbd>8</kbd>. Pausa con <kbd>Esc</kbd>.</li>
+<li><b>En móvil o tablet (horizontal):</b> arrastra el dedo en cualquier parte para moverte, toca un ataque para cambiarlo, una esfera para usarla y el botón de arriba a la derecha para pausar.</li>
+<li><b>Con mando:</b> stick o cruceta para moverte, <kbd>LB</kbd>/<kbd>RB</kbd> para cambiar de ataque, <kbd>X</kbd> para usar una esfera e <kbd>Y</kbd> para cambiar de esfera, <kbd>Start</kbd> para pausar.</li>
 <li>Tu Pokémon <b>ataca solo</b> con el movimiento activo. Tú te encargas de esquivar y de colocarte bien.</li>
 <li>Recoge la experiencia para <b>subir de nivel</b> y elige entre tres cartas: <a href="{lk('moves')}">movimientos</a> nuevos, mejorar los que tienes o potenciar a tu Pokémon.</li>
 </ul>
 <h2>Características</h2>
 <ul class="feat">
-<li><b>{N} Pokémon de las 9 regiones</b> (<a href="{lk('pokedex')}">ver la Pokédex</a>), cada uno con sus ataques y sus propias mejoras permanentes.</li>
-<li><b>Los movimientos evolucionan</b>: al nivel máximo y con la mejora adecuada, Ascuas se convierte en Llamarada, Burbuja en Surf…</li>
+<li><b>{N} Pokémon de las 9 regiones</b> (<a href="{lk('pokedex')}">ver la Pokédex</a>), cada uno con su <b>naturaleza</b> y su <b>habilidad</b> (con efecto en la partida) y sus propias mejoras permanentes.</li>
+<li><a href="{lk('moves')}"><b>Ataques físicos y especiales</b></a>: cada uno pega según el Ataque o el Ataque Especial de tu Pokémon, y la Defensa y la Defensa Especial frenan los de los enemigos.</li>
+<li><b>Los movimientos evolucionan</b>: al nivel máximo y con la mejora adecuada, Ascuas se convierte en Llamarada, Burbuja en Surf… Y al vencer a un legendario ganas un <b>vínculo</b> para fusionar dos movimientos en un solo hueco.</li>
 <li><b>Enemigos con personalidad</b>: hay Pokémon que curan, ponen escudos, invocan ayuda, explotan o disparan rayos avisando en el suelo.</li>
-<li><b>Jefes</b> y <a href="{lk('legends')}"><b>grietas</b> con 18 arenas legendarias</a>, una por tipo.</li>
+<li><b>Jefes</b>, <a href="{lk('legends')}"><b>grietas</b> con 18 arenas legendarias</a> (una por tipo) y, en el minuto 30, la <b>Sentencia de Arceus</b>.</li>
 <li><a href="{lk('types')}"><b>Clima y tabla de tipos</b></a>: con lluvia el Agua se potencia y el Fuego se debilita; sol, arena, nieve y niebla.</li>
-<li><a href="{lk('shinies')}"><b>Shinies</b></a> salvajes (1 entre 4096) y en el gacha.</li>
-<li><b>Gacha con forma de tragaperras</b>, por región, con tickets que se ganan jugando.</li>
-<li><a href="{lk('items')}"><b>Objetos equipables</b></a> como Restos, Cinta Elección o Vidasfera.</li>
-<li><b>Cooperativo online hasta 4</b> con tu lista de amigos.</li>
-<li><b>Misiones</b> diarias y semanales, <a href="{lk('achievements')}"><b>127 logros</b></a> con medallas y títulos, perfil público y ranking.</li>
-<li>En <b>español y en inglés</b>, en PC y en móvil, e <b>instalable como app</b>.</li>
+<li><a href="{lk('shinies')}"><b>Shinies</b></a> salvajes (1 entre 4096), en las grietas y en el gacha.</li>
+<li><b>Gacha con forma de tragaperras</b>, uno por región, de 10 en 10 o de 100 en 100, con tickets que se ganan jugando. Completa la Pokédex de una región y te dan su <b>Amuleto Iris</b>.</li>
+<li><b>Tienda Kecleon</b>: Mentas, Cápsulas Habilidad y 8 MT nuevas cada día. Lo que compras va a la <b>Mochila</b>.</li>
+<li><a href="{lk('items')}"><b>Objetos equipables</b></a> como Restos, Cinta Elección o Vidasfera, y <b>esferas</b> de un solo uso como en Mundo Misterioso (Soporesfera, Rapidosfera…).</li>
+<li><b>Cooperativo online hasta 4</b> con tu lista de amigos. Si caes, miras a un compañero mientras te levantan.</li>
+<li><b>Misiones</b> diarias y semanales, <a href="{lk('achievements')}"><b>{NA} logros</b></a> con medallas y títulos, perfil público y ranking.</li>
+<li>En <b>7 idiomas</b>, en PC, móvil y con mando, e <b>instalable como app</b>.</li>
 </ul>
 <h2>Consejos para aguantar más</h2>
 <ol>
@@ -215,14 +222,15 @@ navegador: eliges un compañero, te mueves por un mapa infinito y tus ataques sa
 <li>Aprovecha la tabla de tipos: cambia al ataque que sea muy eficaz contra lo que tienes delante.</li>
 <li>Los avisos en el suelo (círculos y rayas que se llenan) son ataques a punto de caer: sal de ellos.</li>
 <li>Elimina primero a los Pokémon que curan o ponen escudos.</li>
-<li>Gasta tus monedas en las mejoras de tu compañero favorito.</li>
+<li>Guarda una Soporesfera o una Rafagaesfera para cuando te rodeen.</li>
+<li>Gasta tus monedas en las mejoras de tu compañero favorito, y mira en la Tienda Kecleon si hoy hay una MT que le venga bien.</li>
 </ol>
 <h2>Preguntas frecuentes</h2>
 {''.join(f'<h3>{esc(q)}</h3><p>{esc(a)}</p>' for q, a in FAQ[lang])}
 {cta(pid, lang, 'Jugar a PokéSurvivor')}
 </article>'''
         title = 'Guía de PokéSurvivor: cómo jugar, trucos y preguntas frecuentes'
-        desc = f'Cómo se juega a PokéSurvivor en PC y móvil, sus características ({N} Pokémon, cooperativo, grietas legendarias, gacha), trucos y preguntas frecuentes.'
+        desc = f'Cómo se juega a PokéSurvivor en PC, móvil y con mando, sus características ({N} Pokémon, cooperativo, grietas legendarias, gacha, Tienda Kecleon, esferas), trucos y preguntas frecuentes.'
     else:
         body = f'''<article class="doc">
 <h1>PokéSurvivor guide</h1>
@@ -232,24 +240,27 @@ How long can you last?</p>
 {cta(pid, lang, 'Play free now')}
 <h2>How to play</h2>
 <ul>
-<li><b>On PC:</b> move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys. Switch moves with <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> or by clicking their icon. Pause with <kbd>Esc</kbd>.</li>
-<li><b>On phone or tablet (landscape):</b> drag your finger anywhere to move, tap a move to switch to it and the top-right button to pause.</li>
+<li><b>On PC:</b> move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys. Switch moves with <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> or by clicking their icon. Use orbs with <kbd>5</kbd>–<kbd>8</kbd>. Pause with <kbd>Esc</kbd>.</li>
+<li><b>On phone or tablet (landscape):</b> drag your finger anywhere to move, tap a move to switch to it, an orb to use it and the top-right button to pause.</li>
+<li><b>With a controller:</b> stick or D-pad to move, <kbd>LB</kbd>/<kbd>RB</kbd> to switch moves, <kbd>X</kbd> to use an orb and <kbd>Y</kbd> to pick another, <kbd>Start</kbd> to pause.</li>
 <li>Your Pokémon <b>attacks on its own</b> with the active move. Your job is to dodge and position yourself well.</li>
 <li>Collect experience to <b>level up</b> and pick one of three cards: new <a href="{lk('moves')}">moves</a>, upgrades to the ones you have, or boosts for your Pokémon.</li>
 </ul>
 <h2>Features</h2>
 <ul class="feat">
-<li><b>{N} Pokémon from all 9 regions</b> (<a href="{lk('pokedex')}">see the Pokédex</a>), each with its own moves and permanent upgrades.</li>
-<li><b>Moves evolve</b>: at max level with the right upgrade, Ember becomes Fire Blast, Bubble becomes Surf…</li>
+<li><b>{N} Pokémon from all 9 regions</b> (<a href="{lk('pokedex')}">see the Pokédex</a>), each with its own <b>nature</b> and <b>ability</b> (with an effect in the run) and permanent upgrades.</li>
+<li><a href="{lk('moves')}"><b>Physical and special moves</b></a>: each one hits according to your Pokémon's Attack or Special Attack, and Defense and Special Defense soften the enemies' hits.</li>
+<li><b>Moves evolve</b>: at max level with the right upgrade, Ember becomes Fire Blast, Bubble becomes Surf… And beating a legendary gives you a <b>bond</b> to fuse two moves into one slot.</li>
 <li><b>Enemies with personality</b>: some Pokémon heal, shield their allies, summon help, explode or fire telegraphed beams.</li>
-<li><b>Bosses</b> and <a href="{lk('legends')}"><b>rifts</b> with 18 legendary arenas</a>, one per type.</li>
+<li><b>Bosses</b>, <a href="{lk('legends')}"><b>rifts</b> with 18 legendary arenas</a> (one per type) and, at minute 30, the <b>Judgment of Arceus</b>.</li>
 <li><a href="{lk('types')}"><b>Weather and type chart</b></a>: in the rain Water gets stronger and Fire weaker; plus sun, sand, snow and fog.</li>
-<li>Wild <a href="{lk('shinies')}"><b>shinies</b></a> (1 in 4096) and in the gacha.</li>
-<li>A <b>slot-machine gacha</b> for each region, with tickets you earn by playing.</li>
-<li><a href="{lk('items')}"><b>Held items</b></a> such as Leftovers, Choice Band and Life Orb.</li>
-<li><b>Online co-op for up to 4</b> with your friends list.</li>
-<li>Daily and weekly <b>missions</b>, <a href="{lk('achievements')}"><b>127 achievements</b></a> with medals and titles, a public profile and leaderboards.</li>
-<li>In <b>English and Spanish</b>, on PC and mobile, and <b>installable as an app</b>.</li>
+<li><a href="{lk('shinies')}"><b>Shinies</b></a> in the wild (1 in 4096), in rifts and in the gacha.</li>
+<li>A <b>slot-machine gacha</b> for each region, 10 or 100 pulls at a time, with tickets you earn by playing. Complete a region's Pokédex to get its <b>Shiny Charm</b>.</li>
+<li>The <b>Kecleon Shop</b>: Mints, Ability Capsules and 8 new TMs every day. What you buy goes to your <b>Bag</b>.</li>
+<li><a href="{lk('items')}"><b>Held items</b></a> such as Leftovers, Choice Band and Life Orb, and single-use <b>orbs</b> like in Mystery Dungeon (Slumber Orb, Quick Orb…).</li>
+<li><b>Online co-op for up to 4</b> with your friends list. If you go down, you watch a teammate while you wait to be revived.</li>
+<li>Daily and weekly <b>missions</b>, <a href="{lk('achievements')}"><b>{NA} achievements</b></a> with medals and titles, a public profile and leaderboards.</li>
+<li>In <b>7 languages</b>, on PC, mobile and controller, and <b>installable as an app</b>.</li>
 </ul>
 <h2>Tips to survive longer</h2>
 <ol>
@@ -257,14 +268,15 @@ How long can you last?</p>
 <li>Use the type chart: switch to the move that's super effective against what's in front of you.</li>
 <li>Markers on the ground (circles and lines filling up) are attacks about to land: step out of them.</li>
 <li>Take out healers and shield-casters first.</li>
-<li>Spend your coins on upgrades for your favorite partner.</li>
+<li>Save a Slumber Orb or a Blowback Orb for when you get surrounded.</li>
+<li>Spend your coins on upgrades for your favorite partner, and check the Kecleon Shop for a TM that suits it today.</li>
 </ol>
 <h2>Frequently asked questions</h2>
 {''.join(f'<h3>{esc(q)}</h3><p>{esc(a)}</p>' for q, a in FAQ[lang])}
 {cta(pid, lang, 'Play PokéSurvivor')}
 </article>'''
         title = 'PokéSurvivor guide: how to play, tips and FAQ'
-        desc = f'How to play PokéSurvivor on PC and mobile, its features ({N} Pokémon, online co-op, legendary rifts, gacha), tips and frequently asked questions.'
+        desc = f'How to play PokéSurvivor on PC, mobile and controller, its features ({N} Pokémon, online co-op, legendary rifts, gacha, Kecleon Shop, orbs), tips and frequently asked questions.'
     ld = {'@context': 'https://schema.org', '@graph': [
         {'@type': 'FAQPage', 'inLanguage': lang, 'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in FAQ[lang]]},
         crumbs(pid, lang, 'Guía' if lang == 'es' else 'Guide')]}
@@ -309,16 +321,22 @@ def legends(lang):
     if lang == 'es':
         h1 = 'Legendarios y grietas: las 18 arenas de PokéSurvivor'
         intro = ('<p class="lead">De vez en cuando se abre una <b>grieta misteriosa</b> en el mapa. Si entras, te enfrentas a un <b>Pokémon legendario</b> '
-                 'en una arena de su tipo, con su propio terreno y clima. Si ganas te llevas un <b>ticket ×10</b> para el gacha; si caes, vuelves al mapa sin premio. '
-                 'En grupo, entráis todos juntos.</p>')
+                 'en una arena de su tipo, con su propio terreno y clima. Si ganas te llevas tickets y monedas (y, la mitad de las veces, un <b>ticket ×10</b> para el gacha), '
+                 'dos esferas y un <b>vínculo</b> para fusionar dos movimientos en un solo hueco; si caes, vuelves al mapa sin premio. En grupo, entráis todos juntos.</p>'
+                 '<p>Y si aguantas hasta el <b>minuto 30</b>, llega la <b>Sentencia de Arceus</b>: Arceus te lleva a las Ruinas del Juicio, es invencible, te persigue '
+                 'cada vez más deprisa y cada 5 segundos acude un legendario más fuerte que el anterior. En cada partida lleva una <b>Tabla</b> al azar que le da su tipo, '
+                 'y el ranking tiene dos mitades: el <b>tiempo aguantado</b> y el <b>daño que le haces a Arceus</b>. ¿Hasta dónde llegas?</p>')
         h2a, h2b = '18 arenas, una por tipo', f'Los {len(LEG)} legendarios'
         tip = '<p>Los legendarios de dos tipos eligen uno al azar para la arena. El terreno cuenta: hay lava que quema, hielo que resbala, agua que frena…</p>'
         title, desc, c = 'Legendarios y grietas de PokéSurvivor: las 18 arenas por tipo', f'Cómo funcionan las grietas de PokéSurvivor, las 18 arenas legendarias (una por tipo) y los {len(LEG)} Pokémon legendarios a los que te puedes enfrentar.', 'Busca una grieta: jugar gratis'
     else:
         h1 = 'Legendaries and rifts: PokéSurvivor\'s 18 arenas'
         intro = ('<p class="lead">Every now and then a <b>mysterious rift</b> opens on the map. Step inside and you face a <b>legendary Pokémon</b> in an arena '
-                 'of its type, with its own terrain and weather. Win and you get a <b>×10 ticket</b> for the gacha; fall and you\'re sent back to the map with no reward. '
-                 'In a group, you all go in together.</p>')
+                 'of its type, with its own terrain and weather. Win and you get tickets and coins (and, half the time, a <b>×10 ticket</b> for the gacha), '
+                 'two orbs and a <b>bond</b> to fuse two moves into one slot; fall and you\'re sent back to the map with no reward. In a group, you all go in together.</p>'
+                 '<p>And if you last until <b>minute 30</b>, the <b>Judgment of Arceus</b> begins: Arceus takes you to the Ruins of Judgment, it is invincible, chases you '
+                 'faster and faster, and every 5 seconds a legendary stronger than the last one joins in. In every run it holds a random <b>Plate</b> that gives it its type, '
+                 'and the ranking has two halves: <b>time survived</b> and <b>damage dealt to Arceus</b>. How far can you go?</p>')
         h2a, h2b = '18 arenas, one per type', f'The {len(LEG)} legendaries'
         tip = '<p>Dual-type legendaries pick one of their types at random for the arena. Terrain matters: lava burns, ice is slippery, water slows you down…</p>'
         title, desc, c = 'PokéSurvivor legendaries and rifts: the 18 type arenas', f'How rifts work in PokéSurvivor, the 18 legendary arenas (one per type) and the {len(LEG)} legendary Pokémon you can battle.', 'Find a rift: play free'
@@ -337,22 +355,24 @@ def shinies(lang):
 <p class="lead">Los <b>shiny</b> son versiones de otro color, muy raras. En PokéSurvivor casi todos los {N} Pokémon tienen su forma shiny, con sprites de verdad.</p>
 <h2>Cómo conseguirlos</h2>
 <ul><li><b>Salvajes:</b> cada Pokémon que aparece tiene <b>1 entre 4096</b> de salir shiny (como en los juegos clásicos). Lo verás brillar y saldrá un aviso: derrótalo y es tuyo.</li>
-<li><b>En el gacha:</b> cada tirada tiene <b>1 entre 100</b> de ser shiny.</li>
-<li>Un shiny repetido da el triple de Pokémonedas.</li>
+<li><b>En las grietas:</b> el legendario tiene <b>1 entre 512</b> de salir shiny.</li>
+<li><b>En el gacha:</b> cada tirada tiene <b>1 entre 100</b> de ser shiny, y <b>1 entre 50</b> en el banner de una región cuya Pokédex hayas completado (te dan su <b>Amuleto Iris</b>, que ves en la Mochila).</li>
+<li>En el gacha los shiny no se repiten: si ya tienes ese, te sale otro de la misma rareza que te falte. Sólo cuando los tienes todos, un shiny repetido da el triple de Pokémonedas.</li>
 <li>Cuando tienes la forma shiny de tu compañero, puedes jugar con ella (se elige en la colección).</li></ul>
 <h2>Normal y shiny</h2><ul class="dexgrid pairs">{pairs}</ul>{cta(pid, lang, 'Sal a cazar shinies')}</article>'''
-        title, desc = 'Shinies en PokéSurvivor: probabilidades y cómo conseguirlos', 'Cómo conseguir Pokémon shiny en PokéSurvivor: 1 entre 4096 en estado salvaje y 1 entre 100 en el gacha. Galería de formas normales y shiny.'
+        title, desc = 'Shinies en PokéSurvivor: probabilidades y cómo conseguirlos', 'Cómo conseguir Pokémon shiny en PokéSurvivor: 1 entre 4096 en estado salvaje, 1 entre 512 en las grietas y 1 entre 100 en el gacha (1 entre 50 con el Amuleto Iris). Galería de formas normales y shiny.'
     else:
         h1 = 'Shinies in PokéSurvivor: how to get them'
         body = f'''<article class="doc wide"><h1>{h1}</h1>
 <p class="lead"><b>Shiny</b> Pokémon are rare, differently colored versions. In PokéSurvivor almost all {N} Pokémon have a shiny form, with real sprites.</p>
 <h2>How to get them</h2>
 <ul><li><b>In the wild:</b> every Pokémon that spawns has a <b>1 in 4096</b> chance of being shiny (just like the classic games). You'll see it sparkle and get an alert: defeat it and it's yours.</li>
-<li><b>From the gacha:</b> every pull has a <b>1 in 100</b> chance of being shiny.</li>
-<li>A duplicate shiny gives triple PokéCoins.</li>
+<li><b>In rifts:</b> the legendary has a <b>1 in 512</b> chance of being shiny.</li>
+<li><b>From the gacha:</b> every pull has a <b>1 in 100</b> chance of being shiny, and <b>1 in 50</b> in the banner of a region whose Pokédex you have completed (you get its <b>Shiny Charm</b>, which you can see in your Bag).</li>
+<li>Gacha shinies don\'t repeat: if you already have that one, you get another missing one of the same rarity. Only once you have them all does a duplicate shiny give triple PokéCoins.</li>
 <li>Once you own your partner's shiny form, you can play with it (pick it in your collection).</li></ul>
 <h2>Normal and shiny</h2><ul class="dexgrid pairs">{pairs}</ul>{cta(pid, lang, 'Go shiny hunting')}</article>'''
-        title, desc = 'Shinies in PokéSurvivor: odds and how to get them', 'How to get shiny Pokémon in PokéSurvivor: 1 in 4096 in the wild and 1 in 100 from the gacha. A gallery of normal and shiny forms.'
+        title, desc = 'Shinies in PokéSurvivor: odds and how to get them', 'How to get shiny Pokémon in PokéSurvivor: 1 in 4096 in the wild, 1 in 512 in rifts and 1 in 100 from the gacha (1 in 50 with the Shiny Charm). A gallery of normal and shiny forms.'
     write(pid, lang, page(pid, lang, title, desc, body, {'@context': 'https://schema.org', '@graph': [crumbs(pid, lang, h1)]}))
 
 # ================= tabla de tipos =================
@@ -408,24 +428,30 @@ def moves_page(lang):
     for t in TYPES:
         for m in [x for x in D['moves'] if x['type'] == t]:
             evo = m['evo']
-            evo_txt = (f'<b>{esc(L(lang, evo["name"]))}</b><small>{"con" if lang == "es" else "with"} {esc(L(lang, evo["needs"]))} · {esc(L(lang, evo["text"]))}</small>' if evo else '—')
-            rows.append(f'<tr><td><b>{esc(L(lang, m["name"]))}</b></td><td>{tbadge(t, lang)}</td><td>{KIND[lang].get(m["kind"], m["kind"])}</td>'
+            evo_txt = (f'<b>{esc(L(lang, m["name"]))} +</b><small>{"con" if lang == "es" else "with"} {esc(L(lang, evo["needs"]))} · {esc(L(lang, evo["text"]))}</small>' if evo else '—')
+            cat = {'physical': ('Físico', 'Physical'), 'special': ('Especial', 'Special')}.get(m.get('cat'), ('—', '—'))[0 if lang == 'es' else 1]
+            rows.append(f'<tr><td><b>{esc(L(lang, m["name"]))}</b></td><td>{tbadge(t, lang)}</td><td>{cat}</td><td>{KIND[lang].get(m["kind"], m["kind"])}</td>'
                         f'<td>{esc(L(lang, m["desc"]))}</td><td class="evo">{evo_txt}</td></tr>')
-    th = ('<th>Movimiento</th><th>Tipo</th><th>Clase</th><th>Qué hace</th><th>Evoluciona a</th>' if lang == 'es'
-          else '<th>Move</th><th>Type</th><th>Kind</th><th>What it does</th><th>Evolves into</th>')
+    th = ('<th>Movimiento</th><th>Tipo</th><th>Categoría</th><th>Clase</th><th>Qué hace</th><th>Evoluciona a</th>' if lang == 'es'
+          else '<th>Move</th><th>Type</th><th>Category</th><th>Kind</th><th>What it does</th><th>Evolves into</th>')
     nevo = sum(1 for m in D['moves'] if m['evo'])
     nm = len(D['moves'])
     if lang == 'es':
         h1 = 'Movimientos de PokéSurvivor y sus evoluciones'
         intro = (f'<p class="lead">Hay <b>{nm} movimientos</b> de los 18 tipos. Tu Pokémon ataca solo con el activo, y al subir de nivel eliges cartas '
                  f'para aprender otros o mejorarlos hasta el nivel 5. <b>{nevo} pueden evolucionar</b>: llévalos al nivel máximo, consigue la carta de mejora '
-                 f'que indican (Potencia, Vigor, Reflejos…) y aparecerá una carta dorada de evolución.</p>')
+                 f'que indican (Potencia, Vigor, Reflejos…) y aparecerá una carta dorada de evolución.</p>'
+                 f'<p>Cada movimiento es <b>físico</b> o <b>especial</b>: pega según el Ataque o el Ataque Especial de tu Pokémon, y la Defensa o la Defensa Especial '
+                 f'del que lo recibe lo frena. Con las <b>MT</b> de la Tienda Kecleon (8 nuevas cada día) puedes enseñar para siempre un movimiento de fuera de sus tipos, '
+                 f'si tu Pokémon lo aprende en los juegos.</p>')
         title, desc, c = f'Movimientos de PokéSurvivor: los {nm} ataques y sus evoluciones', f'Lista de los {nm} movimientos de PokéSurvivor por tipo, qué hace cada uno y en qué evoluciona (Ascuas → Llamarada, Burbuja → Surf…).', 'Pruébalos: jugar gratis'
     else:
         h1 = 'PokéSurvivor moves and their evolutions'
         intro = (f'<p class="lead">There are <b>{nm} moves</b> across all 18 types. Your Pokémon attacks on its own with the active one, and when you level up '
                  f'you pick cards to learn new moves or upgrade them up to level 5. <b>{nevo} of them can evolve</b>: max them out, get the upgrade card they ask for '
-                 f'(Power, Vigor, Reflexes…) and a golden evolution card will appear.</p>')
+                 f'(Power, Vigor, Reflexes…) and a golden evolution card will appear.</p>'
+                 f'<p>Every move is <b>physical</b> or <b>special</b>: it hits according to your Pokémon\'s Attack or Special Attack, and the target\'s Defense or Special Defense '
+                 f'softens it. With <b>TMs</b> from the Kecleon Shop (8 new ones every day) you can permanently teach a move outside its types, if your Pokémon learns it in the games.</p>')
         title, desc, c = f'PokéSurvivor moves: all {nm} attacks and their evolutions', f'All {nm} PokéSurvivor moves by type, what each one does and what it evolves into (Ember → Fire Blast, Bubble → Surf…).', 'Try them: play free'
     body = f'<article class="doc wide"><h1>{h1}</h1>{intro}<div class="tablewrap"><table class="list"><thead><tr>{th}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>{cta(pid, lang, c)}</article>'
     write(pid, lang, page(pid, lang, title, desc, body, {'@context': 'https://schema.org', '@graph': [crumbs(pid, lang, h1)]}))
@@ -445,7 +471,19 @@ def items_page(lang):
         intro = ('<p class="lead">During a run you can find <b>held items</b> in chests and by defeating bosses. You can only hold <b>one</b> at a time: '
                  'if you find another, you choose which one to keep. They last for the whole run.</p>')
         title, desc, c = f'PokéSurvivor items: all {ni} held items', f'The {ni} held items in PokéSurvivor (Leftovers, Choice Band, Focus Sash, Life Orb…) and what each one does.', 'Find them: play free'
-    body = f'<article class="doc"><h1>{h1}</h1>{intro}<ul class="items">{rows}</ul>{cta(pid, lang, c)}</article>'
+    # Esferas (de un solo uso, 22-10-2026)
+    orbs = D.get('orbs') or []
+    orows = ''.join(f'<li><b>{esc(L(lang, o["name"]))}</b><span>{esc(L(lang, o["desc"]))}</span></li>' for o in orbs)
+    if lang == 'es':
+        oh = (f'<h2>Esferas</h2><p>Además hay {len(orbs)} <b>esferas</b> de un solo uso, como en Mundo Misterioso. Salen de los cofres, de los jefes y, a veces, '
+              'al derrotar a un Pokémon. Llevas hasta 4 distintas (3 de cada) y se usan con las teclas 5-8, tocando su casilla encima de tus ataques o con X en el mando. '
+              'Con el ratón encima de una ves qué hace, y en la pausa tienes la lista de las que llevas. Se pierden al acabar la partida.</p>')
+    else:
+        oh = (f'<h2>Orbs</h2><p>There are also {len(orbs)} single-use <b>orbs</b>, like in Mystery Dungeon. They come from chests, bosses and sometimes from defeated Pokémon. '
+              'You carry up to 4 different ones (3 of each) and use them with keys 5-8, by tapping their slot above your moves, or with X on a controller. '
+              'Hover over one to see what it does; the pause screen lists the ones you carry. They are lost when the run ends.</p>')
+    osec = f'{oh}<ul class="items">{orows}</ul>' if orbs else ''
+    body = f'<article class="doc"><h1>{h1}</h1>{intro}<ul class="items">{rows}</ul>{osec}{cta(pid, lang, c)}</article>'
     write(pid, lang, page(pid, lang, title, desc, body, {'@context': 'https://schema.org', '@graph': [crumbs(pid, lang, h1)]}))
 
 # ================= logros =================
@@ -475,45 +513,16 @@ def ach_page(lang):
     write(pid, lang, page(pid, lang, title, desc, body, {'@context': 'https://schema.org', '@graph': [crumbs(pid, lang, h1)]}))
 
 # ================= novedades =================
-NEWS = [
- ('2026-10-14', ('Coloca los botones a tu gusto en el móvil', 'Place the buttons your way on mobile'),
-  ('En Ajustes > Controles > Colocar los botones puedes arrastrar los ataques, la pausa y el joystick a donde quieras, y elegir un joystick fijo.',
-   'In Settings > Controls > Place the buttons you can drag the attacks, the pause button and the joystick wherever you want, and choose a fixed joystick.')),
- ('2026-10-14', ('La única web oficial es pokesurvivor.com', 'The only official website is pokesurvivor.com'),
-  ('PokéSurvivor es y será gratis. Si alguna otra web te pide pagar por tickets, monedas o lo que sea, no somos nosotros: es una copia. Desde hoy el código del juego va bajo una licencia no comercial (PolyForm Noncommercial 1.0.0).',
-   'PokéSurvivor is and always will be free. If any other website asks you to pay for tickets, coins or anything else, it isn’t us: it is a copy. From today the game’s code is under a non-commercial license (PolyForm Noncommercial 1.0.0).')),
- ('2026-10-14', ('Recupera tu cuenta con Gmail', 'Recover your account with Gmail'),
-  ('Si juegas con nombre y contraseña, ya puedes vincular tu Gmail: si olvidas la contraseña, entras con Google y es tu misma cuenta.',
-   'If you play with a name and password, you can now link your Gmail: if you forget your password, sign in with Google and it is the same account.')),
- ('2026-10-13', ('La Sentencia de Arceus', 'The Judgment of Arceus'),
-  ('Al llegar al minuto 30, Arceus baja del cielo y te lleva a las Ruinas del Juicio: es invencible, te persigue cada vez más deprisa y cada 5 segundos acude un legendario con el doble de vida y de daño que el anterior. Tres logros nuevos, música nueva y el ranking histórico empieza de cero.',
-   'At minute 30, Arceus descends from the sky and takes you to the Ruins of Judgment: it is invincible, chases you faster and faster, and every 5 seconds a legendary joins with twice the HP and damage of the previous one. Three new achievements, new music, and the all-time leaderboard starts from scratch.')),
- ('2026-10-12', ('Partidas sin límite, grietas con menos azar y novedades en el juego', 'Endless runs, less random rifts and a "What\'s new" screen'),
-  ('Arreglado el fallo que dejaba la pantalla en negro o subía de nivel sin fin pasados 84 minutos; si algo falla, la partida se guarda sola. Las grietas salen como mucho cada 2,5 minutos y los legendarios que te faltan aparecen más. Los curanderos curan según lo fuerte que pegas, con tope. En cooperativo, si el anfitrión cambia de pestaña la partida se pausa para todos. Arreglos para iPhone, selector shiny en el menú, ataques cuerpo a cuerpo más fuertes y un botón de Novedades dentro del juego.',
-   'Fixed the bug that turned the screen black or levelled you up forever after 84 minutes; if something fails, the run saves itself. Rifts show up at least every 2.5 minutes and the legendaries you are missing appear more often. Healers heal based on how hard you hit, with a cap. In co-op, if the host switches tabs the run pauses for everyone. iPhone fixes, a shiny toggle in the menu, stronger melee attacks and a "What\'s new" button inside the game.')),
- ('2026-10-11', ('Vínculos: fusiona movimientos al vencer legendarios', 'Bonds: fuse moves by defeating legendaries'),
-  ('Cada legendario que vences en una grieta te da un vínculo: une dos movimientos para que se lancen a la vez y ocupen un solo hueco, y con cada legendario siguiente se suma otro, hasta 4 a la vez. Así queda sitio para aprender más movimientos. Además, las grietas salen más a menudo.',
-   'Every legendary you defeat in a rift gives you a bond: link two moves so they fire at the same time from a single slot, and each further legendary adds another one, up to 4 at once. That frees slots to learn more moves. Rifts also show up more often.')),
- ('2026-10-10', ('Jefes con varios ataques, 8 tipos de movimiento nuevos y más reto', 'Bosses with several attacks, 8 new move kinds and a tougher game'),
-  ('Los jefes y legendarios tienen 4 ataques avisados, se acercan o pelean de lejos y se enfurecen a media vida. 12 movimientos nuevos y 8 formas de atacar: bumerán, cadena, minas, meteoros, torreta, embestida, rastro y abanico. Menos enemigos pero más duros, eventos a mitad de partida (hordas de un tipo, hora dorada, Pokémon perdidos), Meowth que huyen cargados de monedas, los de tipo Agua nadan sin frenarse y el ranking tiene anti-trampas.',
-   'Bosses and legendaries have 4 telegraphed attacks, close in or fight from range and get enraged at half health. 12 new moves and 8 new ways to attack: boomerang, chain, mines, meteors, turret, dash, trail and spray. Fewer but tougher enemies, mid-run events (single-type hordes, golden hour, lost Pokémon), Meowth running away loaded with coins, Water types swim at full speed and the leaderboard has anti-cheat.')),
- ('2026-10-09', ('Móvil, inglés y ajustes', 'Mobile, English and settings'),
-  ('Ya se puede jugar en móvil y tablet con joystick táctil, en español y en inglés, e instalar como app. Nueva pantalla de ajustes con calidad gráfica automática, y menos enemigos en pantalla pero más fuertes.',
-   'You can now play on phones and tablets with a touch joystick, in English and Spanish, and install it as an app. New settings screen with automatic graphics quality, and fewer but stronger enemies on screen.')),
- ('2026-10-08', ('Misiones, logros y enemigos con personalidad', 'Missions, achievements and enemies with personality'),
-  ('Misiones diarias y semanales, 127 logros con medallas y títulos, perfil público, objetos equipables, evoluciones de movimientos y enemigos que curan, protegen, invocan o explotan.',
-   'Daily and weekly missions, 127 achievements with medals and titles, a public profile, held items, move evolutions and enemies that heal, shield, summon or explode.')),
- ('2026-10-08', ('Grietas legendarias y clima', 'Legendary rifts and weather'),
-  ('Grietas que llevan a 18 arenas legendarias, una por tipo; clima que cambia la batalla; tabla de tipos y gacha tragaperras con tickets.',
-   'Rifts leading to 18 legendary arenas, one per type; weather that changes the fight; a type chart and a slot-machine gacha with tickets.')),
- ('2026-10-08', ('Cooperativo y ranking', 'Co-op and leaderboards'),
-  ('Cooperativo online hasta 4 con tu lista de amigos y ranking diario, semanal, mensual, anual e histórico.',
-   'Online co-op for up to 4 with your friends list, plus daily, weekly, monthly, yearly and all-time leaderboards.')),
-]
+# Salen de js/data/changelog.js (lo mismo que el botón "Novedades" del juego): así no se quedan atrás.
+SECT = {'new': ('Nuevo', 'New'), 'chg': ('Cambios', 'Changes'), 'fix': ('Arreglos', 'Fixes')}
 def news(lang):
     pid = 'news'
     i = 0 if lang == 'es' else 1
-    items = ''.join(f'<article class="news"><time datetime="{d}">{d}</time><h2>{esc(t[i])}</h2><p>{esc(x[i])}</p></article>' for d, t, x in NEWS)
+    items = ''
+    for e in D['changelog']:
+        secs = ''.join(f'<h3>{SECT[k][i]}</h3><ul>' + ''.join(f'<li>{esc(x[i])}</li>' for x in e[k]) + '</ul>'
+                       for k in ('new', 'chg', 'fix') if e.get(k))
+        items += f'<article class="news"><time datetime="{e["d"]}">{e["d"]}</time><h2>{esc(e["title"][i])}</h2>{secs}</article>'
     h1 = 'Novedades de PokéSurvivor' if lang == 'es' else 'PokéSurvivor news'
     title = h1 + (' · actualizaciones del juego' if lang == 'es' else ' · game updates')
     desc = ('Las últimas actualizaciones de PokéSurvivor: nuevas funciones, mejoras y arreglos.' if lang == 'es'

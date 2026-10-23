@@ -377,7 +377,15 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 }
 /* Centrado vertical que no corta por arriba cuando no cabe. */
 #pull-fx::before, #pull-fx::after { content: ''; margin: auto; }
-#pull-close { position: sticky; bottom: 8px; z-index: 2; flex-shrink: 0; box-shadow: 0 4px 18px rgba(0,0,0,.6); }
+#pull-close, #pull-skip { position: sticky; bottom: 8px; z-index: 2; flex-shrink: 0; box-shadow: 0 4px 18px rgba(0,0,0,.6); }
+/* La ×100: cartas más pequeñas y un resumen arriba. */
+.pull-results.many { gap: 6px; max-width: 1100px; }
+.pull-results.many .pcard { width: 104px; padding: 5px 3px; border-radius: 10px; border-width: 2px; box-shadow: 0 0 10px var(--rc, #fff); }
+.pull-results.many .pcard canvas { width: 88px; height: auto; }
+.pull-results.many .pcard b { font-size: 12px; }
+.pull-results.many .pcard .tag { font-size: 10px; }
+.pull-results.many .pcard .stars { font-size: 11px; }
+.pull-sum { flex: 0 0 100%; text-align: center; font-size: 16px; color: var(--gold); }
 @media (max-height: 520px) {
   #pull-fx { gap: 10px; }
   .pull-results { gap: 6px; }
@@ -416,6 +424,9 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .support-ask .btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .support-ask .x { position: absolute; top: 4px; right: 6px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 6px; }
 .pull-results { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 900px; }
+.iris-get { flex: 0 0 100%; box-sizing: border-box; display: flex; justify-content: center; gap: 12px; align-items: center; text-align: left; padding: 10px 14px;
+  border: 2px solid var(--gold); border-radius: 12px; background: rgba(255,210,63,.12); animation: pop .5s ease-out; }
+.iris-get b { color: var(--gold); font-size: 16px; }
 .pcard {
   width: 150px; padding: 10px 6px; text-align: center; border-radius: 12px;
   background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,.3));
@@ -530,6 +541,7 @@ kbd {
 
 /* ============ iconos pixel art ============ */
 img.pix { image-rendering: pixelated; image-rendering: crisp-edges; vertical-align: middle; }
+img.pix.off { filter: grayscale(1); opacity: .4; }
 .stars-row { display: inline-flex; gap: 1px; vertical-align: middle; }
 .cell .stars-row { display: flex; justify-content: center; margin-top: 2px; }
 .badge-r { position: absolute; top: 3px; right: 4px; }
@@ -652,6 +664,13 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .rk-row.mod-row.rep { grid-template-columns: 54px auto 1fr auto auto; }
 .mod-warn { color: #ff8a96 !important; }
 .mod-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+/* Dos mitades (23-10-2026): daño a Arceus a la izquierda y tiempo a la derecha (en el móvil, una debajo de otra). */
+#scr-rank .box.wide { width: min(1240px, 100%); }
+.rk-split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.rk-col { min-width: 0; display: flex; flex-direction: column; }
+.rk-h { margin: 2px 0 6px; font-size: 17px; color: var(--gold); }
+.rk-split .rk-row { grid-template-columns: 46px auto 1fr auto 26px; gap: 8px; padding: 4px 8px; }
+.rk-split .rk-row .time { font-size: 19px; }
 .rk-me { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(0,0,0,.25); font-size: 15px; min-height: 20px; }
 
 .cards.done .card { pointer-events: none; opacity: .45; }
@@ -663,11 +682,13 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 
 @media (max-width: 760px) {
   .lobby-members { grid-template-columns: repeat(2, 1fr); }
-  .rk-row { grid-template-columns: 40px auto 1fr auto 22px; gap: 6px; }
+  .rk-row, .rk-split .rk-row { grid-template-columns: 40px auto 1fr auto 22px; gap: 6px; }
+  .rk-split { grid-template-columns: 1fr; }
+  .rk-split .rk-list { max-height: 38vh; }
 }
 
 /* ---------- tickets y mejoras por Pokémon ---------- */
-.tickets-line img, #tickets-pill img, #cost-1 img, #cost-10 img { vertical-align: middle; }
+.tickets-line img, #tickets-pill img, #cost-10 img, #cost-10b img, #cost-100 img, #cost-100b img { vertical-align: middle; }
 .upg-head { display: flex; gap: 14px; align-items: center; margin: 6px 0 12px; }
 .upg-head .stage { width: 120px; height: 96px; flex: 0 0 120px; }
 select.field { font-family: var(--font); }
@@ -922,6 +943,12 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .news-day ul { margin: 0; padding-left: 20px; }
 .news-day li { margin: 4px 0; line-height: 1.35; font-size: 15px; }
 @media (max-width: 760px) { .news-btn span { display: none; } }
+/* YouTube (en directo: rojo y con un punto que late). */
+.yt-btn.live { background: #e0202a; border-color: #ff8a8a; color: #fff; }
+.yt-btn .rec { display: none; width: 8px; height: 8px; border-radius: 50%; background: #fff; margin-right: 2px; animation: yt-rec 1.2s ease-in-out infinite; }
+.yt-btn.live .rec { display: inline-block; }
+@keyframes yt-rec { 50% { opacity: .25; } }
+@media (max-width: 760px) { .yt-btn:not(.live) span { display: none; } }
 /* Botón Guardar (barra de arriba). */
 .save-btn { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
 #savenote-body p { line-height: 1.4; }

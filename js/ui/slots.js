@@ -7,8 +7,9 @@
  *   G.Icons.rarity; la estrella roja es el shiny). Si es Épica, Legendaria o shiny, el
  *   último rodillo se hace esperar y las luces se vuelven locas.
  *   La ×10 son 10 tiradas rápidas; cada premio cae como una bola a la bandeja.
+ *   La ×100 se anima como 10 tiradas rápidas, una por cada ×10, con lo mejor de cada una.
  *
- * Un clic acelera la animación.
+ * Un clic acelera la animación; skip() la acaba ya (botón Saltar).
  */
 G.Slots = (() => {
   const W = 176, H = 170, CELL = 30;
@@ -21,7 +22,7 @@ G.Slots = (() => {
     led: '#2a0f14', bulbOn: '#ffe9a0', bulbOff: '#6b4a20'
   };
 
-  let cv = null, ctx = null, st = null, raf = 0, last = 0, fast = false;
+  let cv = null, ctx = null, st = null, raf = 0, last = 0, fast = false, skipped = false;
 
   const symOf = r => (r.shiny ? 'shiny' : SYM[r.rarity]);
   const colOf = r => (r.shiny ? '#9ae6ff' : G.Gacha.RARITY_COLOR[r.rarity]);
@@ -29,27 +30,30 @@ G.Slots = (() => {
   function wait(s) {
     return new Promise(res => {
       const end = performance.now() + s * 1000 * (fast ? 0.25 : 1);
-      (function chk() { if (performance.now() >= end || !st) res(); else setTimeout(chk, 16); })();
+      (function chk() { if (performance.now() >= end || !st || skipped) res(); else setTimeout(chk, 16); })();
     });
   }
 
-  /** Anima las tiradas. → Promise que se resuelve al terminar. */
-  async function play(canvas, results) {
+  /** Anima las tiradas. → Promise que se resuelve al terminar.
+   *  @param total  cuántas tiradas son de verdad (100: results trae lo mejor de cada ×10) */
+  async function play(canvas, results, total = results.length) {
     cv = canvas; ctx = cv.getContext('2d');
-    fast = false;
+    fast = false; skipped = false;
     cv.onclick = () => { fast = true; };
+    const hundred = total === 100;
     st = {
       t: 0, lever: 0, reels: REEL_X.map(() => ({ off: Math.random() * 400, spin: false, sym: 'ball', bounce: 0, speed: 0 })),
-      ten: results.length === 10, tray: [], led: results.length === 10 ? 'TIRADA ×10' : '¡SUERTE!', ledCol: C.bulbOn, win: null, frenzy: 0, sparks: []
+      ten: results.length === 10, tray: [], led: hundred ? 'TIRADA ×100' : results.length === 10 ? 'TIRADA ×10' : '¡SUERTE!',
+      ledCol: C.bulbOn, win: null, frenzy: 0, sparks: []
     };
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
 
     const ten = results.length === 10;
-    for (let i = 0; i < results.length; i++) {
+    for (let i = 0; i < results.length && !skipped; i++) {
       const r = results[i];
-      if (ten) st.led = 'TIRADA ' + (i + 1) + '/10';
+      if (ten) st.led = (hundred ? '×100 · ' : 'TIRADA ') + (i + 1) + '/10';
       // Palanca.
       G.Audio.sfx('ball');
       await tween(v => { st.lever = v; }, 0, 1, ten ? 0.12 : 0.22);
@@ -88,11 +92,14 @@ G.Slots = (() => {
 
   function stopAll() { cancelAnimationFrame(raf); st = null; if (cv) cv.onclick = null; }
 
+  /** Botón Saltar: la animación acaba ya (play se resuelve al momento). */
+  function skip() { skipped = true; }
+
   function tween(set, a, b, dur) {
     return new Promise(res => {
       const t0 = performance.now(), d = dur * 1000 * (fast ? 0.25 : 1);
       (function step() {
-        const k = Math.min(1, (performance.now() - t0) / d);
+        const k = skipped ? 1 : Math.min(1, (performance.now() - t0) / d);
         set(a + (b - a) * k);
         if (k < 1 && st) requestAnimationFrame(step); else res();
       })();
@@ -252,5 +259,5 @@ G.Slots = (() => {
     R(x - 1, REEL_Y, 1, REEL_H, C.dark); R(x + REEL_W, REEL_Y, 1, REEL_H, C.dark);
   }
 
-  return { play, stop: stopAll };
+  return { play, skip, stop: stopAll };
 })();

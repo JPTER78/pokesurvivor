@@ -77,8 +77,8 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="css/style.css?v=c3b80e4a12">
-<script src="js/core/locales.js?v=7d5654e0c1"></script>
+<link rel="stylesheet" href="css/style.css?v=c68f470baf">
+<script src="js/core/locales.js?v=f74867b398"></script>
 <script src="js/noframe.js"></script>
 </head>
 <body>
@@ -204,6 +204,7 @@
   <div class="pill" id="user-pill"></div>
   <button id="btn-save" class="btn small gold save-btn hidden" title="Guardar la partida en la nube"></button>
   <button id="btn-news" class="btn small ghost news-btn" title="Novedades"></button>
+  <button id="btn-yt" class="btn small ghost yt-btn" title="Mi canal de YouTube"></button>
   <button id="btn-support" class="btn small gold hidden" title="Apoyar el proyecto"></button>
   <button id="btn-sound" class="btn small ghost" title="Sonido"></button>
   <button id="btn-full" class="btn small ghost hidden" title="Pantalla completa"></button>
@@ -386,7 +387,7 @@
 <!-- ====== Ranking ====== -->
 <section id="scr-rank" class="scr dim hidden">
   <div class="box wide">
-    <div class="row between"><h2>Ranking <span class="sub" style="font-size:15px">· tiempo aguantado</span></h2><span class="row" style="gap:6px"><button id="rk-mod" class="btn small ghost hidden">Moderación</button><button class="btn small ghost" data-back>Volver</button></span></div>
+    <div class="row between"><h2>Ranking</h2><span class="row" style="gap:6px"><button id="rk-mod" class="btn small ghost hidden">Moderación</button><button class="btn small ghost" data-back>Volver</button></span></div>
     <div class="gen-tabs" id="rk-mode"></div>
     <div class="filters" id="rk-period"></div>
     <div class="row rk-tools">
@@ -395,8 +396,10 @@
       <datalist id="rk-dl"></datalist>
       <button id="rk-clear" class="btn small ghost hidden">Quitar filtro</button>
     </div>
-    <div id="rk-list" class="rk-list"></div>
-    <div id="rk-me" class="rk-me"></div>
+    <div class="rk-split">
+      <div class="rk-col"><h3 class="rk-h">Daño a Arceus</h3><div id="rk-dlist" class="rk-list"></div><div id="rk-dme" class="rk-me"></div></div>
+      <div class="rk-col"><h3 class="rk-h">Tiempo aguantado</h3><div id="rk-list" class="rk-list"></div><div id="rk-me" class="rk-me"></div></div>
+    </div>
   </div>
 </section>
 
@@ -526,9 +529,10 @@
           <div class="feat" id="gacha-feat"></div>
         </div>
         <div class="row" style="margin-top:14px">
-          <button id="pull-1" class="btn grow" data-sfx="none">Tirar ×1 · <span id="cost-1"></span></button>
           <button id="pull-10" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10"></span></button>
           <button id="pull-10b" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10b"></span></button>
+          <button id="pull-100" class="btn gold grow" data-sfx="none">Tirar ×100 · <span id="cost-100"></span></button>
+          <button id="pull-100b" class="btn gold grow" data-sfx="none">Tirar ×100 · <span id="cost-100b"></span></button>
         </div>
         <p class="note tickets-line" id="gacha-tickets"></p>
         <p class="note" id="gacha-pity"></p>
@@ -541,6 +545,7 @@
 <div id="pull-fx" class="hidden">
   <canvas id="slot" width="176" height="170" title="Clic para acelerar"></canvas>
   <div class="pull-results" id="pull-results"></div>
+  <button id="pull-skip" class="btn small ghost hidden">Saltar</button>
   <button id="pull-close" class="btn gold hidden">Continuar</button>
 </div>
 
@@ -576,8 +581,8 @@
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center pause-box">
     <h2>Pausa</h2>
-    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
-    <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
+    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>5</kbd>–<kbd>8</kbd> esferas · <kbd>Esc</kbd> pausa</p>
+    <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo · toca una esfera para usarla</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>
@@ -598,6 +603,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=f9fe33f52c"></script>
+<script defer src="js/app.min.js?v=1a52cc838c"></script>
 </body>
 </html>

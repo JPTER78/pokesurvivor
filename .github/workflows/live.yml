@@ -1,0 +1,55 @@
+# ¿Está el canal de YouTube en directo? Cada 5 min (GitHub lo retrasa a veces
+# unos minutos) mira la página /live del canal y deja live.json en la rama
+# «live»: { live, id, at }. El juego la lee (js/ui/live-ui.js) sin Firebase.
+# Sólo se sube algo al cambiar o, en directo, cada 30 min (para que «at» no
+# caduque). Gratis: el repositorio es público.
+name: live
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: live
+      - name: Mirar el canal
+        run: |
+          set -u
+          curl -sL --max-time 25 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' \
+            -H 'Accept-Language: en' --cookie 'CONSENT=YES+1; SOCS=CAI' \
+            'https://www.youtube.com/channel/UC5nyI589EfbS3KvyNdAVOGA/live' -o page.html || true
+          # Si YouTube no da la página de verdad (aviso de bots, error...), no se toca nada.
+          if ! grep -q '"channelId":"UC5nyI589EfbS3KvyNdAVOGA"' page.html; then echo 'página rara: sin cambios'; rm -f page.html; exit 0; fi
+          live=false; id=''
+          if grep -q '"isLiveNow":true' page.html; then
+            id=$(grep -oE '<link rel="canonical" href="https://www.youtube.com/watch\?v=[A-Za-z0-9_-]{11}"' page.html | head -1 | grep -oE '[A-Za-z0-9_-]{11}"$' | tr -d '"')
+            [ -n "$id" ] && live=true
+          fi
+          rm -f page.html
+          old_live=$(grep -oE '"live":(true|false)' live.json 2>/dev/null | cut -d: -f2)
+          old_id=$(grep -oE '"id":"[^"]*"' live.json 2>/dev/null | cut -d'"' -f4)
+          old_at=$(grep -oE '"at":"[^"]*"' live.json 2>/dev/null | cut -d'"' -f4)
+          age=$(( $(date +%s) - $(date -d "${old_at:-1970-01-01T00:00:00Z}" +%s) ))
+          if [ "$live" = "${old_live:-}" ] && [ "$id" = "${old_id:-}" ] && { [ "$live" = false ] || [ "$age" -lt 1800 ]; }; then
+            echo "sin cambios (live=$live)"; exit 0
+          fi
+          printf '{"live":%s,"id":"%s","at":"%s"}\n' "$live" "$id" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > live.json
+          cat live.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add live.json
+          git commit -q -m "live: $live $id"
+          git push -q origin HEAD:live

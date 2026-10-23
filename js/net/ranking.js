@@ -1,11 +1,18 @@
-/* ============ ranking.js — clasificación de tiempo aguantado ============
+/* ============ ranking.js — tiempo aguantado y daño a Arceus ============
  * Firestore (pensado para gastar lo mínimo del plan gratuito):
  *
- *   lbs/{tabla}        RESUMEN: el top 50 de la tabla en UN documento
- *                      { top: { id: { t, uids, names, dex, shiny, lv, kills } }, me, ev }
- *                      Ver una pestaña del ranking = 1 lectura (antes ~52).
- *   lb/{tabla}/e/{id}  la marca de cada jugador o equipo (la que sirve para
- *                      calcular tu puesto si no estás en el top 50)
+ *   lbs/{tabla}        RESUMEN: los dos top 50 de la tabla en UN documento
+ *                      { top:  { id: { t, uids, names, dex, shiny, lv, kills } },   tiempo
+ *                        dtop: { id: { d, uids, names, dex, shiny } },               daño a Arceus
+ *                        me, ev, dev }
+ *                      Ver una pestaña del ranking (las dos mitades) = 1 lectura.
+ *   lb/{tabla}/e/{id}  la marca de cada jugador o equipo: su mejor tiempo y su
+ *                      mejor daño a Arceus (dmg), cada uno de su partida (sirve
+ *                      para calcular tu puesto de tiempo si no estás en el top 50)
+ *
+ *   Daño a Arceus (23-10-2026): sólo el top 50 de cada tabla, y no en las de
+ *   cada Pokémon. Va en el mismo resumen y en la misma marca que el tiempo: si
+ *   mejoras las dos cosas en una partida, se escribe lo mismo que antes.
  *
  *   tabla = modo + periodo:
  *     s_d20261008   solitario, hoy            g_...   en grupo
@@ -19,6 +26,9 @@
  *                   (all3 y todas las demás con una "r" desde el 18-10-2026:
  *                    se acabó huir de Arceus corriendo y con veneno, y TODAS
  *                    las tablas empezaron de cero)
+ *                   (all4 y las demás con una "a" desde el 23-10-2026: sin el
+ *                    tope de 45 min, con el daño a Arceus y los objetos rotos
+ *                    en el minuto 35, otra vez TODAS desde cero)
  *   id = tu uid (solitario) o los uid del equipo ordenados y unidos con "_".
  *
  * Ahorros:
@@ -73,7 +83,7 @@ G.Ranking = (() => {
     return { year: t.getUTCFullYear(), week: Math.ceil(((t - y0) / 86400000 + 1) / 7) };
   }
 
-  const ALL = 'all3';                     // histórico (ver arriba)
+  const ALL = 'all4';                     // histórico (ver arriba)
   function periodIds(date = new Date()) {
     const { y, m, d } = madridDate(date);
     const w = isoWeek(y, m, d);
@@ -82,12 +92,12 @@ G.Ranking = (() => {
   }
 
   /*
-   * Nombres de las tablas: los de periodIds() con una "r" detrás (18-10-2026:
-   * todas desde cero tras el arreglo de la Sentencia; antes semana y mes
-   * llevaban una "j", del 14-10). periodIds() se queda igual porque también
-   * lo usan las misiones (progress.js). El histórico ya cambia de nombre (ALL).
+   * Nombres de las tablas: los de periodIds() con una "a" detrás (23-10-2026:
+   * todas desde cero con el daño a Arceus; del 18-10 era una "r" y antes una
+   * "j", del 14-10). periodIds() se queda igual porque también lo usan las
+   * misiones (progress.js). El histórico ya cambia de nombre (ALL).
    */
-  const GEN = 'r';
+  const GEN = 'a';
   function boardIds(date) {
     const p = periodIds(date);
     return Object.assign({}, p, { d: p.d + GEN, w: p.w + GEN, m: p.m + GEN, y: p.y + GEN });
@@ -131,7 +141,8 @@ G.Ranking = (() => {
   }
   cachePrune();
 
-  // Tus mejores marcas por tabla (para no leer antes de escribir).
+  // Tus mejores marcas por tabla (para no leer antes de escribir): "tabla:id"
+  // el tiempo y "tabla:id#d" el daño a Arceus.
   // (best2 desde 2026-10-12: se quitaron del ranking las marcas rotas; así quien
   //  tenía una vuelve a mirar su marca real y puede volver a entrar.)
   const bestKey = () => 'ps.rk.best2.' + (fbx() ? fbx().uid : '');
@@ -149,19 +160,23 @@ G.Ranking = (() => {
    * subir con el tiempo, así que un valor viejo sigue sirviendo: si tu marca
    * no lo supera, seguro que no entra y no hace falta leer nada (cada resumen
    * pesa ~30 KB y al acabar una partida se miraban hasta 5; 13-10-2026).
+   * "tabla" la del tiempo y "tabla#d" la del daño a Arceus.
    */
   const THR = 'ps.rk.thr';
   function thresholds() { try { return JSON.parse(localStorage.getItem(THR) || '{}'); } catch (e) { return {}; } }
-  function noteTop(b, top) {
-    const vals = Object.values(top || {});
-    if (vals.length < TOP) return;
-    const low = Math.min(...vals.map(v => v.t));
+  function noteTop(b, sum) {
     const t = thresholds();
-    if ((t[b] || 0) >= low) return;
-    t[b] = low;
+    let changed = false;
+    for (const [k, rows, f] of [[b, sum.top, v => v.t], [b + '#d', sum.dtop, v => v.d]]) {
+      const vals = Object.values(rows || {});
+      if (vals.length < TOP) continue;
+      const low = Math.min(...vals.map(f));
+      if ((t[k] || 0) < low) { t[k] = low; changed = true; }
+    }
+    if (!changed) return;
     // Sólo las tablas de los periodos de ahora (y las históricas).
     const cur = Object.values(boardIds());
-    for (const k of Object.keys(t)) if (!cur.some(p => k.split('_')[1] === p)) delete t[k];
+    for (const k of Object.keys(t)) if (!cur.some(p => k.split('#')[0].split('_')[1] === p)) delete t[k];
     try { localStorage.setItem(THR, JSON.stringify(t)); } catch (e) { /* lleno */ }
   }
 
@@ -170,11 +185,19 @@ G.Ranking = (() => {
   // Fila de otro jugador: todo limpio (ver G.U.int / str), sea lo que sea que haya en la base de datos.
   const rowOf = (id, v) => {
     const U = G.U; v = v || {};
-    return { id: U.str(String(id), 200), t: U.int(v.t, 86400), uids: U.list(v.uids, 4).map(x => U.str(x, 128)),
+    return { id: U.str(String(id), 200), t: U.int(v.t, 86400), d: U.int(v.d != null ? v.d : v.dmg, 1e15), uids: U.list(v.uids, 4).map(x => U.str(x, 128)),
              names: U.list(v.names, 4).map(x => U.str(x, 24)), dex: U.list(v.dex, 4).map(x => U.int(x, 2000)),
              shiny: U.list(v.shiny, 4).map(x => x === true), lv: U.int(v.lv, 999) || 1, kills: U.int(v.kills, 1e9) };
   };
   const sorted = top => Object.entries(top || {}).map(([id, v]) => rowOf(id, v)).sort((a, b) => b.t - a.t);
+  const sortedD = dtop => Object.entries(dtop || {}).map(([id, v]) => rowOf(id, v)).sort((a, b) => b.d - a.d);
+  // Filas del resumen: copia exacta de la marca (lo comprueba firestore.rules).
+  // (Sin "shiny" si no hay ninguno: el resumen pesa menos.)
+  const shinyOf = (e, row) => { if (e.shiny.some(Boolean)) row.shiny = e.shiny; return row; };
+  const rowT = e => shinyOf(e, { t: e.t, uids: e.uids, names: e.names, dex: e.dex, lv: e.lv, kills: e.kills });
+  const rowD = e => shinyOf(e, { d: e.dmg, uids: e.uids, names: e.names, dex: e.dex });
+  /** El resumen tal cual se vuelve a escribir (sin perder la otra mitad). */
+  const sumOut = (top, dtop, me, ev, dev) => (dtop && Object.keys(dtop).length ? { top, dtop, me, ev, dev: dev || '' } : { top, me, ev });
   const now = () => firebase.firestore.FieldValue.serverTimestamp();
 
   // ---------------- anti-trampas ----------------
@@ -183,8 +206,9 @@ G.Ranking = (() => {
    * Hasta el 20-10-2026, al empezar a jugar se apuntaba la hora en runs/{uid}
    * y ninguna marca podía durar más que el tiempo real desde entonces. Era lo
    * que más escribía en Firestore (1/3) y la regla lo leía en cada marca, para
-   * una protección que se esquivaba esperando una vez: se quitó. Quedan el tope
-   * de 45 min, nivel y derrotados con sentido y el baneo (firestore.rules).
+   * una protección que se esquivaba esperando una vez: se quitó. Quedan nivel
+   * y derrotados con sentido y el baneo (firestore.rules; el tope de 45 min se
+   * quitó el 23-10-2026: en el minuto 35 Arceus rompe los objetos).
    */
   let busy = Promise.resolve();
   /** Al empezar a jugar: sube las marcas del histórico que esperaban (ver DEFER). */
@@ -232,67 +256,81 @@ G.Ranking = (() => {
   /** La subida de una marca (para que la partida siguiente espere a que acabe). */
   function track(p) { busy = p.catch(() => {}); return p; }
 
-  /** Guarda la entrada en cada tabla donde mejore. → periodos mejorados */
+  /** Guarda la entrada en cada tabla donde mejore (tiempo o daño). → periodos mejorados */
   async function store(boards, id, entry) {
     const fb = fbx();
     const better = [];
     const known = bests();
+    const thr = thresholds();
     await Promise.all(boards.map(async ([b, period]) => {
-      const key = b + ':' + id;
+      const key = b + ':' + id, dkey = key + '#d';
       try {
         const topOnly = TOP_ONLY.has(period);
-        // Si no llegas a la 50.ª marca que conoce este navegador, no entras: en
-        // diario, semanal, mensual y por Pokémon no hay nada que hacer (ni leer).
-        const thr = thresholds()[b] || 0;
-        if (topOnly && thr && entry.t <= thr) return;
+        // Daño a Arceus: sólo en las tablas de periodo (no en las de cada Pokémon).
+        const dmg = period === 'p' ? 0 : entry.dmg || 0;
+        // Si no llegas a la 50.ª marca que conoce este navegador, no entras en
+        // ese top 50 (en diario, semanal, mensual y por Pokémon, ni se lee nada).
+        const thrT = thr[b] || 0, thrD = thr[b + '#d'] || 0;
+        const cached = cacheGet('S:' + b);
+        const canT = !thrT || entry.t > thrT || !!(cached && cached.top && id in cached.top);
+        const canD = dmg > 0 && (!thrD || dmg > thrD || !!(cached && cached.dtop && id in cached.dtop));
+        if (topOnly && !canT && !canD) return;
         // ¿Ya tenías una marca mejor? En el histórico, si este navegador no lo
-        // sabe, se mira una vez tu marca (pequeña). En las demás lo dice el
-        // resumen, que se lee igualmente dentro de la transacción de abajo.
+        // sabe, se mira una vez tu marca (pequeña). En las demás lo dice la
+        // marca, que se lee dentro de la transacción de abajo.
         if (known[key] === undefined && !topOnly) {
           const old = await col(b).doc(id).get();
           known[key] = old.exists ? old.data().t : 0;
+          known[dkey] = old.exists ? old.data().dmg || 0 : 0;
         }
-        if ((known[key] || 0) >= entry.t) return;
-        const data = Object.assign({}, entry, { at: firebase.firestore.FieldValue.serverTimestamp() });
-        // Si la tabla ya está llena y no llegas al top 50, no hace falta tocar el resumen
-        // (y en diario, semanal y mensual, ni siquiera se guarda la marca).
-        const cached = cacheGet('s:' + b);
-        let waiting = false;
-        if (thr && entry.t <= thr && !(cached && id in cached)) {
-          if (topOnly) { known[key] = entry.t; return; }
-          // Histórico fuera del top 50: como mucho cada DEFER (ver arriba).
-          if (dueOrDefer(b, id, entry)) await col(b).doc(id).set(data);
-          else waiting = true;
+        const upT = entry.t > (known[key] || 0), upD = dmg > (known[dkey] || 0);
+        if (!upT && !upD) return;
+        const stamp = e => Object.assign({}, e, { at: firebase.firestore.FieldValue.serverTimestamp() });
+        let waiting = false, wrote = false;
+        if (!canT && !canD) {
+          // Histórico fuera de los dos top 50: sólo cuenta el tiempo (tu puesto
+          // exacto), y como mucho cada DEFER (ver arriba).
+          if (!upT) return;
+          const e = Object.assign({}, entry, { dmg: Math.max(dmg, known[dkey] || 0) });
+          if (dueOrDefer(b, id, e)) { await col(b).doc(id).set(stamp(e)); wrote = true; } else waiting = true;
         } else {
-          let entered = true;
-          let newTop = null;
+          let newSum = null;
           await fb.fs.runTransaction(async tx => {
             const s = await tx.get(sumRef(b));
-            const top = Object.assign({}, s.exists ? s.data().top : {});
-            // (Sin "shiny" si no hay ninguno: el resumen pesa menos.)
-            const mine = { t: entry.t, uids: entry.uids, names: entry.names, dex: entry.dex, shiny: entry.shiny, lv: entry.lv, kills: entry.kills };
-            if (entry.shiny.some(Boolean)) mine.shiny = entry.shiny;
-            let ev = '';
-            // Ya estabas con una marca mejor (otro ordenador): nada que escribir.
-            if (id in top && top[id].t >= entry.t) { entered = false; newTop = top; return; }
-            if (!(id in top) && Object.keys(top).length >= TOP) {
-              const low = sorted(top).pop();
-              if (low.t >= entry.t) {                                // no entra en el top
-                if (!topOnly) tx.set(col(b).doc(id), data);
-                entered = false; newTop = top; return;
-              }
-              ev = low.id; delete top[ev];
+            const old = await tx.get(col(b).doc(id));
+            const sd = s.exists ? s.data() : {};
+            const top = Object.assign({}, sd.top || {}), dtop = Object.assign({}, sd.dtop || {});
+            newSum = { top: sd.top || {}, dtop: sd.dtop || {} };
+            const o = old.exists ? old.data() : null, ot = o ? o.t || 0 : 0, od = o ? o.dmg || 0 : 0;
+            const bt = entry.t > ot, bd = dmg > od;
+            // Ya tenías algo mejor (otro ordenador): nada que escribir.
+            if (!bt && !bd) return;
+            // La marca: lo mejor de cada cosa (nivel y derrotados, los del mejor tiempo).
+            const e = Object.assign({}, entry, { dmg: Math.max(dmg, od) }, bt ? {} : { t: ot, lv: o.lv, kills: o.kills });
+            let ev = '', dev = '', inT = false, inD = false;
+            if (bt) {
+              if (id in top || Object.keys(top).length < TOP) inT = true;
+              else { const low = sorted(top).pop(); if (low.t < e.t) { ev = low.id; delete top[ev]; inT = true; } }
+              if (inT) top[id] = rowT(e);
             }
-            tx.set(col(b).doc(id), data);
-            top[id] = mine;
-            tx.set(sumRef(b), { top, me: id, ev });
-            newTop = top;
+            if (bd) {
+              if (id in dtop || Object.keys(dtop).length < TOP) inD = true;
+              else { const low = sortedD(dtop).pop(); if (low.d < e.dmg) { dev = low.id; delete dtop[dev]; inD = true; } }
+              if (inD) dtop[id] = rowD(e);
+            }
+            // No entra en ningún top: en el histórico se guarda la marca (tu puesto); en los demás, nada.
+            if (!inT && !inD) { if (!topOnly && bt) { tx.set(col(b).doc(id), stamp(e)); wrote = true; } return; }
+            tx.set(col(b).doc(id), stamp(e));
+            tx.set(sumRef(b), sumOut(top, dtop, id, ev, dev));
+            newSum = { top, dtop };
+            wrote = true;
           });
-          if (newTop) { cacheSet('s:' + b, newTop); noteTop(b, newTop); }
-          if (topOnly && !entered) { known[key] = entry.t; return; }
-          if (!topOnly) clearDeferred(b, id);
+          if (newSum) { cacheSet('S:' + b, newSum); noteTop(b, newSum); }
+          if (!topOnly && wrote) clearDeferred(b, id);
         }
-        known[key] = entry.t;
+        known[key] = Math.max(known[key] || 0, entry.t);
+        known[dkey] = Math.max(known[dkey] || 0, dmg);
+        if (!wrote && !waiting) return;
         if (b.startsWith('g_')) known[b + ':*'] = Math.max(known[b + ':*'] || 0, entry.t);
         // (Si la marca espera para subir, tu puesto en la nube aún no ha cambiado.)
         if (!waiting) { mem.delete('r:' + b); try { localStorage.removeItem('ps.rk.c.r:' + b); } catch (e) { /* nada */ } }
@@ -316,7 +354,7 @@ G.Ranking = (() => {
     if (!fb || !G.Social.me || r.t < MIN_T) return [];
     flushDeferred();
     const ids = boardIds();
-    const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
+    const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills, dmg: Math.max(0, Math.floor(r.dmg || 0)) };
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
     if (r.t >= MIN_T_MON) boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
     const better = await store(boards, fb.uid, entry);
@@ -332,7 +370,7 @@ G.Ranking = (() => {
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
     const id = ms.map(m => m.uid).join('_');
     const entry = { t: r.t, uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),
-                    shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills };
+                    shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills, dmg: Math.max(0, Math.floor(r.dmg || 0)) };
     const ids = boardIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
     if (r.t >= MIN_T_MON) for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
@@ -343,20 +381,43 @@ G.Ranking = (() => {
 
   // ---------------- leer ----------------
 
-  /** El top 50 de una tabla (1 lectura, o 0 si se leyó hace menos de 2 h). */
-  const inflight = new Map();             // tabla -> lectura en curso (la lista y tu puesto la comparten)
-  async function summary(b) {
-    const c = cacheGet('s:' + b);
+  /** Los dos top 50 de una tabla, { top, dtop } (1 lectura, o 0 si se leyó hace menos de 2 h). */
+  const inflight = new Map();             // tabla -> lectura en curso (las listas y tu puesto la comparten)
+  async function sumOf(b) {
+    const c = cacheGet('S:' + b);
     if (c !== undefined) return c;
     if (!inflight.has(b)) {
       inflight.set(b, sumRef(b).get().then(s => {
-        const top = s.exists ? (s.data().top || {}) : {};
-        cacheSet('s:' + b, top);
-        noteTop(b, top);
-        return top;
+        const d = s.exists ? s.data() : {};
+        const sum = { top: d.top || {}, dtop: d.dtop || {} };
+        cacheSet('S:' + b, sum);
+        noteTop(b, sum);
+        return sum;
       }).finally(() => inflight.delete(b)));
     }
     return inflight.get(b);
+  }
+  /** El top 50 de tiempo de una tabla. */
+  async function summary(b) { return (await sumOf(b)).top; }
+
+  /** Tú y tus amigos con marca (como mucho 30). */
+  async function circleOf(fb) {
+    await G.Social.ensureFriends();          // (la lista de amigos ya no se carga al entrar)
+    return [fb.uid, ...G.Social.friends.filter(f => f.status === 'ok').map(f => f.uid)].slice(0, 30);
+  }
+
+  /**
+   * Daño a Arceus: el top 50 de una tabla (de la misma lectura que el de
+   * tiempo) y tu puesto en él. No hay por Pokémon. → { rows, me: { pos, d } | { out } | null }
+   */
+  async function topDmg(mode, period, friendsOnly) {
+    const fb = fbx();
+    if (!fb) return { rows: [], me: null };
+    let rows = sortedD((await sumOf(board(mode, period))).dtop);
+    const i = rows.findIndex(r => r.uids.includes(fb.uid));
+    const me = !G.Social.me ? null : i >= 0 ? { pos: i + 1, d: rows[i].d } : { out: true };
+    if (friendsOnly) { const circle = await circleOf(fb); rows = rows.filter(r => r.uids.some(u => circle.includes(u))); }
+    return { rows: rows.slice(0, TOP), me };
   }
 
   /**
@@ -369,8 +430,7 @@ G.Ranking = (() => {
     const b = board(mode, period, dex);
     const rows = sorted(await summary(b));
     if (!friendsOnly) return rows.slice(0, TOP);
-    await G.Social.ensureFriends();          // (la lista de amigos ya no se carga al entrar)
-    const circle = [fb.uid, ...G.Social.friends.filter(f => f.status === 'ok').map(f => f.uid)].slice(0, 30);
+    const circle = await circleOf(fb);
     const inTop = rows.filter(r => r.uids.some(u => circle.includes(u)));
     // En diario, semanal, mensual y por Pokémon no hay marcas fuera del top 50.
     if (TOP_ONLY.has(period) || dex) return inTop;
@@ -462,18 +522,27 @@ G.Ranking = (() => {
     const boards = new Set();
     for (const m of ['s', 'g']) for (const [p] of PERIODS) boards.add(m + '_' + ids[p]);
     for (const k of Object.keys(bests())) boards.add(k.split(':')[0]);
-    await Promise.all([...boards].map(b => fb.fs.runTransaction(async tx => {
+    // Una fila por escritura (las reglas sólo dejan quitar una cada vez): se
+    // repite mientras quede alguna tuya (de tiempo o de daño).
+    const once = b => fb.fs.runTransaction(async tx => {
       const s = await tx.get(sumRef(b));
-      if (!s.exists) return;
-      const top = s.data().top || {};
+      if (!s.exists) return false;
+      const top = s.data().top || {}, dtop = s.data().dtop || {};
       for (const [id, v] of Object.entries(top)) {
         if (!(v.uids || []).includes(fb.uid)) continue;
-        // Una fila por escritura (las reglas sólo dejan quitar una cada vez).
         const next = Object.assign({}, top); delete next[id];
-        tx.set(sumRef(b), { top: next, me: '', ev: id });
-        return;
+        tx.set(sumRef(b), sumOut(next, dtop, '', id, ''));
+        return true;
       }
-    }).catch(() => {})));
+      for (const [id, v] of Object.entries(dtop)) {
+        if (!(v.uids || []).includes(fb.uid)) continue;
+        const next = Object.assign({}, dtop); delete next[id];
+        tx.set(sumRef(b), Object.assign(sumOut(top, next, '', '', id), { dtop: next, dev: id }));
+        return true;
+      }
+      return false;
+    }).catch(() => false);
+    await Promise.all([...boards].map(async b => { for (let i = 0; i < 8 && await once(b); i++) { /* otra */ } }));
     try { localStorage.removeItem(bestKey()); } catch (e) { /* nada */ }
   }
 
@@ -514,24 +583,25 @@ G.Ranking = (() => {
     return [...by.values()].sort((a, b) => b.n - a.n || b.at - a.at);
   }
 
-  /** Admin: la fila de una marca en el top 50 de su tabla (o null si ya no está). */
+  /** Admin: la fila de una marca en un top 50 de su tabla (o null si ya no está). */
   async function entryInfo(b, e) {
-    const top = await summary(b);
-    return top[e] ? rowOf(e, top[e]) : null;
+    const sum = await sumOf(b);
+    return sum.top[e] ? rowOf(e, sum.top[e]) : sum.dtop[e] ? rowOf(e, sum.dtop[e]) : null;
   }
 
-  /** Admin: quita una marca de una tabla (la marca y su fila del top 50). */
+  /** Admin: quita una marca de una tabla (la marca y sus filas de los dos top 50). */
   async function removeEntry(b, e) {
     const fb = fbx();
     await col(b).doc(e).delete().catch(() => {});
     await fb.fs.runTransaction(async tx => {
       const s = await tx.get(sumRef(b));
-      const top = Object.assign({}, s.exists ? s.data().top : {});
-      if (!(e in top)) return;
-      delete top[e];
-      tx.set(sumRef(b), { top, me: '', ev: e });
+      const d = s.exists ? s.data() : {};
+      const top = Object.assign({}, d.top || {}), dtop = Object.assign({}, d.dtop || {});
+      if (!(e in top) && !(e in dtop)) return;
+      delete top[e]; delete dtop[e];
+      tx.set(sumRef(b), Object.assign(sumOut(top, dtop, '', e, e), d.dtop ? { dtop } : {}));
     }).catch(err => console.warn('[Ranking] quitar', b, err.code || err.message));
-    cacheSet('s:' + b, undefined);
+    mem.delete('S:' + b); try { localStorage.removeItem('ps.rk.c.S:' + b); } catch (err) { /* nada */ }
   }
 
   /** Admin: quita la marca de un jugador o equipo de todas las tablas de ahora (y de `also`). */
@@ -564,11 +634,11 @@ G.Ranking = (() => {
         const gone = Object.keys(cur).filter(id => (cur[id].t || 0) > maxT);
         if (!gone.length) return;
         for (const id of gone) delete cur[id];
-        tx.set(d.ref, { top: cur, me: '', ev: gone[0] });
+        tx.set(d.ref, sumOut(cur, s.data().dtop, '', gone[0], ''));
       });
       await Promise.all(bad.map(id => fs.collection('lb').doc(d.id).collection('e').doc(id).delete().catch(() => {})));
       rows += bad.length; boards++;
-      mem.delete('s:' + d.id); try { localStorage.removeItem('ps.rk.c.s:' + d.id); } catch (e) { /* nada */ }
+      mem.delete('S:' + d.id); try { localStorage.removeItem('ps.rk.c.S:' + d.id); } catch (e) { /* nada */ }
     }
     // Las marcas del histórico que no están en el top 50 (sirven para el puesto exacto).
     for (const b of ['s_' + ALL, 'g_' + ALL]) {
@@ -590,6 +660,6 @@ G.Ranking = (() => {
       t1: (v.tickets || {}).t1 || 0, t10: (v.tickets || {}).t10 || 0, owned: Object.keys(v.owned || {}).length }; });
   }
 
-  return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, myRank, removeMine,
+  return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, topDmg, myRank, removeMine,
            report, reported, isAdmin, reports, entryInfo, removeEntry, purgeAbove, removeEverywhere, setMarked, dismiss, markedAccounts };
 })();

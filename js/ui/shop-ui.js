@@ -574,7 +574,7 @@ G.ShopUI = (() => {
     const tms = Object.keys(s.tms || {}).filter(id => G.Moves.BY_ID[id] && s.tms[id] > 0).sort((a, b) => moveName(a).localeCompare(moveName(b)));
     if (!items.length && !tms.length) {
       return `<p class="sub center" style="margin:24px 0">${G.T('Tu Mochila está vacía.')}<br><br>
-            <button class="btn gold" data-go-shop>${G.Icons.html('shop', 16)} ${G.T('Ir a la Tienda Kecleon')}</button></p>`;
+            <button class="btn gold" data-go-shop>${G.Icons.html('shop', 16)} ${G.T('Ir a la Tienda Kecleon')}</button></p>` + irisHtml();
     }
     let h = `<p class="sub" style="margin:10px 0">${G.T('Para usarlo, abre la colección, elige un Pokémon y pulsa Menta, Cápsula o Enseñar MT en su ficha.')}
       <button class="btn small" data-go-dex>${G.Icons.html('book', 14)} ${G.T('Ir a la colección')}</button></p><div class="upg">`;
@@ -587,6 +587,20 @@ G.ShopUI = (() => {
       const n = Object.keys(s.owned).filter(d => G.DEX_BY[d] && G.Mons.canLearn(+d, id)).length;
       h += row(G.Icons.html('move:' + id, 32), `${G.T('MT')} ${moveName(id)}`,
         n ? G.I18n.f('La pueden aprender {x} de tus Pokémon', n) : G.T('Ninguno de tus Pokémon la puede aprender'), `<b class="gold">×${s.tms[id]}</b>`);
+    }
+    return h + '</div>' + irisHtml();
+  }
+
+  /** Amuletos Iris: los 9, los que tienes y cuánto te falta para los demás. */
+  function irisHtml() {
+    const s = G.DB.save;
+    let h = `<h3 style="margin:14px 0 6px">${G.T('Amuletos Iris')}</h3>
+      <p class="sub" style="margin:0 0 8px">${G.T('Completa la Pokédex de una región (legendarios incluidos) y te dan su Amuleto Iris: en su banner, los shiny salen el doble (del 1 % al 2 %).')}</p><div class="upg">`;
+    for (const b of G.Gacha.BANNERS) {
+      const d = G.Gacha.dexOf(s, b.gen), on = d.have >= d.total, name = G.T(b.name);
+      h += row(G.Icons.html('iris', 32, on ? '' : 'off'), G.I18n.f('Amuleto Iris de {x}', name),
+        on ? G.I18n.f('Shiny al 2 % en el banner de {x}', name) : G.I18n.f('Completa la Pokédex de {x}', name),
+        on ? `<b class="gold">${G.Icons.html('shiny', 14)} 2 %</b>` : `<b class="sub">${d.have} / ${d.total}</b>`);
     }
     return h + '</div>';
   }

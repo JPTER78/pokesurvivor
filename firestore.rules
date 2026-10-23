@@ -147,17 +147,20 @@ service cloud.firestore {
       allow create, update: if false;
     }
 
-    // Una entrada sólo se puede mejorar, nunca empeorar. Anti-trampas:
-    //   - no más de 45 min (desde el 18-10-2026 la Sentencia de Arceus deja KO
-    //     de un toque hacia el minuto 40; antes era 1 h y se llegaba huyendo)
+    // Una entrada sólo se puede mejorar, nunca empeorar: el tiempo (t) o el
+    // daño a Arceus (dmg, desde el 23-10-2026), sin bajar el otro. Anti-trampas:
+    //   - (el tope de 45 min se quitó el 23-10-2026: en el minuto 35 Arceus
+    //     rompe los objetos; sólo queda el de un día, por si acaso)
     //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
     //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban; si aún
     //     no ha guardado nunca en la nube, no tiene documento y no está baneada)
     function validEntry(board, id) {
       let d = request.resource.data;
       let sv = /databases/$(database)/documents/saves/$(me());
-      return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
-        && d.t is int && d.t > 0 && d.t <= 2700
+      let dmg = d.get('dmg', 0);
+      return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'dmg', 'at'])
+        && d.t is int && d.t > 0 && d.t <= 86400
+        && dmg is int && dmg >= 0
         && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
         && (!exists(sv) || get(sv).data.get('ban', false) == false)
@@ -169,7 +172,8 @@ service cloud.firestore {
         && (board.matches('s_.*')
               ? (d.uids.size() == 1 && id == me())
               : (d.uids.size() >= 2 && d.uids.size() <= 4 && id == d.uids.join('_')))
-        && (resource == null || d.t > resource.data.t);
+        && (resource == null || (d.t >= resource.data.t && dmg >= resource.data.get('dmg', 0)
+              && (d.t > resource.data.t || dmg > resource.data.get('dmg', 0))));
     }
 
     match /lb/{board}/e/{id} {
@@ -178,42 +182,64 @@ service cloud.firestore {
       allow delete: if signedIn() && (me() in resource.data.uids || admin());
     }
 
-    // Resumen con el top 50 de cada tabla (lo que se lee al mirar el ranking).
-    //   top: { id: { t, uids, names, dex, shiny, lv, kills } }
-    //   me:  la fila que añades o mejoras (debe coincidir con tu marca validada,
-    //        escrita en la misma transacción)
-    //   ev:  la fila que sale del top (sólo si tiene menos tiempo que la tuya)
-    // Al borrar la cuenta: me = '' y ev = una fila tuya que se quita.
+    // Resumen con los dos top 50 de cada tabla (lo que se lee al mirar el ranking).
+    //   top:  { id: { t, uids, names, dex, shiny, lv, kills } }   tiempo aguantado
+    //   dtop: { id: { d, uids, names, dex, shiny } }              daño a Arceus (desde el 23-10-2026)
+    //   me:   la fila que añades o mejoras (debe coincidir con tu marca validada,
+    //         escrita en la misma transacción)
+    //   ev / dev: la fila que sale del top / del dtop (sólo si es peor que la tuya)
+    // Al borrar la cuenta: me = '' y ev (o dev) = una fila tuya que se quita.
     function validTop(board) {
       let d = request.resource.data;
       let old = resource == null ? {} : resource.data.top;
+      let dold = resource == null ? {} : resource.data.get('dtop', {});
+      let dnew = d.get('dtop', {});
+      let dev = d.get('dev', '');
       let changed = d.top.diff(old).affectedKeys();
-      return d.keys().hasOnly(['top', 'me', 'ev'])
+      return d.keys().hasOnly(['top', 'me', 'ev', 'dtop', 'dev'])
         && d.top is map && d.top.size() <= 50
-        && d.me is string && d.ev is string
-        && (d.me == '' ? (removeMine(d, old, changed) || adminRemove(d, old)) : addMine(board, d, old, changed));
+        && dnew is map && dnew.size() <= 50
+        && d.me is string && d.ev is string && dev is string
+        && (d.me == ''
+              ? (removeMine(d, old, changed, dold, dnew, dev) || adminRemove(d, old, dold, dnew))
+              : addMine(board, d, old, changed, dold, dnew, dev));
     }
-    // Moderación: el admin sólo puede QUITAR filas del top.
-    function adminRemove(d, old) {
-      return admin() && old.keys().hasAll(d.top.keys()) && d.top.diff(old).changedKeys().size() == 0;
+    // Moderación: el admin sólo puede QUITAR filas de los dos top.
+    function adminRemove(d, old, dold, dnew) {
+      return admin() && old.keys().hasAll(d.top.keys()) && d.top.diff(old).changedKeys().size() == 0
+        && dold.keys().hasAll(dnew.keys()) && dnew.diff(dold).changedKeys().size() == 0;
     }
-    function addMine(board, d, old, changed) {
+    // (Como mucho 7 argumentos por función: dchanged se calcula dentro.)
+    function addMine(board, d, old, changed, dold, dnew, dev) {
       let e = getAfter(/databases/$(database)/documents/lb/$(board)/e/$(d.me)).data;
-      let row = d.top[d.me];
-      // La fila del resumen es una COPIA exacta de la marca ya validada (validEntry):
-      // también nivel, derrotados y shiny (18-10-2026: sin esto se podía meter
-      // texto con código en el "nivel" y se ejecutaba en quien abría el ranking).
-      // shiny es opcional: las versiones del juego de antes del 18-10 no lo ponían.
+      let dchanged = dnew.diff(dold).affectedKeys();
       return me() in e.uids
         && changed.hasOnly([d.me, d.ev])
-        && row.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills'])
+        && dchanged.hasOnly([d.me, dev])
+        && (!(d.me in changed) || (d.me in d.top && rowOk(d.top[d.me], e)))
+        && (!(d.me in dchanged) || (d.me in dnew && drowOk(dnew[d.me], e)))
+        && (d.ev == '' || (d.me in d.top && !(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t))
+        && (dev == '' || (d.me in dnew && !(dev in dnew) && dev in dold && dold[dev].d <= e.get('dmg', 0)));
+    }
+    // La fila del resumen es una COPIA exacta de la marca ya validada (validEntry):
+    // también nivel, derrotados y shiny (18-10-2026: sin esto se podía meter
+    // texto con código en el "nivel" y se ejecutaba en quien abría el ranking).
+    // shiny es opcional: si no hay ninguno, no se pone.
+    function rowOk(row, e) {
+      return row.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills'])
         && row.t == e.t && row.uids == e.uids && row.names == e.names && row.dex == e.dex
         && row.lv == e.lv && row.kills == e.kills
-        && (!('shiny' in row) || row.shiny == e.shiny)
-        && (d.ev == '' || (!(d.ev in d.top) && d.ev in old && old[d.ev].t <= e.t));
+        && (!('shiny' in row) || row.shiny == e.shiny);
     }
-    function removeMine(d, old, changed) {
-      return d.ev in old && me() in old[d.ev].uids && !(d.ev in d.top) && changed.hasOnly([d.ev]);
+    function drowOk(row, e) {
+      return row.keys().hasOnly(['d', 'uids', 'names', 'dex', 'shiny'])
+        && row.d == e.get('dmg', 0) && row.d > 0 && row.uids == e.uids && row.names == e.names && row.dex == e.dex
+        && (!('shiny' in row) || row.shiny == e.shiny);
+    }
+    function removeMine(d, old, changed, dold, dnew, dev) {
+      let dchanged = dnew.diff(dold).affectedKeys();
+      return (d.ev in old && me() in old[d.ev].uids && !(d.ev in d.top) && changed.hasOnly([d.ev]) && dchanged.size() == 0)
+        || (dev in dold && me() in dold[dev].uids && !(dev in dnew) && dchanged.hasOnly([dev]) && changed.size() == 0);
     }
 
     match /lbs/{board} {

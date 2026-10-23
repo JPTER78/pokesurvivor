@@ -92,11 +92,14 @@ G.MenuUI = (() => {
     G.InvitePop.refresh();
   }
 
-  /** Texto bajo "Mochila": cuántos objetos y MT llevas. */
+  /** Texto bajo "Mochila": cuántos objetos y MT llevas (y los Amuletos Iris, si hay). */
   function bagLine() {
     const s = G.DB.save, sum = o => Object.values(o || {}).reduce((a, b) => a + (+b || 0), 0);
-    const items = sum(s.bag), tms = sum(s.tms);
-    $('menu-bag-sub').textContent = items || tms ? G.I18n.f('Objetos: {x} · MT: {x}', items, tms) : G.T('Vacía');
+    const items = sum(s.bag), tms = sum(s.tms), iris = G.Gacha.BANNERS.filter(b => G.Gacha.hasIris(s, b.gen)).length;
+    const parts = [];
+    if (items || tms) parts.push(G.I18n.f('Objetos: {x} · MT: {x}', items, tms));
+    if (iris) parts.push(G.I18n.f('Amuletos Iris: {x}', iris));
+    $('menu-bag-sub').textContent = parts.join(' · ') || G.T('Vacía');
   }
 
   /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */

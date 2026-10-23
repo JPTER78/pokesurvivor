@@ -94,8 +94,9 @@ G.Projectiles = (() => {
 
   function nearest(enemies, x, y, maxDist) {
     let best = null, bd = maxDist * maxDist;
+    const shield = G.Judgment && G.Judgment.shielded;      // con legendarios vivos, a Arceus no se le apunta
     for (const e of enemies) {
-      if (e.dead) continue;
+      if (e.dead || (e.arceus && shield)) continue;
       const d = G.U.dist2(x, y, e.x, e.cy());
       if (d < bd) { bd = d; best = e; }
     }

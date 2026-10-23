@@ -16,14 +16,26 @@ G.Camera = {
   // también un alto mínimo de mundo, para no ver una franja estrecha.
   MIN_VIEW_H: 420,
 
+  // Luminosfera: la vista se aleja (zoom > 1 = se ve más mundo); va hacia zoomTo poco a poco.
+  zoom: 1, zoomTo: 1, _cw: 0, _ch: 0,
+
   resize(cssW, cssH, dpr = 1) {
     this.dpr = dpr;
-    this.scale = Math.min(cssW / this.VIEW_W, cssH / this.MIN_VIEW_H);
-    this.w = cssW / this.scale;
-    this.h = cssH / this.scale;
+    this._cw = cssW; this._ch = cssH;
+    this.fit();
+  },
+
+  fit() {
+    this.scale = Math.min(this._cw / this.VIEW_W, this._ch / this.MIN_VIEW_H) / this.zoom;
+    this.w = this._cw / this.scale;
+    this.h = this._ch / this.scale;
   },
 
   follow(tx, ty, dt) {
+    if (this.zoom !== this.zoomTo) {
+      this.zoom = Math.abs(this.zoom - this.zoomTo) < 0.003 ? this.zoomTo : G.U.damp(this.zoom, this.zoomTo, 3, dt);
+      this.fit();
+    }
     this.x = G.U.damp(this.x, tx, 9, dt);
     this.y = G.U.damp(this.y, ty, 9, dt);
     if (this.shake > 0) {
