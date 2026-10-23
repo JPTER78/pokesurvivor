@@ -101,3 +101,72 @@ both host and guest with test world/network doubles.
 No desktop/browser-control tests were used. Real cross-browser WebRTC sessions,
 mobile CPU, NAT traversal and TURN are not validated by these automated tests.
 This bandwidth/cost implementation change does not add a player changelog entry.
+
+# Compact enemy rows, coop version 2 (22-10-2026)
+
+Built on top of the binary codec above; the codec itself is unchanged. The enemy
+list is most of every host frame (and of everything a TURN-relayed pair sends),
+so version 2 changes only how that list and the player-state keys are written.
+
+## Negotiation
+
+Guests add `cv: 2` to every frame they send. The host keeps the last value per
+guest and, only for guests with `cv >= 2`, replaces `e` with `e2` and keys `p` by
+the player's index in the room (`"0"`..`"3"`, the same `members` order every
+client received in `start`) instead of the 28-character uid. Old guests never
+send `cv` and keep receiving `e`; old hosts ignore `cv` and keep sending `e`,
+which new guests still read. A room can mix versions.
+
+## `e2` layout (`js/net/rows.js`)
+
+One flat array of integers instead of one array per enemy:
+
+    full   id+1,    x,  y, hp, a + 7*dir + 56*status
+    short  -(id+1), dx, dy
+
+- Animation, direction and status bits share one number (usually 1 byte; 3 before).
+- A short row is sent when hp and that number are unchanged since the last row sent
+  to that guest; dx/dy are relative to the last position sent to that guest
+  (usually under 96 per axis: 1 byte instead of 3).
+- Enemies farther than 640 units from what the guest is watching (outside any
+  supported screen: the widest one sees ~520 from its centre) are sent one frame
+  in three. Between updates the guest already extrapolates them (`netUpdate`).
+- Every 15th frame (1 s at 15 Hz) every enemy is sent as a full row.
+
+## Why the baseline cannot drift
+
+This is the first per-guest delta baseline in the protocol, so its limits:
+
+- The data channel is reliable and ordered, so the guest has applied every row the
+  host sent before. The guest's `net.x/y` is exactly the last position received.
+- The host's baseline only keeps enemies present in the previous frame (or skipped
+  on purpose because they are far). An enemy missing from one frame (left the
+  950-unit radius, stashed by a rift or by the Judgment) is forgotten and comes
+  back as a full row, after the `ne` event that re-creates it on the guest.
+- Rows for enemies the guest does not know are ignored in both formats.
+- Even if something unforeseen happened, the 1-second full frame repairs it.
+
+## Measurement
+
+`node tools/bench_coop.cjs` simulates 15 s at 15 Hz with the real codec and
+`rows.js`, in three scenarios (all enemies on screen while calm, on screen in heavy
+combat, and players apart). Selected wire bytes per host frame and guest:
+
+| Scenario | Enemies | Before | After | Saving |
+| --- | ---: | ---: | ---: | ---: |
+| Together, calm | 100 | 1,928 | 928 | 51.9% |
+| Together, combat | 100 | 1,882 | 1,016 | 46.0% |
+| Apart | 100 | 1,959 | 851 | 56.5% |
+| Together, calm | 300 | 5,018 | 2,148 | 57.2% |
+| Together, combat | 300 | 4,904 | 2,419 | 50.7% |
+| Apart | 300 | 5,149 | 1,925 | 62.6% |
+
+Encode + decode time per frame also drops (0.37 → 0.25 ms for 300 enemies in combat
+on the same machine), because there are no per-enemy arrays to build or walk.
+Same caveats as above: synthetic traffic, not captures or TURN billing.
+
+`node --test tests/rows.test.cjs` checks that after 90 frames of 300 moving,
+hit and animated enemies the guest holds exactly the host's state, that far enemies
+never skip more than 2 frames in a row, that an enemy missing from a frame returns
+as a full row, that malformed arrays stop decoding, and the real `coop.js` with both
+old and new guests and hosts.

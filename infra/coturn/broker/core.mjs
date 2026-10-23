@@ -31,6 +31,9 @@ export function createHandler({ config, secret, verifyToken, now = Date.now }) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     if (req.method === 'OPTIONS') {
+      // The browser may reuse this preflight for 2 h (Chromium's maximum) instead of
+      // sending OPTIONS before every credential POST: half the requests per refresh.
+      res.setHeader('Access-Control-Max-Age', '7200');
       res.setHeader('Access-Control-Allow-Methods', 'POST');
       res.setHeader('Access-Control-Allow-Headers', 'Authorization');
       res.writeHead(204); return res.end();

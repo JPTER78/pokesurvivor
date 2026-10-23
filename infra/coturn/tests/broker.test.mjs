@@ -75,3 +75,9 @@ test('health checks disclose no credentials and do not call Firebase', async () 
   const r = await request(h, { method: 'GET', url: '/healthz', headers: {} });
   assert.deepEqual(r.body, { ok: true }); assert.equal(r.status, 200);
 });
+test('the CORS preflight can be reused for 2 h, so refreshes need one request instead of two', async () => {
+  const r = await request(service(), { method: 'OPTIONS' });
+  assert.equal(r.status, 204);
+  assert.equal(r.headers['Access-Control-Max-Age'], '7200');
+  assert.equal(r.headers['Access-Control-Allow-Origin'], config.origins[0]);
+});
