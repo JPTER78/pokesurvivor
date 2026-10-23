@@ -216,7 +216,7 @@ G.I18n.add({
   "Potencia": "Potência",
   "Carrera": "Corrida",
   "Reflejos": "Reflexos",
-  "Coraza": "Couraça",
+  "Coraza": "Escudo",
   "Síntesis": "Síntese",
   "Imán": "Ímã",
   "Aprendizaje": "Aprendizado",
