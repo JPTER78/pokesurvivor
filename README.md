@@ -116,28 +116,6 @@ lucro.
 **La única web oficial es [pokesurvivor.com](https://pokesurvivor.com).** El
 juego es y será gratis: si alguien te pide pagar, no somos nosotros.
 
-## Probar una rama en local
-
-Desde la raíz del repositorio:
-
-```sh
-python -m http.server 8000
-```
-
-Abre **http://localhost:8000/dev.html** para probar los fuentes de la rama.
-Si acabas de cambiar de rama, recarga con Ctrl+F5.
-
-Abrir solamente `http://localhost:8000/` carga `index.html`, que utiliza
-`js/app.min.js`: es la última versión compilada y puede no incluir los cambios
-de la rama. Python sirve los archivos, pero no los compila.
-
-Para comprobar la versión compilada, ejecuta `node tools/build.js` y después
-abre `http://localhost:8000/`. No edites `index.html` ni `js/app.min.js` a mano.
-
-Para revisar el acceso con teclado: escribe un nombre, pulsa Tab para pasar
-a contraseña y Mayús+Tab para volver. Repite en Crear cuenta. En una partida
-activa, Tab conserva el atajo de cambio de ataque.
-
 ## Estructura
 
 ```
