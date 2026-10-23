@@ -20,14 +20,14 @@ G.Combat = (() => {
   // se tiene en cuenta el radio del enemigo, no sólo la distancia a su centro.
   function meleeTarget(enemies, x, y, radius) {
     let nearestEnemy = null;
-    let nearestDistance = Infinity;
+    let nearestDistanceSquared = Infinity;
     for (const enemy of enemies) {
       if (enemy.dead) continue;
-      const distance = G.U.dist2(x, y, enemy.x, enemy.y);
+      const distanceSquared = G.U.dist2(x, y, enemy.x, enemy.y);
       const collisionRadius = radius + (enemy.r || 0);
-      if (distance <= collisionRadius * collisionRadius && distance < nearestDistance) {
+      if (distanceSquared <= collisionRadius * collisionRadius && distanceSquared < nearestDistanceSquared) {
         nearestEnemy = enemy;
-        nearestDistance = distance;
+        nearestDistanceSquared = distanceSquared;
       }
     }
     return nearestEnemy;

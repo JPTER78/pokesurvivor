@@ -27,7 +27,7 @@ node --test tests/melee-targeting.test.cjs tests/melee-collision.test.cjs
 node --test tests/*.test.cjs
 ```
 
-Los tests utilizan los módulos reales `player.js` y `combat.js` en un entorno aislado de Node.js, con simulaciones deterministas de colisiones, movimiento y efectos. Cubren el alcance, los radios de los enemigos, las fronteras de los arcos, la entrada y salida de enemigos, los cambios de dirección, las fusiones, las recargas, el apuntado manual, el cooperativo y los objetos destructibles.
+Los tests utilizan los módulos reales `player.js` y `combat.js` en un entorno aislado de Node.js, con simulaciones deterministas de colisiones, movimiento y efectos. Cubren el alcance, los radios de los enemigos, las fronteras de los arcos, la entrada y salida de enemigos, los cambios de dirección, las fusiones, las recargas, el apuntado manual, el cooperativo y los objetos destructibles. También comprueban la muerte de un enemigo entre movimientos vinculados y el cruce del arco por ±π. Los escenarios prolongados usan enemigos con vida suficiente para no confundir muerte con pérdida de objetivo.
 
 **Alcance de la validación:** estas pruebas verifican la lógica, no sustituyen las partidas en navegador ni permiten concluir que los FPS o la conexión multijugador no se vean afectados.
 
@@ -46,3 +46,13 @@ Desde la raíz, ejecutar `py -m http.server 8000` y abrir `http://localhost:8000
 ## Lo que deliberadamente no cambia
 
 Los ataques cuerpo a cuerpo utilizan una intersección circular y un arco, sin comprobar si una pared bloquea el golpe. Esta PR no introduce una nueva mecánica de oclusión: sería una modificación de combate independiente de la corrección del apuntado.
+
+## Revisión previa a la PR
+
+- 80 pruebas de la suite raíz superadas con Node.js 24, incluidas 44 de apuntado y colisiones.
+- Sintaxis de los archivos de juego modificados comprobada con `node --check`.
+- Empaquetado de producción con `node tools/build.js` superado en una copia temporal. El bundle, las páginas y la huella de publicación no se incluyen en esta rama: se generan al publicar según `CLAUDE.md`.
+- Novedad ES/EN incluida, con traducciones y diccionarios regenerados para los otros cinco idiomas.
+- Revisado el diff de código: sin nuevos `console.log`, `debugger`, dependencias ni archivos de depuración. Se conservan las pruebas y esta guía porque documentan y protegen el cambio.
+
+La revisión manual de esta iteración fue de código y escenarios. Sigue pendiente la partida de invitado y la prueba cooperativa descritas arriba; no se afirma validación visual ni de FPS en navegador.

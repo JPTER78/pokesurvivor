@@ -8,6 +8,8 @@
 (() => {
   const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
   const rows = [
+    ["Apuntado cuerpo a cuerpo", "Visée au corps à corps", "Mira in mischia", "Mira corpo a corpo", "近战瞄准", "近戰瞄準"],
+    ["Los ataques cuerpo a cuerpo automáticos priorizan enemigos dentro de su zona de impacto aunque haya un jefe más lejos. Cada movimiento vinculado comprueba su propio alcance y no consume la recarga completa si no puede alcanzar a ningún enemigo.", "Les attaques automatiques au corps à corps privilégient les ennemis dans leur zone d’impact, même si un boss se trouve plus loin. Chaque capacité liée vérifie sa propre portée et ne consomme pas son temps de recharge complet si aucun ennemi n’est à portée.", "Gli attacchi automatici in mischia danno priorità ai nemici nella zona d’impatto, anche se un boss è più lontano. Ogni mossa collegata verifica la propria portata e non consuma l’intera ricarica se non può raggiungere alcun nemico.", "Os ataques automáticos corpo a corpo priorizam inimigos na área de impacto, mesmo quando há um chefe mais distante. Cada golpe vinculado verifica seu próprio alcance e não consome toda a recarga se não puder atingir nenhum inimigo.", "自动近战攻击会优先选择命中范围内的敌人，即使远处有首领。每个联动招式都会单独检查射程，无法命中任何敌人时不会消耗完整冷却时间。", "自動近戰攻擊會優先選擇命中範圍內的敵人，即使遠處有首領。每個連動招式都會單獨檢查射程，無法命中任何敵人時不會消耗完整冷卻時間。"],
     ["Tipo", "Type", "Tipo", "Tipo", "属性", "屬性"],
     ["Nuevo", "Nouveau", "Novità", "Novidades", "新增", "新增"],
     ["Cambios", "Modifications", "Modifiche", "Alterações", "变更", "變更"],
