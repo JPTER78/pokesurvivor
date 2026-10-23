@@ -8,6 +8,8 @@
 (() => {
   const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
   const rows = [
+    ["Navegación con teclado", "Navigation au clavier", "Navigazione da tastiera", "Navegação pelo teclado", "键盘导航", "鍵盤導覽"],
+    ["Acceso: Tab y Mayús+Tab permiten pasar entre los campos de nombre y contraseña. Escribir en formularios ya no activa los controles del juego.", "Connexion : Tab et Maj+Tab permettent de passer entre les champs du nom et du mot de passe. La saisie dans les formulaires ne déclenche plus les commandes du jeu.", "Accesso: Tab e Maiusc+Tab permettono di passare tra i campi del nome e della password. Scrivere nei moduli non attiva più i comandi di gioco.", "Login: Tab e Shift+Tab permitem alternar entre os campos de nome e senha. Digitar em formulários não ativa mais os controles do jogo.", "登录：Tab 和 Shift+Tab 可在用户名和密码字段之间切换。在表单中输入内容不再触发游戏控制。", "登入：Tab 和 Shift+Tab 可在使用者名稱和密碼欄位之間切換。在表單中輸入內容不再觸發遊戲控制。"],
     ["Tipo", "Type", "Tipo", "Tipo", "属性", "屬性"],
     ["Nuevo", "Nouveau", "Novità", "Novidades", "新增", "新增"],
     ["Cambios", "Modifications", "Modifiche", "Alterações", "变更", "變更"],

@@ -13,6 +13,12 @@ G.Input = (() => {
 
   addEventListener('keydown', e => {
     const c = code(e);
+    // Los formularios conservan la edición y la navegación nativas del navegador.
+    if (e.target && (e.target.isContentEditable ||
+        /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return;
+    // Tab solo cambia de ataque (o espectador) durante una partida activa.
+    if (c === 'tab' && (!G.Game || G.Game.state !== 'playing' ||
+        (G.SettingsUI && G.SettingsUI.isOpen))) return;
     if (!down.has(c)) pressed.add(c);
     down.add(c);
     // Evita que el navegador haga scroll con flechas/espacio durante el juego.

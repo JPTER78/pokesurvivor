@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-23', title: ['Navegación con teclado', 'Keyboard navigation'], fix: [
+    ["Acceso: Tab y Mayús+Tab permiten pasar entre los campos de nombre y contraseña. Escribir en formularios ya no activa los controles del juego.",
+     'Login: Tab and Shift+Tab move between the username and password fields. Typing in forms no longer activates game controls.']
+  ] },
   { d: '2026-10-22', title: ['Cooperativo sin salas que se cierran solas', 'Co-op without rooms closing on their own'], fix: [
     ['Cooperativo: a los invitados ya no les sale «La sala se ha cerrado» a mitad de partida (a veces a los pocos minutos o al entrar en una grieta) mientras los demás seguían jugando. Pasaba cuando su conexión con el servidor de las salas se cortaba un momento; ahora la partida sigue y la sala se recupera sola.',
      'Co-op: guests no longer get "The room has been closed" in the middle of a run (sometimes after a few minutes or when entering a rift) while the others kept playing. It happened when their connection to the rooms server dropped for a moment; now the run goes on and the room recovers on its own.'],
