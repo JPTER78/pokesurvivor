@@ -61,6 +61,9 @@ G.RunUI = (() => {
     list.forEach((c, i) => {
       const el = document.createElement('div');
       el.className = 'card';
+      // Las cartas de movimiento llevan su ficha: ratón encima o el botoncito «?».
+      const mv = c.icon && c.icon.startsWith('move:') ? c.icon.slice(5) : null;
+      if (mv) el.dataset.move = mv;
       const tag = c.type === 'new'
         ? `<span class="tag-chip" style="background:${c.color}">Nuevo · ${c.tag}</span>${c.cat ? `<span class="tag-chip cat">${c.cat}</span>` : ''}`
         : c.type === 'up' || c.type === 'evo'
@@ -70,9 +73,12 @@ G.RunUI = (() => {
       el.innerHTML =
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
          <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
+         ${mv ? `<button class="mv-info" type="button" title="${G.T('Ver ficha')}">?</button>` : ''}
          <div class="key">${i + 1}</div>`;
       el.dataset.sfx = 'none';             // el juego pone su propio sonido al elegir
       el.onclick = () => pick(i);
+      const info = el.querySelector('.mv-info');
+      if (info) info.onclick = e => { e.stopPropagation(); G.MovesCodexUI.popup(mv); };
       box.appendChild(el);
     });
   }
@@ -136,7 +142,7 @@ G.RunUI = (() => {
       ${r.t1 || r.t10 ? `<div style="grid-column:1/-1"><span>Tickets del gacha</span><b>
         ${r.t1 ? G.Icons.html('ticket', 22) + ' +' + r.t1 + ' ' : ''}${r.t10 ? G.Icons.html('ticket10', 22) + ' +' + r.t10 + ' ×10' : ''}</b></div>` : ''}
       <div style="grid-column:1/-1"><span>Movimientos</span><b style="font-size:15px">
-        ${r.moves.map(m => `${G.Icons.html('move:' + m.id, 16)} ${G.T(m.name, 'move')} Nv.${m.lvl}`).join(' · ') || '—'}</b></div>
+        ${r.moves.map(m => `<span data-move="${m.id}">${G.Icons.html('move:' + m.id, 16)} ${G.T(m.name, 'move')} Nv.${m.lvl}</span>`).join(' · ') || '—'}</b></div>
       ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
         <div class="caught-row" id="over-caught"></div></div>` : ''}
       ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">¡Nuevo récord de tiempo!</div>' : ''}
@@ -211,12 +217,15 @@ G.RunUI = (() => {
         : m.desc || '';
       const el = document.createElement('div');
       el.className = 'card' + (opt.mode === 'add' || step2 ? ' bond' : '');
+      el.dataset.move = m.id;
       el.innerHTML =
         `<div class="ico" style="background:${col}33">${G.Icons.html('move:' + m.id, 32)}</div>
          <div class="txt"><div class="nm">${G.T(m.name, 'move')} <span class="tag-chip" style="background:${col}">Nv.${m.lvl}</span></div><div class="ds">${desc}</div></div>
+         <button class="mv-info" type="button" title="${G.T('Ver ficha')}">?</button>
          <div class="key">${i + 1}</div>`;
       el.dataset.sfx = 'none';
       el.onclick = () => pickBond(i);
+      el.querySelector('.mv-info').onclick = e => { e.stopPropagation(); G.MovesCodexUI.popup(m.id); };
       box.appendChild(el);
     });
   }
@@ -257,7 +266,7 @@ G.RunUI = (() => {
     const moves = pl.moves.map(m => {
       const secs = Math.max(5, t - (m.since || 0)), col = G.U.TYPE_COLOR[m.type];
       const cat = m.cat ? `<span class="tag-chip" style="background:${col}">${G.Stats.NAME[m.cat]}</span>` : '<span class="sub">Mejora</span>';
-      return `<tr><td>${G.Icons.html('move:' + m.id, 18)} ${G.T(m.name, 'move')} <small>Nv.${m.lvl}</small></td><td>${cat}</td>
+      return `<tr><td data-move="${m.id}">${G.Icons.html('move:' + m.id, 18)} ${G.T(m.name, 'move')} <small>Nv.${m.lvl}</small></td><td>${cat}</td>
         <td class="num">${m.cat ? n(m.dealt || 0) : '—'}</td><td class="num">${m.cat ? n((m.dealt || 0) / secs) + '/s' : '—'}</td></tr>`;
     }).join('');
     const mon = pl.mon, fis = 1 - G.Stats.taken(mon, 'physical'), esp = 1 - G.Stats.taken(mon, 'special');

@@ -290,6 +290,8 @@ G.HUD = (() => {
     }
     const BOND = '#ff8ad8';
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
+    // Para el cartel de «qué hace» al poner el ratón en un hueco (PC), como las esferas.
+    const tips = [];
 
     for (let i = 0; i < n; i++) {
       const g = pl.slots[i] || [];
@@ -312,12 +314,14 @@ G.HUD = (() => {
       ctx.stroke();
 
       if (!m) continue;
+      if (!fused) tips.push([x, y, S, m]);
 
       if (fused) {
         // Vínculo: los movimientos en una cuadrícula de 2×2, cada uno con su recarga.
         const C = 22, P = (S - C * 2) / 3;
         g.forEach((gm, k) => {
           const cx = x + P + (k % 2) * (C + P), cy = y + P + Math.floor(k / 2) * (C + P);
+          tips.push([cx, cy, C, gm]);
           G.Icons.draw(ctx, 'move:' + gm.id, cx, cy, C);
           const f = cdOf(gm);
           if (f > 0) { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(cx, cy, C, C * f); }
@@ -363,6 +367,17 @@ G.HUD = (() => {
         ctx.fillStyle = fused ? BOND : col;
         ctx.fillText(fused ? G.T(m.name, 'move') + ' +' + (g.length - 1) : G.T(m.name, 'move'), x + S / 2, y - 7);
       }
+    }
+
+    // Qué hace el movimiento del hueco donde está el ratón (PC, como las esferas).
+    if (!touch && tips.length) {
+      const mo = G.Input.mouse();
+      // Con esferas puestas, su barra va justo encima de los huecos: el cartel
+      // sube a la altura del de las esferas (oy − 8), para no tapársela.
+      const orbBar = (pl.orbs && pl.orbs.some(Boolean)) || Object.values(pl.orbBuff || {}).some(v => v > 0);
+      const by = orbBar ? sy - 78 : sy - 8;
+      for (const [tx, ty, ts, tm] of tips)
+        if (mo.x >= tx && mo.x <= tx + ts && mo.y >= ty && mo.y <= ty + ts) { G.MovesCodexUI.tip(ctx, tm, tx + ts / 2, by, w); break; }
     }
 
     // ---------- vínculo guardado (aún no hay dos movimientos sueltos) ----------
