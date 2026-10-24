@@ -753,3 +753,64 @@
     'Gracias: la revisaremos': 'Grazie: lo controlleremo'
   }, 'it');
 })();
+
+/* Ficha de movimientos (24-10-2026): catálogo en el menú, popup, hover y
+ * carteles en la run. Igual que arriba: español, francés, italiano,
+ * portugués de Brasil, chino simplificado y chino tradicional. */
+(() => {
+  const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
+  const rows = [
+    ["Qué hace cada ataque", "Ce que fait chaque attaque", "Cosa fa ogni attacco", "O que cada ataque faz", "每招的效果", "每招的效果"],
+    ["Buscar por nombre", "Rechercher par nom", "Cerca per nome", "Buscar por nome", "按名称搜索", "依名稱搜尋"],
+    ["Categoría", "Catégorie", "Categoria", "Categoria", "攻击类别", "攻擊類別"],
+    ["Clase", "Classe", "Classe", "Classe", "攻击方式", "攻擊方式"],
+    ["Mejoras al subir de nivel", "Améliorations en montant de niveau", "Migliorie salendo di livello", "Melhorias ao subir de nível", "升级强化", "升級強化"],
+    ["Evoluciona a", "Évolue en", "Evolve in", "Evolui para", "进化为", "進化為"],
+    ["con {x}", "avec {x}", "con {x}", "com {x}", "需要{x}", "需要{x}"],
+    ["Solo evolucionables", "Seulement évolutifs", "Solo evolvibili", "Só evoluíveis", "仅显示可进化", "僅顯示可進化"],
+    ["Elige un movimiento para ver su ficha", "Choisis un mouvement pour voir sa fiche", "Scegli una mossa per vedere la scheda", "Escolha um golpe para ver a ficha", "点击招式查看详情", "點擊招式查看詳情"],
+    ["Siguiente: {x}", "Suivant : {x}", "Prossima: {x}", "Próxima: {x}", "下一级：{x}", "下一級：{x}"],
+    ["Evoluciona con {x}", "Évolue avec {x}", "Evolve con {x}", "Evolui com {x}", "集齐{x}后可进化", "集齊{x}後可進化"],
+    ["Ya está evolucionado", "Déjà évolué", "Già evoluta", "Já está evoluído", "已进化完成", "已進化完成"]
+  ];
+  languages.forEach((lang, i) => G.I18n.add(Object.fromEntries(rows.map(r => [r[0], r[i + 1]])), lang));
+  // Las familias («Clase»), con contexto propio: «Rayo» ya está como movimiento.
+  const kindRows = [
+    ["Proyectil", "Projectile", "Proiettile", "Projétil", "弹幕", "彈幕"],
+    ["Cuerpo a cuerpo", "Corps à corps", "Corpo a corpo", "Corpo a corpo", "近战", "近戰"],
+    ["Rayo", "Rayon", "Raggio", "Raio", "光束", "光束"],
+    ["Órbita", "Orbite", "Orbita", "Órbita", "环绕", "環繞"],
+    ["Ráfaga", "Rafale", "Raffica", "Rajada", "爆发", "爆發"],
+    ["Aura", "Aura", "Aura", "Aura", "光环", "光環"],
+    ["Mejora", "Renfort", "Potenziamento", "Reforço", "强化", "強化"],
+    ["Bumerán", "Boomerang", "Boomerang", "Bumerangue", "回旋镖", "回力鏢"],
+    ["Cadena", "Chaîne", "Catena", "Corrente", "连锁", "連鎖"],
+    ["Minas", "Mines", "Mine", "Minas", "地雷", "地雷"],
+    ["Meteoros", "Météores", "Meteore", "Meteoros", "陨石", "隕石"],
+    ["Torreta", "Tourelle", "Torretta", "Torreta", "炮台", "砲台"],
+    ["Embestida", "Charge", "Scatto", "Investida", "冲锋", "衝鋒"],
+    ["Rastro", "Traînée", "Scia", "Rastro", "路径", "路徑"],
+    ["Abanico", "Cône", "Cono", "Leque", "扇形", "扇形"]
+  ];
+  languages.forEach((lang, i) => G.I18n.add(Object.fromEntries(kindRows.map(r => [r[0], r[i + 1]])), lang, 'kind'));
+})();
+(() => {
+  const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
+  const rows = [
+    ["Ver ficha", "Voir la fiche", "Vedi la scheda", "Ver ficha", "查看详情", "查看詳情"]
+  ];
+  languages.forEach((lang, i) => G.I18n.add(Object.fromEntries(rows.map(r => [r[0], r[i + 1]])), lang));
+})();
+(() => {
+  const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
+  const rows = [
+    ["Carteles de movimientos", "Info-bulles des capacités", "Schede dei movimenti", "Dicas de golpes", "招式提示", "招式提示"],
+    ["Al apuntar a un movimiento (las cartas, la colección o la barra de la run) sale qué hace y cómo evoluciona. El botoncito «?» de las cartas funciona siempre.",
+     "Viser une capacité (cartes, collection ou barre en partie) affiche son effet et son évolution. Le petit «?» des cartes fonctionne toujours.",
+     "Puntare una mossa (carte, collezione o barra in partita) mostra cosa fa e come evolve. Il pulsantino «?» delle carte funziona sempre.",
+     "Apontar para um golpe (cartas, coleção ou barra na partida) mostra o que ele faz e como evolui. O botãozinho «?» das cartas funciona sempre.",
+     "指向招式（卡牌、收藏或局内快捷栏）时显示其效果和进化方式。卡牌上的小「?」按钮始终可用。",
+     "指向招式（卡牌、收藏或局內快捷欄）時顯示其效果和進化方式。卡牌上的小「?」按鈕始終可用。"]
+  ];
+  languages.forEach((lang, i) => G.I18n.add(Object.fromEntries(rows.map(r => [r[0], r[i + 1]])), lang));
+})();

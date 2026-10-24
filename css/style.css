@@ -62,7 +62,7 @@ input { font: inherit; }
 .scr.hidden { display: none; }
 /* Pantallas que se abren con la barra superior a la vista: empiezan debajo de ella. */
 @media (min-height: 521px) {
-  #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 66px; }
+  #scr-goals, #scr-dex, #scr-moves, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 66px; }
 }
 .scr.dim { background: radial-gradient(circle at 50% 40%, rgba(10,20,50,.55), rgba(3,6,16,.88)); }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -996,3 +996,41 @@ html:lang(zh-Hant) { --font: 'Pixelify', 'PingFang TC', 'Microsoft JhengHei', 'N
 html:lang(zh-Hans) { --font: 'Pixelify', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif; }
 html:lang(zh) body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
 html:lang(zh) .btn, html:lang(zh) .chip { letter-spacing: 0; }
+
+/* ============ moves-codex — catálogo y ficha de movimientos (24-10-2026) ============ */
+#mv-grid .cell img.pix { display: block; margin: 6px auto 4px; }
+#mv-grid .cell b { white-space: normal; }
+.mv-ups { margin: 2px 0 8px; padding: 0; list-style: none; }
+.mv-ups li { font-size: 13px; color: var(--muted); margin: 3px 0; line-height: 1.35; }
+.mv-ups b { display: inline-block; min-width: 18px; text-align: center; color: var(--ink);
+  background: rgba(255,255,255,.08); border-radius: 4px; margin-right: 5px; }
+/* Cartel al pasar el ratón por un icono de movimiento (fuera de la run). */
+.move-tip { position: fixed; z-index: 80; width: 250px; pointer-events: none; display: none;
+  background: rgba(10,14,28,.95); border: 1.5px solid var(--edge); border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.5); padding: 8px 10px; }
+.move-tip .mv-tip-head { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.move-tip img.pix { flex: none; }
+.move-tip .mv-tip-meta { color: var(--muted); font-size: 12px; margin: 3px 0 4px; }
+.move-tip .mv-tip-desc { font-size: 12.5px; margin-bottom: 4px; line-height: 1.35; }
+.move-tip .mv-tip-evo { font-size: 12px; color: var(--gold); line-height: 1.35; }
+/* Botoncito «?» de las cartas de nivel y vínculo: la ficha del movimiento. */
+.card { position: relative; }
+.mv-info { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; padding: 0;
+  display: grid; place-items: center; border-radius: 50%; cursor: pointer;
+  border: 1.5px solid rgba(244,248,255,.25); background: rgba(10,14,28,.75);
+  color: var(--muted); font: 700 12px var(--font); line-height: 1; }
+.mv-info:hover { color: var(--ink); border-color: var(--edge); background: rgba(20,26,46,.95); }
+
+/* ============ movimientos: la lista llena la pantalla (24-10-2026) ============
+ * Sin esto la rejilla corta a 56vh y debajo queda un hueco muerto dentro
+ * de la caja. La caja estira la rejilla hasta abajo, como la colección en
+ * el móvil apaisado; align-content evita que las filas se estiren cuando
+ * la lista queda corta (con filtros). Sólo esta pantalla: la colección y
+ * los iniciales se quedan como están. */
+@media (min-height: 521px) {
+  #scr-moves .box { height: 100%; display: flex; flex-direction: column; }
+  #scr-moves .split { flex: 1; min-height: 0; margin-top: 8px; }
+  #scr-moves .split > div:first-child { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  #scr-moves .grid { max-height: none; flex: 1; min-height: 0; align-content: start; }
+  #mv-detail { overflow-y: auto; min-height: 0; }
+}

@@ -1020,3 +1020,27 @@ G.I18n.add({
   "Mi canal de YouTube": "My YouTube channel",
   "¡Estoy en directo! Pulsa para verlo": "I'm live! Click to watch"
 });
+// Ficha de movimientos: catálogo en el menú, popup y hover (24-10-2026)
+G.I18n.add({
+  'Qué hace cada ataque': 'What every move does',
+  'Buscar por nombre': 'Search by name',
+  'Categoría': 'Category', 'Clase': 'Class',
+  'Mejoras al subir de nivel': 'Upgrades as it levels up',
+  'Evoluciona a': 'Evolves into', 'con {x}': 'with {x}',
+  'Solo evolucionables': 'Only evolvable',
+  'Elige un movimiento para ver su ficha': 'Pick a move to see its details',
+  'Siguiente: {x}': 'Next: {x}', 'Evoluciona con {x}': 'Evolves with {x}',
+  'Ya está evolucionado': 'Already evolved'
+});
+// Las familias de movimiento («Clase»), con contexto propio: «Rayo» ya
+// está como movimiento (Thunderbolt) y «Mejora» como mejora de la run.
+G.I18n.add({
+  'Proyectil': 'Projectile', 'Cuerpo a cuerpo': 'Melee', 'Rayo': 'Beam', 'Órbita': 'Orbit', 'Ráfaga': 'Burst',
+  'Aura': 'Aura', 'Mejora': 'Buff', 'Bumerán': 'Boomerang', 'Cadena': 'Chain', 'Minas': 'Mines',
+  'Meteoros': 'Meteors', 'Torreta': 'Turret', 'Embestida': 'Dash', 'Rastro': 'Trail', 'Abanico': 'Cone'
+}, 'en', 'kind');
+G.I18n.add({ 'Ver ficha': 'View details' });
+G.I18n.add({
+  'Carteles de movimientos': 'Move tooltips',
+  'Al apuntar a un movimiento (las cartas, la colección o la barra de la run) sale qué hace y cómo evoluciona. El botoncito «?» de las cartas funciona siempre.': 'Pointing at a move (cards, collection or the in-run bar) shows what it does and how it evolves. The little «?» on cards always works.'
+});

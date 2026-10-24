@@ -81,8 +81,8 @@
 }
 </script>
 
-<link rel="stylesheet" href="css/style.css?v=c68f470baf">
-<script src="js/core/locales.js?v=f74867b398"></script>
+<link rel="stylesheet" href="css/style.css?v=66b25a3ffb">
+<script src="js/core/locales.js?v=061c384712"></script>
 <script src="js/noframe.js"></script>
 </head>
 <body>
@@ -186,6 +186,7 @@
       <div class="menu-list">
         <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
+        <button class="menu-item" data-go="moves">Movimientos<small>Qué hace cada ataque</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="shop">Tienda Kecleon<small>Mentas, Cápsulas y MT</small></button>
         <button class="menu-item" data-go="bag">Mochila<small id="menu-bag-sub">Vacía</small></button>
@@ -472,6 +473,25 @@
   </div>
 </section>
 
+<!-- ====== Movimientos: catálogo con su ficha (24-10-2026, ver js/ui/moves-codex.js) ====== -->
+<section id="scr-moves" class="scr dim hidden">
+  <div class="box wide">
+    <div class="row between"><h2>Movimientos <span id="mv-total" class="sub" style="font-size:15px"></span></h2><button class="btn small ghost" data-back>Volver</button></div>
+    <div class="split" style="margin-top:8px">
+      <div>
+        <div class="dex-tools">
+          <input id="mv-q" type="search" placeholder="Buscar por nombre" autocomplete="off" spellcheck="false">
+          <select id="mv-type" title="Tipo"></select>
+          <button class="btn small ghost hidden" id="mv-clear" type="button">Limpiar</button>
+        </div>
+        <div class="filters" id="mv-filters"></div>
+        <div class="grid" id="mv-grid"></div>
+      </div>
+      <div class="panel" id="mv-detail"></div>
+    </div>
+  </div>
+</section>
+
 <!-- ====== Tienda Kecleon (20-10-2026, del PR #236 de TheAdro7) ====== -->
 <section id="scr-shop" class="scr dim hidden">
   <div class="box wide shop-box">
@@ -608,6 +628,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=1a52cc838c"></script>
+<script defer src="js/app.min.js?v=232aa01834"></script>
 </body>
 </html>
