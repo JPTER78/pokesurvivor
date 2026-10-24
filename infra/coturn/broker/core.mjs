@@ -42,7 +42,7 @@ export function createHandler({ config, secret, verifyToken, now = Date.now }) {
     }
     const current = Math.floor(now() / 60000);
     if (current !== window) { window = current; global = 0; ips.clear(); users.clear(); }
-    // Listener is loopback-only; Caddy overwrites X-Real-IP with its socket peer.
+    // Unpublished bridge listener; Caddy overwrites X-Real-IP with its socket peer.
     const ip = req.headers['x-real-ip'] || req.socket.remoteAddress;
     if (++global > 300 || !limit(ips, ip, 30) || inflight >= 32) {
       res.setHeader('Retry-After', '60'); return send(429, { error: 'rate_limited' });

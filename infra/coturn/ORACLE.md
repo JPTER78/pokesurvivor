@@ -63,7 +63,7 @@ resumidos; guardar tokens, IP de jugadores y logs detallados en privado.
 | --- | --- |
 | SHA, arquitectura, versiones Docker/Compose y digests de imágenes registrados | Pendiente |
 | `docker compose config --quiet`, descarga, build y arranque correctos | Pendiente |
-| API saludable, HTTPS válido y 8088 accesible solo desde loopback | Pendiente |
+| API saludable, HTTPS válido y 8088 sin publicar en el host | Pendiente |
 | Token Firebase real de piloto aceptado; inválido, anónimo y UID excluido rechazados | Pendiente |
 | Dos redes distintas, incluida móvil: candidato seleccionado relay y datos bidireccionales | Pendiente |
 | TURN UDP y TURN TCP probados por separado; TLS si se habilita | Pendiente |
@@ -89,7 +89,7 @@ Mantener fuera del VPS una copia privada cifrada de `settings.json`,
 `runtime/auth-secret`, certificados TURN si se usan y sus instrucciones de renovación.
 Guardar también SHA, digests, DNS, reglas de red y el inventario de recursos OCI.
 Para evitar reemitir certificados repetidamente, respaldar de forma segura los
-volúmenes `caddy_data` y `caddy_config` con Caddy detenido y restaurarlos conservando
+directorios `runtime/caddy-data` y `runtime/caddy-config` con Caddy detenido y restaurarlos conservando
 permisos. Contienen claves privadas. No subir ninguna de estas copias al repositorio.
 
 Ante una caída:

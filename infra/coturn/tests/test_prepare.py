@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('prepare', ROOT / 'prepare.py')
@@ -19,6 +20,22 @@ def config():
 
 
 class PreparationTests(unittest.TestCase):
+    def test_root_user_or_group_rejected_before_writing(self):
+        for uid, gid in [(0, 1000), (1000, 0)]:
+            with tempfile.TemporaryDirectory() as tmp, \
+                    patch.object(module.os, 'getuid', return_value=uid, create=True), \
+                    patch.object(module.os, 'getgid', return_value=gid, create=True):
+                with self.assertRaisesRegex(ValueError, 'non-root'):
+                    module.prepare(config(), tmp)
+                self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_caddy_routes_to_unpublished_broker_with_admin_disabled(self):
+        _, _, caddy = module.render(config(), 'a' * 64)
+        self.assertIn('reverse_proxy credentials:8088', caddy)
+        self.assertIn('admin off', caddy)
+        self.assertIn('protocols h1 h2', caddy)
+        self.assertIn('header_up X-Real-IP {remote_host}', caddy)
+
     def test_direct_and_nat_mapping(self):
         c = config()
         direct, _, _ = module.render(c, 'a' * 64)
@@ -58,6 +75,8 @@ class PreparationTests(unittest.TestCase):
     def test_preparation_preserves_secret_and_writes_no_secret_to_env(self):
         with tempfile.TemporaryDirectory() as tmp:
             module.prepare(config(), tmp)
+            self.assertTrue((Path(tmp) / 'runtime/caddy-data').is_dir())
+            self.assertTrue((Path(tmp) / 'runtime/caddy-config').is_dir())
             secret = (Path(tmp) / 'runtime/auth-secret').read_text().strip()
             self.assertRegex(secret, r'^[a-f0-9]{64}$')
             module.prepare(config(), tmp)

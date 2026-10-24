@@ -7,9 +7,9 @@ La activación en el juego requiere la integración y validación descritas más
 
 ## Qué incluye
 
-- Coturn `4.18.0-r0`, con UDP/TCP 3478 y relé UDP 49160–49559. Red host en Linux.
+- Coturn `4.18.0-r0-alpine`, con UDP/TCP 3478 y relé UDP 49160–49559. Red host en Linux.
 - API de credenciales en Node 24 y Firebase Admin `14.5.0`, con lockfile.
-- Caddy `2.11.7` para HTTPS de la API; certificados renovados automáticamente.
+- Caddy `2.11.7` reconstruido para HTTPS de la API; certificados renovados automáticamente.
 - Generador de configuración y secreto de 256 bits; los archivos privados están
   ignorados por Git. No se genera ni publica ningún secreto de producción ahora.
 - Credenciales HMAC temporales; verificación de ID token del proyecto existente
@@ -46,7 +46,7 @@ son valores para un piloto, no una promesa de capacidad ni un límite de gasto m
 | UDP y TCP 3478 | Internet | Cliente → coturn |
 | UDP 49160–49559 | Internet | Puertos de relé; respetar cualquier cambio del rango |
 | TCP 5349 | Internet, solo al habilitar `tls` | TURN sobre TLS opcional |
-| TCP 8088 | **Nunca abrir** | API interna enlazada a 127.0.0.1 |
+| TCP 8088 | **Nunca abrir ni publicar** | API en la red Docker dedicada |
 
 La salida debe permitir DNS, HTTPS hacia Google/ACME y UDP hacia los puertos públicos
 de los otros jugadores, no solo hacia el rango local 49160–49559. Mantener tráfico
@@ -64,8 +64,7 @@ cp settings.example.json settings.json
 python3 prepare.py --check
 python3 prepare.py
 docker compose config --quiet
-docker compose pull
-docker compose build credentials
+docker compose build --pull
 ```
 
 Campos que hay que cambiar:
@@ -93,14 +92,15 @@ ni `settings.json` en una PR. Respaldarlos solo en almacenamiento privado.
 docker compose up -d
 docker compose ps
 docker compose logs --tail=80 coturn credentials https
-curl --fail http://127.0.0.1:8088/healthz
+docker compose exec -T credentials node -e "fetch('http://127.0.0.1:8088/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 ```
 
 El arranque de Caddy solicita un certificado público real para `apiHost`.
 La comprobación de salud solo verifica que la API responde; **no prueba el relé**.
 Comprobar que coturn no registra opciones desconocidas, errores de permisos ni
-direcciones de escucha inexistentes. `ss -lntup` debe confirmar que 8088 solo escucha
-en loopback y que no hay interfaces de administración expuestas.
+direcciones de escucha inexistentes. `docker compose port credentials 8088` no debe
+mostrar ningún puerto publicado. Verificar desde otra máquina que 8088 no es accesible
+y que no hay interfaces de administración expuestas.
 
 La API acepta `POST https://ice.<dominio>/v1/ice`, sin cuerpo, con:
 
@@ -173,6 +173,57 @@ Esta integración requiere una revisión aparte y la aprobación del autor.
 
 ## Operación, límites y apagado
 
+### Aislamiento de los contenedores
+
+Los tres servicios usan el UID/GID no root del operador, raíz de solo lectura,
+`cap_drop: ALL` y `no-new-privileges`. El generador rechaza UID/GID 0 antes de
+escribir, y el punto de entrada de cada servicio vuelve a comprobarlos al arrancar.
+No modificar `.env` para usar root. Los temporales están limitados en tamaño, sin
+ejecución, dispositivos ni setuid. No se monta el socket Docker.
+
+Solo coturn usa red host para sus puertos UDP. Caddy y la API comparten una red
+bridge dedicada: únicamente Caddy publica TCP 80/443. La API escucha en el puerto
+8088 del contenedor, sin publicación al host; sigue teniendo salida HTTPS para
+verificar firmas Firebase. El host y los contenedores de esa red pueden acceder a
+ella; no conectar servicios ajenos a esa red. La red bridge no es un filtro de salida.
+Caddy sobrescribe `X-Real-IP` y tiene la administración deshabilitada. HTTP/3 está
+deshabilitado: la API usa HTTP/1.1 y HTTP/2 por TCP.
+
+Caddy puede enlazar 80/443 gracias a `ip_unprivileged_port_start=0` únicamente en su
+espacio de red. No se altera ese parámetro en el host ni se concede una capacidad
+Linux. Solo puede escribir en los directorios privados de certificados/configuración
+y temporales. Esto no configura el motor Docker en modo rootless: administrar
+Docker sigue dando privilegios sobre el host. Mantener Docker/kernel actualizados,
+SSH por clave y firewall del proveedor; los puertos publicados por Docker pueden
+evitar reglas UFW del host, por lo que también se deben revisar sus reglas Docker.
+
+### Actualizar un despliegue anterior
+
+La versión anterior guardaba Caddy en volúmenes nombrados. Antes de recrear HTTPS,
+hacer copia privada y detenerlo; copiar `/data/.` y `/config/.` desde el contenedor
+anterior a `runtime/caddy-data/` y `runtime/caddy-config/` con `docker cp`. Comprobar
+que ambos directorios pertenecen al UID/GID del operador (también su contenido) y
+mantenerlos privados. No borrar los volúmenes anteriores hasta validar la migración.
+Si el contenedor viejo ya no existe, restaurar desde los volúmenes o la copia privada.
+No arrancar Caddy con carpetas vacías por accidente: provocaría una nueva emisión.
+
+Regenerar los archivos con `python3 prepare.py`, ejecutar `docker compose build --pull` y recrear los
+servicios en una ventana acordada: cambia el destino del proxy de loopback al nombre
+`credentials`. Comprobar la salud con `docker compose exec` como se indica arriba.
+No reutilizar solo el Compose nuevo con un Caddyfile viejo.
+
+Comprobación de permisos en el VPS:
+
+```sh
+for service in coturn credentials https; do
+  docker compose exec -T "$service" sh -c 'id; grep -E "^(CapEff|NoNewPrivs):" /proc/1/status'
+done
+```
+
+UID/GID distintos de cero, `CapEff: 0000000000000000` y `NoNewPrivs: 1` en los tres.
+Comprobar además desde otra red que 8088 no responde. El endurecimiento no sustituye
+las pruebas de TURN y renovación de certificados del piloto.
+
 Valores iniciales: 200 asignaciones globales, 12 por usuario TURN, 1 MiB/s por
 asignación y 3 MiB/s de capacidad global configurada (3 MiB/s × 31 días ≈ 8,4 TB:
 queda por debajo de los 10 TB/mes de salida gratis de Oracle Always Free). Coturn trata entrada/salida
@@ -205,9 +256,19 @@ coturn y API: hacer copia privada, sustituir `runtime/auth-secret` por 32 bytes
 aleatorios en hexadecimal, regenerar y recrear ambos servicios; las credenciales
 anteriores dejan de funcionar. No cambiar el secreto automáticamente en cada arranque.
 
-Para actualizar versiones, revisar las notas de seguridad, fijar la nueva imagen y
-probar el piloto. La imagen Node usa la línea mantenida `24-alpine`; al desplegar,
-registrar los digests reales de todas las imágenes para poder reproducir/volver atrás.
+Las tres imágenes se construyen localmente: coturn usa Alpine con paquetes
+actualizados y sin herramientas de diagnóstico DNS; Node elimina npm/yarn del
+runtime después de instalar dependencias. Caddy se compila desde el commit de la
+release 2.11.7 con Go 1.27.2 y `golang.org/x/net` 0.60.0, y actualiza su base Alpine.
+Los compiladores y Git quedan solo en la etapa de construcción de Caddy.
+
+Para actualizar versiones, revisar las notas de seguridad, fijar las nuevas bases y
+probar el piloto. Node usa la línea mantenida `24-alpine`. Registrar los digests de
+las bases y los IDs de las imágenes construidas. Conservar las imágenes aprobadas
+en un registro privado o archivo seguro para un rollback reproducible: `apk upgrade`
+y las etiquetas de base pueden cambiar entre builds. Ejecutar el escaneo de las
+imágenes finales, no solo `npm audit`; una dependencia de sistema o de Go también
+puede necesitar actualizarse aunque npm no reporte nada.
 Un rollback nunca debe restaurar una versión con una vulnerabilidad conocida.
 
 ## Validación realizada en este equipo
@@ -217,17 +278,36 @@ node --test infra/coturn/tests/broker.test.mjs
 python -m unittest discover -s infra/coturn/tests -p 'test_*.py'
 ```
 
-8 pruebas del servicio y 5 del generador pasan. Cubren HMAC, expiración, CORS,
+8 pruebas del servicio y 7 del generador pasan. Cubren HMAC, expiración, CORS,
 autenticación simulada, lista piloto, rate limits, mapeo NAT, rechazo de configuración,
 bloqueo de destinos privados y conservación del secreto. SDK oficial cargado y
 rechazo de token inválido comprobado sin cuenta de servicio. Lockfile instalado;
 `npm audit` reportó cero vulnerabilidades durante la preparación.
 
-**Sin Docker instalado aquí:** no se han ejecutado `docker compose config`, imágenes,
-coturn real, ACME, verificación de un ID token real ni pruebas WebRTC/NAT. No se ha
+**Sin motor Docker instalado aquí:** Compose se ha validado con el CLI portable;
+localmente no se han ejecutado imágenes, coturn real, ACME, verificación de un ID
+token real ni pruebas WebRTC/NAT. No se ha
 controlado el escritorio. La revisión operativa anterior es obligatoria antes de
 considerarlo validado para producción. No cambia ningún archivo del juego, por lo
 que no corresponde regenerar el bundle ni añadir novedades de jugadores.
+
+La revisión de endurecimiento valida además el modelo Compose con el CLI portable.
+En una máquina Linux desechable con Docker/Compose, Python y Node se pueden ejecutar
+las comprobaciones de contenedores y el escaneo final:
+
+```sh
+sh infra/coturn/tests/docker-checks.sh
+```
+
+**Solo en una copia limpia de pruebas, nunca sobre el despliegue:** el script
+genera configuración de ensayo, enlaza 80/443/3478, sustituye temporalmente Caddy
+por HTTP sin ACME y elimina sus contenedores al terminar. Construye las imágenes,
+comprueba arranque, usuario, capacidades, raíz de solo lectura, rechazo de root y
+proxy sin credenciales reales. Trivy lee el socket Docker únicamente en esa máquina
+desechable; no añadir ese montaje a los servicios de producción. El escaneo falla
+si detecta vulnerabilidades HIGH/CRITICAL, sin ocultar las que aún no tienen parche.
+No prueba ACME ni una partida WebRTC y no sustituye la aceptación del piloto. La
+ejecución Linux y el escaneo de las imágenes reconstruidas siguen pendientes aquí.
 
 ## Referencias oficiales consultadas
 
