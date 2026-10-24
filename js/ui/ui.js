@@ -88,7 +88,7 @@ G.UI = (() => {
    * fondo (arrastrar desde dentro no cierra). Sin cursor de mano en el fondo:
    * el mando lo tomaría por un botón (con el mando, B ya pulsa Volver). Durante
    * una tirada del gacha no pasa nada: #pull-fx tapa toda la pantalla. */
-  const BACKDROP = ['scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-goals', 'scr-friends', 'scr-rank', 'scr-settings'];
+  const BACKDROP = ['scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-goals', 'scr-friends', 'scr-rank', 'scr-settings', 'scr-news', 'scr-support'];
   function wireBackdrops() {
     let down = null;
     document.addEventListener('pointerdown', e => { down = e.target; });
