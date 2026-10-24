@@ -62,7 +62,7 @@ input { font: inherit; }
 .scr.hidden { display: none; }
 /* Pantallas que se abren con la barra superior a la vista: empiezan debajo de ella. */
 @media (min-height: 521px) {
-  #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 66px; }
+  #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile, #scr-shop, #scr-news { padding-top: 66px; }
 }
 .scr.dim { background: radial-gradient(circle at 50% 40%, rgba(10,20,50,.55), rgba(3,6,16,.88)); }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -546,6 +546,14 @@ img.pix.off { filter: grayscale(1); opacity: .4; }
 .cell .stars-row { display: flex; justify-content: center; margin-top: 2px; }
 .badge-r { position: absolute; top: 3px; right: 4px; }
 .move-icons { display: flex; flex-wrap: wrap; gap: 3px; margin: 0 0 10px; }
+/* Ficha de la colección: recuadro de cada ataque al pasar por su icono (menu.js, moveTips). */
+#dex-moves { gap: 4px; }
+#dex-moves span { cursor: help; }
+.move-tip { position: fixed; z-index: 30; max-width: 260px; padding: 8px 10px; pointer-events: none; font-size: 14px;
+  background: linear-gradient(180deg, var(--box1), var(--box2)); border: 2px solid var(--edge); border-radius: 8px;
+  box-shadow: 0 0 0 2px var(--edge-out), 0 8px 22px rgba(0,0,0,.55); }
+.move-tip-tags { display: flex; gap: 4px; margin: 5px 0; }
+.move-tip .sub { margin: 0; font-size: 12px; line-height: 1.4; }
 .card .ico img { display: block; }
 .upg-item .ic { display: flex; justify-content: center; }
 
