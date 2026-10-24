@@ -6,6 +6,13 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-24', title: ['Tienda Kecleon y Novedades', "Kecleon Shop and What's new"], chg: [
+    ['La Tienda Kecleon se puede cerrar pulsando fuera de la ventana, además de con Volver.',
+     'The Kecleon Shop can be closed by clicking outside its window, as well as with Back.']
+  ], fix: [
+    ['Las ventanas de la Tienda Kecleon y de Novedades ya no se meten por debajo de la barra de arriba: ahora empiezan debajo de ella, como las demás.',
+     "The Kecleon Shop and What's new windows no longer slide under the top bar: they now start below it, like the other windows."]
+  ] },
   { d: '2026-10-23', title: ['Ranking de daño a Arceus y Tablas', 'Arceus damage ranking and Plates'], new: [
     ["Botón de YouTube arriba, junto a Novedades: lleva al canal del juego y, cuando hay directo, se pone rojo con «EN DIRECTO» y te lleva a verlo.",
      "YouTube button at the top, next to What's new: it takes you to the game's channel and, when there is a live stream, it turns red with \"LIVE\" and takes you to watch it."],

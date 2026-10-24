@@ -461,6 +461,13 @@ G.ShopUI = (() => {
       st.classList.remove('opening');
       Scene.skip();
     };
+    // Pulsar fuera de la caja (en el fondo oscuro) es como Volver. Sólo si se
+    // pulsa y se suelta fuera: arrastrar desde dentro no la cierra. (Sin cursor
+    // de mano en el fondo: el mando lo tomaría por un botón.)
+    const scr = $('scr-shop');
+    let downOut = false;
+    scr.onpointerdown = e => { downOut = e.target === scr; };
+    scr.onclick = e => { if (downOut && e.target === scr) scr.querySelector('[data-back]').click(); };
   }
 
   /** Mochila desde el menú principal. */
