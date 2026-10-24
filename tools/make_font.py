@@ -13,10 +13,11 @@ de letras para que no desentonen.
 Necesita fontTools (pip install fonttools). La fuente cambia de nombre
 ("Pixelify PS"), como pide la licencia OFL para versiones modificadas.
 """
-import os
+import os, unicodedata
 from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
 from fontTools.pens.ttGlyphPen import TTGlyphPen
+from fontTools.pens.transformPen import TransformPen
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(ROOT, 'assets', 'fonts', 'PixelifySans.ttf')
@@ -35,6 +36,77 @@ DIGITS = {
     'eight': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
     'nine':  ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
 }
+
+
+def add_vietnamese(font):
+    """Añade las vocales y tonos vietnamitas que faltan en Pixelify Sans."""
+    glyf, hmtx = font['glyf'], font['hmtx']
+    cmap = font.getBestCmap()
+    order = list(font.getGlyphOrder())
+
+    def rect(pen, x0, y0, x1, y1):
+        pen.moveTo((x0, y0)); pen.lineTo((x0, y1)); pen.lineTo((x1, y1)); pen.lineTo((x1, y0)); pen.closePath()
+
+    def put_glyph(cp, name, g, adv):
+        if name not in order:
+            order.append(name)
+            font.setGlyphOrder(order)
+        g.recalcBounds(glyf)
+        glyf[name] = g
+        hmtx[name] = (adv, g.xMin if g.numberOfContours else 0)
+        cmap[cp] = name
+        for t in font['cmap'].tables:
+            t.cmap[cp] = name
+
+    # 1. Marcas combinables que faltan: gancho arriba (0309), cuerno (031B) y punto abajo (0323).
+    p_hook = TTGlyphPen(glyf)
+    rect(p_hook, 95, 625, 195, 675)
+    rect(p_hook, 145, 570, 195, 625)
+    rect(p_hook, 105, 524, 155, 570)
+    put_glyph(0x0309, 'hookabovecomb', p_hook.glyph(), 0)
+
+    p_dot = TTGlyphPen(glyf)
+    rect(p_dot, 99, -175, 201, -74)
+    put_glyph(0x0323, 'dotbelowcomb', p_dot.glyph(), 0)
+
+    p_horn = TTGlyphPen(glyf)
+    rect(p_horn, 480, 390, 560, 460)
+    rect(p_horn, 525, 450, 605, 535)
+    put_glyph(0x031B, 'horncomb', p_horn.glyph(), 0)
+
+    def combine(base_name, mark_name, dx, dy):
+        gset = font.getGlyphSet()
+        pen = TTGlyphPen(gset)
+        gset[base_name].draw(pen)
+        gset[mark_name].draw(TransformPen(pen, (1, 0, 0, 1, dx, dy)))
+        return pen.glyph()
+
+    # 2. Vocales con cuerno: Ơ (01A0), ơ (01A1), Ư (01AF), ư (01B0).
+    for cp, name, bname, dy in [(0x01A0, 'Ohorn', 'O', 180), (0x01A1, 'ohorn', 'o', 0),
+                                (0x01AF, 'Uhorn', 'U', 180), (0x01B0, 'uhorn', 'u', 0)]:
+        put_glyph(cp, name, combine(bname, 'horncomb', 0, dy), hmtx[bname][0])
+
+    # 3. Todas las vocales vietnamitas precompuestas (1EA0..1EF9).
+    mark_for = {0x0300: 'gravecomb', 0x0301: 'acutecomb', 0x0302: 'uni0302', 0x0303: 'tildecomb',
+                0x0306: 'uni0306', 0x0309: 'hookabovecomb', 0x0323: 'dotbelowcomb'}
+    for cp in range(0x1EA0, 0x1EFA):
+        if cp in cmap:
+            continue
+        dec = unicodedata.decomposition(chr(cp)).split()
+        if len(dec) != 2:
+            continue
+        b_cp, m_cp = int(dec[0], 16), int(dec[1], 16)
+        bname = 'dotlessi' if (b_cp == 0x69 and m_cp != 0x0323 and 'dotlessi' in glyf) else cmap.get(b_cp)
+        mname = mark_for.get(m_cp)
+        if not bname or not mname:
+            continue
+        bg, mg = glyf[bname], glyf[mname]
+        bg.recalcBounds(glyf); mg.recalcBounds(glyf)
+        dx = round((bg.xMin + bg.xMax) / 2 - (mg.xMin + mg.xMax) / 2)
+        dy = 0 if m_cp == 0x0323 else round(bg.yMax + 74 - mg.yMin)
+        put_glyph(cp, f'uni{cp:04X}', combine(bname, mname, dx, dy), hmtx[bname][0])
+
+    font.setGlyphOrder(order)
 
 
 def build(weight):
@@ -73,6 +145,7 @@ def build(weight):
         g.recalcBounds(glyf)
         glyf[name] = g
         hmtx[name] = (hmtx[name][0], g.xMin)
+    add_vietnamese(font)
     # Nombre nuevo (OFL: una versión modificada no debe llamarse igual).
     style = 'Regular' if weight == 400 else 'Bold'
     for rec in font['name'].names:

@@ -11,7 +11,7 @@ window.PS_LOCALES = (() => {
   const choices = [
     ['es', 'Español', 'es-ES'], ['en', 'English', 'en-GB'],
     ['fr', 'Français', 'fr-FR'], ['it', 'Italiano', 'it-IT'],
-    ['pt-BR', 'Português (Brasil)', 'pt-BR'],
+    ['pt-BR', 'Português (Brasil)', 'pt-BR'], ['vi', 'Tiếng Việt', 'vi-VN'],
     ['zh-Hans', '简体中文', 'zh-CN'], ['zh-Hant', '繁體中文', 'zh-TW']
   ];
   function normalize(value) {
