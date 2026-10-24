@@ -6,9 +6,11 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-24', title: ['Cerrar ventanas pulsando fuera', 'Close windows by clicking outside'], chg: [
+  { d: '2026-10-24', title: ['Ventanas del menú y ataques en la colección', 'Menu windows and moves in the collection'], chg: [
     ['Las ventanas del menú y Ajustes se pueden cerrar pulsando fuera de ellas, además de con Volver o Cerrar.',
-     'The menu windows and Settings can be closed by clicking outside them, as well as with Back or Close.']
+     'The menu windows and Settings can be closed by clicking outside them, as well as with Back or Close.'],
+    ['Colección: los iconos de los ataques que puede aprender cada Pokémon son el doble de grandes y, al pasar el ratón (o al tocarlos en el móvil), dicen su tipo, si es físico o especial y lo que hace.',
+     'Collection: the icons of the moves each Pokémon can learn are twice as big and, when you hover over them (or tap them on mobile), they show their type, whether they are physical or special, and what they do.']
   ], fix: [
     ['Las ventanas de la Tienda Kecleon y de Novedades ya no se meten por debajo de la barra de arriba: ahora empiezan debajo de ella, como las demás.',
      "The Kecleon Shop and What's new windows no longer slide under the top bar: they now start below it, like the other windows."]
