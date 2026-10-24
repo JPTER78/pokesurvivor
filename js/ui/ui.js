@@ -81,6 +81,25 @@ G.UI = (() => {
     }, true);
   }
 
+  // ---------------- cerrar pulsando fuera ----------------
+
+  /* Ventanas del menú que se cierran pulsando en el fondo oscuro, fuera de la
+   * caja: es como pulsar su Volver / Cerrar. Sólo si se pulsa y se suelta en el
+   * fondo (arrastrar desde dentro no cierra). Sin cursor de mano en el fondo:
+   * el mando lo tomaría por un botón (con el mando, B ya pulsa Volver). Durante
+   * una tirada del gacha no pasa nada: #pull-fx tapa toda la pantalla. */
+  const BACKDROP = ['scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-goals', 'scr-friends', 'scr-rank', 'scr-settings'];
+  function wireBackdrops() {
+    let down = null;
+    document.addEventListener('pointerdown', e => { down = e.target; });
+    document.addEventListener('click', e => {
+      const sc = e.target;
+      if (sc !== down || !BACKDROP.includes(sc.id)) return;
+      const back = [...sc.querySelectorAll('[data-back], [id$="-close"]')].find(b => b.getBoundingClientRect().width > 0);
+      if (back) back.click();
+    });
+  }
+
   /** Controles de volumen (se usan en la barra superior y en la pausa). */
   function soundControls(box) {
     const st = G.Audio.settings;
@@ -185,6 +204,7 @@ G.UI = (() => {
       toast(r.why === 'wait' ? `Se guarda en la nube en ${r.secs} s.` : r.why ? MSG[r.why] : '¡Partida guardada en la nube!', 3000);
     };
     wireSounds();
+    wireBackdrops();
     refreshSoundIcon();
     $('btn-sound').onclick = () => {
       const p = $('sound-panel');

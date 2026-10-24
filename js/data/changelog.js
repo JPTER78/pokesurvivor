@@ -6,9 +6,9 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-24', title: ['Tienda Kecleon y Novedades', "Kecleon Shop and What's new"], chg: [
-    ['La Tienda Kecleon se puede cerrar pulsando fuera de la ventana, además de con Volver.',
-     'The Kecleon Shop can be closed by clicking outside its window, as well as with Back.']
+  { d: '2026-10-24', title: ['Cerrar ventanas pulsando fuera', 'Close windows by clicking outside'], chg: [
+    ['Las ventanas del menú y Ajustes se pueden cerrar pulsando fuera de ellas, además de con Volver o Cerrar.',
+     'The menu windows and Settings can be closed by clicking outside them, as well as with Back or Close.']
   ], fix: [
     ['Las ventanas de la Tienda Kecleon y de Novedades ya no se meten por debajo de la barra de arriba: ahora empiezan debajo de ella, como las demás.',
      "The Kecleon Shop and What's new windows no longer slide under the top bar: they now start below it, like the other windows."]
