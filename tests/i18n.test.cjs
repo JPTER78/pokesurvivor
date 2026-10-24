@@ -39,8 +39,8 @@ function boot(saved = null, nav = 'en-US', pathname = '/', blocked = false) {
   dictionaries.forEach(load);
   return { ctx, G: ctx.G, storage, calls, dicts, Canvas, load, written };
 }
-const langs = ['es', 'en', 'fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
-const save = ['Guardar', 'Save', 'Enregistrer', 'Salva', 'Salvar', '保存', '儲存'];
+const langs = ['es', 'en', 'fr', 'it', 'pt-BR', 'vi', 'zh-Hans', 'zh-Hant'];
+const save = ['Guardar', 'Save', 'Enregistrer', 'Salva', 'Salvar', 'Lưu', '保存', '儲存'];
 for (const [i, lang] of langs.entries()) {
   test(`${lang}: isolated dictionary, templates, loading locale, canvas, new save notice`, () => {
     const b = boot(lang), I = b.G.I18n;
@@ -75,7 +75,7 @@ for (const [i, lang] of langs.entries()) {
     assert.equal(b.G.LoginUI.updateNotices(), false);
     b.G.DB.save.stats.runs = 1;
     assert.equal(b.G.LoginUI.updateNotices(), true);
-    assert.ok(/rankings|leaderboards/.test(b.G.T(node('savenote-title').textContent)) || lang.startsWith('zh') || lang === 'fr' || lang === 'it');
+    assert.ok(/rankings|leaderboards|xếp hạng/i.test(b.G.T(node('savenote-title').textContent)) || lang.startsWith('zh') || lang === 'fr' || lang === 'it' || lang === 'vi');
     assert.equal((node('savenote-body').innerHTML.match(/<p>/g) || []).length, 2);
     assert.equal(b.G.LoginUI.updateNotices(), false);
   });
@@ -101,7 +101,7 @@ for (const [i, lang] of langs.entries()) {
 test('locale precedence, aliases and blocked storage', () => {
   for (const [input, expected] of [['zh-TW', 'zh-Hant'], ['zh-HK', 'zh-Hant'], ['zh-Hant-HK', 'zh-Hant'],
     ['zh-CN', 'zh-Hans'], ['zh-SG', 'zh-Hans'], ['zh', 'zh-Hans'], ['zh-Hans-TW', 'zh-Hans'],
-    ['pt', 'pt-BR'], ['pt-PT', 'pt-BR'], ['fr-CA', 'fr'], ['it-IT', 'it'], ['ja-JP', 'en']]) {
+    ['pt', 'pt-BR'], ['pt-PT', 'pt-BR'], ['vi-VN', 'vi'], ['fr-CA', 'fr'], ['it-IT', 'it'], ['ja-JP', 'en']]) {
     assert.equal(boot(null, input).G.I18n.lang, expected, input);
   }
   assert.equal(boot('it', 'fr-FR', '/en/').G.I18n.lang, 'it');
