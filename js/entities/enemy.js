@@ -965,11 +965,11 @@
       }
     }
 
-    /** El jugador vivo más cercano (los caídos no atraen a nadie). */
+    /** El jugador vivo más cercano (los caídos no atraen a nadie, ni el compañero sin conexión: coop.js). */
     function nearestPlayer(players, x, y) {
       let best = null, bd = Infinity;
       for (const p of players) {
-        if (p.dead) continue;
+        if (p.dead || p.silent) continue;
         const d = G.U.dist2(x, y, p.x, p.y);
         if (d < bd) { bd = d; best = p; }
       }

@@ -84,7 +84,10 @@ G.RankingUI = (() => {
     if (my !== token) return;
     list.innerHTML = dlist.innerHTML = '';
     if (!rows.length) {
-      list.innerHTML = '<p class="sub">Todavía no hay marcas aquí. ¡Sé el primero!</p>';
+      // Sólo amigos en diario, semanal y mensual: ahí sólo se guarda el top 50 (ranking.js).
+      list.innerHTML = scope === 'friends' && period !== 'a' && !dex
+        ? '<p class="sub">Ninguno de tus amigos está en el top 50 de este periodo. En Histórico salen todos.</p>'
+        : '<p class="sub">Todavía no hay marcas aquí. ¡Sé el primero!</p>';
     }
     const uid = G.Social.uid;
     const b = G.Ranking.board(mode, period, dex), done = G.Ranking.reported();

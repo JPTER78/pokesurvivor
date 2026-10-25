@@ -301,6 +301,7 @@ G.Judgment = (() => {
       bossT -= dt;
       if (bossT <= 0) { bossT = BOSS_EVERY; if (!noBosses) spawnBoss(); }
     } else netTick(dt);
+    keepMeInside(pl);
     A.anim.update(dt);
     touch(pl);
     ember(dt);
@@ -311,7 +312,7 @@ G.Judgment = (() => {
   function target() {
     let best = null, bd = Infinity;
     for (const p of G.Game.everyone()) {
-      if (p.dead) continue;
+      if (p.dead || p.silent) continue;              // (ni el compañero sin conexión: coop.js)
       const d = G.U.dist2(p.x, p.y, A.x, A.y);
       if (d < bd) { bd = d; best = p; }
     }
@@ -433,6 +434,14 @@ G.Judgment = (() => {
     };
     clampIn(A);
     for (const e of G.EnemyMgr.all()) if (!e.remote) clampIn(e);
+  }
+  // Y tú (25-10-2026): sólo te frenaban las paredes, y quien se salía de la
+  // arena (yendo muy rápido) ya no podía ser alcanzado: aguantaba para siempre.
+  // Cada juego, con su jugador (también los invitados).
+  function keepMeInside(pl) {
+    if (!pl || !center) return;
+    const max = (ARENA_R - 1.4) * TS(), dx = pl.x - center.x, dy = pl.y - center.y, d = Math.hypot(dx, dy);
+    if (d > max) { pl.x = center.x + dx / d * max; pl.y = center.y + dy / d * max; }
   }
 
   // ---------------- legendarios ----------------

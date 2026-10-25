@@ -229,7 +229,8 @@ G.Ranking = (() => {
   function dueOrDefer(b, id, entry) {
     const d = deferred(), k = b + ':' + id, up = (d[k] && d[k].up) || 0;
     if (Date.now() - up >= DEFER) { d[k] = { up: Date.now() }; saveDeferred(d); return true; }
-    d[k] = { up, e: entry }; saveDeferred(d);
+    // (Si ya esperaba una mejor, se queda esa: 25-10-2026, una partida peor la sustituía.)
+    d[k] = { up, e: d[k] && d[k].e && d[k].e.t >= entry.t ? d[k].e : entry }; saveDeferred(d);
     return false;
   }
   function flushDeferred() {
@@ -332,7 +333,8 @@ G.Ranking = (() => {
         known[dkey] = Math.max(known[dkey] || 0, dmg);
         if (!wrote && !waiting) return;
         if (b.startsWith('g_')) known[b + ':*'] = Math.max(known[b + ':*'] || 0, entry.t);
-        // (Si la marca espera para subir, tu puesto en la nube aún no ha cambiado.)
+        // (Si la marca espera para subir, tu puesto en la nube aún no ha cambiado:
+        // myRank enseña la que espera sin volver a leer nada.)
         if (!waiting) { mem.delete('r:' + b); try { localStorage.removeItem('ps.rk.c.r:' + b); } catch (e) { /* nada */ } }
         if (period && period !== 'p' && !better.includes(period)) better.push(period);
       } catch (e) { console.warn('[Ranking] no se pudo guardar en', b, e.code || e.message); }
@@ -348,13 +350,24 @@ G.Ranking = (() => {
     G.UI.toast('¡Nueva mejor marca ' + names[best] + ' en el ranking!', 3400);
   }
 
+  /*
+   * Nivel y derrotados dentro de lo que aceptan las reglas (firestore.rules,
+   * validEntry). Si se pasaban, el servidor rechazaba la marca ENTERA sin avisar
+   * (25-10-2026: los mejores pasaban de 12 derrotados por segundo y su marca no
+   * subía nunca). Así entra siempre; como mucho, con algún derrotado de menos.
+   */
+  function fit(r) {
+    const t = Math.min(86400, Math.max(1, r.t | 0));
+    return { t, lv: Math.max(1, Math.min(r.lv | 0, 10 + Math.floor(t / 4))), kills: Math.max(0, Math.min(r.kills | 0, 100 + t * 12)) };
+  }
+
   function submitSolo(r) { return track(submitSoloNow(r)); }
   async function submitSoloNow(r) {
     const fb = fbx();
     if (!fb || !G.Social.me || r.t < MIN_T) return [];
     flushDeferred();
     const ids = boardIds();
-    const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills, dmg: Math.max(0, Math.floor(r.dmg || 0)) };
+    const entry = Object.assign({ uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny] }, fit(r), { dmg: Math.max(0, Math.floor(r.dmg || 0)) });
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
     if (r.t >= MIN_T_MON) boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
     const better = await store(boards, fb.uid, entry);
@@ -369,8 +382,8 @@ G.Ranking = (() => {
     if (!fb || r.t < MIN_T || !r.members || r.members.length < 2) return [];
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
     const id = ms.map(m => m.uid).join('_');
-    const entry = { t: r.t, uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),
-                    shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills, dmg: Math.max(0, Math.floor(r.dmg || 0)) };
+    const entry = Object.assign({ uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),
+                    shiny: ms.map(m => !!m.shiny) }, fit(r), { dmg: Math.max(0, Math.floor(r.dmg || 0)) });
     const ids = boardIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
     if (r.t >= MIN_T_MON) for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
@@ -400,6 +413,27 @@ G.Ranking = (() => {
   /** El top 50 de tiempo de una tabla. */
   async function summary(b) { return (await sumOf(b)).top; }
 
+  /*
+   * Lo que se enseña de una tabla: su resumen y, encima, lo que este navegador
+   * ya tiene leído de las más cortas (sin leer nada más). Cada tabla se guarda
+   * 2 h por su cuenta y el semanal podía enseñar marcas que el histórico (leído
+   * antes) aún no tenía: no cuadraban (25-10-2026). Toda marca de hoy es también
+   * de esta semana, de este mes y del histórico.
+   */
+  const WITHIN = { a: ['m', 'w', 'd'], m: ['d'], w: ['d'], d: [] };
+  async function view(mode, period, dex) {
+    const sum = await sumOf(board(mode, period, dex));
+    if (dex) return sum;
+    const top = Object.assign({}, sum.top), dtop = Object.assign({}, sum.dtop);
+    for (const p of WITHIN[period] || []) {
+      const c = cacheGet('S:' + board(mode, p));
+      if (!c) continue;
+      for (const [id, v] of Object.entries(c.top || {})) if (!top[id] || v.t > top[id].t) top[id] = v;
+      for (const [id, v] of Object.entries(c.dtop || {})) if (!dtop[id] || v.d > dtop[id].d) dtop[id] = v;
+    }
+    return { top, dtop };
+  }
+
   /** Tú y tus amigos con marca (como mucho 30). */
   async function circleOf(fb) {
     await G.Social.ensureFriends();          // (la lista de amigos ya no se carga al entrar)
@@ -413,7 +447,7 @@ G.Ranking = (() => {
   async function topDmg(mode, period, friendsOnly) {
     const fb = fbx();
     if (!fb) return { rows: [], me: null };
-    let rows = sortedD((await sumOf(board(mode, period))).dtop);
+    let rows = sortedD((await view(mode, period)).dtop);
     const i = rows.findIndex(r => r.uids.includes(fb.uid));
     const me = !G.Social.me ? null : i >= 0 ? { pos: i + 1, d: rows[i].d } : { out: true };
     if (friendsOnly) { const circle = await circleOf(fb); rows = rows.filter(r => r.uids.some(u => circle.includes(u))); }
@@ -428,7 +462,7 @@ G.Ranking = (() => {
     const fb = fbx();
     if (!fb) return [];
     const b = board(mode, period, dex);
-    const rows = sorted(await summary(b));
+    const rows = sorted((await view(mode, period, dex)).top);
     if (!friendsOnly) return rows.slice(0, TOP);
     const circle = await circleOf(fb);
     const inTop = rows.filter(r => r.uids.some(u => circle.includes(u)));
@@ -459,13 +493,16 @@ G.Ranking = (() => {
     if (!fb) return null;
     const b = board(mode, period, dex);
     // ¿Estás en el top 50? Entonces el puesto sale del resumen, sin gastar nada.
-    const rows = sorted(await summary(b));
+    const rows = sorted((await view(mode, period, dex)).top).slice(0, TOP);
     const i = rows.findIndex(r => r.uids.includes(fb.uid));
     if (i >= 0) return { pos: i + 1, t: rows[i].t, row: rows[i] };
     if (TOP_ONLY.has(period) || dex) return { out: true };
     const ck = 'r:' + b;
+    // Tu marca que espera para subir (DEFER) es la buena: se enseña ya esa, sin
+    // leer nada (el puesto, el de la última vez que se miró).
+    const w = mode === 's' ? (deferred()[b + ':' + fb.uid] || {}).e : null;
     const c = cacheGet(ck);
-    if (c !== undefined) return c;
+    if (c !== undefined) return c && w && w.t > c.t ? Object.assign({}, c, { t: w.t, row: rowOf(fb.uid, w) }) : c;
     // Si este navegador ya sabe que no tienes marca en esta tabla, no se mira.
     const kb = bests(), mk = b + ':' + (mode === 's' ? fb.uid : '*');
     if (kb[mk] === 0) { cacheSet(ck, null); return null; }
@@ -473,11 +510,14 @@ G.Ranking = (() => {
     if (mode === 's') {
       const d = await col(b).doc(fb.uid).get();
       if (d.exists) mine = rowOf(d.id, d.data());
+      if (w && (!mine || w.t > mine.t)) mine = rowOf(fb.uid, w);
     } else {
       const s = await col(b).where('uids', 'array-contains', fb.uid).get();
       for (const d of s.docs) { const r = rowOf(d.id, d.data()); if (!mine || r.t > mine.t) mine = r; }
     }
-    kb[mk] = mine ? mine.t : 0;
+    // (Sin bajar lo que ya sabía este navegador: con la marca de la nube, más
+    // vieja, la siguiente partida aunque fuera peor sustituía a la que esperaba.)
+    kb[mk] = Math.max(kb[mk] || 0, mine ? mine.t : 0);
     saveBests(kb);
     let res = null;
     if (mine) { const above = await countAbove(b, mine.t); res = { pos: above + 1, capped: above >= RANK_CAP, t: mine.t, row: mine }; }

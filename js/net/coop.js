@@ -81,7 +81,7 @@ G.Coop = (() => {
       p.x = x; p.y = y;
       p.net = { x, y, ang: Math.PI / 2, walk: 0, hp: p.maxHp, maxHp: p.maxHp, dead: 0, mv: G.baseStartOf(mon.dex), ml: 1, mag: 78, aim: Math.PI / 2, rev: 0 };
       G.Sprites.preload([mon.dex], 8000, p.shiny);
-      mates.set(m.uid, { uid: m.uid, name: m.name, color: COLORS[i], pl: p, connected: true, q: [], flushT: 0, xpMul: 1 });
+      mates.set(m.uid, { uid: m.uid, name: m.name, color: COLORS[i], pl: p, connected: true, q: [], flushT: 0, xpMul: 1, lastAt: performance.now() });
     });
   }
 
@@ -224,6 +224,10 @@ G.Coop = (() => {
     if (host) {
       for (const m of mates.values()) {
         if (!m.connected) continue;
+        // Un compañero que no manda nada (el móvil apagado o en segundo plano) se
+        // queda quieto y nunca muere: si los enemigos y Arceus le seguían
+        // persiguiendo, el anfitrión aguantaba para siempre (25-10-2026).
+        m.pl.silent = performance.now() - m.lastAt > SILENT_MS;
         m.flushT -= dt;
         if (m.flushT > 0) continue;
         m.flushT = rateFor(m.uid);
@@ -257,6 +261,7 @@ G.Coop = (() => {
    * en pausa («esperando al anfitrión») y el anfitrión sigue jugando.
    */
   const GRACE_MS = 45000;
+  const SILENT_MS = 3000;              // sin noticias de un compañero: los enemigos le dejan (ver tick)
   const graceT = new Map();             // uid -> temporizador de la espera
 
   function stopGrace(u) { clearTimeout(graceT.get(u)); graceT.delete(u); }
@@ -311,6 +316,7 @@ G.Coop = (() => {
   function onClientFrame(from, msg) {
     const m = mates.get(from);
     if (!m || !m.connected) return;
+    m.lastAt = performance.now(); m.pl.silent = false;
     if (msg.p) { m.state = msg.p; m.pl.net = readState(msg.p); m.xpMul = m.pl.net.xpMul || 1; reconcile(from, m.pl.net); }
     for (const ev of msg.ev || []) {
       switch (ev[0]) {

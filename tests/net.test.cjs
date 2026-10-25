@@ -6,6 +6,13 @@ const { frame, client } = require('./net-fixtures.cjs');
 const source = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 function codec() { const G = {}; new Function('G', source('js/net/codec.js'))(G); return G.NetCodec; }
 const C = codec();
+// Mensajes por la base de datos: rooms/{sala}/q/{para}/{remitente}_00..99 (database.rules.json).
+// Devuelve la ruta del destinatario, sin el hueco.
+function slotted(p) {
+  const i = p.lastIndexOf('/');
+  assert.match(p.slice(i + 1), /^[A-Za-z0-9]{1,64}_[0-9][0-9]$/);
+  return p.slice(0, i);
+}
 
 test('host/client frames, events, pauses and Unicode round-trip exactly', () => {
   for (const f of [client(), frame(0, 0), frame(100, 40), frame(600, 400)]) {
@@ -63,7 +70,7 @@ test('bounded deterministic random numeric payloads round-trip', () => {
 
 function network() {
   const pcs = [], relay = [], G = { NetCodec: codec(), DB: { fb: { uid: 'host', rtdb: {
-    ref: p => ({ on() {}, off() {}, push: s => { relay.push([p, s]); return Promise.resolve(); } })
+    ref: p => ({ on() {}, off() {}, set: s => { relay.push([slotted(p), s]); return Promise.resolve(); } })
   } } } };
   class PC {
     constructor() { pcs.push(this); }
@@ -153,7 +160,7 @@ test('real Coop.tick frames pass through the codec without changing gameplay fie
 
 function turnNetwork(respond, { user = { uid: 'host', getIdToken: async () => 'token' }, host = true } = {}) {
   const pcs = [], calls = [], signals = [], timers = [], G = { NetCodec: codec(), DB: { fb: { uid: host ? 'host' : 'guest', auth: { currentUser: user }, rtdb: {
-    ref: p => ({ on(ev, fn) { this.fn = fn; G.listen = fn; }, off() {}, push: s => { signals.push([p, JSON.parse(s)]); return Promise.resolve(); } })
+    ref: p => ({ on(ev, fn) { this.fn = fn; G.listen = fn; }, off() {}, set: s => { signals.push([slotted(p), JSON.parse(s)]); return Promise.resolve(); } })
   } } } };
   class PC {
     constructor(cfg) { this.cfg = cfg; pcs.push(this); }

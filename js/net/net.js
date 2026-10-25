@@ -302,9 +302,18 @@ G.Net = (() => {
 
   // ---------------- envío / recepción ----------------
 
+  /*
+   * Cada remitente tiene 100 huecos por destinatario (tuUid_00 ... tuUid_99) y
+   * los va usando en orden; quien recibe borra cada mensaje al leerlo. Antes cada
+   * mensaje era nuevo (push) y sin tope de tamaño, y el 23-10-2026 se llenó la
+   * base de datos de basura (ver social.js, createRoom). Las reglas
+   * (database.rules.json) sólo admiten estos huecos y mensajes de hasta 16.000.
+   */
+  let slot = 0;
   function relayPush(to, env) {
     if (!rtdb || !roomId) return;
-    rtdb.ref('rooms/' + roomId + '/q/' + to).push(JSON.stringify(env)).catch(e => console.warn('[Net] relé:', e.code || e.message));
+    const key = uid + '_' + String(slot++ % 100).padStart(2, '0');
+    rtdb.ref('rooms/' + roomId + '/q/' + to + '/' + key).set(JSON.stringify(env)).catch(e => console.warn('[Net] relé:', e.code || e.message));
   }
 
   function send(to, msg) {

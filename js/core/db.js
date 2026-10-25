@@ -295,7 +295,18 @@ G.DB = (() => {
   /** Apunta en la libreta de ESTE aparato lo que ha cambiado desde la última vez. */
   function fold(s) {
     if (!s) return s;
+    // Libreta en negativo (lo mismo gastado en dos aparatos): antes se veía 0,
+    // pero lo ganado después se volvía a apuntar en cada guardado (y en cada
+    // aparato) y los tickets crecían solos (25-10-2026). Ahora lo debido se
+    // perdona una vez en led.fix: como cada apunte, al juntar se toma el mayor,
+    // así que dos aparatos que ven la misma deuda no la perdonan dos veces.
+    if (isObj(s.led)) for (const k of curKeys(s, s.led)) {
+      const owed = -ledSum(s.led, k);
+      if (owed > 0) addTo(s.led, 'fix', k, owed);
+    }
     s.led = ledOf(s, DEV);
+    // Y el saldo es siempre el de la libreta.
+    for (const k of curKeys(s, s.led)) curSet(s, k, Math.max(0, ledSum(s.led, k)));
     return s;
   }
 
@@ -563,7 +574,30 @@ G.DB = (() => {
     // (Al salir de la pestaña ya no se sube nada: sólo con Guardar, ver MODO NUBE.
     // Y al volver tampoco se lee la nube desde el 20-10-2026: lo del otro aparato
     // se trae al recargar la página; pullSoon queda sin usar.)
+    if (window.addEventListener) window.addEventListener('storage', fromOtherTab);
     return true;
+  }
+
+  /*
+   * Otra pestaña de este navegador ha guardado su copia (25-10-2026). Las dos
+   * apuntan en la misma entrada de la libreta (es el mismo aparato), y al
+   * juntarlas ganaba la mayor: lo ganado o gastado en una se perdía. Ahora cada
+   * pestaña junta al momento lo de la otra, y si tenía algo que la otra no,
+   * vuelve a dejar la copia completa (la otra la junta y ya no cambia nada).
+   */
+  function fromOtherTab(e) {
+    if (mode !== 'cloud' || guest || !save || !uid || e.key !== K_CLOUD + uid || !e.newValue) return;
+    let other;
+    try { other = migrate(JSON.parse(e.newValue)); } catch (x) { return; }
+    const before = canon(save);
+    applyInPlace(fold(merge(plain(fold(save)), other)));
+    const now = canon(save);
+    // (Más nueva que la de la otra, para que al juntarla se quede con esta.)
+    if (now !== canon(other)) { save.updated = Math.max(Date.now(), (other.updated || 0) + 1); write(K_CLOUD + uid, save); }
+    if (now === before) return;
+    pending = true;
+    setSync('pending');
+    if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
   }
 
   /*
@@ -602,6 +636,8 @@ G.DB = (() => {
 
   const docRef = () => fs.collection('saves').doc(uid);
   const plain = s => JSON.parse(JSON.stringify(s));      // Firestore no admite undefined
+  // La partida en texto con las claves ordenadas (Firestore no guarda el orden): para comparar dos.
+  const canon = v => JSON.stringify(v, (k, x) => (isObj(x) ? Object.keys(x).sort().reduce((o, k2) => (o[k2] = x[k2], o), {}) : x));
 
   /** Abre la partida de la nube de un usuario recién autenticado. */
   async function openCloud(u, opts = {}) {
@@ -629,11 +665,46 @@ G.DB = (() => {
     lastPull = Date.now();
     // Si esta copia tiene algo que la nube no (cuenta nueva, progreso sin subir),
     // se queda pendiente hasta que pulses Guardar (ya no se sube sola al entrar).
-    const same = remote && !opts.legacy && (!cached || (cached.updated || 0) <= (remote.updated || 0));
+    // Se mira lo que hay, no la fecha (25-10-2026): si otro aparato guardó
+    // después, la nube era "más nueva" y lo de aquí sin subir (tickets, Pokémon)
+    // se daba por guardado; Guardar decía "Ya está todo guardado" y no lo subía.
+    const same = remote && !opts.legacy && canon(save) === canon(fold(migrate(plain(remote))));
     lastPush = Date.now();
-    if (!online) { pending = true; setSync('offline'); }
+    if (!online) { pending = true; setSync('offline'); readTries = 0; readLater(); }
     else if (same) setSync('ok');
     else { pending = true; setSync('pending'); }
+  }
+
+  /*
+   * Si al entrar no se pudo leer la nube (el móvil aún sin red al abrir), se
+   * jugaba con la copia de este navegador, que puede ser vieja, y no se volvía
+   * a mirar: faltaba lo guardado en otro aparato y se podía gastar dos veces
+   * (25-10-2026). Ahora se reintenta esa lectura (la única de la sesión: las
+   * fallidas no se cobran) hasta que sale, y se junta con lo de aquí.
+   */
+  let readT = 0, readTries = 0;
+  function readLater() {
+    clearTimeout(readT);
+    if (readTries >= 10) return;
+    readT = setTimeout(retryRead, Math.min(10 * 60e3, 10e3 * Math.pow(2, readTries++)));
+  }
+  async function retryRead() {
+    if (mode !== 'cloud' || guest || !save || !uid) return;
+    if (navigator.onLine === false) { readLater(); return; }
+    const u = uid, r0 = rev;
+    let snap;
+    try { snap = await docRef().get(); } catch (e) { readLater(); return; }
+    if (uid !== u || !save) return;
+    const remote = snap.exists ? migrate(snap.data().save) : null;
+    if (remote) applyInPlace(fold(merge(plain(fold(save)), plain(remote))));
+    // (Si mientras tanto se subió la partida, su rev ya es la buena.)
+    if (rev === r0) setRev(snap.exists ? snap.data().rev : 0);
+    write(K_CLOUD + uid, save);
+    if (!pushing) {
+      pending = !(remote && canon(save) === canon(fold(remote)));
+      setSync(pending ? 'pending' : 'ok');
+    }
+    if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
   }
 
   /*
@@ -690,6 +761,7 @@ G.DB = (() => {
       return send(rev + 1);
     }).then(r => {
       fails = 0;
+      clearTimeout(readT);           // (si estaba sin leer la nube: ya va a la par)
       if (uid === u) setRev(r);
       write(K_OK + uid, Date.now());
       // (Lo cambiado mientras se subía queda pendiente para el próximo Guardar.)
@@ -869,7 +941,7 @@ G.DB = (() => {
       commit();
       remove(K_SES);
     }
-    clearTimeout(pushT); clearTimeout(retryT);
+    clearTimeout(pushT); clearTimeout(retryT); clearTimeout(readT);
     user = key = save = uid = null; guest = false; pending = false;
     setSync(mode === 'cloud' ? 'ok' : 'local');
   }

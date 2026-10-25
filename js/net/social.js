@@ -298,10 +298,20 @@ G.Social = (() => {
   function rtOn() { if (fb.rtdb) fb.rtdb.goOnline(); }
   function rtOff() { if (fb && fb.rtdb && !room) fb.rtdb.goOffline(); }
 
+  /*
+   * Salas con límite (25-10-2026): el 23-10 una cuenta creada fuera del juego
+   * llenó la base de datos con 19.691 salas de basura (100 GB, ~17 $ al día).
+   * Ahora (database.rules.json) cada cuenta tiene UNA sala, que se llama como
+   * ella; el anfitrión sólo puede poner en su sala a quien haya entrado de
+   * verdad (rin/{sala}/{uid}, que sólo escribe cada invitado), y los mensajes
+   * son pequeños y van a huecos fijos (net.js).
+   */
+  const rinRef = (id, u = uid) => fb.rtdb.ref('rin/' + id + '/' + u);
+
   async function createRoom() {
     if (room) return room;
     rtOn();
-    const id = fb.rtdb.ref('rooms').push().key;
+    const id = uid;
     await fb.rtdb.ref('rooms/' + id).set({ host: uid, open: true, at: ts(), m: { [uid]: memberInfo() } });
     enterRoom(id, uid);
     return room;
@@ -318,6 +328,8 @@ G.Social = (() => {
     } catch (e) { /* sala borrada */ }
     if (!host) { rtOff(); return { ok: false, error: 'Esa sala ya no existe.' }; }
     if (open !== true) { rtOff(); return { ok: false, error: 'La partida de esa sala ya ha empezado.' }; }
+    // (Con las reglas de antes de rin no se puede escribir: se sigue igual.)
+    await rinRef(id).set(true).catch(() => {});
     try { await fb.rtdb.ref('rooms/' + id + '/m/' + uid).set(memberInfo()); }
     catch (e) { rtOff(); return { ok: false, error: 'No se pudo entrar en la sala.' }; }
     const n = (await fb.rtdb.ref('rooms/' + id + '/m').get()).numChildren();
@@ -414,6 +426,7 @@ G.Social = (() => {
       } else {
         if (!host) throw Error('sin anfitrión');
         const mine = room.members.find(x => x.uid === uid);
+        await within(rinRef(id).set(true), 5000).catch(() => {});
         // Si no deja, los demás siguen jugando (la sala no admite a nadie hasta que acaben): a esperar.
         await within(base.child('m/' + uid).set(Object.assign(memberInfo(), mine && mine.at ? { at: mine.at } : {})), 5000)
           .catch(e => { throw Object.assign(e, { wait: e.message !== 'timeout' }); });
@@ -472,6 +485,7 @@ G.Social = (() => {
     const ref = r.isHost ? fb.rtdb.ref('rooms/' + r.id) : fb.rtdb.ref('rooms/' + r.id + '/m/' + uid);
     ref.onDisconnect().cancel().catch(() => {});
     await ref.remove().catch(() => {});
+    if (!r.isHost) rinRef(r.id).remove().catch(() => {});
     retractInvites();
     writeStatus();
     rtOff();
