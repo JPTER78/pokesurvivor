@@ -33,6 +33,7 @@ G.Net = (() => {
   // junta ('failed') y el anfitrión lo reintenta cada RETRY_MS. Por la base de datos
   // sólo pasa la señalización (unos pocos mensajes pequeños para conectarse).
   const ALLOW_RELAY = false, RETRY_MS = 15000;
+  const ICE_BATCH = 250, ICE_MAX = 40;    // candidatos: se juntan 250 ms (o 40) en un mensaje (ver newPeer)
 
 
   let rtdb = null, uid = null, roomId = null, isHost = false, hostUid = null;
@@ -173,7 +174,22 @@ G.Net = (() => {
     let pc;
     try { pc = p.pc = new RTCPeerConnection({ iceServers: ICE.concat(turnIce || []) }); }
     catch (e) { p.mode = 'relay'; emitPeer(u); return p; }
-    pc.onicecandidate = e => { if (e.candidate) signal(u, { c: e.candidate.toJSON() }); };
+    /*
+     * Los candidatos de conexión se juntan ICE_BATCH ms y van en un solo mensaje
+     * ({ cs: [...] }), y en cuanto no hay más (candidate null), al momento.
+     * Antes iba uno por mensaje: unos 4.000 por minuto por la base de datos
+     * (25-10-2026), lo que más se descargaba de ella. Quien recibe entiende los
+     * dos (las versiones de antes mandan { c }).
+     */
+    const iceOut = [];
+    let iceT = 0;
+    const flushIce = () => { clearTimeout(iceT); iceT = 0; if (iceOut.length && peers.get(u) === p) signal(u, { cs: iceOut.splice(0) }); };
+    pc.onicecandidate = e => {
+      if (!e.candidate) { flushIce(); return; }
+      iceOut.push(e.candidate.toJSON());
+      if (iceOut.length >= ICE_MAX) flushIce();
+      else if (!iceT) iceT = setTimeout(flushIce, ICE_BATCH);
+    };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'failed' && p.mode !== 'closed') useRelay(u);
     };
@@ -277,9 +293,11 @@ G.Net = (() => {
         pendingIce.delete(from);
       } else if (sig.sdp && sig.sdp.type === 'answer') {
         if (p && p.pc) await p.pc.setRemoteDescription(sig.sdp);
-      } else if (sig.c) {
-        if (p && p.pc && p.pc.remoteDescription) await p.pc.addIceCandidate(sig.c).catch(() => {});
-        else { if (!pendingIce.has(from)) pendingIce.set(from, []); pendingIce.get(from).push(sig.c); }
+      } else if (sig.c || Array.isArray(sig.cs)) {
+        for (const c of sig.cs || [sig.c]) {
+          if (p && p.pc && p.pc.remoteDescription) await p.pc.addIceCandidate(c).catch(() => {});
+          else { if (!pendingIce.has(from)) pendingIce.set(from, []); pendingIce.get(from).push(c); }
+        }
       }
     } catch (e) {
       console.warn('[Net] señalización:', e.message);

@@ -420,7 +420,9 @@ G.HUD = (() => {
           ctx.restore();
         }
         ctx.font = F(800, 9);
-        if (!touch) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(180,200,230,.7)'; ctx.fillText(String(i + 5), x + 3, oy + 10); }
+        // Con mando: X usa la elegida, Y pasa a la siguiente (las teclas 5-8 no sirven ahí).
+        if (G.Pad.name) { ctx.textAlign = 'left'; ctx.fillStyle = pick ? '#ffd23f' : 'rgba(180,200,230,.7)'; ctx.fillText(pick ? 'X' : 'Y', x + 3, oy + 10); }
+        else if (!touch) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(180,200,230,.7)'; ctx.fillText(String(i + 5), x + 3, oy + 10); }
         if (o.n > 1) { ctx.textAlign = 'right'; ctx.fillStyle = '#f4f8ff'; ctx.fillText('×' + o.n, x + OS - 3, oy + OS - 4); }
       }
       // Qué hace cada una: ratón encima (PC), la elegida con mando, o la que acabas de coger (3 s).

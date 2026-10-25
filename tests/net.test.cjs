@@ -169,7 +169,7 @@ function turnNetwork(respond, { user = { uid: 'host', getIdToken: async () => 't
     createAnswer() { return Promise.resolve({ type: 'answer' }); }
     setLocalDescription(d) { this.localDescription = { toJSON: () => d }; return Promise.resolve(); }
     setRemoteDescription(d) { this.remoteDescription = d; return Promise.resolve(); }
-    addIceCandidate() { return Promise.resolve(); }
+    addIceCandidate(c) { (this.added = this.added || []).push(c); return Promise.resolve(); }
     fail() { this.connectionState = 'failed'; this.onconnectionstatechange(); }
     close() {}
   }
@@ -177,7 +177,8 @@ function turnNetwork(respond, { user = { uid: 'host', getIdToken: async () => 't
   const fetch = async (url, opt) => { calls.push([url, opt]); return respond(); };
   new Function('G', 'RTCPeerConnection', 'setTimeout', 'clearTimeout', 'fetch', source('js/net/net.js'))(G, PC, setTimeout, () => {}, fetch);
   const offer = (t) => G.listen({ val: () => JSON.stringify({ f: 'host', sig: t ? { sdp: { type: 'offer' }, t: 1 } : { sdp: { type: 'offer' } } }), ref: { remove: () => Promise.resolve() } });
-  return { N: G.Net, pcs, calls, signals, timers, offer };
+  const deliver = sig => G.listen({ val: () => JSON.stringify({ f: 'host', sig }), ref: { remove: () => Promise.resolve() } });
+  return { N: G.Net, pcs, calls, signals, timers, offer, deliver };
 }
 const settle = async () => { for (let i = 0; i < 5; i++) await new Promise(r => setImmediate(r)); };
 const turnReply = (body, status = 200) => ({ ok: status === 200, status, json: async () => body });
@@ -346,4 +347,79 @@ test('co-op orbs: the host applies a guest orb only if the guest really has it, 
   assert.ok(G.Orbs.canTake(guest, 'blowback'));      // (las dos Rapidosferas ya se gastaron: queda 1 hueco)
   G.Orbs.add(guest, 'quick');
   assert.ok(!G.Orbs.canTake(guest, 'blowback'));     // y 4 huecos
+});
+
+test('connection candidates travel together in one database message, and both formats are understood', async () => {
+  const { N, pcs, signals, offer, deliver } = turnNetwork(goodTurn, { user: { uid: 'guest', getIdToken: async () => 'token' }, host: false });
+  N.open('room', false, 'host');
+  offer(false); await settle();
+  const pc = pcs[0], before = signals.length;
+  for (const n of [1, 2, 3]) pc.onicecandidate({ candidate: { toJSON: () => ({ candidate: 'c' + n }) } });
+  assert.equal(signals.length, before, 'they wait to go together');
+  pc.onicecandidate({ candidate: null });
+  assert.equal(signals.length, before + 1, 'one message');
+  assert.deepEqual(signals.at(-1)[1].sig.cs.map(c => c.candidate), ['c1', 'c2', 'c3']);
+  deliver({ cs: [{ candidate: 'h1' }, { candidate: 'h2' }] });   // de esta versión
+  deliver({ c: { candidate: 'h3' } });                          // de las de antes
+  await settle();
+  assert.deepEqual(pc.added.map(c => c.candidate).sort(), ['h1', 'h2', 'h3']);   // (el orden da igual)
+});
+
+function coopSums(host, mySum) {
+  let msgFn = null; const got = {};
+  const G = {};
+  G.Net = { uid: host ? 'host' : 'guest', on(fn) { msgFn = fn; }, onPeer() {}, slow: () => false, send() {}, toHost() {}, mode: () => 'direct' };
+  G.Player = class { constructor() { this.maxHp = 300; } };
+  G.DEX_BY = { 25: { dex: 25 }, 7: { dex: 7 } }; G.baseStartOf = () => 'thundershock';
+  G.Moves = { BY_ID: { thundershock: {}, tackle: {} } }; G.Items = { BY: { leftovers: {} } };
+  G.Sprites = { preload() {} }; G.U = { dist2: () => 0 };
+  G.Projectiles = { clearOrbs() {} }; G.Spawner = { say() {} }; G.Social = { me: { name: 'yo' }, dropMember() {} };
+  new Function('G', 'document', 'setTimeout', 'clearTimeout', source('js/net/coop.js'))(G, { addEventListener() {} }, () => 0, () => {});
+  G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 7 }] }, { x: 0, y: 0 },
+    { mySum: () => mySum, over: d => { got.over = d; }, syncTeam() {}, hold() {}, away() {}, lost() {}, mateLeft() {}, waiting() {} });
+  return { G, got, from: (u, msg) => msgFn(u, msg) };
+}
+
+test('co-op run summary: each player sees everyone, and what arrives is cleaned', () => {
+  const mine = { dex: 25, sh: false, lv: 30, t: 900, it: null, mv: [['thundershock', 5, 12000, 0, 1]] };
+  // Anfitrión: el resumen del invitado llega con basura y se queda sólo lo válido.
+  const h = coopSums(true, mine);
+  h.from('guest', { k: 'f', ev: [['sm', { dex: 7, sh: true, lv: 1e9, t: 900, it: '<img onerror=x>',
+    mv: [['tackle', 3, 5000, 10, 0], ['<script>', 1, 1, 1, 0], 'x', ['thundershock', 2, -50, 0, 0]], extra: 'nope' }]] });
+  const s = h.G.Coop.sums();
+  assert.deepEqual(s.host, mine);
+  assert.deepEqual(s.guest, { dex: 7, sh: true, lv: 9999, t: 900, it: null, mv: [['tackle', 3, 5000, 10, 0], ['thundershock', 2, 0, 0, 0]] });
+  // Invitado: al acabar le llegan los de todos (y sólo de quien está en la partida); el suyo, el de su juego.
+  const g = coopSums(false, { dex: 7, sh: false, lv: 30, t: 900, it: 'leftovers', mv: [] });
+  g.from('host', { k: 'f', ev: [['ov', { why: 'host', sums: { host: mine, guest: { dex: 25, lv: 1, t: 1, mv: [] }, intruso: mine } }]] });
+  assert.equal(g.got.over.why, 'host');
+  const all = g.G.Coop.sums();
+  assert.deepEqual(Object.keys(all).sort(), ['guest', 'host']);
+  assert.deepEqual(all.host, mine);
+  assert.equal(all.guest.it, 'leftovers');
+});
+
+test('co-op: a lost "I have picked" or "I am done choosing" message no longer freezes the run for everyone', () => {
+  const calls = { resume: 0, hold: [] };
+  const r = coopSums(true, null);
+  r.G.Judgment = { netState: () => null }; r.G.EnemyMgr = { all: () => [] };
+  const local = { x: 0, y: 0, moveAngle: 0, walking: false, hp: 300, maxHp: 300, magnet: 78, aim: 0, xpMul: 1, activeGroup: () => [] };
+  r.G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 7 }] }, local,
+    { levelStart() {}, waiting() {}, resume: () => calls.resume++, hold: names => calls.hold.push(names.join(',')), mateLeft() {}, lost() {},
+      team: () => ({ time: 0, level: 1, xp: 0, xpNext: 10, kills: 0, bosses: 0, coins: 0, t1: 0, t10: 0 }), summary: () => ({}) });
+  // Ronda de cartas: el anfitrión elige; el aviso del invitado ('lp') se pierde.
+  r.G.Coop.levelStart(2);
+  r.G.Coop.localPicked();
+  assert.equal(calls.resume, 0, 'still waiting for the guest');
+  r.from('guest', { k: 'f', ev: [], w: 1, h: 0 });          // su siguiente mensaje normal: ya eligió la ronda 1
+  assert.equal(calls.resume, 1, 'the run goes on');
+  // Fusión: el aviso de "he terminado" ('he') se pierde; el estado del mensaje manda.
+  r.from('guest', { k: 'f', ev: [['hs']], w: 1, h: 1 });
+  assert.equal(calls.hold.at(-1), 'Bea');
+  r.from('guest', { k: 'f', ev: [], w: 1, h: 0 });
+  assert.equal(calls.hold.at(-1), '', 'nobody is choosing any more');
+  // Una versión vieja (sin h ni w) sigue igual que antes: sólo cuentan sus avisos.
+  r.from('guest', { k: 'f', ev: [['hs']] });
+  r.from('guest', { k: 'f', ev: [] });
+  assert.equal(calls.hold.at(-1), 'Bea');
 });

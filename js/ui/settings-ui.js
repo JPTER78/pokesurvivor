@@ -12,8 +12,6 @@ G.SettingsUI = (() => {
 
   function init() {
     document.querySelectorAll('#set-tabs .gen-tab').forEach(b => { b.onclick = () => { tab = b.dataset.t; render(); }; });
-    // En el móvil no hay apuntado a mano (siempre apunta solo): fuera la pestaña, que sólo tenía eso.
-    if (G.Settings.touch) document.querySelector('#set-tabs [data-t="a11y"]').classList.add('hidden');
     // Al conectar o quitar un mando con Controles abierto, se ve al momento.
     for (const ev of ['gamepadconnected', 'gamepaddisconnected']) addEventListener(ev, () => { if (isOpen() && tab === 'ctl') render(); });
     $('set-close').onclick = close;
@@ -122,7 +120,9 @@ G.SettingsUI = (() => {
            </div>`;
     } else if (tab === 'a11y') {
       box.innerHTML = section('Apuntado')
-        + toggle('aimManual', 'Apuntar a mano', 'Tus ataques van hacia el ratón (o hacia donde empujes el stick derecho del mando) en vez de al enemigo más cercano. Si sueltas el stick y no mueves el ratón, vuelve a apuntar solo. La cadena y los meteoros siguen buscando a los enemigos solos.');
+        + (G.Settings.touch
+          ? toggle('aimManual', 'Apuntar a mano', 'Con el dedo en la mitad derecha de la pantalla apuntas tus ataques: arrástralo hacia donde quieras disparar (con el joystick fijo, en cualquier sitio lejos de él). La mitad izquierda sigue siendo para moverte. Al soltar el dedo, vuelven a apuntar solos al enemigo más cercano. La cadena y los meteoros siguen buscando a los enemigos solos.')
+          : toggle('aimManual', 'Apuntar a mano', 'Tus ataques van hacia el ratón (o hacia donde empujes el stick derecho del mando) en vez de al enemigo más cercano. Si sueltas el stick y no mueves el ratón, vuelve a apuntar solo. La cadena y los meteoros siguen buscando a los enemigos solos.'));
     } else if (tab === 'acc') {
       renderAccount(box);
     } else {

@@ -71,6 +71,7 @@ G.Coop = (() => {
     mates.clear();
     outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
     hostAway = false; stalled = false; lastHostAt = performance.now();
+    sums = {}; sumT = 1; myHold = false;
     levelSeq = 0; levelNow = 1; seenSeq = 0; doneSeq = 0; lastHo = '';
     cfg.members.forEach((m, i) => {
       const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
@@ -96,7 +97,7 @@ G.Coop = (() => {
     if (!active) return;
     if (host) {
       // Si se va el anfitrión, la partida termina para todos.
-      emit(['ov', Object.assign(api.summary ? api.summary() : {}, { why: 'host' })]);
+      emit(['ov', Object.assign(api.summary ? api.summary() : {}, { why: 'host', sums: teamSums() })]);
       flushAll();
     } else {
       outEv.push(['bye']);
@@ -141,6 +142,38 @@ G.Coop = (() => {
 
   /** Número que llega por la red: si no es un número de verdad vale `def`, y si se pasa se queda en el tope. */
   const num = (v, def, lo, hi) => typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def;
+
+  /*
+   * Resumen de cada uno para el final de la partida (25-10-2026): su Pokémon, sus
+   * ataques con el daño que han hecho y su objeto. Cada invitado manda el suyo al
+   * anfitrión cada SUM_EVERY s ('sm') y el anfitrión, los de todos a todos ('sms');
+   * al acabar van también en 'ov'. Así cada uno ve el de todos aunque alguien se
+   * haya ido antes. Lo que llega se limpia (sólo números, ataques y objetos que
+   * existen): nada de texto de otros jugadores.
+   */
+  const SUM_EVERY = 5;
+  let sums = {}, sumT = 0;
+  const mySum = () => (api && api.mySum ? api.mySum() : null);
+  function cleanSum(s) {
+    if (!s || typeof s !== 'object') return null;
+    const dex = Math.floor(num(s.dex, 0, 0, 5000));
+    if (!G.DEX_BY[dex]) return null;
+    const mv = (Array.isArray(s.mv) ? s.mv : []).slice(0, 8)
+      .filter(m => Array.isArray(m) && typeof m[0] === 'string' && G.Moves.BY_ID[m[0]])
+      .map(m => [m[0], Math.floor(num(m[1], 1, 1, 99)), Math.round(num(m[2], 0, 0, 1e13)), Math.round(num(m[3], 0, 0, 86400)), m[4] ? 1 : 0]);
+    return { dex, sh: s.sh === true, lv: Math.floor(num(s.lv, 1, 1, 9999)), t: Math.round(num(s.t, 0, 0, 86400)),
+             it: typeof s.it === 'string' && G.Items.BY[s.it] ? s.it : null, mv };
+  }
+  /** Los resúmenes de todos (el tuyo, recién hecho). Siguen ahí al acabar la partida. */
+  function teamSums() { const out = Object.assign({}, sums), m = mySum(); if (m && me) out[me] = m; return out; }
+  function takeSums(all) {
+    if (!all || typeof all !== 'object') return;
+    for (const u of Object.keys(all)) {
+      if (u === me || !members.some(x => x.uid === u)) continue;
+      const c = cleanSum(all[u]);
+      if (c) sums[u] = c;
+    }
+  }
 
   // Lo que manda otro jugador no se cree a ciegas: un xpMul de 1e309 colgaba al anfitrión al subir de nivel.
   function readState(a) {
@@ -212,15 +245,28 @@ G.Coop = (() => {
 
   function flushAll() { for (const m of mates.values()) if (m.connected) G.Net.send(m.uid, hostFrame(m)); }
 
+  /*
+   * Cada mensaje del invitado lleva también si está eligiendo fusión u objeto (h)
+   * y hasta qué ronda de cartas de nivel ha elegido (w), y el anfitrión lo coge de
+   * ahí (onClientFrame). Antes sólo iban en avisos sueltos ('hs'/'he'/'lp'): si uno
+   * se perdía en un corte de la conexión, el anfitrión esperaba para siempre y la
+   * partida se quedaba parada para todos (25-10-2026).
+   */
+  let myHold = false;
   function flushClient(force) {
     if (!force && !outEv.length && flushT > 0) return;
-    G.Net.toHost({ k: 'f', p: myState(), ev: outEv });
+    G.Net.toHost({ k: 'f', p: myState(), ev: outEv, h: myHold ? 1 : 0, w: doneSeq });
     outEv = [];
   }
 
   /** Cada fotograma (también en la pantalla de subida de nivel). */
   function tick(dt) {
     if (!active) return;
+    if ((sumT -= dt) <= 0) {
+      sumT = SUM_EVERY;
+      if (host) emit(['sms', teamSums()]);
+      else { const m = mySum(); if (m) outEv.push(['sm', m]); }
+    }
     if (host) {
       for (const m of mates.values()) {
         if (!m.connected) continue;
@@ -317,6 +363,10 @@ G.Coop = (() => {
     const m = mates.get(from);
     if (!m || !m.connected) return;
     m.lastAt = performance.now(); m.pl.silent = false;
+    // Lo que dice su juego manda sobre lo que se apuntó con los avisos (ver flushClient).
+    if (msg.h === 0 && holds.has(from)) holdOff(from);
+    else if (msg.h === 1 && !holds.has(from)) holdOn(from);
+    if (typeof msg.w === 'number' && msg.w >= levelSeq && waiting.has(from)) picked(from);
     if (msg.p) { m.state = msg.p; m.pl.net = readState(msg.p); m.xpMul = m.pl.net.xpMul || 1; reconcile(from, m.pl.net); }
     for (const ev of msg.ev || []) {
       switch (ev[0]) {
@@ -356,6 +406,14 @@ G.Coop = (() => {
         case 'he': holdOff(from); break;
         case 're': G.Rift.enterRequest(); break;
         case 'bye': mateGone(from); break;
+        case 'sm': { const c = cleanSum(ev[1]); if (c) sums[from] = c; break; }
+        // Un invitado con Sequía, Llovizna...: su clima, si no hay otro (como mucho uno por minuto).
+        case 'wxq':
+          if (typeof ev[1] === 'string' && G.Weather.KINDS[ev[1]] && !G.Weather.current && performance.now() - (m.wxAt || -1e9) > 60000) {
+            m.wxAt = performance.now();
+            G.Weather.debugStart(ev[1], 60);
+          }
+          break;
       }
     }
   }
@@ -453,7 +511,8 @@ G.Coop = (() => {
       case 'hp': lastHo = (ev[1] || []).join('|'); api.hold && api.hold(ev[1]); break;
       case 'ha': hostAway = !!ev[1]; updateAway(); break;
       case 'sh': api.shiny(ev[1]); break;
-      case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
+      case 'ov': { const cb = api.over; const d = ev[1]; if (d) takeSums(d.sums); end(); cb(d); break; }
+      case 'sms': takeSums(ev[1]); break;
       case 'rift': case 'riftx': case 'arena': case 'aw': case 'al': G.Rift.onEvent(ev); break;
       case 'jd': case 'jk': case 'jb': G.Judgment.onEvent(ev); break;
       case 'wx': G.Weather.onEvent(ev); break;
@@ -564,8 +623,8 @@ G.Coop = (() => {
   }
 
   /** Tú empiezas / terminas de elegir fusión. */
-  function holdStart() { if (host) holdOn(me); else { outEv.push(['hs']); flushClient(true); } }
-  function holdEnd() { if (host) holdOff(me); else { outEv.push(['he']); flushClient(true); } }
+  function holdStart() { if (host) holdOn(me); else { myHold = true; outEv.push(['hs']); flushClient(true); } }
+  function holdEnd() { if (host) holdOff(me); else { myHold = false; outEv.push(['he']); flushClient(true); } }
 
   /** Has elegido tu carta. */
   function localPicked() {
@@ -575,7 +634,7 @@ G.Coop = (() => {
 
   /** Anfitrión: se acabó para todos. */
   function over(data) {
-    emit(['ov', data]);
+    emit(['ov', Object.assign({}, data, { sums: teamSums() })]);
     flushAll();
     end();
   }
@@ -590,6 +649,8 @@ G.Coop = (() => {
     mate(u) { return mates.get(u); },
     get mates() { return [...mates.values()]; },
     get members() { return members; },
+    /** uid -> resumen de cada jugador (ver cleanSum), también al acabar. */
+    sums: teamSums,
     get active() { return active; },
     get isHost() { return active && host; },
     get local() { return local; }

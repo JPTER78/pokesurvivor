@@ -60,6 +60,9 @@ input { font: inherit; }
   animation: fade .2s ease-out;
 }
 .scr.hidden { display: none; }
+/* Cartas de nivel, objeto y vínculo en el móvil: fuera del recuadro se coge el joystick
+   (touch.js), sin gestos del navegador ahí. Dentro (.box) se desplaza como siempre. */
+body.touch #scr-levelup, body.touch #scr-bond, body.touch #scr-item { touch-action: none; }
 /* Pantallas que se abren con la barra superior a la vista: empiezan debajo de ella. */
 @media (min-height: 521px) {
   #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile, #scr-shop, #scr-news { padding-top: 66px; }
@@ -1004,3 +1007,19 @@ html:lang(zh-Hant) { --font: 'Pixelify', 'PingFang TC', 'Microsoft JhengHei', 'N
 html:lang(zh-Hans) { --font: 'Pixelify', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif; }
 html:lang(zh) body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
 html:lang(zh) .btn, html:lang(zh) .chip { letter-spacing: 0; }
+
+/* ============ barra de arriba en el móvil en vertical (25-10-2026) ============
+ * No cabía en una línea y se salía por la izquierda: justo las monedas, los
+ * tickets y el nombre quedaban fuera de la pantalla. Ahora ocupa todo el ancho y
+ * pasa a dos líneas (las monedas siempre a la vista), con botones más compactos;
+ * lo que empieza debajo de ella baja lo que haga falta. */
+@media (max-width: 600px) {
+  .topbar { left: 6px; right: 6px; top: 6px; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .topbar .pill { padding: 3px 8px; font-size: 13px; gap: 4px; }
+  .topbar .btn.small { padding: 3px 5px; }
+  #user-pill { max-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #btn-support span { display: none; }
+  .sound-panel { top: 82px; }
+  .menu-left { padding-top: 92px; }
+  #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile, #scr-shop, #scr-news { padding-top: 92px; }
+}

@@ -56,10 +56,10 @@ G.Ranking = (() => {
   // importe y eran muchas lecturas y escrituras para nada: los que empiezan
   // mueren a menudo en el primer minuto; era 1 min hasta el 14-10-2026).
   const MIN_T = 120;
-  // En el histórico de cada Pokémon, 5 min: con casi mil tablas, la mayoría no
-  // llega a 50 marcas y aceptaban cualquier partida (2 escrituras cada vez; el
-  // ranking era ~1/5 de las escrituras de Firestore el 20-10-2026).
-  const MIN_T_MON = 300;
+  // En el histórico de cada Pokémon, 10 min (5 hasta el 25-10-2026): con más de mil
+  // tablas, casi ninguna llega a 50 marcas y aceptaban cualquier partida (2
+  // escrituras cada vez; eran ~1/10 de todas las escrituras de Firestore).
+  const MIN_T_MON = 600;
   // Caché de lo leído: 2 h (era 30 min hasta el 20-10-2026). Tu marca nueva se
   // ve al momento igual (al subirla se guarda en la caché lo que se escribió).
   const TTL = 2 * 3600 * 1000;

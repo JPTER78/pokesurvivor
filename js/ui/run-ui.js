@@ -137,6 +137,8 @@ G.RunUI = (() => {
         ${r.t1 ? G.Icons.html('ticket', 22) + ' +' + r.t1 + ' ' : ''}${r.t10 ? G.Icons.html('ticket10', 22) + ' +' + r.t10 + ' ×10' : ''}</b></div>` : ''}
       <div style="grid-column:1/-1"><span>Movimientos</span><b style="font-size:15px">
         ${r.moves.map(m => `${G.Icons.html('move:' + m.id, 16)} ${G.T(m.name, 'move')} Nv.${m.lvl}`).join(' · ') || '—'}</b></div>
+      ${r.team && r.team.length ? `<div style="grid-column:1/-1" class="over-sum"><span>Resumen de la partida</span>
+        ${r.team.length > 1 ? '<div class="chips over-tabs" id="over-tabs"></div>' : ''}<div id="over-sum"></div></div>` : ''}
       ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
         <div class="caught-row" id="over-caught"></div></div>` : ''}
       ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">¡Nuevo récord de tiempo!</div>' : ''}
@@ -147,6 +149,25 @@ G.RunUI = (() => {
       </div>` : ''}`;
     const ask = $('over-ask');
     if (ask) ask.querySelector('.x').onclick = () => ask.remove();
+    if (r.team && r.team.length) {
+      const show = i => {
+        $('over-sum').innerHTML = sumHtml(r.team[i]);
+        const tabs = $('over-tabs');
+        if (tabs) tabs.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === i));
+      };
+      const tabs = $('over-tabs');
+      if (tabs) r.team.forEach((p, i) => {
+        const b = document.createElement('button');
+        b.className = 'chip';
+        b.textContent = p.me ? 'Tú' : p.name;            // (textContent: el nombre de otro jugador nunca es HTML)
+        b.setAttribute('translate', 'no');
+        b.onclick = () => show(i);
+        tabs.appendChild(b);
+      });
+      show(0);
+    }
+    // Con compañeros, la caja es algo más ancha (las tablas de daño caben mejor).
+    $('scr-over').querySelector('.box').style.width = r.team && r.team.length > 1 ? 'min(560px,100%)' : 'min(480px,100%)';
     $('btn-again').onclick = onBack;
     if (r.caught && r.caught.length) {
       const row = $('over-caught');
@@ -241,6 +262,29 @@ G.RunUI = (() => {
     if (!bond) return;
     bond.first = null;
     renderBond();
+  }
+
+  /*
+   * Resumen de un jugador al acabar (25-10-2026): su Pokémon, sus ataques con el
+   * daño hecho y el daño por segundo, el total y su objeto. sum viene de
+   * Game.mySum() o, de un compañero, limpio por coop.js (cleanSum).
+   */
+  function sumHtml(p) {
+    const s = p.sum, n = v => Math.round(v).toLocaleString(G.I18n.locale);
+    let total = 0;
+    const rows = s.mv.map(([id, lvl, dealt, since, evo]) => {
+      const m = G.Moves.instance(id, lvl);
+      if (evo) G.Moves.evolve(m);
+      const secs = Math.max(5, s.t - since);
+      if (m.cat) total += dealt;
+      return `<tr><td>${G.Icons.html('move:' + id, 18)} ${G.T(m.name, 'move')} <small>Nv.${lvl}</small></td>
+        <td class="num">${m.cat ? n(dealt) : '—'}</td><td class="num">${m.cat ? n(dealt / secs) + '/s' : '—'}</td></tr>`;
+    }).join('');
+    const mon = G.DEX_BY[s.dex], it = s.it && G.Items.BY[s.it];
+    // (La frase entera en cada idioma: traducida por trozos sale rara.)
+    return `<p class="sub" style="margin:6px 0" translate="no">${s.sh ? G.Icons.html('shiny', 12) + ' ' : ''}${G.I18n.f('{x} · Nv. {x} · {x} de daño en total', G.T(mon.name), s.lv, n(total))}</p>
+      <table class="sum-moves"><tr><th></th><th class="num">Daño</th><th class="num">Por segundo</th></tr>${rows}</table>
+      <p class="sub" style="margin:6px 0 0">${it ? G.Icons.html(s.it, 16) + ' ' + it.name : 'Sin objeto.'}</p>`;
   }
 
   /*

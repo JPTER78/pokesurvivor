@@ -107,7 +107,10 @@ service cloud.firestore {
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 40))
         && (!('best' in request.resource.data) || validBest(request.resource.data.best))
         && (!('medals' in request.resource.data) || (request.resource.data.medals is list && request.resource.data.medals.size() <= 8))
-        && getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me()
+        // El apodo sólo se comprueba si cambia (25-10-2026): ya se comprobó al ponerlo, y
+        // leerlo en cada guardado del perfil era 1 lectura de más cada vez (~400.000 al día).
+        && ((resource != null && resource.data.get('lower', '') == request.resource.data.lower)
+            || getAfter(/databases/$(database)/documents/names/$(request.resource.data.lower)).data.uid == me())
         && (resource == null || every(resource.data.at, 20));
       allow delete: if signedIn() && me() == uid;
     }
@@ -152,18 +155,17 @@ service cloud.firestore {
     //   - (el tope de 45 min se quitó el 23-10-2026: en el minuto 35 Arceus
     //     rompe los objetos; sólo queda el de un día, por si acaso)
     //   - nivel y derrotados con margen de sobra (un grupo de 4 muy bueno)
-    //   - la cuenta no puede estar baneada por el admin (saves/{uid}.ban; si aún
-    //     no ha guardado nunca en la nube, no tiene documento y no está baneada)
+    //   (el baneo del admin se mira al entrar en un top 50, en addMine: es lo único
+    //    que se ve. Mirarlo en cada marca era leer la partida cada vez, ~300.000
+    //    lecturas al día; 25-10-2026.)
     function validEntry(board, id) {
       let d = request.resource.data;
-      let sv = /databases/$(database)/documents/saves/$(me());
       let dmg = d.get('dmg', 0);
       return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'dmg', 'at'])
         && d.t is int && d.t > 0 && d.t <= 86400
         && dmg is int && dmg >= 0
         && d.lv is int && d.lv >= 1 && d.lv <= 10 + d.t / 4
         && d.kills is int && d.kills >= 0 && d.kills <= 100 + d.t * 12
-        && (!exists(sv) || get(sv).data.get('ban', false) == false)
         && d.uids is list && me() in d.uids
         && d.names is list && d.names.size() == d.uids.size()
         && d.dex is list && d.dex.size() == d.uids.size()
@@ -213,7 +215,11 @@ service cloud.firestore {
     function addMine(board, d, old, changed, dold, dnew, dev) {
       let e = getAfter(/databases/$(database)/documents/lb/$(board)/e/$(d.me)).data;
       let dchanged = dnew.diff(dold).affectedKeys();
+      // La cuenta no puede estar baneada por el admin (saves/{uid}.ban; si aún no ha
+      // guardado nunca en la nube, no tiene documento y no está baneada).
+      let sv = /databases/$(database)/documents/saves/$(me());
       return me() in e.uids
+        && (!exists(sv) || get(sv).data.get('ban', false) == false)
         && changed.hasOnly([d.me, d.ev])
         && dchanged.hasOnly([d.me, dev])
         && (!(d.me in changed) || (d.me in d.top && rowOk(d.top[d.me], e)))

@@ -7,7 +7,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const SRC = fs.readFileSync(path.join(__dirname, '..', 'js/core/db.js'), 'utf8');
 
-let NOW = 1e12, cloud = null, down = false;
+let NOW = 1e12, cloud = null, down = false, writes = 0;
 const clone = o => JSON.parse(JSON.stringify(o));
 const ref = {
   async get() { if (down) throw { code: 'unavailable' }; return { exists: !!cloud, data: () => clone(cloud) }; },
@@ -19,7 +19,7 @@ const ref = {
       const had = cloud.rev || 0, now = next.rev || 0;
       if (NOW <= cloud.updatedAt + 20000 || !(now === had + 1 || (had === 0 && now === 0))) throw { code: 'permission-denied' };
     }
-    cloud = next;
+    cloud = next; writes++;
   }
 };
 const TABS = new Map();   // navegador (su localStorage) -> eventos 'storage' de cada pestaña
@@ -143,4 +143,19 @@ test('si al entrar no se pudo leer la nube, se vuelve a intentar y se junta lo d
   await act(A, -7); await act(A, 'save');        // y gasta lo de verdad, sin gastar dos veces
   assert.equal(cloud.save.tickets.t1, 0);
   assert.ok(!cloud.save.led.fix);
+});
+
+test('Guardar sin haber cambiado nada no vuelve a escribir en la nube', async () => {
+  reset();
+  const A = await open(new Map());
+  await act(A, 3); await act(A, 'save');
+  const n = writes;
+  NOW += 100000; A.DB.commit(); await settle();  // se guarda en el navegador sin cambiar nada
+  assert.equal(A.DB.syncState, 'pending');
+  await act(A, 'save');
+  assert.equal(writes, n);
+  assert.equal(A.DB.syncState, 'ok');
+  await act(A, 1); await act(A, 'save');       // algo nuevo: sí
+  assert.equal(writes, n + 1);
+  assert.equal(cloud.save.tickets.t1, 4);
 });

@@ -188,6 +188,12 @@ G.Game = (() => {
     return { time, level: pl.level, xp: pl.xp, xpNext: pl.xpNext, kills: pl.kills, bosses: pl.bosses, coins: pl.coins, t1: pl.t1, t10: pl.t10 };
   }
   function summary() { return { t: time, ki: pl.kills, bo: pl.bosses, co: pl.coins, lv: pl.level, t1: pl.t1, t10: pl.t10 }; }
+  /** Tu resumen para el final de la partida (y para los compañeros, ver coop.js): ataques con su daño, objeto... */
+  function mySum() {
+    if (!pl) return null;
+    return { dex: pl.dex, sh: !!pl.shiny, lv: pl.level, t: Math.floor(time), it: pl.item || null,
+             mv: pl.moves.slice(0, 8).map(m => [m.id, m.lvl, Math.round(m.dealt || 0), Math.round(m.since || 0), m.evolved ? 1 : 0]) };
+  }
 
   /** Lo que el cooperativo necesita del juego. */
   /**
@@ -210,6 +216,7 @@ G.Game = (() => {
   const coopApi = {
     team: teamState,
     summary,
+    mySum,
     // Invitado: el anfitrión manda el reloj y lo del equipo.
     syncTeam(t) {
       if (Math.abs(t.time - time) > 0.4) time = t.time;
@@ -322,6 +329,10 @@ G.Game = (() => {
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
     const wasHost = !!pl.coopHost;
     const team = coop ? G.Coop.members.slice() : [];
+    // Resumen de cada uno (en grupo, también el de los compañeros; ver coop.js).
+    const sums = coop ? G.Coop.sums() : {};
+    const meUid = coop ? pl.uid : '';
+    if (!coop) sums[meUid] = mySum();
     if (G.Coop.active) G.Coop.end();
     if (coop) G.Social.setPlaying(false);
     state = 'over';
@@ -369,6 +380,8 @@ G.Game = (() => {
 
     G.RunUI.showOver({
       dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,
+      team: (coop ? team : [{ uid: meUid }]).filter(m => sums[m.uid]).map(m => ({ name: m.name, me: m.uid === meUid, sum: sums[m.uid] }))
+        .sort((a, b) => b.me - a.me),
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')

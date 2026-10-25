@@ -32,9 +32,13 @@ jobs:
             -H 'Accept-Language: en' --cookie 'CONSENT=YES+1; SOCS=CAI' \
             'https://www.youtube.com/channel/UC5nyI589EfbS3KvyNdAVOGA/live' -o page.html || true
           # Si YouTube no da la página de verdad (aviso de bots, error...), no se toca nada.
-          if ! grep -q '"channelId":"UC5nyI589EfbS3KvyNdAVOGA"' page.html; then echo 'página rara: sin cambios'; rm -f page.html; exit 0; fi
+          # (Sin directo, /live es la página del canal: ahí el id va como browseId o externalId.)
+          if ! grep -qE '"(channelId|externalId|browseId)":"UC5nyI589EfbS3KvyNdAVOGA"' page.html; then echo 'página rara: sin cambios'; rm -f page.html; exit 0; fi
           live=false; id=''
-          if grep -q '"isLiveNow":true' page.html; then
+          # En directo: el vídeo se puede ver (OK), es un directo y no está sólo programado.
+          # (Hasta el 25-10-2026 se buscaba "isLiveNow":true, que YouTube ya no pone:
+          # nunca se veía un directo. Un directo programado da LIVE_STREAM_OFFLINE e isUpcoming.)
+          if grep -q '"playabilityStatus":{"status":"OK"' page.html && grep -q '"isLiveContent":true' page.html && ! grep -q '"isUpcoming":true' page.html; then
             id=$(grep -oE '<link rel="canonical" href="https://www.youtube.com/watch\?v=[A-Za-z0-9_-]{11}"' page.html | head -1 | grep -oE '[A-Za-z0-9_-]{11}"$' | tr -d '"')
             [ -n "$id" ] && live=true
           fi

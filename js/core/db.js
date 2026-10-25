@@ -492,6 +492,10 @@ G.DB = (() => {
    */
   const K_REV = 'ps.rev.';
   let rev = 0, lastCheck = 0;
+  // Lo último que se subió (o se leyó igual) desde aquí: si Guardar no cambia nada, no se escribe.
+  // (Sin la hora del último cambio: cada guardado en el navegador la pone aunque no cambie nada más.)
+  let sentCanon = '';
+  const sameKey = s => canon(Object.assign({}, s, { updated: 0 }));
   const setRev = r => { rev = Number.isInteger(r) && r > 0 ? r : 0; write(K_REV + uid, rev); };
   // Como mucho una subida cada 30 min (con miles de jugadores, cada 5 min
   // eran decenas de miles de escrituras por hora); lo que cuesta algo
@@ -641,7 +645,7 @@ G.DB = (() => {
 
   /** Abre la partida de la nube de un usuario recién autenticado. */
   async function openCloud(u, opts = {}) {
-    uid = u.uid;
+    uid = u.uid; sentCanon = '';
     const cached = read(K_CLOUD + uid);
     let remote = null, online = true;
     try {
@@ -671,7 +675,7 @@ G.DB = (() => {
     const same = remote && !opts.legacy && canon(save) === canon(fold(migrate(plain(remote))));
     lastPush = Date.now();
     if (!online) { pending = true; setSync('offline'); readTries = 0; readLater(); }
-    else if (same) setSync('ok');
+    else if (same) { sentCanon = sameKey(plain(save)); setSync('ok'); }
     else { pending = true; setSync('pending'); }
   }
 
@@ -702,6 +706,7 @@ G.DB = (() => {
     write(K_CLOUD + uid, save);
     if (!pushing) {
       pending = !(remote && canon(save) === canon(fold(remote)));
+      if (!pending) sentCanon = sameKey(plain(save));
       setSync(pending ? 'pending' : 'ok');
     }
     if (G.UI && G.UI.refreshCoins) G.UI.refreshCoins();
@@ -729,6 +734,8 @@ G.DB = (() => {
     // Si ya hay una subida en marcha, se hace otra justo después (para lo que haya cambiado mientras).
     if (pushing) { pending = true; return pushing.then(() => (pending ? pushNow() : undefined)); }
     clearTimeout(pushT); pushT = 0; pushDue = 0;
+    // Igual que lo último que se subió: la nube ya lo tiene (25-10-2026, una escritura de menos).
+    if (sentCanon && sameKey(plain(fold(save))) === sentCanon) { pending = false; setSync('ok'); return Promise.resolve(); }
     if (navigator.onLine === false) {
       pending = true; setSync('offline'); scheduleRetry();
       return Promise.resolve();
@@ -742,11 +749,16 @@ G.DB = (() => {
     lastPush = Date.now();
     setSync('syncing');
     // Si la red se cae a medias, Firestore puede quedarse esperando: tope de 12 s.
-    const u = uid, send = r => Promise.race([
-      docRef().set({ save: plain(fold(save)), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION, rev: r },
-        { mergeFields: ['save', 'updatedAt', 'v', 'rev'] }).then(() => r),
-      new Promise((_, rej) => setTimeout(() => rej({ code: 'unavailable' }), 12000))
-    ]);
+    let tried = '';
+    const u = uid, send = r => {
+      const body = plain(fold(save));
+      tried = sameKey(body);
+      return Promise.race([
+        docRef().set({ save: body, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), v: VERSION, rev: r },
+          { mergeFields: ['save', 'updatedAt', 'v', 'rev'] }).then(() => r),
+        new Promise((_, rej) => setTimeout(() => rej({ code: 'unavailable' }), 12000))
+      ]);
+    };
     pushing = send(rev + 1).catch(async e => {
       // Rechazada: si es porque otro aparato subió antes (rev distinto), se junta
       // con lo suyo y se sube otra vez. Como mucho una lectura cada 5 min.
@@ -762,7 +774,7 @@ G.DB = (() => {
     }).then(r => {
       fails = 0;
       clearTimeout(readT);           // (si estaba sin leer la nube: ya va a la par)
-      if (uid === u) setRev(r);
+      if (uid === u) { setRev(r); sentCanon = tried; }
       write(K_OK + uid, Date.now());
       // (Lo cambiado mientras se subía queda pendiente para el próximo Guardar.)
       setSync(pending ? 'pending' : 'ok');
@@ -942,6 +954,7 @@ G.DB = (() => {
       remove(K_SES);
     }
     clearTimeout(pushT); clearTimeout(retryT); clearTimeout(readT);
+    sentCanon = '';
     user = key = save = uid = null; guest = false; pending = false;
     setSync(mode === 'cloud' ? 'ok' : 'local');
   }
