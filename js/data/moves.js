@@ -594,7 +594,82 @@
       cd: 0.7, dmg: 22, speed: 330, life: 1.6, size: 7, homing: 6 },
     { id: 'night-slash', name: 'Tajo Umbrío', type: 'dark', kind: 'spin',
       desc: 'Cortes en giro que alcanzan a todo lo que te rodea.',
-      cd: 1.0, dmg: 11, count: 3, radius: 62 }
+      cd: 1.0, dmg: 11, count: 3, radius: 62 },
+
+    // ================= POPULARES: ataques muy usados en los juegos que aún no estaban =================
+    // Mismas familias de siempre; números ajustados a los de su familia.
+    // Normal
+    { id: 'recover', name: 'Recuperación', type: 'normal', kind: 'buff',
+      desc: 'No hace daño: acumula REGENERACIÓN rápida de vida.',
+      cd: 1.0, stat: 'regen', amount: 1.9, dur: 5, stacks: 3 },
+    // Fuego
+    { id: 'fire-punch', name: 'Puño Fuego', type: 'fire', kind: 'melee',
+      desc: 'Puñetazo en llamas que quema.',
+      cd: 0.55, dmg: 17, radius: 50, arc: 1.4, knock: 70, burn: 1 },
+    // Agua
+    { id: 'waterfall', name: 'Cascada', type: 'water', kind: 'melee',
+      desc: 'Embestida de agua que empuja con fuerza.',
+      cd: 0.7, dmg: 22, radius: 52, arc: 1.5, knock: 120 },
+    { id: 'aqua-jet', name: 'Acua Jet', type: 'water', kind: 'dash',
+      desc: 'Te lanzas como un chorro: muy rápido y frecuente.',
+      cd: 0.55, dmg: 15, radius: 105, width: 34, knock: 30 },
+    { id: 'water-pulse', name: 'Hidropulso', type: 'water', kind: 'projectile',
+      desc: 'Onda de agua que persigue y ralentiza.',
+      cd: 0.55, dmg: 18, speed: 300, count: 1, spread: 0.1, pierce: 0, life: 1.8, size: 9, homing: 2, slow: 0.3 },
+    // Planta
+    { id: 'leaf-blade', name: 'Hoja Aguda', type: 'grass', kind: 'melee',
+      desc: 'Corte de hoja muy afilado en arco amplio.',
+      cd: 0.55, dmg: 19, radius: 58, arc: 1.6, knock: 60 },
+    // Eléctrico
+    { id: 'thunder-punch', name: 'Puño Trueno', type: 'electric', kind: 'melee',
+      desc: 'Puñetazo eléctrico que paraliza un poco.',
+      cd: 0.52, dmg: 16, radius: 50, arc: 1.4, knock: 70, slow: 0.3 },
+    { id: 'volt-tackle', name: 'Placaje Eléctrico', type: 'electric', kind: 'dash',
+      desc: 'Embestida eléctrica brutal a lo largo de todo el camino.',
+      cd: 1.0, dmg: 28, radius: 130, width: 42, knock: 60 },
+    { id: 'volt-switch', name: 'Voltiocambio', type: 'electric', kind: 'boomerang',
+      desc: 'Descarga que va y vuelve, golpeando a la ida y a la vuelta.',
+      cd: 0.85, dmg: 16, count: 1, radius: 220, speed: 380, size: 8, slow: 0.2 },
+    // Hielo
+    { id: 'ice-punch', name: 'Puño Hielo', type: 'ice', kind: 'melee',
+      desc: 'Puñetazo helado que ralentiza.',
+      cd: 0.52, dmg: 16, radius: 50, arc: 1.4, knock: 70, slow: 0.45 },
+    // Lucha
+    { id: 'mach-punch', name: 'Ultrapuño', type: 'fighting', kind: 'melee',
+      desc: 'Puñetazos rapidísimos.',
+      cd: 0.3, dmg: 11, radius: 46, arc: 1.3, knock: 50 },
+    { id: 'drain-punch', name: 'Puño Drenaje', type: 'fighting', kind: 'aura',
+      desc: 'Golpes a tu alrededor que te curan con cada impacto.',
+      cd: 0.6, dmg: 10, radius: 64, drain: 1 },
+    // Veneno
+    { id: 'cross-poison', name: 'Veneno X', type: 'poison', kind: 'melee',
+      desc: 'Corte en cruz que envenena.',
+      cd: 0.5, dmg: 15, radius: 50, arc: 1.6, knock: 50, poison: 1 },
+    // Tierra
+    { id: 'dig', name: 'Excavar', type: 'ground', kind: 'mine',
+      desc: 'Cavas bajo tierra y sales de golpe donde pisan.',
+      cd: 1.3, dmg: 19, count: 2, radius: 64, dur: 7 },
+    // Volador
+    { id: 'roost', name: 'Respiro', type: 'flying', kind: 'buff',
+      desc: 'No hace daño: te posas y recuperas vida rápido.',
+      cd: 1.1, stat: 'regen', amount: 2.4, dur: 4, stacks: 2 },
+    // Psíquico
+    { id: 'zen-headbutt', name: 'Cabezazo Zen', type: 'psychic', kind: 'melee',
+      desc: 'Cabezazo con fuerza mental.',
+      cd: 0.7, dmg: 22, radius: 50, arc: 1.3, knock: 110 },
+    { id: 'calm-mind', name: 'Paz Mental', type: 'psychic', kind: 'buff',
+      desc: 'No hace daño: acumula ATAQUE ESPECIAL con calma (dura más que Maquinación).',
+      cd: 0.8, stat: 'satk', amount: 0.10, dur: 8, stacks: 5 },
+    // Acero
+    { id: 'bullet-punch', name: 'Puño Bala', type: 'steel', kind: 'dash',
+      desc: 'Golpe veloz como una bala.',
+      cd: 0.45, dmg: 12, radius: 100, width: 30, knock: 30 },
+    { id: 'iron-tail', name: 'Cola Férrea', type: 'steel', kind: 'melee',
+      desc: 'Coletazo de acero potente en arco amplio.',
+      cd: 0.9, dmg: 28, radius: 56, arc: 2.0, knock: 130 },
+    { id: 'iron-defense', name: 'Defensa Férrea', type: 'steel', kind: 'buff',
+      desc: 'No hace daño: acumula mucha DEFENSA.',
+      cd: 0.9, stat: 'def', amount: 0.10, dur: 7, stacks: 4 }
   ];
 
   // Cuerpo a cuerpo (12-10-2026): +20 % de daño y +25 % de alcance y de arco
@@ -623,7 +698,10 @@
     // nuevos del 19-10-2026
     'rapid-spin', 'flame-charge', 'seed-bomb', 'sand-tomb', 'magnitude', 'u-turn', 'rock-tomb', 'ice-shard',
     'rolling-kick', 'dynamic-punch', 'shadow-sneak', 'dragon-claw', 'outrage', 'play-rough', 'gyro-ball',
-    'sucker-punch', 'night-slash']);
+    'sucker-punch', 'night-slash',
+    // populares
+    'fire-punch', 'waterfall', 'aqua-jet', 'leaf-blade', 'thunder-punch', 'volt-tackle', 'ice-punch', 'mach-punch',
+    'drain-punch', 'cross-poison', 'dig', 'zen-headbutt', 'bullet-punch', 'iron-tail']);
 
   // Los que disparan bolas necesitan count y spread de base: las mejoras los
   // multiplican y, sin ellos, "+1 proyectil" no sumaba ninguno y el abanico se
@@ -764,7 +842,16 @@
     'outrage': 'hp',          'draining-kiss': 'rgn',
     'play-rough': 'atk',      'disarming-voice': 'def',
     'mirror-shot': 'atk',     'gyro-ball': 'def',
-    'sucker-punch': 'atk',    'night-slash': 'spd'
+    'sucker-punch': 'atk',    'night-slash': 'spd',
+    // populares (los potenciadores no evolucionan)
+    'fire-punch': 'atk',      'waterfall': 'atk',
+    'aqua-jet': 'spd',        'water-pulse': 'cd',
+    'leaf-blade': 'atk',      'thunder-punch': 'atk',
+    'volt-tackle': 'atk',     'volt-switch': 'cd',
+    'ice-punch': 'atk',       'mach-punch': 'spd',
+    'drain-punch': 'rgn',     'cross-poison': 'atk',
+    'dig': 'atk',             'zen-headbutt': 'atk',
+    'bullet-punch': 'spd',    'iron-tail': 'atk'
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {

@@ -6,6 +6,14 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-26', title: ['20 ataques populares, objetos de apoyo y Pulsera Z', '20 popular moves, support items and Z-Ring'], new: [
+    ['20 ataques muy usados en los juegos que aún no estaban: Puño Fuego, Puño Trueno, Puño Hielo, Cascada, Acua Jet, Hoja Aguda, Voltiocambio, Placaje Eléctrico, Excavar, Cola Férrea, Recuperación, Paz Mental... cada uno con su evolución.',
+     '20 moves that are very common in the games and were still missing: Fire Punch, Thunder Punch, Ice Punch, Waterfall, Aqua Jet, Leaf Blade, Volt Switch, Volt Tackle, Dig, Iron Tail, Recover, Calm Mind... each with its evolution.'],
+    ['Objetos de apoyo: salen en las cartas de subir de nivel y se pueden llevar hasta 6 a la vez, cada uno con hasta 5 niveles: Cinta Experto, Polvo Veloz, Hierba Única, Periscopio, Mineral Evolutivo, Más PS, Miel, Raíz Grande, Refleluz, Revivir, Repartir Experiencia, Pepita, Lodo Negro y Lupa. Se ven arriba a la izquierda y en el resumen de la pausa.',
+     'Support items: they show up in the level-up cards and you can carry up to 6 at once, each with up to 5 levels: Expert Belt, Quick Powder, Power Herb, Scope Lens, Eviolite, HP Up, Honey, Big Root, Light Clay, Revive, Exp. Share, Nugget, Black Sludge and Wide Lens. They show at the top left and in the pause summary.'],
+    ['Objeto nuevo, Pulsera Z: todos tus movimientos se lanzan a la vez.',
+     'New item, Z-Ring: all your moves fire at once.']
+  ] },
   { d: '2026-10-25', title: ['Tickets y Pokémon iguales en todos tus aparatos', 'The same tickets and Pokémon on all your devices'], new: [
     ['Al acabar la partida, sola o en grupo, sale el resumen: cada ataque con el daño que ha hecho y su daño por segundo, el daño total y tu objeto. En grupo, también el de cada compañero, con una pestaña por jugador.',
      'When a run ends, solo or in a group, you get the summary: each move with the damage it dealt and its damage per second, your total damage and your item. In a group, also each teammate’s, with one tab per player.'],
