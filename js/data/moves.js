@@ -436,7 +436,7 @@
 
     { id: 'meteor-mash', name: 'Puño Meteoro', type: 'steel', kind: 'meteor',
       desc: 'Dos meteoros de acero que aplastan donde caen.',
-      cd: 1.4, dmg: 34, count: 2, radius: 54, knock: 80 },
+      cd: 1.4, dmg: 24, count: 2, radius: 48, knock: 70 },     // (23-10-2026: era 34 y radio 54; al máximo y evolucionado pegaba 1,8 veces lo que Avalancha)
 
     { id: 'will-o-wisp', name: 'Fuego Fatuo', type: 'fire', kind: 'turret',
       desc: 'Deja una llama flotante que dispara sola y quema.',
@@ -712,57 +712,59 @@
    */
   const NEED_NAME = { hp: 'Vigor', atk: 'Potencia', spd: 'Carrera', cd: 'Reflejos', def: 'Coraza',
                       rgn: 'Síntesis', mag: 'Imán', xp: 'Aprendizaje' };
+  // Condición de cada uno. Al evolucionar se llama igual con « +» (Puño Meteoro +):
+  // así ningún nombre de movimiento queda gastado en una evolución.
   const EVO = {
-    'tackle': ['Derribo', 'hp'],             'quick-attack': ['Velocidad Extrema', 'spd'],
-    'body-slam': ['Gigaimpacto', 'atk'],     'hyper-voice': ['Alboroto', 'cd'],
-    'ember': ['Llamarada', 'atk'],           'flamethrower': ['Sofoco', 'cd'],
-    'fire-spin': ['Fuego Sagrado', 'rgn'],   'heat-wave': ['Erupción', 'hp'],
-    'water-gun': ['Escaldar', 'atk'],        'bubble': ['Surf', 'spd'],
-    'hydro-pump': ['Hidrocañón', 'atk'],     'vine-whip': ['Latigazo', 'atk'],
-    'razor-leaf': ['Lluevehojas', 'cd'],     'leaf-storm': ['Danza Pétalo', 'rgn'],
-    'giga-drain': ['Planta Feroz', 'hp'],    'thunder-shock': ['Trueno', 'atk'],
-    'discharge': ['Campo Eléctrico', 'def'], 'thunderbolt': ['Electrocañón', 'cd'],
-    'confusion': ['Psicocarga', 'cd'],       'psybeam': ['Premonición', 'atk'],
-    'psychic': ['Vasta Fuerza', 'mag'],      'sludge': ['Bomba Lodo', 'atk'],
-    'poison-sting': ['Puya Nociva', 'spd'],  'toxic': ['Gas Venenoso', 'rgn'],
-    'mud-shot': ['Tierra Viva', 'atk'],      'bulldoze': ['Terremoto', 'atk'],
-    'gust': ['Vendaval', 'spd'],             'wing-attack': ['Pájaro Osado', 'atk'],
-    'bug-bite': ['Tijera X', 'atk'],         'string-shot': ['Red Viscosa', 'cd'],
-    'bug-buzz': ['Enjambre', 'rgn'],         'rock-throw': ['Roca Afilada', 'atk'],
-    'rock-slide': ['Trampa Rocas', 'cd'],    'ice-beam': ['Ventisca', 'atk'],
-    'powder-snow': ['Viento Hielo', 'spd'],  'karate-chop': ['A Bocajarro', 'atk'],
-    'aura-sphere': ['Onda Certera', 'cd'],   'lick': ['Puño Sombra', 'atk'],
-    'shadow-ball': ['Golpe Fantasma', 'cd'], 'dragon-rage': ['Cometa Draco', 'atk'],
-    'fairy-wind': ['Fuerza Lunar', 'atk'],   'dazzling-gleam': ['Campo de Niebla', 'rgn'],
-    'metal-claw': ['Cabeza de Hierro', 'atk'], 'flash-cannon': ['Rayo Metálico', 'def'],
-    'bite': ['Triturar', 'atk'],             'dark-pulse': ['Alarido', 'spd'],
-    'night-shade': ['Pesadilla', 'rgn'],
-    'bonemerang': ['Ataque Óseo', 'atk'],    'psycho-cut': ['Psicocolmillo', 'cd'],
-    'spikes': ['Fisura', 'atk'],             'toxic-spikes': ['Lanza Mugre', 'rgn'],
-    'hail': ['Alud', 'cd'],                  'meteor-mash': ['Bomba Imán', 'atk'],
-    'will-o-wisp': ['Infierno', 'cd'],       'substitute': ['Doble Equipo', 'def'],
-    'aerial-ace': ['Acróbata', 'spd'],       'flame-wheel': ['Envite Ígneo', 'spd'],
-    'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag'],
+    'tackle': 'hp',           'quick-attack': 'spd',
+    'body-slam': 'atk',       'hyper-voice': 'cd',
+    'ember': 'atk',           'flamethrower': 'cd',
+    'fire-spin': 'rgn',       'heat-wave': 'hp',
+    'water-gun': 'atk',       'bubble': 'spd',
+    'hydro-pump': 'atk',      'vine-whip': 'atk',
+    'razor-leaf': 'cd',       'leaf-storm': 'rgn',
+    'giga-drain': 'hp',       'thunder-shock': 'atk',
+    'discharge': 'def',       'thunderbolt': 'cd',
+    'confusion': 'cd',        'psybeam': 'atk',
+    'psychic': 'mag',         'sludge': 'atk',
+    'poison-sting': 'spd',    'toxic': 'rgn',
+    'mud-shot': 'atk',        'bulldoze': 'atk',
+    'gust': 'spd',            'wing-attack': 'atk',
+    'bug-bite': 'atk',        'string-shot': 'cd',
+    'bug-buzz': 'rgn',        'rock-throw': 'atk',
+    'rock-slide': 'cd',       'ice-beam': 'atk',
+    'powder-snow': 'spd',     'karate-chop': 'atk',
+    'aura-sphere': 'cd',      'lick': 'atk',
+    'shadow-ball': 'cd',      'dragon-rage': 'atk',
+    'fairy-wind': 'atk',      'dazzling-gleam': 'rgn',
+    'metal-claw': 'atk',      'flash-cannon': 'def',
+    'bite': 'atk',            'dark-pulse': 'spd',
+    'night-shade': 'rgn',
+    'bonemerang': 'atk',      'psycho-cut': 'cd',
+    'spikes': 'atk',          'toxic-spikes': 'rgn',
+    'hail': 'cd',             'meteor-mash': 'atk',
+    'will-o-wisp': 'cd',      'substitute': 'def',
+    'aerial-ace': 'spd',      'flame-wheel': 'spd',
+    'bubble-beam': 'atk',     'hex': 'mag',
     // nuevos del 19-10-2026
-    'hyper-beam': ['Rayo Prisma', 'atk'],    'rapid-spin': ['Triataque', 'spd'],
-    'flame-charge': ['Golpe Calor', 'spd'],  'whirlpool': ['Salmuera', 'rgn'],
-    'seed-bomb': ['Mazazo', 'atk'],          'energy-ball': ['Gigadrenado', 'rgn'],
-    'solar-beam': ['Cuchilla Solar', 'cd'],  'thunder-wave': ['Voltio Cruel', 'atk'],
-    'electro-ball': ['Chispa', 'spd'],       'extrasensory': ['Psicoonda', 'def'],
-    'mist-ball': ['Resplandor', 'cd'],       'acid-spray': ['Onda Tóxica', 'rgn'],
-    'sand-tomb': ['Fuerza Equina', 'hp'],    'magnitude': ['Taladradora', 'atk'],
-    'whirlwind': ['Huracán', 'spd'],         'air-slash': ['Ataque Aéreo', 'cd'],
-    'signal-beam': ['Megacuerno', 'atk'],    'u-turn': ['Sanguijuela', 'rgn'],
-    'rock-tomb': ['Testarazo', 'hp'],        'ancient-power': ['Tormenta de Diamantes', 'def'],
-    'power-gem': ['Rayo Meteórico', 'atk'],  'ice-shard': ['Carámbano', 'cd'],
-    'freeze-dry': ['Frío Polar', 'atk'],     'rolling-kick': ['Patada Salto Alta', 'spd'],
-    'vacuum-wave': ['Puño Incremento', 'def'], 'dynamic-punch': ['Megapuño', 'atk'],
-    'shadow-sneak': ['Garra Umbría', 'cd'],  'ominous-wind': ['Golpe Umbrío', 'mag'],
-    'dragon-breath': ['Pulso Dragón', 'atk'], 'dragon-claw': ['Carga Dragón', 'atk'],
-    'outrage': ['Dracoflecha', 'hp'],        'draining-kiss': ['Luz Lunar', 'rgn'],
-    'play-rough': ['Choque Anímico', 'atk'], 'disarming-voice': ['Encanto', 'def'],
-    'mirror-shot': ['Metaláser', 'atk'],     'gyro-ball': ['Cuerpo Pesado', 'def'],
-    'sucker-punch': ['Juego Sucio', 'atk'],  'night-slash': ['Lariat Oscuro', 'spd']
+    'hyper-beam': 'atk',      'rapid-spin': 'spd',
+    'flame-charge': 'spd',    'whirlpool': 'rgn',
+    'seed-bomb': 'atk',       'energy-ball': 'rgn',
+    'solar-beam': 'cd',       'thunder-wave': 'atk',
+    'electro-ball': 'spd',    'extrasensory': 'def',
+    'mist-ball': 'cd',        'acid-spray': 'rgn',
+    'sand-tomb': 'hp',        'magnitude': 'atk',
+    'whirlwind': 'spd',       'air-slash': 'cd',
+    'signal-beam': 'atk',     'u-turn': 'rgn',
+    'rock-tomb': 'hp',        'ancient-power': 'def',
+    'power-gem': 'atk',       'ice-shard': 'cd',
+    'freeze-dry': 'atk',      'rolling-kick': 'spd',
+    'vacuum-wave': 'def',     'dynamic-punch': 'atk',
+    'shadow-sneak': 'cd',     'ominous-wind': 'mag',
+    'dragon-breath': 'atk',   'dragon-claw': 'atk',
+    'outrage': 'hp',          'draining-kiss': 'rgn',
+    'play-rough': 'atk',      'disarming-voice': 'def',
+    'mirror-shot': 'atk',     'gyro-ball': 'def',
+    'sucker-punch': 'atk',    'night-slash': 'spd'
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {
@@ -790,22 +792,22 @@
     stun:       { t: '×1,8 daño, más radio y aturde más rato', m: { dmg: 1.8, radius: 1.3, stun: 1.4 } }
   };
 
+  const evoName = name => name + ' +';
+
   /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */
   function evoInfo(m, statsTaken) {
-    const e = EVO[m.id];
-    if (!e || m.evolved || m.lvl < m.def.maxLvl || !EVO_MODS[m.kind]) return null;
-    const [name, needs] = e;
-    return { name, needs, needName: NEED_NAME[needs], text: EVO_MODS[m.kind].t,
+    const needs = EVO[m.id];
+    if (!needs || m.evolved || m.lvl < m.def.maxLvl || !EVO_MODS[m.kind]) return null;
+    return { name: evoName(m.def.name), needs, needName: NEED_NAME[needs], text: EVO_MODS[m.kind].t,
              ready: !!(statsTaken && statsTaken[needs]) };
   }
 
   /** Evoluciona una instancia (cambia nombre y potencia; sigue siendo del mismo tipo). */
   function evolve(m) {
-    const e = EVO[m.id];
-    if (!e || m.evolved) return false;
+    if (!EVO[m.id] || m.evolved) return false;
     applyMods(m, EVO_MODS[m.kind].m);
     m.baseName = m.name;
-    m.name = e[0];
+    m.name = evoName(m.baseName);
     m.evolved = true;
     return true;
   }

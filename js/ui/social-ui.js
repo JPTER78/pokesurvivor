@@ -154,7 +154,9 @@
         const room = G.Social.room;
         if (room) {
           G.Net.open(room.id, room.isHost, room.host);
-          G.Net.syncMembers(room.members.map(m => m.uid));
+          // En partida la lista de la sala no echa a nadie (puede faltar alguien un
+          // momento por un corte con la base de datos): manda el canal directo.
+          if (!G.Coop.active && !room.lost) G.Net.syncMembers(room.members.map(m => m.uid));
         } else if (G.Net.open_) G.Net.close();
         if (what === 'room-closed') {
           G.UI.toast('La sala se ha cerrado', 2600);

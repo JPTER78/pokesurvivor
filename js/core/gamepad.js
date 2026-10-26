@@ -6,6 +6,7 @@
  *                   LB / RB (o LT / RT)         ataque anterior / siguiente
  *                   Start                       pausa
  *                   A                           saltar la animación de Arceus
+ *                   X / Y                       usar la esfera elegida / cambiar de esfera
  *                   stick derecho               apuntar (con "Apuntar a mano" en Accesibilidad)
  *   En menús, cartas y pausa:
  *                   stick o cruceta             mover la selección (recuadro dorado);
@@ -47,6 +48,11 @@ G.Pad = (() => {
 
   /** La pantalla que se ve por encima: la de mayor z-index (Ajustes va por delante de la pausa) y, si empatan, la última. */
   function topScreen() {
+    // La tirada del gacha va por encima de todo y no es una .scr: antes el mando
+    // seguía en el gacha de debajo y no había forma de llegar a Saltar ni a
+    // Continuar (25-10-2026).
+    const fx = document.getElementById('pull-fx');
+    if (fx && !fx.classList.contains('hidden')) return fx;
     let top = null, tz = -Infinity;
     for (const s of document.querySelectorAll('.scr:not(.hidden)')) {
       const z = parseInt(getComputedStyle(s).zIndex, 10) || 0;
@@ -117,10 +123,13 @@ G.Pad = (() => {
 
   /** La primera selección de una pantalla: el botón principal, si lo hay (nunca "Volver" o "Cerrar" si hay otra cosa). */
   const isBack = el => /(-close|-back)$/.test(el.id) || el.hasAttribute('data-back') || /^(Cerrar|Volver|Close|Back)$/i.test(el.textContent.trim());
+  // Botones que gastan (tirar en el gacha): nunca son lo primero que se elige. Hay
+  // que ir a ellos a propósito; si no, pulsando A seguido se tiraba sin querer.
+  const SPEND = '#pull-10, #pull-10b, #pull-100, #pull-100b';
   function firstOf(list) {
-    const rest = list.filter(el => !isBack(el));
+    const rest = list.filter(el => !isBack(el) && !el.matches(SPEND));
     const pool = rest.length ? rest : list;
-    const main = pool.find(el => el.matches('.play, .btn.gold, .card'));
+    const main = pool.find(el => el.matches('.play, .btn.gold, .card, #pull-skip'));    // (en la tirada del gacha, Saltar)
     if (main) return main;
     return pool.slice().sort((a, b) => { const [ax, ay] = center(a), [bx, by] = center(b); return (ay - by) || (ax - bx); })[0] || null;
   }
@@ -166,7 +175,13 @@ G.Pad = (() => {
       if (!showing || valid()) return;
       const list = candidates();
       if (!list.length) { hideFocus(); return; }
-      if (topScreen() !== scr) { setFocus(firstOf(list)); return; }
+      if (topScreen() !== scr) {
+        // Al cerrar una tirada del gacha no se deja nada elegido: lo primero era
+        // «Tirar» y, pulsando A seguido para pasar las animaciones, se encadenaban
+        // tiradas sin querer (25-10-2026). El siguiente A sólo enseña la selección.
+        if (scr && scr.id === 'pull-fx') { hideFocus(); return; }
+        setFocus(firstOf(list)); return;
+      }
       let best = null, bd = Infinity;
       for (const c of list) { const [x, y] = center(c); const d = (x - ox) ** 2 + (y - oy) ** 2; if (d < bd) { bd = d; best = c; } }
       setFocus(best);
@@ -254,6 +269,8 @@ G.Pad = (() => {
       if (hit(BT.RB) || hit(BT.RT)) G.Input.virtual('keye');
       if (hit(BT.START) || hit(BT.BACK)) G.Input.virtual('escape');
       if (hit(BT.A)) G.Input.virtual('space');
+      if (hit(BT.X)) G.Input.virtual('padx');
+      if (hit(BT.Y)) G.Input.virtual('pady');
     }
   }
   function step(dir) { if (!slide(dir)) move(...{ r: [1, 0], l: [-1, 0], d: [0, 1], u: [0, -1] }[dir]); }

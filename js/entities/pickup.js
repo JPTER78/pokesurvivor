@@ -21,12 +21,14 @@ G.Pickups = (() => {
     coin:  { color: '#ffd23f', glow: '#b8860b', r: 5.5 },
     ticket:   { color: '#ffd23f', glow: '#c08a10', r: 7 },
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
-    item:     { color: '#ffd23f', glow: '#c08a10', r: 9 }       // value = id del objeto
+    item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
+    sphere:   { color: '#c9b8ff', glow: '#7e5be0', r: 8 }       // value = id de la esfera (orbs.js)
   };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
   const BOSS_T10 = 1 / 3;               // ticket ×10 de un jefe normal
   const LEGEND_T10 = 1 / 2;             // ticket ×10 del legendario de la grieta
   const TICKET_RATE = 1 / 400;          // (antes 1/260; más raros desde 2026-10-10)
+  const SPHERE_RATE = 1 / 300;          // esfera de un Pokémon normal (y los jefes, siempre)
 
   function clear() { list = []; }
   function all() { return list; }
@@ -83,10 +85,13 @@ G.Pickups = (() => {
       // Ticket ×10: siempre el legendario de la grieta; un jefe normal, 1 de cada 3 veces.
       // (Hasta el 12-10-2026 el legendario de la grieta daba siempre 2: salían demasiados.)
       if (Math.random() < (legend ? LEGEND_T10 : BOSS_T10)) push(orb('ticket10', x, y - 20, 1));
+      push(orb('sphere', x - 20, y - 16, G.Orbs.roll()));
+      if (legend) push(orb('sphere', x + 20, y - 16, G.Orbs.roll()));
       return;
     }
     push(orb(value >= 20 ? 'xpBig' : 'xp', x, y, value));
     if (Math.random() < TICKET_RATE) push(orb('ticket', x + G.U.rand(-6, 6), y, 1));
+    if (Math.random() < SPHERE_RATE) push(orb('sphere', x + G.U.rand(-6, 6), y, G.Orbs.roll()));
 
     // Drops ocasionales.
     const r = Math.random();
@@ -119,14 +124,15 @@ G.Pickups = (() => {
       const p = list[i];
       p.t += dt * 4;
 
-      // El jugador vivo más cercano (en solitario, siempre tú).
+      // El jugador vivo más cercano (en solitario, siempre tú). Una esfera, sólo a quien le quepa.
       let pl = null, d2 = Infinity;
       for (const o of players) {
         if (o.dead && players.length > 1) continue;
+        if (p.kind === 'sphere' && !G.Orbs.canTake(o, p.value)) continue;
         const dd = G.U.dist2(o.x, o.y, p.x, p.y);
         if (dd < d2) { d2 = dd; pl = o; }
       }
-      if (!pl) continue;
+      if (!pl) { p.pulled = false; p.vx *= Math.pow(0.02, dt); p.vy *= Math.pow(0.02, dt); p.x += p.vx * dt; p.y += p.vy * dt; continue; }
       const dx = pl.x - p.x, dy = pl.y - p.y;
       const mag2 = pl.magnet * pl.magnet;
 
@@ -185,7 +191,16 @@ G.Pickups = (() => {
       } else {
         // Baya, imán y bomba: su icono pixel art.
         const ICON = { heal: 'berry', magnet: 'magnet', bomb: 'bomb', ticket: 'ticket', ticket10: 'ticket10' };
-        const sz = p.kind === 'ticket10' || p.kind === 'item' ? 24 : 18;
+        const sz = p.kind === 'ticket10' || p.kind === 'item' || p.kind === 'sphere' ? 24 : 18;
+        if (p.kind === 'sphere') {
+          // Esfera: brillo de su color, para distinguirlas desde lejos.
+          ctx.globalAlpha = 0.3 + Math.sin(p.t * 1.5) * 0.12;
+          ctx.fillStyle = (G.Orbs.BY[p.value] || {}).col || k.color;
+          ctx.beginPath(); ctx.arc(p.x, y, 16, 0, 6.2832); ctx.fill();
+          ctx.globalAlpha = 1;
+          G.Icons.draw(ctx, 'orb:' + p.value, p.x - sz / 2, y - sz / 2 - 1, sz);
+          continue;
+        }
         if (p.kind === 'item') {
           // Objeto: brillo dorado latiendo, para que se vea desde lejos.
           ctx.globalAlpha = 0.35 + Math.sin(p.t * 1.5) * 0.15;

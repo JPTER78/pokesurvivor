@@ -22,19 +22,21 @@ for (const f of ['js/core/locales.js', 'js/core/util.js', 'js/core/i18n.js']) lo
 const add = G.I18n.add;
 G.I18n.add = (d, language = 'en', context = '') => { if (language === 'en' && !context) Object.assign(EN, d); add(d, language, context); };
 for (const f of ['js/data/lang-en.js', 'js/core/settings.js', 'js/data/pokedex.js', 'js/data/sprites-meta.js', 'js/data/moves.js', 'js/data/types.js',
-                 'js/data/items.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js']) {
+                 'js/data/items.js', 'js/systems/orbs.js', 'js/data/achievements.js', 'js/world/tiles.js', 'js/data/funding.js',
+                 'js/data/changelog.js']) {
   try { load(f); } catch (e) { console.warn('aviso', f, e.message); }
 }
 const moves = Object.values(G.Moves.BY_ID).map(m => {
   const inst = G.Moves.instance(m.id, m.maxLvl || 5);
   const evo = G.Moves.evoInfo(inst, {});
-  return { id: m.id, name: m.name, type: m.type, kind: m.kind, desc: m.desc, maxLvl: m.maxLvl, evo: evo ? { name: evo.name, needs: evo.needName, text: evo.text } : null };
+  return { id: m.id, name: m.name, type: m.type, kind: m.kind, cat: m.cat || null, desc: m.desc, maxLvl: m.maxLvl, evo: evo ? { name: evo.name, needs: evo.needName, text: evo.text } : null };
 });
 const out = {
   dex: G.DEX,
   legends: G.DEX.filter(p => p.leg).map(p => p.dex),
   moves,
   items: (G.Items.LIST || []).map(i => ({ id: i.id, name: i.name, desc: i.desc })),
+  orbs: (G.Orbs ? G.Orbs.LIST : []).map(o => ({ id: o.id, name: o.name, desc: o.desc })),
   achievements: (G.AchDefs.LIST || []).map(a => ({ id: a.id, cat: a.cat, name: a.name, desc: a.desc, tier: a.tier, title: a.title || '', reward: a.reward || {} })),
   achCats: G.AchDefs.CATS || null,
   types: G.Types.CHART,
@@ -45,6 +47,8 @@ const out = {
   // (Sin la arena de Arceus: las de las grietas son una por tipo.)
   arenas: Object.fromEntries(Object.entries(G.ARENA_THEMES || (G.Tiles && G.Tiles.ARENA_THEMES) || {}).filter(([k]) => k !== 'judgment').map(([k, v]) => [k, v.name])),
   funding: { kofi: G.Funding.kofi, sponsors: G.Funding.sponsors, costs: G.Funding.costs },
+  // Las novedades de la web salen de las del juego (antes era una lista aparte que se quedaba atrás).
+  changelog: G.CHANGELOG || [],
   en: EN
 };
 fs.mkdirSync(path.join(__dirname, 'cache'), { recursive: true });

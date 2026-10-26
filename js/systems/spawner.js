@@ -36,8 +36,15 @@ G.Spawner = (() => {
     return (1.6 + t * 0.028 + Math.pow(t / 60, 1.6) * 0.5) * DENSITY;
   }
 
+  /** Radio de "fuera de la vista": el de la cámara, o más si alguien la tiene alejada (Luminosfera). */
+  function outR() {
+    let z = G.Camera.zoom;
+    for (const o of players) if (o.net && o.net.zm > z) z = o.net.zm;
+    return G.Camera.outerRadius() * z / G.Camera.zoom;
+  }
+
   function ringPoint(pl, angle) {
-    const d = G.Camera.outerRadius() + G.U.rand(10, 70);
+    const d = outR() + G.U.rand(10, 70);
     return [pl.x + Math.cos(angle) * d, pl.y + Math.sin(angle) * d * 0.9];
   }
 
@@ -45,7 +52,7 @@ G.Spawner = (() => {
 
   /** ¿Lo vería algún jugador? (para no aparecer delante de nadie) */
   function seenByAnyone(x, y) {
-    const r = G.Camera.outerRadius() - 30;
+    const r = outR() - 30;
     return players.some(o => G.U.dist2(o.x, o.y, x, y) < r * r);
   }
 

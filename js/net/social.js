@@ -25,6 +25,7 @@ G.Social = (() => {
   const VALID = /^[A-Za-z0-9_ñÑáéíóúÁÉÍÓÚ]{3,16}$/;
   const MAX_PLAYERS = 4;
   const INVITE_TTL = 3 * 60 * 1000;
+  const REINVITE_MS = 20 * 1000;     // volver a invitar al mismo amigo antes de esto no escribe nada
   /*
    * Hora real: la del servidor de la web (cabecera Date de version.json, gratis).
    * Si el reloj del aparato va adelantado (p. ej. la zona horaria mal puesta),
@@ -55,7 +56,7 @@ G.Social = (() => {
   let unFriends = null;
   let beatT = 0, presAt = 0, unInv = null;
   const pres = new Map();           // otherUid -> { online, play, room, seen } (lo último leído)
-  const sentInv = new Set();        // a quién invitaste (para retirarlo al salir)
+  const sentInv = new Map();        // a quién invitaste: uid -> { room, at } (para retirarlo al salir)
   let room = null;                  // { id, host, isHost, members: [{ uid, name, dex, shiny }] }
   let roomRefs = [];
   const invites = new Map();        // fromUid -> { from, name, room, at }
@@ -171,7 +172,11 @@ G.Social = (() => {
   // writeStatus y refreshPresence se quedan vacías para no tocar a quien las llama.
   const presKey = () => 'ps.pres.' + uid;
   function writeStatus() {}
-  function setPlaying(p) { playing = !!p; }
+  function setPlaying(p) {
+    playing = !!p;
+    // Al acabar la partida, la sala se vuelve a comprobar (los que se fueron, fuera).
+    if (!playing && room) { if (room.lost) room.tries = 0; emit('room'); }
+  }
 
   async function stop(why) {
     if (!started) return;
@@ -294,10 +299,20 @@ G.Social = (() => {
   function rtOn() { if (fb.rtdb) fb.rtdb.goOnline(); }
   function rtOff() { if (fb && fb.rtdb && !room) fb.rtdb.goOffline(); }
 
+  /*
+   * Salas con límite (25-10-2026): el 23-10 una cuenta creada fuera del juego
+   * llenó la base de datos con 19.691 salas de basura (100 GB, ~17 $ al día).
+   * Ahora (database.rules.json) cada cuenta tiene UNA sala, que se llama como
+   * ella; el anfitrión sólo puede poner en su sala a quien haya entrado de
+   * verdad (rin/{sala}/{uid}, que sólo escribe cada invitado), y los mensajes
+   * son pequeños y van a huecos fijos (net.js).
+   */
+  const rinRef = (id, u = uid) => fb.rtdb.ref('rin/' + id + '/' + u);
+
   async function createRoom() {
     if (room) return room;
     rtOn();
-    const id = fb.rtdb.ref('rooms').push().key;
+    const id = uid;
     await fb.rtdb.ref('rooms/' + id).set({ host: uid, open: true, at: ts(), m: { [uid]: memberInfo() } });
     enterRoom(id, uid);
     return room;
@@ -314,6 +329,8 @@ G.Social = (() => {
     } catch (e) { /* sala borrada */ }
     if (!host) { rtOff(); return { ok: false, error: 'Esa sala ya no existe.' }; }
     if (open !== true) { rtOff(); return { ok: false, error: 'La partida de esa sala ya ha empezado.' }; }
+    // (Con las reglas de antes de rin no se puede escribir: se sigue igual.)
+    await rinRef(id).set(true).catch(() => {});
     try { await fb.rtdb.ref('rooms/' + id + '/m/' + uid).set(memberInfo()); }
     catch (e) { rtOff(); return { ok: false, error: 'No se pudo entrar en la sala.' }; }
     const n = (await fb.rtdb.ref('rooms/' + id + '/m').get()).numChildren();
@@ -327,24 +344,34 @@ G.Social = (() => {
   }
 
   function enterRoom(id, host) {
-    room = { id, host, isHost: host === uid, members: [], open: true };
-    watchRoomDisconnect();
+    room = { id, host, isHost: host === uid, members: [], open: true, lost: false };
+    watchRoom(id);
+    writeStatus();
+    emit('room');
+  }
+
+  function watchRoom(id) {
+    detachRoom();
     const mref = fb.rtdb.ref('rooms/' + id + '/m');
     mref.on('value', s => {
       if (!room || room.id !== id) return;
       const m = s.val() || {};
+      if (!m[uid]) { lostRoom(id); return; }          // tu plaza ya no está (corte)
+      const prev = room.members;
       // El anfitrión siempre primero; el resto por orden de llegada.
       room.members = Object.keys(m).map(k => Object.assign({ uid: k }, m[k]))
         .sort((a, b) => (a.uid === room.host ? -1 : b.uid === room.host ? 1 : (a.at || 0) - (b.at || 0)));
+      if (room.isHost && playing) keepMates(id, prev);
       emit('room');
-    }, () => closedRoom());
+    }, () => lostRoom(id));
     const href = fb.rtdb.ref('rooms/' + id + '/host');
-    href.on('value', s => { if (room && room.id === id && !s.val()) closedRoom(); }, () => closedRoom());
+    href.on('value', s => { if (room && room.id === id && !s.val()) lostRoom(id); }, () => lostRoom(id));
     const oref = fb.rtdb.ref('rooms/' + id + '/open');
     oref.on('value', s => { if (room && room.id === id) { room.open = s.val() === true; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref];
-    writeStatus();
-    emit('room');
+    // Tras un corte el servidor ya ha hecho el onDisconnect: hay que volver a dejarlo puesto.
+    const cref = fb.rtdb.ref('.info/connected');
+    cref.on('value', s => { if (s.val() === true && room && room.id === id) watchRoomDisconnect(); });
+    roomRefs = [mref, href, oref, cref];
   }
 
   /** Si se cierra el navegador, la sala (anfitrión) o tu plaza (invitado) se borran solas. */
@@ -357,6 +384,88 @@ G.Social = (() => {
   function detachRoom() {
     for (const r of roomRefs) r.off();
     roomRefs = [];
+  }
+
+  /*
+   * Cortes de la Realtime Database (22-10-2026). Basta un corte de la conexión
+   * (red del móvil, pestaña dormida, o el tope de 100 conexiones del plan
+   * gratuito al reconectar) para que el servidor haga el onDisconnect: borra la
+   * plaza del invitado (y al volver ya no le deja leer la sala) o la sala entera
+   * si es el anfitrión. Antes eso era «La sala se ha cerrado» y fuera de la
+   * partida, aunque el canal directo con los demás siguiera bien.
+   * Ahora la sala no se da por cerrada a la primera: se recupera (el anfitrión
+   * la vuelve a escribir con los que había; el invitado vuelve a poner su plaza)
+   * y, durante una partida, nunca se cierra: la partida va por el canal directo.
+   */
+  const REJOIN_MS = 4000, REJOIN_TRIES = 3;
+
+  function lostRoom(id) {
+    if (!room || room.id !== id || room.lost) return;
+    detachRoom();
+    room.lost = true;
+    room.tries = 0;
+    rejoin(id);
+  }
+
+  const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(Error('timeout')), ms))]);
+
+  async function rejoin(id) {
+    if (!room || room.id !== id || !room.lost) return;
+    const base = fb.rtdb.ref('rooms/' + id);
+    try {
+      const host = (await within(base.child('host').get(), 5000)).val();
+      if (!room || room.id !== id) return;
+      if (room.isHost) {
+        // El servidor borró tu sala: se vuelve a escribir igual (misma id) con los que había.
+        if (host !== uid) {
+          if (host) throw Error('otra');
+          const m = {};
+          for (const x of room.members) m[x.uid] = { name: x.name, dex: x.dex, shiny: !!x.shiny, at: x.at || 0 };
+          m[uid] = Object.assign(memberInfo(), m[uid] ? { at: m[uid].at } : {});
+          await within(base.set({ host: uid, open: playing ? false : room.open, at: ts(), m }), 5000);
+        }
+      } else {
+        if (!host) throw Error('sin anfitrión');
+        const mine = room.members.find(x => x.uid === uid);
+        await within(rinRef(id).set(true), 5000).catch(() => {});
+        // Si no deja, los demás siguen jugando (la sala no admite a nadie hasta que acaben): a esperar.
+        await within(base.child('m/' + uid).set(Object.assign(memberInfo(), mine && mine.at ? { at: mine.at } : {})), 5000)
+          .catch(e => { throw Object.assign(e, { wait: e.message !== 'timeout' }); });
+      }
+    } catch (e) {
+      if (!room || room.id !== id) return;
+      // En partida se sigue intentando sin prisa; fuera, tras unos intentos, la sala se da
+      // por cerrada (pero no mientras el anfitrión siga en ella con la partida en marcha).
+      if (!playing && !e.wait && ++room.tries >= REJOIN_TRIES) { closedRoom(); return; }
+      setTimeout(() => rejoin(id), playing || e.wait ? 2 * REJOIN_MS : REJOIN_MS);
+      return;
+    }
+    if (!room || room.id !== id) return;
+    room.lost = false;
+    watchRoom(id);
+    watchRoomDisconnect();
+  }
+
+  /**
+   * Anfitrión en partida: si la plaza de un invitado desaparece pero sigue en
+   * la partida (aunque se esté reconectando, ver coop.js), ha sido un corte suyo
+   * con la base de datos: se le vuelve a poner. Sin plaza no podría ni leer la
+   * sala ni contestar al anfitrión para volver a conectar.
+   */
+  function keepMates(id, prev) {
+    for (const x of prev) {
+      if (x.uid === uid || room.members.some(m => m.uid === x.uid)) continue;
+      setTimeout(() => {
+        if (!room || room.id !== id || !playing || room.members.some(m => m.uid === x.uid)) return;
+        if (!G.Coop.keeps(x.uid)) return;
+        fb.rtdb.ref('rooms/' + id + '/m/' + x.uid).set({ name: x.name, dex: x.dex, shiny: !!x.shiny, at: x.at || 0 }).catch(() => {});
+      }, 3000);
+    }
+  }
+
+  /** Anfitrión: quita a alguien de la sala (se cortó en partida y no volvió). */
+  function dropMember(u) {
+    if (room && room.isHost && u !== uid) fb.rtdb.ref('rooms/' + room.id + '/m/' + u).remove().catch(() => {});
   }
 
   function closedRoom() {
@@ -377,6 +486,7 @@ G.Social = (() => {
     const ref = r.isHost ? fb.rtdb.ref('rooms/' + r.id) : fb.rtdb.ref('rooms/' + r.id + '/m/' + uid);
     ref.onDisconnect().cancel().catch(() => {});
     await ref.remove().catch(() => {});
+    if (!r.isHost) rinRef(r.id).remove().catch(() => {});
     retractInvites();
     writeStatus();
     rtOff();
@@ -402,17 +512,22 @@ G.Social = (() => {
     if (room && room.members.length >= MAX_PLAYERS) return { ok: false, error: 'La sala está llena.' };
     if (room && !room.isHost) return { ok: false, error: 'Sólo el anfitrión de la sala puede invitar.' };
     if (!room) await createRoom();
+    // Acabas de invitarle a esta sala: ya la tiene (pulsar otra vez no escribe nada; 25-10-2026).
+    const s = sentInv.get(other);
+    if (s && s.room === room.id && now() - s.at < REINVITE_MS) return { ok: true, msg: 'Invitación enviada a ' + f.name };
     try {
       await fb.fs.collection('inv').doc(other + '_' + uid).set({ to: other, from: uid, room: room.id, name: me.name, at: fts() });
     } catch (e) { return { ok: false, error: 'No se pudo invitar (' + (e.code || 'error') + ').' }; }
-    sentInv.add(other);
+    sentInv.set(other, { room: room.id, at: now() });
     return { ok: true, msg: 'Invitación enviada a ' + f.name };
   }
 
   /** Retira las invitaciones que mandaste (al salir de la sala). */
   function retractInvites() {
     if (!fb) return;
-    for (const o of sentInv) fb.fs.collection('inv').doc(o + '_' + uid).delete().catch(() => {});
+    // Sólo las que pueden seguir ahí: las caducadas ya no cuentan, y borrar las que
+    // ya no están (aceptadas o rechazadas) lo rechazaban las reglas (~200 por hora).
+    for (const [o, s] of sentInv) if (now() - s.at < INVITE_TTL) fb.fs.collection('inv').doc(o + '_' + uid).delete().catch(() => {});
     sentInv.clear();
   }
 
@@ -470,7 +585,7 @@ G.Social = (() => {
    */
   function publishProfile(force = false) {
     if (!me || !fb) return;
-    if (!force && Date.now() - pubAt < 2 * 3600 * 1000) return;    // como mucho cada 2 h (era 30 min)
+    if (!force && Date.now() - pubAt < 6 * 3600 * 1000) return;    // como mucho cada 6 h (2 h hasta el 25-10-2026; antes 30 min)
     clearTimeout(pubT);
     pubT = setTimeout(() => {
       if (!me || !fb) return;
@@ -519,7 +634,7 @@ G.Social = (() => {
 
   return {
     start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence, ensureFriends,
+    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, dropMember, setPlaying, refreshPresence, ensureFriends,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

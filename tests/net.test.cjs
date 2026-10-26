@@ -6,6 +6,13 @@ const { frame, client } = require('./net-fixtures.cjs');
 const source = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 function codec() { const G = {}; new Function('G', source('js/net/codec.js'))(G); return G.NetCodec; }
 const C = codec();
+// Mensajes por la base de datos: rooms/{sala}/q/{para}/{remitente}_00..99 (database.rules.json).
+// Devuelve la ruta del destinatario, sin el hueco.
+function slotted(p) {
+  const i = p.lastIndexOf('/');
+  assert.match(p.slice(i + 1), /^[A-Za-z0-9]{1,64}_[0-9][0-9]$/);
+  return p.slice(0, i);
+}
 
 test('host/client frames, events, pauses and Unicode round-trip exactly', () => {
   for (const f of [client(), frame(0, 0), frame(100, 40), frame(600, 400)]) {
@@ -63,7 +70,7 @@ test('bounded deterministic random numeric payloads round-trip', () => {
 
 function network() {
   const pcs = [], relay = [], G = { NetCodec: codec(), DB: { fb: { uid: 'host', rtdb: {
-    ref: p => ({ on() {}, off() {}, push: s => { relay.push([p, s]); return Promise.resolve(); } })
+    ref: p => ({ on() {}, off() {}, set: s => { relay.push([slotted(p), s]); return Promise.resolve(); } })
   } } } };
   class PC {
     constructor() { pcs.push(this); }
@@ -147,13 +154,13 @@ test('real Coop.tick frames pass through the codec without changing gameplay fie
     assert.equal(sent.length, 1);
     assert.deepEqual(C.decode(C.encode(sent[0])), sent[0]);
     if (host) { assert.deepEqual(sent[0].e, [[123, 50, -10, 126, 1, 3, 1]]); assert.ok('ho' in sent[0]); }
-    else { assert.equal(sent[0].p.length, 16); assert.equal(sent[0].p[15], ''); }   // 16.º: a quién mira estando caído
+    else { assert.equal(sent[0].p.length, 17); assert.equal(sent[0].p[15], ''); assert.equal(sent[0].p[16], 1); }   // 16.º: a quién mira estando caído; 17.º: zoom (Luminosfera)
   }
 });
 
 function turnNetwork(respond, { user = { uid: 'host', getIdToken: async () => 'token' }, host = true } = {}) {
   const pcs = [], calls = [], signals = [], timers = [], G = { NetCodec: codec(), DB: { fb: { uid: host ? 'host' : 'guest', auth: { currentUser: user }, rtdb: {
-    ref: p => ({ on(ev, fn) { this.fn = fn; G.listen = fn; }, off() {}, push: s => { signals.push([p, JSON.parse(s)]); return Promise.resolve(); } })
+    ref: p => ({ on(ev, fn) { this.fn = fn; G.listen = fn; }, off() {}, set: s => { signals.push([slotted(p), JSON.parse(s)]); return Promise.resolve(); } })
   } } } };
   class PC {
     constructor(cfg) { this.cfg = cfg; pcs.push(this); }
@@ -162,7 +169,7 @@ function turnNetwork(respond, { user = { uid: 'host', getIdToken: async () => 't
     createAnswer() { return Promise.resolve({ type: 'answer' }); }
     setLocalDescription(d) { this.localDescription = { toJSON: () => d }; return Promise.resolve(); }
     setRemoteDescription(d) { this.remoteDescription = d; return Promise.resolve(); }
-    addIceCandidate() { return Promise.resolve(); }
+    addIceCandidate(c) { (this.added = this.added || []).push(c); return Promise.resolve(); }
     fail() { this.connectionState = 'failed'; this.onconnectionstatechange(); }
     close() {}
   }
@@ -170,7 +177,8 @@ function turnNetwork(respond, { user = { uid: 'host', getIdToken: async () => 't
   const fetch = async (url, opt) => { calls.push([url, opt]); return respond(); };
   new Function('G', 'RTCPeerConnection', 'setTimeout', 'clearTimeout', 'fetch', source('js/net/net.js'))(G, PC, setTimeout, () => {}, fetch);
   const offer = (t) => G.listen({ val: () => JSON.stringify({ f: 'host', sig: t ? { sdp: { type: 'offer' }, t: 1 } : { sdp: { type: 'offer' } } }), ref: { remove: () => Promise.resolve() } });
-  return { N: G.Net, pcs, calls, signals, timers, offer };
+  const deliver = sig => G.listen({ val: () => JSON.stringify({ f: 'host', sig }), ref: { remove: () => Promise.resolve() } });
+  return { N: G.Net, pcs, calls, signals, timers, offer, deliver };
 }
 const settle = async () => { for (let i = 0; i < 5; i++) await new Promise(r => setImmediate(r)); };
 const turnReply = (body, status = 200) => ({ ok: status === 200, status, json: async () => body });
@@ -234,4 +242,184 @@ test('own TURN: a pair that needed it starts with it next time, and after 2 such
   b1.fail(); await settle();
   N.syncMembers(['host', 'a', 'b', 'c']); await settle();
   assert.equal(pcs.at(-1).cfg.iceServers.length, 2, 'two failures: own network needs TURN');
+});
+
+function coopWithCuts(host) {
+  let peerFn = null, msgFn = null;
+  const timers = new Map(), lost = [], said = [], dropped = [];
+  let mode = 'direct', nextT = 0;
+  const G = {};
+  G.Net = { uid: host ? 'host' : 'guest', on(fn) { msgFn = fn; }, onPeer(fn) { peerFn = fn; }, slow: () => false,
+    send() {}, toHost() {}, mode: () => mode };
+  G.Player = class { constructor() { this.maxHp = 300; } };
+  G.DEX_BY = { 25: { dex: 25 } }; G.baseStartOf = () => 'thundershock';
+  G.Sprites = { preload() {} }; G.U = { dist2: () => 0 };
+  G.Projectiles = { clearOrbs() {} }; G.Spawner = { say: s => said.push(s) };
+  G.Social = { me: { name: 'yo' }, dropMember: u => dropped.push(u) };
+  const setT = fn => { timers.set(++nextT, fn); return nextT; };
+  new Function('G', 'document', 'setTimeout', 'clearTimeout', source('js/net/coop.js'))(G, { addEventListener() {} }, setT, id => timers.delete(id));
+  G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 25 }] }, { x: 0, y: 0 },
+    { lost: m => lost.push(m), mateLeft() {}, waiting() {} });
+  const other = host ? 'guest' : 'host';
+  return {
+    G, lost, said, dropped, timers,
+    cut() { mode = 'failed'; peerFn(other, 'failed'); },
+    back() { mode = 'direct'; peerFn(other, 'direct'); },
+    expire() { for (const [id, fn] of [...timers]) { timers.delete(id); fn(); } },
+    bye() { msgFn(other, { k: 'f', ev: [['bye']] }); }
+  };
+}
+
+test('co-op cut mid-run: the guest waits for the host to reconnect instead of losing the run', () => {
+  const c = coopWithCuts(false);
+  c.cut();
+  assert.equal(c.lost.length, 0);
+  assert.ok(c.G.Coop.active);
+  c.back();
+  assert.equal(c.timers.size, 0);
+  c.expire();
+  assert.equal(c.lost.length, 0);
+  // a second cut that never comes back does end it, after the wait
+  c.cut(); c.cut();
+  assert.equal(c.timers.size, 1);
+  c.expire();
+  assert.equal(c.lost.length, 1);
+  assert.ok(!c.G.Coop.active);
+});
+
+test('co-op cut mid-run: the host keeps the guest while it reconnects and removes it only if it never does', () => {
+  const c = coopWithCuts(true);
+  c.cut();
+  assert.equal(c.G.Coop.puppets().length, 1);
+  assert.ok(c.G.Coop.keeps('guest'));
+  c.back();
+  assert.ok(c.said.some(s => s.includes('ha vuelto')));
+  c.cut(); c.expire();
+  assert.equal(c.G.Coop.puppets().length, 0);
+  assert.deepEqual(c.dropped, ['guest']);
+  // leaving on purpose during the wait never removes them from the room
+  const d = coopWithCuts(true);
+  d.cut(); d.bye(); d.expire();
+  assert.deepEqual(d.dropped, []);
+  assert.equal(d.G.Coop.puppets().length, 0);
+});
+
+test('co-op orbs: the host applies a guest orb only if the guest really has it, and buffs reach those nearby', () => {
+  let msgFn = null;
+  const G = {}, slept = [], slowed = [];
+  G.Net = { uid: 'host', on(fn) { msgFn = fn; }, onPeer() {}, slow: () => false, send() {}, toHost() {}, mode: () => 'direct' };
+  G.Player = class { constructor() { this.maxHp = 300; } };
+  G.DEX_BY = { 25: { dex: 25 } }; G.baseStartOf = () => 'thundershock';
+  G.Sprites = { preload() {} };
+  G.U = { dist2: (x, y, a, b) => (x - a) ** 2 + (y - b) ** 2, norm: (x, y) => { const d = Math.hypot(x, y) || 1; return [x / d, y / d]; },
+    pick: a => a[0] };
+  G.FX = { ring() {}, dmgText() {} }; G.Audio = { sfx() {} }; G.Spawner = { say() {} }; G.T = s => s;
+  G.Camera = { VIEW_W: 768, MIN_VIEW_H: 420, zoom: 1, zoomTo: 1 };
+  const foe = (id, x, boss) => ({ id, x, y: 0, boss, applySleep: d => slept.push([id, d]), applySlow: (f, d) => slowed.push([id, f, d]) });
+  G.EnemyMgr = { all: () => [foe(1, 100, false), foe(2, 120, true), foe(3, 5000, false)] };
+  const local = { x: 0, y: 0, dead: false, bodyH: 20, critChance: 0, spdMul: 1 };
+  G.Game = { player: local, state: 'playing' };
+  new Function('G', source('js/systems/orbs.js'))(G);
+  new Function('G', 'document', source('js/net/coop.js'))(G, { addEventListener() {} });
+  G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 25 }] }, local,
+    { lost() {}, mateLeft() {}, waiting() {} });
+  const guest = G.Coop.puppets()[0];
+  const use = (id, x = 0) => msgFn('guest', { k: 'f', ev: [['ou', id, x, 0, 1]] });
+
+  use('slumber');                                   // no la tiene: no pasa nada
+  assert.deepEqual(slept, []);
+  assert.ok(G.Orbs.add(guest, 'slumber'));          // la coge (el anfitrión lleva la cuenta)
+  use('slumber');
+  assert.deepEqual(slept, [[1, 4], [2, 1]]);         // los de su pantalla; el jefe, 1 s; el lejano, nada
+  use('slumber');                                   // ya la ha gastado
+  assert.equal(slept.length, 2);
+
+  G.Orbs.add(guest, 'quick');
+  use('quick', 5000);                               // lejos del anfitrión: a él no le llega
+  assert.equal(local.spdMul, 1);
+  G.Orbs.add(guest, 'quick');
+  use('quick', 100);                                // a menos de media pantalla: también para el anfitrión
+  assert.equal(local.spdMul, 1.4);
+
+  for (let i = 0; i < 3; i++) G.Orbs.add(guest, 'slow');
+  assert.ok(!G.Orbs.canTake(guest, 'slow'));         // 3 de cada como mucho
+  for (const id of ['focus', 'luminous']) G.Orbs.add(guest, id);
+  assert.ok(G.Orbs.canTake(guest, 'blowback'));      // (las dos Rapidosferas ya se gastaron: queda 1 hueco)
+  G.Orbs.add(guest, 'quick');
+  assert.ok(!G.Orbs.canTake(guest, 'blowback'));     // y 4 huecos
+});
+
+test('connection candidates travel together in one database message, and both formats are understood', async () => {
+  const { N, pcs, signals, offer, deliver } = turnNetwork(goodTurn, { user: { uid: 'guest', getIdToken: async () => 'token' }, host: false });
+  N.open('room', false, 'host');
+  offer(false); await settle();
+  const pc = pcs[0], before = signals.length;
+  for (const n of [1, 2, 3]) pc.onicecandidate({ candidate: { toJSON: () => ({ candidate: 'c' + n }) } });
+  assert.equal(signals.length, before, 'they wait to go together');
+  pc.onicecandidate({ candidate: null });
+  assert.equal(signals.length, before + 1, 'one message');
+  assert.deepEqual(signals.at(-1)[1].sig.cs.map(c => c.candidate), ['c1', 'c2', 'c3']);
+  deliver({ cs: [{ candidate: 'h1' }, { candidate: 'h2' }] });   // de esta versión
+  deliver({ c: { candidate: 'h3' } });                          // de las de antes
+  await settle();
+  assert.deepEqual(pc.added.map(c => c.candidate).sort(), ['h1', 'h2', 'h3']);   // (el orden da igual)
+});
+
+function coopSums(host, mySum) {
+  let msgFn = null; const got = {};
+  const G = {};
+  G.Net = { uid: host ? 'host' : 'guest', on(fn) { msgFn = fn; }, onPeer() {}, slow: () => false, send() {}, toHost() {}, mode: () => 'direct' };
+  G.Player = class { constructor() { this.maxHp = 300; } };
+  G.DEX_BY = { 25: { dex: 25 }, 7: { dex: 7 } }; G.baseStartOf = () => 'thundershock';
+  G.Moves = { BY_ID: { thundershock: {}, tackle: {} } }; G.Items = { BY: { leftovers: {} } };
+  G.Sprites = { preload() {} }; G.U = { dist2: () => 0 };
+  G.Projectiles = { clearOrbs() {} }; G.Spawner = { say() {} }; G.Social = { me: { name: 'yo' }, dropMember() {} };
+  new Function('G', 'document', 'setTimeout', 'clearTimeout', source('js/net/coop.js'))(G, { addEventListener() {} }, () => 0, () => {});
+  G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 7 }] }, { x: 0, y: 0 },
+    { mySum: () => mySum, over: d => { got.over = d; }, syncTeam() {}, hold() {}, away() {}, lost() {}, mateLeft() {}, waiting() {} });
+  return { G, got, from: (u, msg) => msgFn(u, msg) };
+}
+
+test('co-op run summary: each player sees everyone, and what arrives is cleaned', () => {
+  const mine = { dex: 25, sh: false, lv: 30, t: 900, it: null, mv: [['thundershock', 5, 12000, 0, 1]] };
+  // Anfitrión: el resumen del invitado llega con basura y se queda sólo lo válido.
+  const h = coopSums(true, mine);
+  h.from('guest', { k: 'f', ev: [['sm', { dex: 7, sh: true, lv: 1e9, t: 900, it: '<img onerror=x>',
+    mv: [['tackle', 3, 5000, 10, 0], ['<script>', 1, 1, 1, 0], 'x', ['thundershock', 2, -50, 0, 0]], extra: 'nope' }]] });
+  const s = h.G.Coop.sums();
+  assert.deepEqual(s.host, mine);
+  assert.deepEqual(s.guest, { dex: 7, sh: true, lv: 9999, t: 900, it: null, mv: [['tackle', 3, 5000, 10, 0], ['thundershock', 2, 0, 0, 0]] });
+  // Invitado: al acabar le llegan los de todos (y sólo de quien está en la partida); el suyo, el de su juego.
+  const g = coopSums(false, { dex: 7, sh: false, lv: 30, t: 900, it: 'leftovers', mv: [] });
+  g.from('host', { k: 'f', ev: [['ov', { why: 'host', sums: { host: mine, guest: { dex: 25, lv: 1, t: 1, mv: [] }, intruso: mine } }]] });
+  assert.equal(g.got.over.why, 'host');
+  const all = g.G.Coop.sums();
+  assert.deepEqual(Object.keys(all).sort(), ['guest', 'host']);
+  assert.deepEqual(all.host, mine);
+  assert.equal(all.guest.it, 'leftovers');
+});
+
+test('co-op: a lost "I have picked" or "I am done choosing" message no longer freezes the run for everyone', () => {
+  const calls = { resume: 0, hold: [] };
+  const r = coopSums(true, null);
+  r.G.Judgment = { netState: () => null }; r.G.EnemyMgr = { all: () => [] };
+  const local = { x: 0, y: 0, moveAngle: 0, walking: false, hp: 300, maxHp: 300, magnet: 78, aim: 0, xpMul: 1, activeGroup: () => [] };
+  r.G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 7 }] }, local,
+    { levelStart() {}, waiting() {}, resume: () => calls.resume++, hold: names => calls.hold.push(names.join(',')), mateLeft() {}, lost() {},
+      team: () => ({ time: 0, level: 1, xp: 0, xpNext: 10, kills: 0, bosses: 0, coins: 0, t1: 0, t10: 0 }), summary: () => ({}) });
+  // Ronda de cartas: el anfitrión elige; el aviso del invitado ('lp') se pierde.
+  r.G.Coop.levelStart(2);
+  r.G.Coop.localPicked();
+  assert.equal(calls.resume, 0, 'still waiting for the guest');
+  r.from('guest', { k: 'f', ev: [], w: 1, h: 0 });          // su siguiente mensaje normal: ya eligió la ronda 1
+  assert.equal(calls.resume, 1, 'the run goes on');
+  // Fusión: el aviso de "he terminado" ('he') se pierde; el estado del mensaje manda.
+  r.from('guest', { k: 'f', ev: [['hs']], w: 1, h: 1 });
+  assert.equal(calls.hold.at(-1), 'Bea');
+  r.from('guest', { k: 'f', ev: [], w: 1, h: 0 });
+  assert.equal(calls.hold.at(-1), '', 'nobody is choosing any more');
+  // Una versión vieja (sin h ni w) sigue igual que antes: sólo cuentan sus avisos.
+  r.from('guest', { k: 'f', ev: [['hs']] });
+  r.from('guest', { k: 'f', ev: [] });
+  assert.equal(calls.hold.at(-1), 'Bea');
 });

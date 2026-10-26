@@ -92,11 +92,14 @@ G.MenuUI = (() => {
     G.InvitePop.refresh();
   }
 
-  /** Texto bajo "Mochila": cuántos objetos y MT llevas. */
+  /** Texto bajo "Mochila": cuántos objetos y MT llevas (y los Amuletos Iris, si hay). */
   function bagLine() {
     const s = G.DB.save, sum = o => Object.values(o || {}).reduce((a, b) => a + (+b || 0), 0);
-    const items = sum(s.bag), tms = sum(s.tms);
-    $('menu-bag-sub').textContent = items || tms ? G.I18n.f('Objetos: {x} · MT: {x}', items, tms) : G.T('Vacía');
+    const items = sum(s.bag), tms = sum(s.tms), iris = G.Gacha.BANNERS.filter(b => G.Gacha.hasIris(s, b.gen)).length;
+    const parts = [];
+    if (items || tms) parts.push(G.I18n.f('Objetos: {x} · MT: {x}', items, tms));
+    if (iris) parts.push(G.I18n.f('Amuletos Iris: {x}', iris));
+    $('menu-bag-sub').textContent = parts.join(' · ') || G.T('Vacía');
   }
 
   /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */
@@ -324,8 +327,8 @@ G.MenuUI = (() => {
         ${monExtras(dex)}
         ${p.types.length === 1 ? `<p class="sub center" style="margin:2px 0 0">Monotipo: +20 % de daño con sus ataques de tipo ${G.U.TYPE_NAME[p.types[0]]}</p>` : ''}
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.T(G.Moves.BY_ID[G.startMoveOf(dex)].name, 'move')}</b></p>
-        <p class="move-icons" title="Movimientos que puede aprender">
-          ${G.Moves.poolFor(p).map(id => `<span title="${G.T(G.Moves.BY_ID[id].name, 'move')}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
+        <p class="move-icons" id="dex-moves">
+          ${G.Moves.poolFor(p).map(id => `<span data-move="${id}">${G.Icons.html('move:' + id, 32)}</span>`).join('')}</p>
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
@@ -333,6 +336,7 @@ G.MenuUI = (() => {
             o derrotándolo cuando salga shiny.</p>`}
     `;
     for (const [el, t] of scrolls) el.scrollTop = t;
+    moveTips($('dex-moves'));
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
     $('dex-big').classList.toggle('shiny', own && viewShiny);
     G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny });
@@ -350,6 +354,57 @@ G.MenuUI = (() => {
       renderGrid(true); showDetail(dex);
     };
     if (own) wireExtras(dex, box);
+  }
+
+  // ---------------- ficha: lo que hace cada ataque (24-10-2026) ----------------
+  /* Los iconos de los ataques que puede aprender: al pasar el ratón (o al
+   * tocarlos en el móvil) sale un recuadro con su nombre, su tipo, si es físico
+   * o especial y lo que hace (lo mismo que enseña la Tienda Kecleon). El
+   * recuadro va en #scr-dex: se va con la pantalla. */
+  let tipOn = null;
+  function moveTipHtml(id) {
+    const m = G.Moves.BY_ID[id];
+    const cat = G.Stats.NAME[m.cat || (m.stat === 'patk' ? 'physical' : m.stat === 'satk' ? 'special' : '')];
+    return `<b>${G.T(m.name, 'move')}</b>
+      <div class="move-tip-tags"><span class="tag-chip" style="background:${G.U.TYPE_COLOR[m.type]}">${G.U.TYPE_NAME[m.type]}</span>${cat ? `<span class="tag-chip cat">${cat}</span>` : ''}</div>
+      <div class="sub">${G.T(m.desc)}</div>`;
+  }
+  function hideMoveTip() { tipOn = null; const t = $('move-tip'); if (t) t.classList.add('hidden'); }
+  function showMoveTip(ic) {
+    let tip = $('move-tip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'move-tip'; tip.className = 'move-tip hidden';
+      const scr = $('scr-dex');
+      scr.appendChild(tip);
+      // Tocar fuera de los iconos o desplazar la lista lo quita (en el móvil no hay "salir con el ratón").
+      scr.addEventListener('pointerdown', e => { if (!e.target.closest('#dex-moves')) hideMoveTip(); }, true);
+      scr.addEventListener('scroll', hideMoveTip, true);
+    }
+    tipOn = ic;
+    tip.innerHTML = moveTipHtml(ic.dataset.move);
+    tip.classList.remove('hidden');
+    // Encima del icono (si no cabe, debajo), sin salirse por los lados.
+    const r = ic.getBoundingClientRect(), t = tip.getBoundingClientRect(), M = 8;
+    tip.style.left = G.U.clamp(r.left + r.width / 2 - t.width / 2, M, innerWidth - t.width - M) + 'px';
+    tip.style.top = (r.top - t.height - M >= M ? r.top - t.height - M : r.bottom + M) + 'px';
+  }
+  function moveTips(row) {
+    hideMoveTip();
+    if (!row) return;
+    let touch = false;
+    row.onpointerdown = e => { touch = e.pointerType === 'touch'; };
+    row.onpointerover = e => {
+      const ic = e.target.closest('[data-move]');
+      if (ic && e.pointerType !== 'touch' && ic !== tipOn) showMoveTip(ic);
+    };
+    row.onpointerleave = e => { if (e.pointerType !== 'touch') hideMoveTip(); };
+    // En el móvil: tocar un icono lo enseña; tocarlo otra vez, lo quita.
+    row.onclick = e => {
+      const ic = e.target.closest('[data-move]');
+      if (!ic || !touch) return;
+      if (ic === tipOn) hideMoveTip(); else showMoveTip(ic);
+    };
   }
 
   // ---------------- naturaleza, habilidad y MT (Tienda Kecleon, 20-10-2026) ----------------
