@@ -63,7 +63,7 @@ G.RunUI = (() => {
       el.className = 'card';
       const tag = c.type === 'new'
         ? `<span class="tag-chip" style="background:${c.color}">Nuevo · ${c.tag}</span>${c.cat ? `<span class="tag-chip cat">${c.cat}</span>` : ''}`
-        : c.type === 'up' || c.type === 'evo'
+        : c.type === 'up' || c.type === 'evo' || c.type === 'pitem'
           ? `<span class="tag-chip" style="background:${c.color}">${c.tag}</span>`
           : `<span class="tag-chip" style="background:${c.color === '#ffd23f' ? '#ffd23f' : '#9fb1c9'}">${c.tag}</span>`;
       if (c.type === 'evo') el.classList.add('evo');
@@ -322,6 +322,9 @@ G.RunUI = (() => {
     const cards = Object.entries(pl.statsTaken || {}).map(([id, c]) => {
       const s = G.LevelUp.STATS.find(x => x.id === id);
       return s ? `<span class="chip">${G.Icons.html(s.icon, 12)} ${s.title} ×${c}</span>` : '';
+    }).join('') + Object.entries(pl.passives || {}).map(([id, lv]) => {
+      const p = G.Passives.BY[id];               // objetos de apoyo: ×nivel
+      return p ? `<span class="chip">${G.Icons.html(id, 12)} ${p.name} ×${lv}</span>` : '';
     }).join('');
     return `<h3>Tus ataques</h3>
       <table class="sum-moves"><tr><th></th><th></th><th class="num">Daño</th><th class="num">Por segundo</th></tr>${moves}</table>
