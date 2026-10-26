@@ -3,6 +3,7 @@
  *   new   aprender un movimiento nuevo (sólo si quedan huecos de los 4; un vínculo libera huecos)
  *   up    mejorar un movimiento que ya tienes
  *   stat  mejora permanente de la run
+ *   pitem objeto de apoyo nuevo o un nivel más del que ya llevas (data/passives.js)
  */
 G.LevelUp = (() => {
 
@@ -122,6 +123,9 @@ G.LevelUp = (() => {
         apply: p => { s.apply(p); p.statsTaken[s.id] = (p.statsTaken[s.id] || 0) + 1; }
       });
     }
+
+    // --- objetos de apoyo ---
+    out.push(...G.Passives.cards(pl));
 
     return out;
   }
