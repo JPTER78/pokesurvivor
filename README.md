@@ -91,7 +91,7 @@ jefe, la captura de un shiny salvaje y un shiny en el gacha.
 ## Guardado en la nube y publicación
 
 - **Base de datos (Firebase):** cuentas con nombre + contraseña o Google, y la
-  partida se sigue en cualquier ordenador. Pasos en [docs/FIREBASE.md](docs/FIREBASE.md).
+  partida se sigue en cualquier ordenador.
   Sin configurar, el juego guarda sólo en el navegador, como antes.
 - **Jugar con amigos (hasta 4) y ranking:** con cuenta en la nube, menú
   **Amigos** (añadir por apodo, invitar a tu sala) y **Ranking** (tiempo

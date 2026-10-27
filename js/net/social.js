@@ -1,4 +1,4 @@
-/* ============ social.js — apodo, amigos, en línea, invitaciones y salas ============
+/* ============ social.js — apodo, amigos, invitaciones y salas ============
  * Sólo funciona con cuenta en la nube (G.DB.online). Usa:
  *
  *   Firestore
@@ -6,7 +6,7 @@
  *     profiles/{uid}               { name, lower, at }   apodo público
  *     friendships/{uidA_uidB}      { users, from, to, status: 'pending'|'ok', names, at }
  *
- *     pres/{uid}                   { on, at, room, play } en línea (aproximado)
+ *     pres/{uid}                   (el "en línea", quitado el 20-10-2026: sólo se borra con la cuenta)
  *     inv/{para_de}                { to, from, room, name, at } invitaciones
  *
  *   Realtime Database: SÓLO mientras estás en una sala o partida en grupo
@@ -14,10 +14,8 @@
  *                         la sala; q/ son los mensajes de net.js
  *
  * Por qué así: el plan gratuito de Firebase sólo admite 100 conexiones a la
- * vez a la Realtime Database. Si todo el mundo estuviera conectado para el
- * "en línea", ése sería el máximo de jugadores. Ahora sólo cuentan los que
- * están en una sala; el "en línea" va por Firestore con un latido cada 10 min
- * y se lee sólo al abrir Amigos o la sala (lo leído vale 1 min).
+ * vez a la Realtime Database. Si todo el mundo estuviera conectado, ése sería
+ * el máximo de jugadores: sólo se conectan los que están en una sala.
  *
  * El resto del juego escucha los cambios con G.Social.on(fn).
  */
@@ -44,18 +42,11 @@ G.Social = (() => {
       if (skew) console.warn('[Social] el reloj de este aparato va desfasado', Math.round(skew / 60000), 'min: se corrige');
     }).catch(() => {});
   }
-  // Latido de presencia: cada 30 min (era 15; antes 10). 57.000 jugadores con
-  // amigos lo escribían 4 veces por hora (13-10-2026, menos gasto de Firestore).
-  const BEAT = 30 * 60 * 1000;
-  const ONLINE = 40 * 60 * 1000;        // "en línea" si el último latido es más reciente
-  const PRES_TTL = 60 * 1000;           // lo leído de los amigos vale 1 min
-
   let fb = null, uid = null;
   let me = null;                    // { uid, name }
   let friends = new Map();          // otherUid -> { uid, name, pid, status: 'ok'|'in'|'out', online, play }
   let unFriends = null;
-  let beatT = 0, presAt = 0, unInv = null;
-  const pres = new Map();           // otherUid -> { online, play, room, seen } (lo último leído)
+  let listening = false, unInv = null;  // listening: ya se ha puesto en marcha (online)
   const sentInv = new Map();        // a quién invitaste: uid -> { room, at } (para retirarlo al salir)
   let room = null;                  // { id, host, isHost, members: [{ uid, name, dex, shiny }] }
   let roomRefs = [];
@@ -67,7 +58,6 @@ G.Social = (() => {
   const ts = () => firebase.database.ServerValue.TIMESTAMP;
   const fts = () => firebase.firestore.FieldValue.serverTimestamp();
   const msOf = v => (v && v.toMillis ? v.toMillis() : +v || 0);
-  const pidOf = (a, b) => (a < b ? a + '_' + b : b + '_' + a);
 
   // ---------------- arranque ----------------
 
@@ -120,7 +110,7 @@ G.Social = (() => {
     me = { uid, name };
     try { localStorage.setItem('ps.nick.' + uid, name); } catch (e) { /* nada */ }
     G.DB.setName(name);
-    if (started && !beatT) online();
+    if (started && !listening) online();
     publishProfile(true);
     return { ok: true };
   }
@@ -135,8 +125,8 @@ G.Social = (() => {
    */
   const hasFrKey = () => 'ps.hasfr.' + uid;
   function online() {
-    if (beatT) return;                        // ya estaba en marcha
-    beatT = 1;
+    if (listening) return;                    // ya estaba en marcha
+    listening = true;
     if (fb.rtdb) fb.rtdb.goOffline();         // se conecta sólo al entrar en una sala
     let known = false;
     try { known = localStorage.getItem(hasFrKey()) === '1'; } catch (e) { /* nada */ }
@@ -163,15 +153,13 @@ G.Social = (() => {
     }, e => console.warn('[Social] invitaciones:', e.code || e.message));
   }
 
-  let playing = false, lastBeat = 0;
-  /** ¿Hay alguien que pueda leer tu "en línea"? (sólo los amigos confirmados) */
+  let playing = false;
+  /** ¿Tienes algún amigo confirmado? (si no, nadie te puede invitar) */
   const hasFriends = () => [...friends.values()].some(f => f.status === 'ok');
   // El "en línea" de los amigos se quitó el 20-10-2026: era 1/4 de todas las
   // escrituras de Firestore (unas 2 millones al día). Ya no se escribe ni se lee
   // pres/{uid}; se puede invitar a cualquier amigo (la invitación caduca sola).
-  // writeStatus y refreshPresence se quedan vacías para no tocar a quien las llama.
-  const presKey = () => 'ps.pres.' + uid;
-  function writeStatus() {}
+  const presKey = () => 'ps.pres.' + uid;    // (sólo para borrar lo que quedó de entonces)
   function setPlaying(p) {
     playing = !!p;
     // Al acabar la partida, la sala se vuelve a comprobar (los que se fueron, fuera).
@@ -183,13 +171,13 @@ G.Social = (() => {
     await leaveRoom().catch(() => {});
     if (unFriends) { unFriends(); unFriends = null; }
     if (unInv) { unInv(); unInv = null; }
-    clearInterval(beatT); beatT = 0; friendsReady = null;
+    listening = false; friendsReady = null;
     try { localStorage.removeItem(presKey()); } catch (e) { /* nada */ }
     if (why === 'delete') {
       try { localStorage.removeItem('ps.nick.' + uid); } catch (e) { /* nada */ }
       await deleteAll().catch(e => console.warn('[Social] borrar:', e));
     }
-    friends.clear(); invites.clear(); sentInv.clear(); pres.clear(); presAt = 0;
+    friends.clear(); invites.clear(); sentInv.clear();
     me = null; started = false; fb = null; uid = null; playing = false;
     emit('stop');
   }
@@ -221,11 +209,11 @@ G.Social = (() => {
       snap.forEach(d => {
         const f = d.data();
         const other = f.users[0] === uid ? f.users[1] : f.users[0];
-        next.set(other, Object.assign({
+        next.set(other, {
           uid: other, pid: d.id, name: (f.names && f.names[other]) || '???',
           status: f.status === 'ok' ? 'ok' : f.to === uid ? 'in' : 'out',
           online: false, play: false, room: '', seen: 0
-        }, pres.get(other) || {}));
+        });
       });
       friends = next;
       emit('friends');
@@ -237,7 +225,6 @@ G.Social = (() => {
   }
 
   /** (Quitado el 20-10-2026 con el "en línea": ya no lee nada.) */
-  async function refreshPresence() {}
 
   /** Envía una solicitud de amistad (o acepta la que ya te había mandado). */
   async function request(name) {
@@ -346,7 +333,6 @@ G.Social = (() => {
   function enterRoom(id, host) {
     room = { id, host, isHost: host === uid, members: [], open: true, lost: false };
     watchRoom(id);
-    writeStatus();
     emit('room');
   }
 
@@ -473,7 +459,6 @@ G.Social = (() => {
     detachRoom();
     room = null;
     retractInvites();
-    writeStatus();
     rtOff();
     emit('room-closed');
   }
@@ -488,7 +473,6 @@ G.Social = (() => {
     await ref.remove().catch(() => {});
     if (!r.isHost) rinRef(r.id).remove().catch(() => {});
     retractInvites();
-    writeStatus();
     rtOff();
     emit('room');
   }
@@ -634,7 +618,7 @@ G.Social = (() => {
 
   return {
     start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, dropMember, setPlaying, refreshPresence, ensureFriends,
+    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, dropMember, setPlaying, ensureFriends,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

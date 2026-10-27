@@ -17,7 +17,10 @@ G.Shop = (() => {
     cap:  { name: 'Cápsula Habilidad', icon: 'capsule', price: 1500,
             desc: 'Cambia la habilidad de un Pokémon por otra de las suyas (no la oculta).' },
     caph: { name: 'Cápsula Habilidad Oculta', icon: 'capsuleh', price: 5000, hidden: true,
-            desc: 'Cambia la habilidad de un Pokémon por cualquiera de las suyas, también la oculta.' }
+            desc: 'Cambia la habilidad de un Pokémon por cualquiera de las suyas, también la oculta.' },
+    // Halloween (25-10-2026): no se vende; se consigue jugando esos días y se gasta en las skins.
+    candy: { name: 'Caramelo de Halloween', icon: 'candy', price: 0, event: true,
+             desc: 'Lo sueltan los Pokémon Fantasma y las calabazas en Halloween. Con ellos se compran las skins de bruja en la Tienda Kecleon.' }
   };
   const ORDER = ['mint', 'cap', 'caph'];
   const DAILY = 8;
@@ -76,7 +79,7 @@ G.Shop = (() => {
     if (!s) return { ok: false };
     const tm = key.startsWith('tm:') ? key.slice(3) : null;
     if (tm && !dailyTms().includes(tm)) return { ok: false, error: 'Esa MT ya no está a la venta.' };
-    if (!tm && !ITEMS[key]) return { ok: false };
+    if (!tm && (!ITEMS[key] || ITEMS[key].event)) return { ok: false };
     const price = tm ? tmPrice(tm) : ITEMS[key].price;
     if (s.coins < price) return { ok: false, error: 'No tienes Pokémonedas suficientes.' };
     s.coins -= price;
@@ -86,5 +89,22 @@ G.Shop = (() => {
     return { ok: true };
   }
 
-  return { ITEMS, ORDER, count, take, tmCount, takeTm, dailyTms, tmPrice, buy, today };
+  /** Halloween: una skin de bruja por caramelos (sólo esos días; luego se queda para siempre). → { ok, error? } */
+  function buySkin(id) {
+    const s = save(), sk = G.Skins.SKINS[id], price = G.Halloween.SKIN_PRICE;
+    if (!s || !sk) return { ok: false };
+    if (!G.Halloween.on) return { ok: false, error: 'Las skins de bruja sólo se venden en Halloween.' };
+    if (G.Skins.owns(s, id)) return { ok: false, error: 'Ya tienes esta skin.' };
+    if (count('candy') < price) return { ok: false, error: 'No tienes caramelos suficientes.' };
+    s.bag.candy -= price;
+    if (s.bag.candy <= 0) delete s.bag.candy;
+    s.skins = s.skins || {};
+    s.skins[id] = Date.now();
+    // Si ya tienes ese Pokémon, se la pone.
+    if (G.DB.owns(sk.dex)) G.Skins.wear(s, sk.dex, id);
+    G.DB.commit(true);
+    return { ok: true };
+  }
+
+  return { ITEMS, ORDER, count, take, tmCount, takeTm, dailyTms, tmPrice, buy, buySkin, today };
 })();

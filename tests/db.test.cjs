@@ -25,7 +25,7 @@ const ref = {
 const TABS = new Map();   // navegador (su localStorage) -> eventos 'storage' de cada pestaña
 function tab(store) {
   if (!TABS.has(store)) TABS.set(store, []);
-  const mine = [], timers = [];
+  const mine = [], timers = [], vis = [];
   const localStorage = {
     getItem: k => (store.has(k) ? store.get(k) : null),
     setItem: (k, v) => { store.set(k, String(v)); for (const fn of TABS.get(store)) if (!mine.includes(fn)) setImmediate(() => fn({ key: k, newValue: String(v) })); },
@@ -39,12 +39,14 @@ function tab(store) {
     firebase: { initializeApp() {}, auth: Object.assign(() => auth, { Auth: { Persistence: { LOCAL: 1 } } }),
                 firestore: Object.assign(() => db, { FieldValue: { serverTimestamp: () => 0 } }) },
     location: { protocol: 'https:', hostname: 'localhost' }, navigator: { onLine: true },
-    document: { createElement: () => ({}), head: { appendChild: el => setImmediate(el.onload) } },
+    document: { createElement: () => ({}), head: { appendChild: el => setImmediate(el.onload) }, hidden: false,
+      addEventListener: (t, fn) => { if (t === 'visibilitychange') vis.push(fn); } },
     window: { addEventListener: (t, fn) => { mine.push(fn); TABS.get(store).push(fn); } }, Date: { now: () => NOW }
   };
   vm.createContext(ctx);
   vm.runInContext(SRC, ctx);
-  return { DB: G.DB, timers, close() { const l = TABS.get(store); for (const fn of mine) l.splice(l.indexOf(fn), 1); } };
+  const hide = () => { ctx.document.hidden = true; vis.forEach(fn => fn()); };
+  return { DB: G.DB, timers, hide, close() { const l = TABS.get(store); for (const fn of mine) l.splice(l.indexOf(fn), 1); } };
 }
 const settle = async () => { for (let i = 0; i < 6; i++) await new Promise(r => setImmediate(r)); };
 async function open(store) { const t = tab(store); await t.DB.ready(); await settle(); return t; }
@@ -158,4 +160,16 @@ test('Guardar sin haber cambiado nada no vuelve a escribir en la nube', async ()
   await act(A, 1); await act(A, 'save');       // algo nuevo: sí
   assert.equal(writes, n + 1);
   assert.equal(cloud.save.tickets.t1, 4);
+});
+
+test('Guardar dos veces seguidas y salir del juego: la segunda se sube al salir', async () => {
+  reset();
+  const A = await open(new Map());
+  await act(A, 3); await act(A, 'save');            // 1.ª subida
+  NOW += 5000; A.DB.save.tickets.t1 += 2; A.DB.commit(); await settle();
+  const r = await A.DB.saveNow();                   // a los 5 s: tiene que esperar
+  assert.equal(r.why, 'wait');
+  assert.equal(cloud.save.tickets.t1, 3);
+  NOW += 17000; A.hide(); await settle();            // a los 22 s sales del juego
+  assert.equal(cloud.save.tickets.t1, 5, 'se ha subido al salir');
 });

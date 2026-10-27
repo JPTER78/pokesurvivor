@@ -100,6 +100,17 @@ G.Combat = (() => {
   /** Tabla de tipos × clima para un ataque de tipo `type` contra `e`. */
   function typeK(type, e) { return G.Types.mult(type, e.types) * G.Weather.mult(type); }
 
+  /** Un proyectil del movimiento m, de pl hacia el ángulo a. */
+  function shot(pl, m, a, col, vis) {
+    G.Projectiles.spawn(Object.assign({
+      x: pl.x + Math.cos(a) * 3, y: pl.y + Math.sin(a) * 3,
+      vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
+      dmg: m.dmg * pl.atkFor(m), r: m.size, life: m.life,
+      pierce: m.pierce | 0, color: col, homing: m.homing || 0,
+      hits: new Set(), vis, ghost, owner: pl
+    }, payload(m)));
+  }
+
   function fireProjectiles(pl, m) {
     const col = G.U.TYPE_COLOR[m.type];
     const vis = G.VFX.forMove(m);
@@ -108,13 +119,7 @@ G.Combat = (() => {
     for (let i = 0; i < n; i++) {
       const off = n === 1 ? 0 : (i / (n - 1) - 0.5) * spread * n;
       const a = pl.aim + off + G.U.rand(-0.03, 0.03);
-      G.Projectiles.spawn(Object.assign({
-        x: pl.x + Math.cos(a) * 3, y: pl.y + Math.sin(a) * 3,
-        vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
-        dmg: m.dmg * pl.atkFor(m), r: m.size, life: m.life,
-        pierce: m.pierce | 0, color: col, homing: m.homing || 0,
-        hits: new Set(), vis, ghost, owner: pl
-      }, payload(m)));
+      shot(pl, m, a, col, vis);
     }
     G.FX.spark(pl.x + Math.cos(pl.aim) * pl.r, pl.y - G.LIFT + Math.sin(pl.aim) * pl.r,
                col, Math.cos(pl.aim), Math.sin(pl.aim), 3);
@@ -126,13 +131,7 @@ G.Combat = (() => {
     const n = Math.max(3, m.count | 0);
     for (let i = 0; i < n; i++) {
       const a = (i / n) * 6.2832 + G.U.rand(-0.06, 0.06);
-      G.Projectiles.spawn(Object.assign({
-        x: pl.x + Math.cos(a) * 3, y: pl.y + Math.sin(a) * 3,
-        vx: Math.cos(a) * m.speed, vy: Math.sin(a) * m.speed,
-        dmg: m.dmg * pl.atkFor(m), r: m.size, life: m.life,
-        pierce: m.pierce | 0, color: col, homing: m.homing || 0,
-        hits: new Set(), vis, ghost, owner: pl
-      }, payload(m)));
+      shot(pl, m, a, col, vis);
     }
     G.FX.ring(pl.x, pl.y, pl.r, pl.r * 4, col, 0.3, 3);
   }

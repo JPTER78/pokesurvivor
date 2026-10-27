@@ -1,8 +1,0 @@
-{
-  "name": "pokesurvivor-turn-credentials",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": { "start": "node server.mjs", "test": "node --test ../tests/broker.test.mjs" },
-  "dependencies": { "firebase-admin": "14.5.0" }
-}

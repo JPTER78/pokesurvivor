@@ -27,9 +27,12 @@ let joined = files.map(f => `/* ${f} */\n` + fs.readFileSync(path.join(ROOT, f),
 // hacerse invencible, saltar el reloj, etc. (dev.html sigue igual, para programar).
 //   --expose   sin encerrar ni ofuscar (para las pruebas automáticas)
 const EXPOSE = process.argv.includes('--expose');
+const WIN_G = 'window.G = window.G || {};';
+if (!joined.includes(WIN_G)) throw new Error('util.js ya no crea G como se esperaba: revisa build.js');
+// G.BUILT: es la versión publicada (no dev.html, que va sin encerrar y con G en la
+// consola: en la web va sin nube, ver initCloud en db.js).
+joined = joined.replace(WIN_G, WIN_G + ' G.BUILT = true;');
 if (!EXPOSE) {
-  const WIN_G = 'window.G = window.G || {};';
-  if (!joined.includes(WIN_G)) throw new Error('util.js ya no crea G como se esperaba: revisa build.js');
   joined = '(() => {\n' + joined.replace(WIN_G, 'var G = {};') + '\n})();\n';
 }
 const tmp = path.join(ROOT, 'tools', 'cache', 'app.js');

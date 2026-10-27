@@ -5,7 +5,7 @@
 G.NewsUI = (() => {
   const $ = G.UI.$;
   const KEY = 'ps.news.seen';
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = G.U.esc;
   const latest = () => (G.CHANGELOG[0] || {}).d || '';
   function seen() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
 

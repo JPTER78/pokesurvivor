@@ -107,7 +107,7 @@
     </div>
     <form id="login-form" autocomplete="off">
       <label for="f-user">Nombre</label>
-      <input id="f-user" class="field" maxlength="16" spellcheck="false">
+      <input id="f-user" class="field" maxlength="16" spellcheck="false" autocomplete="username" autocapitalize="none" autocorrect="off">
       <label for="f-pass">Contraseña</label>
       <input id="f-pass" class="field" type="password" maxlength="64">
       <p id="login-err" class="err"></p>
@@ -174,6 +174,7 @@
     <div class="logo">
       <div class="t1">PokéSurvivor<span class="splash">Folagor, Sekiam, PokeAlex: ¿un hueco?</span></div>
       <div class="t2">Mundo Misterioso</div>
+      <div id="menu-hw" class="hw-count hidden"></div>
     </div>
     <div class="partner-card">
       <canvas id="menu-partner" class="stage" width="260" height="200"></canvas>
@@ -559,9 +560,9 @@
 <section id="scr-levelup" class="scr dim hidden">
   <div class="box center">
     <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
-    <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
+    <p class="sub">Elige una recompensa<span class="kbd-hint"> · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span></p>
     <div id="cards" class="cards"></div>
-    <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
+    <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>)<span class="kbd-hint"> · <kbd>R</kbd></span></button>
     <p id="lvl-wait" class="note hidden"></p>
   </div>
 </section>
@@ -579,7 +580,7 @@
 <section id="scr-item" class="scr dim hidden">
   <div class="box center">
     <h2>¡Un objeto!</h2>
-    <p class="sub">Sólo puedes llevar uno · <kbd>1</kbd> <kbd>2</kbd></p>
+    <p class="sub">Sólo puedes llevar uno<span class="kbd-hint"> · <kbd>1</kbd> <kbd>2</kbd></span></p>
     <div id="item-cards" class="cards"></div>
   </div>
 </section>
@@ -625,6 +626,8 @@
 <script defer src="js/core/touch.js"></script>
 <script defer src="js/core/gamepad.js"></script>
 <script defer src="js/core/sprites.js"></script>
+<script defer src="js/core/skins.js"></script>
+<script defer src="js/systems/halloween.js"></script>
 <script defer src="js/core/camera.js"></script>
 <!-- datos de juego -->
 <script defer src="js/data/moves.js"></script>

@@ -406,6 +406,7 @@ G.ShopUI = (() => {
       kcx.setTransform(1, 0, 0, 1, 0, 0);
       kcx.clearRect(0, 0, KS, KS);
       kcx.imageSmoothingEnabled = false;
+      k.a.skin = G.Halloween.on ? 'hat' : null;      // Halloween: con gorro de bruja
       k.a.draw(kcx, KS / 2, KS - 12);
       if (k.purple) G.UI.hueSwap(kcx, kc, PURPLE);
       const ox = x - KS / 2, oy = y - KS + 12;
@@ -540,6 +541,21 @@ G.ShopUI = (() => {
         flyToBag(icon, from, key);
       };
     });
+    box.querySelectorAll('[data-skin]').forEach(b => {
+      b.onclick = () => {
+        const r = G.Shop.buySkin(b.dataset.skin);
+        if (!r.ok) { if (r.error) G.UI.toast(G.T(r.error)); G.Audio.sfx('error'); return; }
+        G.Audio.sfx('buy');
+        G.UI.refreshCoins();
+        Scene.cheer();
+        say(G.T('¡Feliz Halloween! Póntela en la ficha del Pokémon.'));
+        render();
+      };
+    });
+    box.querySelectorAll('canvas[data-skin-pv]').forEach(cv => {
+      const id = cv.dataset.skinPv;
+      G.UI.sprite(cv, G.Skins.SKINS[id].dex, { skin: id, scale: 2 });
+    });
     // Pasar por algo de la tienda: el Kecleon más cercano va a señalarlo.
     box.querySelectorAll('.upg-item').forEach(it => {
       it.addEventListener('pointerenter', () => { const r = it.getBoundingClientRect(); Scene.point(r.left + r.width / 2); });
@@ -549,7 +565,8 @@ G.ShopUI = (() => {
   function buyHtml() {
     const s = G.DB.save, partner = s.partner, mine = n => (n ? ` <small class="gold">· ${G.I18n.f('tienes {x}', n)}</small>` : '');
     const buyBtn = (key, price) => `<button class="btn small gold" data-buy="${key}" data-sfx="none" ${s.coins < price ? 'disabled' : ''}>${coin(price)}</button>`;
-    let h = `<h3 style="margin:10px 0 6px">${G.T('Objetos')}</h3><div class="upg">`;
+    let h = G.Halloween.on ? skinsHtml() : '';
+    h += `<h3 style="margin:10px 0 6px">${G.T('Objetos')}</h3><div class="upg">`;
     for (const id of G.Shop.ORDER) {
       const it = G.Shop.ITEMS[id];
       h += row(G.Icons.html(it.icon, 32), G.T(it.name) + mine(G.Shop.count(id)), G.T(it.desc), buyBtn(id, it.price));
@@ -568,9 +585,27 @@ G.ShopUI = (() => {
     return h + '</div>';
   }
 
+  /** Halloween: las skins de bruja, por caramelos. */
+  function skinsHtml() {
+    const s = G.DB.save, have = (s.bag && s.bag.candy) || 0, P = G.Halloween.SKIN_PRICE;
+    let h = `<h3 style="margin:10px 0 6px">${G.Icons.html('witch', 18)} ${G.T('Halloween: skins de bruja')}</h3>
+      <p class="sub" style="margin:0 0 8px">${G.T('Sólo hasta el 1 de noviembre. Los caramelos salen en las partidas (sobre todo de los Fantasma y las calabazas) y ante el gran Gengar. La skin es para siempre; se pone y se quita en la ficha del Pokémon.')}
+      <b class="gold">${G.Icons.html('candy', 14)} ${G.I18n.f('Tienes {x} caramelos', have.toLocaleString(G.I18n.locale))}</b></p><div class="upg">`;
+    for (const id of G.Skins.LIST) {
+      const sk = G.Skins.SKINS[id], got = G.Skins.owns(s, id), name = G.DEX_BY[sk.dex].name;
+      const desc = !got ? G.I18n.f(sk.dex === 94 ? 'Sombrero y capa de bruja para {x}.' : 'Sombrero de bruja para {x}.', name)
+        : G.DB.owns(sk.dex) ? G.T('Comprada. Póntela o quítatela en la ficha del Pokémon.') : G.I18n.f('Comprada. Se pone cuando tengas a {x}.', name);
+      const btn = got ? `<b class="gold">${G.T('Comprada')}</b>`
+        : `<button class="btn small gold" data-skin="${id}" data-sfx="none" ${have < P ? 'disabled' : ''}>${G.Icons.html('candy', 14)} ${P}</button>`;
+      h += row(`<canvas data-skin-pv="${id}" width="64" height="72"></canvas>`, G.T(sk.name), desc, btn);
+    }
+    return h + '</div>';
+  }
+
   function bagHtml() {
     const s = G.DB.save;
     const items = G.Shop.ORDER.filter(id => G.Shop.count(id) > 0);
+    if (G.Shop.count('candy') > 0) items.push('candy');
     const tms = Object.keys(s.tms || {}).filter(id => G.Moves.BY_ID[id] && s.tms[id] > 0).sort((a, b) => moveName(a).localeCompare(moveName(b)));
     if (!items.length && !tms.length) {
       return `<p class="sub center" style="margin:24px 0">${G.T('Tu Mochila está vacía.')}<br><br>

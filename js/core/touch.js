@@ -73,6 +73,14 @@ G.Touch = (() => {
     });
     addEventListener('blur', reset);
     document.addEventListener('visibilitychange', reset);
+    // Red de seguridad (26-10-2026): si el navegador se come el «levantar el dedo»
+    // (pasa en algunos móviles al abrirse algo encima), el joystick se quedaba
+    // cogido por un dedo que ya no está y no dejaba coger otro: «se atasca». En
+    // cuanto no queda ningún dedo en la pantalla, se suelta.
+    const allUp = e => { if (!e.touches || !e.touches.length) reset(); };
+    document.addEventListener('touchend', allUp, true);
+    document.addEventListener('touchcancel', allUp, true);
+    cv.addEventListener('lostpointercapture', up);
   }
 
   function hit(x, y) {
