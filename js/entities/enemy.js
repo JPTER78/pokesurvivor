@@ -229,6 +229,11 @@
         G.Pickups.drop('item', this.x - 26, this.y - 10, G.Items.roll());
       }
       G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend, !!this.judge);
+      // Halloween: caramelos, con el ritmo que deja systems/halloween.js (los Fantasma
+      // en cuanto toca; los demás, sólo si se han ido acumulando).
+      if (G.Halloween.inRun && !this.judge && G.Halloween.takeCandy(G.Game.st.time, (this.types || []).includes('ghost') ? 1 : 3)) {
+        G.Pickups.drop('candy', this.x + G.U.rand(-8, 8), this.y - 6, 1);
+      }
       if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
       // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.
       if (this.behavior === 'thief') {

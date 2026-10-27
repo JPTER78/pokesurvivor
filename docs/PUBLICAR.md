@@ -32,7 +32,7 @@ En uno o dos minutos estará en <https://jpter78.github.io/pokesurvivor/>.
 
 ## 4. Conectar con Firebase
 
-Si ya seguiste [FIREBASE.md](FIREBASE.md), añade `jpter78.github.io` a los
+Si ya configuraste Firebase, añade `jpter78.github.io` a los
 **dominios autorizados** de Authentication (paso 5) y sube el
 `firebase-config.js` rellenado:
 

@@ -53,6 +53,11 @@ G.U = {
     const m = Math.floor(s / 60);
     return m + ':' + String(Math.floor(s % 60)).padStart(2, '0');
   },
+  /** Como mmss, pero con horas si pasa de una: "1:02:05". */
+  hmmss(t) { return t >= 3600 ? Math.floor(t / 3600) + ':' + G.U.mmss(t % 3600).padStart(5, '0') : G.U.mmss(t); },
+
+  /** Texto seguro para meterlo en HTML (nombres y demás que escriben otros jugadores). */
+  esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); },
 
   /** Colores de tipo Pokémon (para proyectiles, tags y efectos). */
   TYPE_COLOR: {

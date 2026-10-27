@@ -36,6 +36,16 @@ G.Icons = (() => {
     iris: { pal: { y: '#ffd23f', w: '#ffffff', r: '#ff5f6d', o: '#ffa64d', g: '#5fe08a', b: '#4fb4ff', p: '#c47bff' }, rows: [
       '....kkkk....', '...ky..yk...', '....kyyk....', '.....kk.....', '....kwrk....', '...kwrrok...',
       '..kwrroyyk..', '.krooyyggbk.', '..koyggbbk..', '...kgbppk...', '....kbpk....', '.....kk.....'] },
+    // Halloween (25-10-2026): caramelo (la moneda del evento), calabaza y sombrero de bruja.
+    candy: { pal: { o: '#ff8a2a', y: '#ffd23f', w: '#fff1d6', p: '#7a4ad0', d: '#4a2a8a' }, rows: [
+      '............', '............', 'kk...kk...kk', 'kpk.kyyk.kpk', 'kppkowyokppk', 'kpdkooyokdpk',
+      'kpdkoooykdpk', 'kppkoooykppk', 'kpk.kook.kpk', 'kk...kk...kk', '............', '............'] },
+    pumpkin: { pal: { o: '#ff8a2a', d: '#c45a12', y: '#ffd23f', g: '#5fae3f' }, rows: [
+      '.....kk.....', '....kgk.....', '..kkkgkkk...', '.kooodoooodk', 'koyyodooyyok', 'kooyodooyook',
+      'koooodoooook', 'koyyyyyyyyok', 'kooyoyyoyook', '.koooooooodk', '..kkdddddkk.', '....kkkkk...'] },
+    witch: { pal: { p: '#3d2266', l: '#6a40a8', o: '#ff8a2a', y: '#ffd23f' }, rows: [
+      '.......kk...', '......kpk...', '......kplk..', '.....kpplk..', '.....kppplk.', '....kpppplk.',
+      '....kppppplk', '...kooyooook', '.kkpppppppkk', 'kppppppppppl', '.kkkkkkkkkkk', '............'] },
     shop: { pal: { g: '#5fe08a', w: '#f4f8ff', b: '#b07a4a', y: '#ffd23f' }, rows: [
       '............', 'kkkkkkkkkkkk', 'kgwgwgwgwgwk', 'kgwgwgwgwgwk', 'kkkkkkkkkkkk', '.kbbbbbbbbk.',
       '.kbkkkbbbbk.', '.kbkwkbyybk.', '.kbkwkbyybk.', '.kbkwkbbbbk.', '.kbkwkbbbbk.', 'kkkkkkkkkkkk'] },

@@ -388,14 +388,14 @@ test('co-op run summary: each player sees everyone, and what arrives is cleaned'
     mv: [['tackle', 3, 5000, 10, 0], ['<script>', 1, 1, 1, 0], 'x', ['thundershock', 2, -50, 0, 0]], extra: 'nope' }]] });
   const s = h.G.Coop.sums();
   assert.deepEqual(s.host, mine);
-  assert.deepEqual(s.guest, { dex: 7, sh: true, lv: 9999, t: 900, it: null, mv: [['tackle', 3, 5000, 10, 0], ['thundershock', 2, 0, 0, 0]] });
+  assert.deepEqual(s.guest, { dex: 7, sh: true, lv: 9999, t: 900, it: null, sk: '', mv: [['tackle', 3, 5000, 10, 0], ['thundershock', 2, 0, 0, 0]] });
   // Invitado: al acabar le llegan los de todos (y sólo de quien está en la partida); el suyo, el de su juego.
   const g = coopSums(false, { dex: 7, sh: false, lv: 30, t: 900, it: 'leftovers', mv: [] });
   g.from('host', { k: 'f', ev: [['ov', { why: 'host', sums: { host: mine, guest: { dex: 25, lv: 1, t: 1, mv: [] }, intruso: mine } }]] });
   assert.equal(g.got.over.why, 'host');
   const all = g.G.Coop.sums();
   assert.deepEqual(Object.keys(all).sort(), ['guest', 'host']);
-  assert.deepEqual(all.host, mine);
+  assert.deepEqual(all.host, { ...mine, sk: '' });
   assert.equal(all.guest.it, 'leftovers');
 });
 

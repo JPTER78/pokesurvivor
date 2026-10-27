@@ -66,6 +66,44 @@ G.Ranking = (() => {
 
   const fbx = () => G.DB.online ? G.DB.fb : null;
 
+  // ---------------- sello ----------------
+  /*
+   * Al empezar cada partida se pide un sello a ice.pokesurvivor.com (el servidor
+   * del cooperativo): tu cuenta y la hora, firmadas. Va con la marca y sin él no
+   * entra en el ranking. En grupo cada uno pide el suyo y el invitado se lo
+   * manda al anfitrión (coop.js), que es quien sube la marca.
+   */
+  const SEAL_API = 'https://ice.pokesurvivor.com/v1/seal';
+  let seal = null, sealRun = 0;
+  function newSeal() {
+    seal = null;
+    const run = ++sealRun, fb = fbx(), user = fb && fb.auth.currentUser;
+    if (!user || fb.emulator) return;
+    (async () => {
+      // Hasta 3 intentos al empezar (el sello tiene que ser de los primeros segundos).
+      for (let i = 0; i < 3 && run === sealRun; i++) {
+        if (i) await new Promise(r => setTimeout(r, 5000));
+        const ctl = new AbortController(), stop = setTimeout(() => ctl.abort(), 6000);
+        try {
+          const token = await user.getIdToken();
+          const r = await fetch(SEAL_API, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, signal: ctl.signal });
+          if (r.status === 401 || r.status === 403) return;
+          const j = r.ok ? await r.json() : null;
+          if (j && Number.isSafeInteger(j.s) && /^[0-9a-f]{64}$/.test(j.g)) {
+            if (run === sealRun) seal = { uid: user.uid, s: j.s, g: j.g };
+            return;
+          }
+        } catch (e) { /* sin red: otra vez */ } finally { clearTimeout(stop); }
+      }
+    })();
+  }
+  /** El sello de esta partida, { s, g }, o null si no hay. */
+  function mySeal() {
+    const fb = fbx();
+    return seal && fb && seal.uid === fb.uid ? { s: seal.s, g: seal.g } : null;
+  }
+  const okSeal = x => !!x && Number.isSafeInteger(x.s) && typeof x.g === 'string' && /^[0-9a-f]{64}$/.test(x.g);
+
   // ---------------- periodos ----------------
 
   function madridDate(date) {
@@ -210,7 +248,6 @@ G.Ranking = (() => {
    * y derrotados con sentido y el baneo (firestore.rules; el tope de 45 min se
    * quitó el 23-10-2026: en el minuto 35 Arceus rompe los objetos).
    */
-  let busy = Promise.resolve();
   /** Al empezar a jugar: sube las marcas del histórico que esperaban (ver DEFER). */
   function runStarted() { flushDeferred(); }
 
@@ -254,8 +291,6 @@ G.Ranking = (() => {
     const d = deferred(), k = b + ':' + id;
     if (d[k] && d[k].e) { d[k] = { up: Date.now() }; saveDeferred(d); }
   }
-  /** La subida de una marca (para que la partida siguiente espere a que acabe). */
-  function track(p) { busy = p.catch(() => {}); return p; }
 
   /** Guarda la entrada en cada tabla donde mejore (tiempo o daño). → periodos mejorados */
   async function store(boards, id, entry) {
@@ -351,23 +386,27 @@ G.Ranking = (() => {
   }
 
   /*
-   * Nivel y derrotados dentro de lo que aceptan las reglas (firestore.rules,
+   * Nivel, derrotados y daño a Arceus dentro de lo que aceptan las reglas (firestore.rules,
    * validEntry). Si se pasaban, el servidor rechazaba la marca ENTERA sin avisar
    * (25-10-2026: los mejores pasaban de 12 derrotados por segundo y su marca no
    * subía nunca). Así entra siempre; como mucho, con algún derrotado de menos.
    */
   function fit(r) {
     const t = Math.min(86400, Math.max(1, r.t | 0));
-    return { t, lv: Math.max(1, Math.min(r.lv | 0, 10 + Math.floor(t / 4))), kills: Math.max(0, Math.min(r.kills | 0, 100 + t * 12)) };
+    // Daño a Arceus: sólo desde el minuto 30, hasta 50.000 por segundo de Sentencia.
+    const dmg = t < 1800 ? 0 : Math.max(0, Math.min(Math.floor(r.dmg || 0), (t - 1799) * 50000));
+    // rt: el tiempo de esta partida (t puede quedarse en el de una marca anterior mejor).
+    return { t, rt: t, lv: Math.max(1, Math.min(r.lv | 0, 10 + Math.floor(t / 4))), kills: Math.max(0, Math.min(r.kills | 0, 100 + t * 12)), dmg };
   }
 
-  function submitSolo(r) { return track(submitSoloNow(r)); }
+  function submitSolo(r) { return submitSoloNow(r); }
   async function submitSoloNow(r) {
     const fb = fbx();
-    if (!fb || !G.Social.me || r.t < MIN_T) return [];
+    const sl = mySeal();
+    if (!fb || !G.Social.me || r.t < MIN_T || !sl) return [];
     flushDeferred();
     const ids = boardIds();
-    const entry = Object.assign({ uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny] }, fit(r), { dmg: Math.max(0, Math.floor(r.dmg || 0)) });
+    const entry = Object.assign({ uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], seal: [sl] }, fit(r));
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
     if (r.t >= MIN_T_MON) boards.push(['s_' + ALL + '_p' + r.dex, 'p']);
     const better = await store(boards, fb.uid, entry);
@@ -376,14 +415,17 @@ G.Ranking = (() => {
   }
 
   /** La sube el anfitrión, con todo el equipo. */
-  function submitGroup(r) { return track(submitGroupNow(r)); }
+  function submitGroup(r) { return submitGroupNow(r); }
   async function submitGroupNow(r) {
     const fb = fbx();
     if (!fb || r.t < MIN_T || !r.members || r.members.length < 2) return [];
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
     const id = ms.map(m => m.uid).join('_');
+    // El sello de cada uno (el mío, de aquí; el de los demás, el que mandaron).
+    const seals = ms.map(m => (m.uid === fb.uid ? mySeal() : okSeal(m.seal) ? { s: m.seal.s, g: m.seal.g } : null));
+    if (seals.some(x => !x)) return [];
     const entry = Object.assign({ uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),
-                    shiny: ms.map(m => !!m.shiny) }, fit(r), { dmg: Math.max(0, Math.floor(r.dmg || 0)) });
+                    shiny: ms.map(m => !!m.shiny), seal: seals }, fit(r));
     const ids = boardIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
     if (r.t >= MIN_T_MON) for (const d of new Set(entry.dex)) boards.push(['g_' + ALL + '_p' + d, 'p']);
@@ -410,8 +452,6 @@ G.Ranking = (() => {
     }
     return inflight.get(b);
   }
-  /** El top 50 de tiempo de una tabla. */
-  async function summary(b) { return (await sumOf(b)).top; }
 
   /*
    * Lo que se enseña de una tabla: su resumen y, encima, lo que este navegador
@@ -700,6 +740,6 @@ G.Ranking = (() => {
       t1: (v.tickets || {}).t1 || 0, t10: (v.tickets || {}).t10 || 0, owned: Object.keys(v.owned || {}).length }; });
   }
 
-  return { PERIODS, periodIds, board, runStarted, submitSolo, submitGroup, top, topDmg, myRank, removeMine,
+  return { PERIODS, periodIds, board, runStarted, newSeal, mySeal, submitSolo, submitGroup, top, topDmg, myRank, removeMine,
            report, reported, isAdmin, reports, entryInfo, removeEntry, purgeAbove, removeEverywhere, setMarked, dismiss, markedAccounts };
 })();

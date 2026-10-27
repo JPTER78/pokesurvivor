@@ -66,6 +66,13 @@ G.Audio = (() => {
   // En móvil, tocar la pantalla (pointerdown) no cuenta como gesto para el
   // sonido: sí levantar el dedo (pointerup / touchend). Se escuchan todos.
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'keydown']) addEventListener(ev, unlock, { capture: true });
+  // Juego minimizado o en otra pestaña: el sonido se para y vuelve al volver.
+  // (En el móvil seguía sonando, y distorsionado, con el juego en segundo plano.)
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden) { if (ctx.state === 'running') ctx.suspend().catch(() => {}); }
+    else if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  });
 
   function applyVolumes() {
     if (!ctx) return;
@@ -186,6 +193,56 @@ G.Audio = (() => {
       lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
       lfo.start(t); lfo.stop(t + d + 0.25);
     },
+    // ---- Halloween (versión tenebrosa de la música: spooky()) ----
+    // Theremin: seno que entra deslizándose, con un vibrato ancho y mucho eco.
+    theremin(t, f, d, v, bus) {
+      const lp = filt('lowpass', 2400, 0.6, bus);
+      const g = gainEnv(lp, t, 0.09, 0.19 * v, d, 0.3, 0.85);
+      send(g, 0.65);
+      const o1 = osc('sine', f * 0.96, t, t + d + 0.45, g);
+      o1.frequency.exponentialRampToValueAtTime(f, t + 0.09);
+      const g2 = ctx.createGain(); g2.gain.value = 0.12; g2.connect(g);
+      const o2 = osc('triangle', f * 2, t, t + d + 0.45, g2);
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 5.6;
+      const lg = ctx.createGain(); lg.gain.value = f * 0.016;
+      lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
+      lfo.start(t); lfo.stop(t + d + 0.5);
+    },
+    // Caja de música desafinada (en vez de las campanitas).
+    musicbox(t, f, d, v, bus) {
+      const g = ctx.createGain(); g.connect(bus); send(g, 0.5);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.16 * v, t + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0006, t + 1.1);
+      osc('sine', f, t, t + 1.2, g);
+      osc('sine', f * 1.012, t, t + 1.2, g);
+      const g2 = ctx.createGain(); g2.connect(g);
+      g2.gain.setValueAtTime(0.3, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      osc('sine', f * 3, t, t + 0.3, g2);
+    },
+    // Órgano de iglesia vieja (en vez del pad).
+    organ(t, f, d, v, bus) {
+      const lp = filt('lowpass', 1500, 0.5, bus);
+      const g = gainEnv(lp, t, 0.25, 0.05 * v, d, 0.9, 0.9);
+      send(g, 0.6);
+      osc('square', f, t, t + d + 1.2, g);
+      const g2 = ctx.createGain(); g2.gain.value = 0.5; g2.connect(g);
+      osc('sine', f * 2.003, t, t + d + 1.2, g2);
+      osc('sine', f * 0.5, t, t + d + 1.2, g2);
+    },
+    // Campana grave, como de campanario a lo lejos (parciales no armónicos).
+    toll(t, f, d, v, bus) {
+      const g = ctx.createGain(); g.connect(bus); send(g, 0.7);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.2 * v, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0005, t + 2.6);
+      osc('sine', f, t, t + 2.7, g);
+      const g2 = ctx.createGain(); g2.gain.value = 0.35; g2.connect(g);
+      osc('sine', f * 2.76, t, t + 1.6, g2);
+      const g3 = ctx.createGain(); g3.connect(g);
+      g3.gain.setValueAtTime(0.25, t); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+      osc('sine', f * 5.4, t, t + 0.9, g3);
+    },
     kick(t, v, bus) {
       const g = ctx.createGain(); g.connect(bus);
       g.gain.setValueAtTime(0.55 * v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
@@ -239,8 +296,9 @@ G.Audio = (() => {
    * (semicorchea). Melodías: "A4:4 C5:2 -:2" (nota:duración en semicorcheas).
    * Bajo y arpegios salen de los acordes con patrones de 16 caracteres.
    */
-  function compile(song) {
+  function compile(song, dark = null) {
     const bars = song.bars || song.chords.length;
+    const nm = dark ? dark.note : m => m, im = dark ? i => dark.inst[i] || i : i => i;
     const steps = bars * 16;
     const ev = Array.from({ length: steps }, () => []);
 
@@ -251,15 +309,15 @@ G.Audio = (() => {
           const [n, len] = tok.split(':');
           const L = +len || 1;
           if (n !== '-') {
-            const midi = midiOf(n) + (tr.shift || 0);
-            ev[(bi * 16 + s) % steps].push({ inst: tr.inst, f: midiFreq(midi), len: L, v: tr.vel || 1 });
+            const midi = nm(midiOf(n) + (tr.shift || 0));
+            ev[(bi * 16 + s) % steps].push({ inst: im(tr.inst), f: midiFreq(midi), len: L, v: tr.vel || 1 });
           }
           s += L;
         }
       });
     }
 
-    const chords = song.chords.map(parseChord);
+    const chords = song.chords.map(c => (dark ? dark.chord(parseChord(c)) : parseChord(c)));
     const chordTone = (ch, i, base) => {
       const third = ch.minor ? 3 : 4;
       const iv = [0, third, 7, 12, 12 + third, 19][i] || 0;
@@ -281,10 +339,10 @@ G.Audio = (() => {
           else if (c === 'O') midi = base + ch.root + 12;
           else if (c === 'T') midi = base + ch.root + (ch.minor ? 3 : 4);
           else if (c === 'C') {           // acorde entero (pad)
-            for (let i = 0; i < 3; i++) ev[b * 16 + s].push({ inst: tr.inst, f: midiFreq(chordTone(ch, i, base)), len, v: tr.vel || 1 });
+            for (let i = 0; i < 3; i++) ev[b * 16 + s].push({ inst: im(tr.inst), f: midiFreq(chordTone(ch, i, base)), len, v: tr.vel || 1 });
             continue;
           } else midi = chordTone(ch, +c, base);
-          ev[b * 16 + s].push({ inst: tr.inst, f: midiFreq(midi), len, v: tr.vel || 1 });
+          ev[b * 16 + s].push({ inst: im(tr.inst), f: midiFreq(midi), len, v: tr.vel || 1 });
         }
       }
       for (const [inst, pat] of Object.entries(song.drums || {})) {
@@ -294,7 +352,29 @@ G.Audio = (() => {
         }
       }
     }
-    return { steps, ev, bpm: song.bpm, swing: song.swing || 0 };
+    return { steps, ev, bpm: song.bpm * (dark ? dark.tempo : 1), swing: song.swing || 0 };
+  }
+
+  /*
+   * Halloween (30-10 al 1-11): las mismas canciones, más tenebrosas. Si están
+   * en tono mayor (la del menú), pasan a menor: la 3.ª, la 6.ª y la 7.ª del
+   * tono bajan un semitono, en la melodía y en los acordes. Y en todas, algo
+   * más lentas, la melodía con theremin, caja de música en vez de campanitas,
+   * órgano de fondo y una campana grave al empezar cada compás.
+   */
+  function spooky(song) {
+    const first = parseChord(song.chords[0]), tonic = first.root;
+    const DOWN = first.minor ? {} : { 4: 1, 9: 1, 11: 1 };
+    const pc = p => (p - (DOWN[(p - tonic + 24) % 12] || 0) + 12) % 12;
+    return {
+      tempo: 0.88,
+      note: m => m - (DOWN[(m - tonic + 120) % 12] || 0),
+      chord: ch => {
+        const root = pc(ch.root), third = pc(ch.root + (ch.minor ? 3 : 4));
+        return { root, minor: (third - root + 12) % 12 === 3, bass: pc(ch.bass) };
+      },
+      inst: { flute: 'theremin', lead: 'theremin', bell: 'musicbox', pad: 'organ' }
+    };
   }
 
   let wanted = null, current = null;
@@ -302,7 +382,13 @@ G.Audio = (() => {
 
   function startSong(name) {
     if (!ctx || !G.MUSIC[name]) return;
-    const song = compiled[name] || (compiled[name] = compile(G.MUSIC[name]));
+    // (inRun: en partida, lo que era al empezarla; en los menús, lo de ahora.)
+    const hw = !!(G.Halloween && G.Halloween.inRun), key = name + (hw ? ':hw' : '');
+    const src = G.MUSIC[name];
+    // Halloween: además, la campana grave en la raíz de cada compás.
+    const song = compiled[key] || (compiled[key] = hw
+      ? compile(Object.assign({}, src, { parts: [...(src.parts || []), { inst: 'toll', octave: 2, vel: 0.55, pattern: 'R...............' }] }), spooky(src))
+      : compile(src));
     const bus = ctx.createGain();
     bus.gain.setValueAtTime(0.0001, ctx.currentTime);
     bus.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.8);
@@ -333,6 +419,13 @@ G.Audio = (() => {
   setInterval(() => {
     if (!ctx || !current || ctx.state !== 'running') return;
     const c = current, sd = 60 / c.song.bpm / 4;
+    // Si se ha quedado atrás (el navegador frena los temporizadores en segundo
+    // plano o el móvil va justo), lo perdido se salta: antes se tocaba todo de
+    // golpe y la música sonaba distorsionada (25-10-2026).
+    if (c.next < ctx.currentTime - 0.1) {
+      const skip = Math.ceil((ctx.currentTime - c.next) / sd);
+      c.next += skip * sd; c.step += skip;
+    }
     while (c.next < ctx.currentTime + 0.15) {
       const i = c.step % c.song.steps;
       // Swing: retrasa las corcheas a contratiempo.

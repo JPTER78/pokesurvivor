@@ -3,6 +3,8 @@
  *   llega al momento; si no hay conexión, la última copia guardada.
  * - Sprites, iconos y fuente: no cambian nunca, se sirven de la caché
  *   (se van guardando según se usan: no se descarga todo de golpe).
+ *   Menos los disfraces (assets/pokemon/{dex}/k-*, tools/make_skins.py): esos
+ *   se pueden retocar, así que van como el código (primero la red).
  * - Firebase y demás servicios de fuera no se tocan.
  */
 const CODE = 'ps-code-v1', ART = 'ps-art-v1';
@@ -22,7 +24,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  const art = /\/assets\/(pokemon|icons|fonts)\//.test(url.pathname);
+  const art = /\/assets\/(pokemon|icons|fonts)\//.test(url.pathname) && !/\/k-[a-z0-9-]+\//.test(url.pathname);
   if (art) {
     e.respondWith(caches.open(ART).then(async c => {
       const hit = await c.match(req);

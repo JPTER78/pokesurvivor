@@ -35,7 +35,6 @@ G.Tiles = (() => {
       prop: 'dead', leaf: ['#4a3a30', '#5e4a3c', '#6f5a49', '#806a58'], trunk: ['#3a2e27', '#52423a'],
       rock: ['#4e4642', '#6a605b', '#877c76'], grass: ['#6b4a2a', '#94693a', '#c4914e'] },
   ];
-  const NORMAL = 3;                   // biomas que se van turnando en una run
   const ARENA = 3;                    // a partir de aquí, las arenas de la grieta (una por tipo)
 
   // ---------------- arenas de la grieta ----------------
@@ -135,6 +134,46 @@ G.Tiles = (() => {
   }
   for (const t of ARENA_TYPES) BIOMES.push(arenaBiome(ARENA_THEMES[t]));
   BIOMES[ARENA + ARENA_TYPES.indexOf('judgment')].name = ARENA_THEMES.judgment.name;
+
+  // ---------------- Halloween (30-10 al 1-11, systems/halloween.js) ----------------
+  /*
+   * Tres biomas de noche que esos días sustituyen a los normales (y el fondo
+   * del menú): paletas apagadas, flores naranjas y calabazas por el mapa
+   * (world.js). Van al final de la lista: fuera del evento no salen nunca
+   * (runBiome).
+   */
+  const HW = BIOMES.length;
+  BIOMES.push(
+    { name: 'Huerto de Calabazas', liquid: 'swamp',
+      floor: ['#2f3a26', '#34402a', '#2a3322'], dirt: ['#4a3a2a', '#423426', '#51402e'],
+      speck: '#232c1c', light: '#4a5a36', flowers: ['#ff8a2a', '#ffd23f', '#c47bff'],
+      wallTop: ['#3d3446', '#45394f', '#362e3e'], wallLight: '#6a5a7a', wallEdge: '#140f18',
+      wallFace: ['#2a2330', '#241e2a'], wallFaceDark: '#130f16',
+      liq: '#3e5a2a', liqDeep: '#2c4220', foam: '#9ac25a', shore: '#232c1c',
+      prop: 'dead', leaf: ['#2a1f33', '#3a2a47', '#4e3a5e', '#6a5080'], trunk: ['#2a1f1a', '#3d2e25'],
+      rock: ['#45404e', '#5e5868', '#7a7484'], grass: ['#2a3a1e', '#3e5428', '#5a7236'] },
+    { name: 'Cementerio Embrujado', liquid: 'water',
+      floor: ['#34303f', '#393446', '#2f2b39'], dirt: ['#2a2631', '#26222c', '#2e2a36'],
+      speck: '#24202b', light: '#4e4860', flowers: ['#9bffb0', '#c9a6ff', '#ff8a2a'],
+      wallTop: ['#4a4652', '#524e5c', '#423e49'], wallLight: '#7a7684', wallEdge: '#121016',
+      wallFace: ['#2e2b34', '#28252e'], wallFaceDark: '#141217',
+      liq: '#3a3a6a', liqDeep: '#2a2a52', foam: '#a6a6ff', shore: '#24202b',
+      prop: 'dead', leaf: ['#1f1a26', '#2c2536', '#3e3449', '#57496a'], trunk: ['#1f1a1e', '#2e272c'],
+      rock: ['#4e4a58', '#6a6676', '#8a8696'], grass: ['#2c3a3a', '#3e5452', '#5a7472'] },
+    { name: 'Bosque Tenebroso', liquid: 'poison',
+      floor: ['#1f2a2a', '#233030', '#1b2525'], dirt: ['#2e2622', '#29221f', '#332a25'],
+      speck: '#172020', light: '#34464a', flowers: ['#ff8a2a', '#c47bff', '#ffd23f'],
+      wallTop: ['#2e2838', '#352e40', '#282231'], wallLight: '#584c66', wallEdge: '#0e0b12',
+      wallFace: ['#211c28', '#1c1823'], wallFaceDark: '#0f0d13',
+      liq: '#6a3a8a', liqDeep: '#4e2a6a', foam: '#e0a6ff', shore: '#172020',
+      prop: 'tree', leaf: ['#24152f', '#341f45', '#4a2c62', '#68408a'], trunk: ['#24191a', '#382627'],
+      rock: ['#3e3a46', '#57525f', '#736e7c'], grass: ['#1f3330', '#2e4a44', '#466a60'] }
+  );
+  /** Bioma número i de una partida: esos días, sólo los de Halloween; si no, los de siempre. */
+  function runBiome(i) {
+    i = Math.max(0, i | 0);
+    return G.Halloween && G.Halloween.inRun ? HW + i % 3 : i % HW;
+  }
 
   // ---------------- utilidades de color / píxel ----------------
 
@@ -440,6 +479,36 @@ G.Tiles = (() => {
       return P.canvas();
     },
 
+    // Calabaza de Halloween: gajos naranjas, rabo verde y cara de farol
+    // encendida (agrietada al dañarla, como las rocas).
+    pumpkin(B, variant) {
+      const P = Pix(22, 20);
+      const O = ['#a8460c', '#d8661a', '#ff8a2a', '#ffb05a'].map(h => pack(h));
+      const stem = [pack('#3a6a2a'), pack('#5fae3f')], face = pack('#ffd23f'), deep = pack('#ff6a10');
+      for (let y = 5; y <= 19; y++) for (let x = 1; x <= 20; x++) {
+        const nx = (x - 10.5) / 9.6, ny = (y - 12.5) / 7.4;
+        if (nx * nx + ny * ny > 1) continue;
+        // Gajos: más oscuro en las juntas.
+        const rib = Math.abs(((x - 10.5) / 3.3) % 1);
+        const lit = -nx * 0.5 - ny * 0.8;
+        let c = lit > 0.45 ? 3 : lit > -0.1 ? 2 : lit > -0.6 ? 1 : 0;
+        if (rib < 0.16 && c > 0) c--;
+        P.set(x, y, O[c]);
+      }
+      for (let y = 1; y <= 5; y++) { P.set(10, y, stem[y < 3 ? 1 : 0]); P.set(11, y, stem[0]); }
+      P.set(12, 2, stem[1]); P.set(13, 2, stem[1]);
+      // Cara: ojos triangulares y boca en dientes de sierra.
+      [[6, 10], [7, 10], [7, 9], [14, 10], [15, 10], [14, 9]].forEach(([x, y]) => P.set(x, y, face));
+      [[6, 11], [15, 11]].forEach(([x, y]) => P.set(x, y, deep));
+      for (let x = 5; x <= 16; x++) { P.set(x, 14, face); if (x % 3 !== 1) P.set(x, 15, x % 3 === 0 ? deep : face); }
+      if (variant === 1) {
+        const dark = pack('#3a1a08');
+        [[9, 7], [10, 8], [9, 9], [11, 9], [12, 10], [8, 16], [9, 17], [13, 16]].forEach(([x, y]) => P.set(x, y, dark));
+      }
+      outline(P, pack('#1b1528'));
+      return P.canvas();
+    },
+
     rock(B, variant) {
       const P = Pix(22, 17);
       const R = B.rock.map(h => pack(h));
@@ -626,7 +695,7 @@ G.Tiles = (() => {
 
   function clearProps() { propCache.clear(); }
 
-  return { T, BIOMES, NORMAL, ARENA, ARENA_THEMES, ARENA_TYPES, paintChunk, propSprite, clearProps,
+  return { T, BIOMES, ARENA, ARENA_THEMES, ARENA_TYPES, HW, runBiome, paintChunk, propSprite, clearProps,
            /** Índice de bioma de la arena de un tipo. */
            arenaBiome: type => ARENA + Math.max(0, ARENA_TYPES.indexOf(type)) };
 })();

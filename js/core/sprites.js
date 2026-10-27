@@ -79,12 +79,13 @@ G.Sprites = (() => {
     }
   }
 
-  function sheet(dex, anim, shiny = false) {
+  /** @param skin  disfraz (core/skins.js): sus hojas, con el disfraz pintado, en k-{skin}/ */
+  function sheet(dex, anim, shiny = false, skin = '') {
     const m = meta(dex);
     shiny = shiny && !!(m && m.sh);
     const name = animName(dex, anim, shiny);
     if (!name) return null;
-    const k = dex + '/' + name + (shiny ? '/s' : '');
+    const k = dex + '/' + name + (shiny ? '/s' : '') + (skin ? '/k:' + skin : '');
     let s = sheets.get(k);
     const now = Date.now();
     if (s) {
@@ -95,7 +96,7 @@ G.Sprites = (() => {
     }
     if (sheets.size >= MAX_SHEETS) evict(now);
     s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0, at: now,
-          src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png` };
+          src: `assets/pokemon/${dex}/${skin ? 'k-' + skin + '/' : ''}${shiny ? 's/' : ''}${name}.png` };
     s.img.onload = () => { s.ready = true; };
     s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
     s.img.src = s.src;
@@ -105,10 +106,13 @@ G.Sprites = (() => {
 
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
 
-  /** Precarga todas las animaciones de esos Pokémon. */
-  function preload(dexes, timeout = 8000, shiny = false) {
+  /** Precarga todas las animaciones de esos Pokémon (y las de su disfraz, si lo lleva). */
+  function preload(dexes, timeout = 8000, shiny = false, skin = '') {
     const hs = [];
-    for (const d of dexes) for (const a of ANIMS) { const s = sheet(d, a, shiny); if (s) hs.push(s); }
+    for (const d of dexes) for (const a of ANIMS) {
+      const s = sheet(d, a, shiny); if (s) hs.push(s);
+      const ks = skin && G.Skins && G.Skins.get(skin, d) ? sheet(d, a, shiny, skin) : null; if (ks) hs.push(ks);
+    }
     return new Promise(res => {
       const t0 = performance.now();
       (function check() {
@@ -167,6 +171,18 @@ G.Sprites = (() => {
     ctx.fill();
   }
 
+  /** Geometría de una hoja con disfraz: la misma, con el margen del sombrero. */
+  const pads = new WeakMap();
+  function padded(m) {
+    let p = pads.get(m);
+    if (!p) {
+      const X = G.Skins.PAD_X, T = G.Skins.PAD_T;
+      p = Object.assign({}, m, { w: m.w + 2 * X, h: m.h + T, ax: m.ax + X, ay: m.ay + T });
+      pads.set(m, p);
+    }
+    return p;
+  }
+
   // ---------------- Animator ----------------
 
   /**
@@ -189,6 +205,7 @@ G.Sprites = (() => {
       this.hold = false;       // se queda en el último fotograma (Faint)
       this.done = false;
       this.dir = 0;
+      this.skin = null;        // disfraz (core/skins.js): sus hojas, con sombrero y capa de bruja
       // Las hojas se cargan al dibujarse por primera vez; la run las precarga
       // todas con preload() para que no parpadeen al primer ataque.
     }
@@ -249,12 +266,17 @@ G.Sprites = (() => {
       let m = animMeta(this.dex, this.cur, this.shiny);
       let s = sheet(this.dex, this.cur, this.shiny);
       const k = PX * this.scale;
-      if (s && !s.ready) {
+      // Disfraz: la hoja con el disfraz pintado (más grande: lleva margen para
+      // el sombrero). Mientras carga, el Pokémon sin él.
+      const ks = this.skin && G.Skins && G.Skins.get(this.skin, this.dex) ? sheet(this.dex, this.cur, this.shiny, this.skin) : null;
+      let own = true;
+      if (ks && ks.ready && m) { s = ks; m = padded(m); }
+      else if (s && !s.ready) {
         // Mientras carga esta animación, enseña Idle si ya está.
         const idle = sheet(this.dex, 'Idle', this.shiny);
-        if (idle && idle.ready) { s = idle; m = animMeta(this.dex, 'Idle', this.shiny); }
+        if (idle && idle.ready) { s = idle; m = animMeta(this.dex, 'Idle', this.shiny); own = false; }
       }
-      const frame = s === sheet(this.dex, this.cur, this.shiny) ? this.frame : 0;
+      const frame = own ? this.frame : 0;
       if (!m || !s || !s.ready) {
         // Respaldo: bolita, por si falta el fichero.
         ctx.fillStyle = opts.color || '#6b7a94';

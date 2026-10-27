@@ -22,16 +22,29 @@ G.UI = (() => {
   /** Barra superior (monedas, usuario, sonido) sólo fuera de las runs. */
   function chrome(on) {
     $('topbar').classList.toggle('hidden', !on);
+    document.body.classList.toggle('in-run', !on);       // (para el CSS: en partida)
     $('credits-line').classList.toggle('hidden', !on);
     if (!on) $('sound-panel').classList.add('hidden');
     if (on) refreshCoins();
   }
 
+  /** Un número para la barra de arriba: entero hasta 99.999 y en corto desde ahí ("250 mil", "1,2 M"). */
+  function short(n) {
+    n = +n || 0;
+    if (n < 1e5) return n.toLocaleString(G.I18n.locale);
+    try { return new Intl.NumberFormat(G.I18n.locale, { notation: 'compact', maximumFractionDigits: n < 1e6 ? 0 : 1 }).format(n); }
+    catch (e) { return n.toLocaleString(G.I18n.locale); }
+  }
+
   function refreshCoins() {
     const s = G.DB.save;
-    $('coins').textContent = s ? s.coins.toLocaleString(G.I18n.locale) : '0';
+    $('coins').textContent = s ? short(s.coins) : '0';
+    $('coins').parentElement.title = s ? s.coins.toLocaleString(G.I18n.locale) + ' ' + G.T('Pokémonedas') : '';
     const t = (s && s.tickets) || { t1: 0, t10: 0 };
-    $('tickets-pill').innerHTML = `${G.Icons.html('ticket', 18)} ${t.t1} &nbsp;${G.Icons.html('ticket10', 18)} ${t.t10}`;
+    // Halloween: los caramelos, al lado (title: qué son).
+    const cn = G.Halloween.on && s ? (s.bag && s.bag.candy) || 0 : null;
+    $('tickets-pill').innerHTML = `${G.Icons.html('ticket', 18)} ${short(t.t1)} &nbsp;${G.Icons.html('ticket10', 18)} ${short(t.t10)}` +
+      (cn != null ? ` &nbsp;<span title="${G.T('Caramelos de Halloween')}">${G.Icons.html('candy', 18)} ${short(cn)}</span>` : '');
     // Punto de sincronización: verde = guardado en la nube, amarillo = hay cambios
     // sin subir (sólo se suben con Guardar, desde el 20-10-2026), rojo = sin conexión.
     const st = G.DB.guest ? 'guest' : G.DB.syncState;
@@ -124,10 +137,8 @@ G.UI = (() => {
 
   const CONTACT = 'jpieratorregrosa@gmail.com';
   const REPO = 'https://github.com/JPTER78/pokesurvivor';
-  let legalBack = null;
 
   function openLegal() {
-    legalBack = SCREENS.find(s => isOpen(s)) || null;
     $('legal-mail').textContent = CONTACT;
     $('legal-mail').href = 'mailto:' + CONTACT + '?subject=Pok%C3%A9Survivor';
     $('legal-repo').textContent = REPO.replace('https://', '');
@@ -230,6 +241,7 @@ G.UI = (() => {
    *         scale=2   tamaño de píxel FIJO (×2 como en el juego): todos los
    *                   Pokémon de una vista salen con el mismo píxel, aunque
    *                   los gigantes no quepan enteros
+   *         skin      disfraz (core/skins.js)
    *         hero      vista de un solo Pokémon: puede reducir la escala para
    *                   que quepa, porque ahí no se compara con nada }
    */
@@ -238,6 +250,7 @@ G.UI = (() => {
     if (prev) live.delete(prev);
     const a = new G.Sprites.Animator(dex, 1, !!opts.shiny);
     a.dir = opts.dir || 0;
+    a.skin = opts.skin || null;
     a.loop(opts.anim || 'Idle');
     const s = { cv, ctx: cv.getContext('2d'), a, dex, opts, t: Math.random() * 3, spinT: 0, sparkT: 0 };
     live.add(s);

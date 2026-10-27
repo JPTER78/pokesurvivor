@@ -46,7 +46,8 @@ G.MenuUI = (() => {
     G.UI.chrome(true);
     G.UI.show('scr-menu');
     bagLine();
-    G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
+    hwLine();
+    G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny, skin: G.Skins.worn(s, mon.dex) });
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
     $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
@@ -93,11 +94,30 @@ G.MenuUI = (() => {
   }
 
   /** Texto bajo "Mochila": cuántos objetos y MT llevas (y los Amuletos Iris, si hay). */
+  /*
+   * Halloween: cuenta atrás bajo el título (systems/halloween.js): 14 días antes,
+   * cuánto falta; durante el evento, cuánto queda. Se pone al día cada segundo
+   * mientras se ve el menú.
+   */
+  const hms = ms => { const t = Math.floor(ms / 1000); return [Math.floor(t / 3600) % 24, Math.floor(t / 60) % 60, t % 60].map(v => String(v).padStart(2, '0')).join(':'); };
+  const left = ms => { const d = Math.floor(ms / 864e5); return d ? G.I18n.f('{x} d {x}', d, hms(ms)) : hms(ms); };
+  let hwT = 0;
+  function hwLine() {
+    const el = $('menu-hw'), c = G.Halloween.countdown();
+    const txt = G.Halloween.on ? (c && c.on ? G.I18n.f('¡Halloween! Termina en {x}', left(c.ms)) : G.T('¡Halloween!'))
+      : c && !c.on ? G.I18n.f('Halloween empieza en {x}', left(c.ms)) : '';
+    el.classList.toggle('hidden', !txt);
+    if (txt) el.innerHTML = `${G.Icons.html('pumpkin', 18)} <span>${txt}</span>`;
+    if (!hwT && txt) hwT = setInterval(() => { if (G.UI.isOpen('scr-menu')) hwLine(); }, 1000);
+  }
+
   function bagLine() {
     const s = G.DB.save, sum = o => Object.values(o || {}).reduce((a, b) => a + (+b || 0), 0);
-    const items = sum(s.bag), tms = sum(s.tms), iris = G.Gacha.BANNERS.filter(b => G.Gacha.hasIris(s, b.gen)).length;
+    const candy = (s.bag && s.bag.candy) || 0;
+    const items = sum(s.bag) - candy, tms = sum(s.tms), iris = G.Gacha.BANNERS.filter(b => G.Gacha.hasIris(s, b.gen)).length;
     const parts = [];
     if (items || tms) parts.push(G.I18n.f('Objetos: {x} · MT: {x}', items, tms));
+    if (candy) parts.push(G.I18n.f('Caramelos: {x}', candy));
     if (iris) parts.push(G.I18n.f('Amuletos Iris: {x}', iris));
     $('menu-bag-sub').textContent = parts.join(' · ') || G.T('Vacía');
   }
@@ -339,7 +359,8 @@ G.MenuUI = (() => {
     moveTips($('dex-moves'));
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
     $('dex-big').classList.toggle('shiny', own && viewShiny);
-    G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny });
+    G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny,
+                                     skin: own ? G.Skins.worn(s, dex) : '' });
     box.querySelectorAll('.seg button').forEach(b => {
       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
     });
@@ -431,17 +452,36 @@ G.MenuUI = (() => {
         ? `<span class="move-icons">${taught.map(id => `<span title="${G.T(G.Moves.BY_ID[id].name, 'move')}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</span>`
         : `<small>${G.T('Aún no ha aprendido ninguna')}</small>`}
         ${btn('tm', 'tm', 'Enseñar MT', tmsHere.length)}</div>
+      ${skinRow(dex)}
       <div id="mx-picker"></div>
     </div>`;
   }
 
+  /** Skins (Halloween 2026): las compradas de este Pokémon, para ponerlas o quitarlas. */
+  function skinRow(dex) {
+    const s = G.DB.save, mine = G.Skins.LIST.filter(id => G.Skins.SKINS[id].dex === +dex && G.Skins.owns(s, id));
+    if (!mine.length) return '';
+    const on = G.Skins.worn(s, dex);
+    return `<div class="mx-row"><span>${G.T('Skin')}</span><b>${on ? G.T(G.Skins.SKINS[on].name) : G.T('Sin skin')}</b>
+      ${mine.map(id => `<button class="btn small${on === id ? '' : ' gold'}" data-skin="${on === id ? '' : id}">${G.Icons.html('witch', 14)}
+        <span>${G.T(on === id ? 'Quitársela' : 'Ponérsela')}</span></button>`).join('')}</div>`;
+  }
+
   function wireExtras(dex, box) {
+    box.querySelectorAll('[data-skin]').forEach(b => {
+      b.onclick = () => {
+        G.Skins.wear(G.DB.save, dex, b.dataset.skin);
+        G.DB.commit();
+        G.Audio.sfx(b.dataset.skin ? 'buy' : 'select');
+        showDetail(dex);
+      };
+    });
     box.querySelectorAll('[data-extra]').forEach(b => {
       b.onclick = () => { extraOpen = extraOpen === b.dataset.extra ? '' : b.dataset.extra; G.Audio.sfx('select'); showDetail(dex); };
     });
     const host = box.querySelector('#mx-picker');
     if (!host || !extraOpen) return;
-    const s = G.DB.save, mon = G.DEX_BY[dex];
+    const mon = G.DEX_BY[dex];
     const chips = (list, label, onPick) => {
       host.innerHTML = `<div class="panel ban-picker"><div class="ban-moves">${list.map(x => `<button class="chip" data-v="${x.v}">${x.html}</button>`).join('')}</div></div>`;
       host.querySelectorAll('[data-v]').forEach(c => { c.onclick = () => onPick(c.dataset.v); });

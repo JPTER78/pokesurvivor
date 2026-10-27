@@ -11,6 +11,9 @@
  * Amuleto Iris: uno por generación. Se tiene al completar su Pokédex (todos sus
  *   Pokémon, legendarios incluidos). No se guarda aparte: sale de lo que tienes.
  * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
+ * Halloween (30-10 al 1-11, systems/halloween.js): banner Noche Espectral
+ *   (gen 10, SPOOKY): los Pokémon Fantasma de todas las regiones, con shiny al
+ *   doble (2 %) y su propio pity. No tiene Amuleto Iris ni está en BANNERS.
  *
  * Se tira con TICKETS (se consiguen jugando):
  *   ×1   1 ticket (ya sin botón: desde el 22-10-2026 se tira de 10 en 10 o de 100 en 100)
@@ -49,7 +52,16 @@ G.Gacha = (() => {
     { gen: 9, name: 'Paldea',  color: ['#6a2a1a', '#4a1a5a', '#1a4a6a'] }
   ];
 
-  function inBanner(p, gen) { return p.gen === gen && !!G.SPRITE_META[p.dex]; }
+  const SPOOKY = { gen: 10, name: 'Noche Espectral', event: true, color: ['#1a0f2a', '#3d2266', '#7a3a12'] };
+  /** El banner de un número (1-9 las generaciones, 10 el de Halloween). */
+  const banner = gen => (gen === SPOOKY.gen ? SPOOKY : BANNERS[gen - 1]);
+  /** ¿Se puede tirar hoy en ese banner? (el de Halloween, sólo esos días) */
+  const isOpen = gen => (gen === SPOOKY.gen ? !!(G.Halloween && G.Halloween.on) : !!BANNERS[gen - 1]);
+
+  function inBanner(p, gen) {
+    if (!G.SPRITE_META[p.dex]) return false;
+    return gen === SPOOKY.gen ? p.types.includes('ghost') : p.gen === gen;
+  }
 
   /** Pokémon de una rareza en un banner. */
   function pool(rarity, gen) { return G.DEX.filter(p => inBanner(p, gen) && p.rarity === rarity); }
@@ -67,14 +79,17 @@ G.Gacha = (() => {
 
   /** Cuántos tienes de una generación → { have, total }. */
   function dexOf(save, gen) {
-    const list = G.DEX.filter(p => p.gen === gen);
+    const list = gen === SPOOKY.gen ? G.DEX.filter(p => p.types.includes('ghost')) : G.DEX.filter(p => p.gen === gen);
     return { have: list.filter(p => save.owned[p.dex]).length, total: list.length };
   }
 
   /** ¿Tiene el Amuleto Iris de esa generación (su Pokédex completa)? */
-  function hasIris(save, gen) { const d = dexOf(save, gen); return d.have >= d.total; }
+  function hasIris(save, gen) {
+    if (gen === SPOOKY.gen) return false;
+    const d = dexOf(save, gen); return d.have >= d.total;
+  }
 
-  function shinyRate(save, gen) { return hasIris(save, gen) ? SHINY_RATE_IRIS : SHINY_RATE; }
+  function shinyRate(save, gen) { return gen === SPOOKY.gen || hasIris(save, gen) ? SHINY_RATE_IRIS : SHINY_RATE; }
 
   function rollRarity(min = 1) {
     const rates = RATES.filter(([r]) => r >= min);
@@ -97,6 +112,7 @@ G.Gacha = (() => {
    * (y en .iris la generación si estas tiradas te han dado su Amuleto Iris).
    */
   function pull(save, n, gen = 1, use = 't1') {
+    if (!isOpen(gen)) return null;
     if (n === 100) {
       if (!costOf(save, 100, use)) return null;
       const hadIris = hasIris(save, gen);
@@ -154,6 +170,6 @@ G.Gacha = (() => {
   }
 
   return { debugForceShiny(n = 1) { forceShiny = n; },
-           costOf, RATES, PITY_5, SHINY_RATE, SHINY_RATE_IRIS, REFUND, RARITY_NAME, RARITY_COLOR, BANNERS,
+           costOf, RATES, PITY_5, SHINY_RATE, SHINY_RATE_IRIS, REFUND, RARITY_NAME, RARITY_COLOR, BANNERS, SPOOKY, banner, isOpen,
            pool, featured, pull, dexOf, hasIris, shinyRate };
 })();

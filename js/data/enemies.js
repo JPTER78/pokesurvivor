@@ -147,6 +147,12 @@ G.Enemies = (() => {
       from: tier.from,
       list: castFor(tier).map(p => defFor(p, tier, ti))
     }));
+    // Halloween (systems/halloween.js): en cada tramo, dos Pokémon Fantasma más de su nivel.
+    if (G.Halloween && G.Halloween.inRun) cast.forEach((tier, ti) => {
+      const have = new Set(tier.list.map(d => d.dex));
+      const ghosts = candidates(TIERS[ti]).filter(p => p.types.includes('ghost') && !have.has(p.dex));
+      for (const p of G.U.pickN(ghosts, 2)) tier.list.push(defFor(p, TIERS[ti], ti));
+    });
     for (const tier of cast) {
       const plain = tier.list.filter(d => d.behavior === 'chase' || d.behavior === 'charger' || d.behavior === 'tank');
       const r = plain.sort((a, b) => b.spd - a.spd)[0];
