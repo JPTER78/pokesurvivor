@@ -138,7 +138,7 @@ test('representative busy host payload saves at least 30%; all savings are lossl
 test('real Coop.tick frames pass through the codec without changing gameplay fields', () => {
   for (const host of [true, false]) {
     const sent = [], G = {};
-    G.Net = { uid: host ? 'host' : 'guest', on() {}, onPeer() {}, slow: () => false,
+    G.Net = { uid: host ? 'host' : 'guest', on() {}, onPeer() {}, slow: () => false, busy: () => false,
       send: (uid, f) => sent.push(f), toHost: f => sent.push(f) };
     G.Player = class { constructor() { this.maxHp = 300; } };
     G.DEX_BY = { 25: { dex: 25 } }; G.baseStartOf = () => 'thundershock';
@@ -189,12 +189,12 @@ const goodTurn = () => turnReply({ expiresAt: Date.now() / 1000 + 7200, iceServe
 test('own TURN: first try is direct only; a failed pair retries at once with clean TURN servers', async () => {
   const { N, pcs, calls, signals } = turnNetwork(goodTurn);
   N.open('room', true, 'host'); N.syncMembers(['host', 'a', 'b']); await settle();
-  assert.equal(calls.length, 0, 'nothing is asked while direct may work');
+  assert.equal(calls.length, 1, 'credentials are fetched on entering, so a retry never waits for them');
   assert.equal(pcs.length, 2);
   for (const pc of pcs) assert.equal(pc.cfg.iceServers.length, 1);
   assert.ok(signals.every(([, m]) => !m.sig.sdp || !m.sig.t));
   pcs[0].fail(); await settle();
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 1, 'the retry reuses the ones just fetched');
   assert.equal(calls[0][0], 'https://ice.pokesurvivor.com/v1/ice');
   assert.equal(calls[0][1].method, 'POST'); assert.equal(calls[0][1].headers.Authorization, 'Bearer token');
   const retry = pcs[2];
@@ -204,31 +204,59 @@ test('own TURN: first try is direct only; a failed pair retries at once with cle
   assert.equal(offers.at(-1)[1].sig.t, 1);
   assert.equal(pcs.length, 3, 'only the failed pair reserves TURN');
 });
-test('own TURN: refused or broken answers retry with STUN only and then wait as before', async () => {
+test('own TURN: refused or broken answers still ask the guest for theirs, then wait as before', async () => {
   for (const respond of [() => turnReply({ error: 'user_denied' }, 403), () => { throw Error('offline'); },
     () => turnReply({ expiresAt: 1, iceServers: [] })]) {
-    const { N, pcs, calls, timers } = turnNetwork(respond);
+    const { N, pcs, calls, timers, signals } = turnNetwork(respond);
     N.open('room', true, 'host'); N.syncMembers(['host', 'a']); await settle();
     pcs[0].fail(); await settle();
     assert.equal(calls.length, 1); assert.equal(pcs.length, 2); assert.equal(pcs[1].cfg.iceServers.length, 1);
+    assert.equal(signals.filter(([, m]) => m.sig.sdp).at(-1)[1].sig.t, 1, 'the guest may have TURN');
+    assert.equal(timers.at(-1), 15000, 'and waits the TURN time for it');
     pcs[1].fail(); await settle();
     assert.equal(timers.at(-1), 15000); assert.equal(pcs.length, 2); assert.equal(calls.length, 1);
   }
 });
-test('own TURN: guests use it only when the host asks for it', async () => {
-  const { N, pcs, calls, offer } = turnNetwork(goodTurn, { user: { uid: 'guest', getIdToken: async () => 'token' }, host: false });
-  N.open('room', false, 'host');
-  offer(false); await settle();
-  assert.equal(calls.length, 0); assert.equal(pcs[0].cfg.iceServers.length, 1);
-  offer(true); await settle();
-  assert.equal(calls.length, 1); assert.equal(pcs[1].cfg.iceServers.length, 2);
+test('own TURN: a server that failed is asked again soon (not after a minute); a refused account, in half an hour', async () => {
+  const realNow = Date.now;
+  try {
+    for (const [respond, wait] of [[() => { throw Error('timeout'); }, 10000], [() => turnReply({}, 502), 10000],
+      [() => turnReply({ error: 'user_denied' }, 403), 1800000]]) {
+      let now = 1e12; Date.now = () => now;
+      const { N, calls } = turnNetwork(respond);
+      N.open('room', true, 'host'); await settle();
+      assert.equal(calls.length, 1);
+      now += wait - 1; N.close(); N.open('room2', true, 'host'); await settle();
+      assert.equal(calls.length, 1);
+      now += 2; N.close(); N.open('room3', true, 'host'); await settle();
+      assert.equal(calls.length, 2);
+    }
+  } finally { Date.now = realNow; }
 });
-test('own TURN: players without an account never ask and keep the old retry', async () => {
+test('own TURN: guests have theirs ready on entering and use it only when the host asks for it', async () => {
+  const { N, pcs, calls, offer, timers } = turnNetwork(goodTurn, { user: { uid: 'guest', getIdToken: async () => 'token' }, host: false });
+  N.open('room', false, 'host'); await settle();
+  assert.equal(calls.length, 1);
+  offer(false); await settle();
+  assert.equal(pcs[0].cfg.iceServers.length, 1); assert.equal(timers.at(-1), 9000);
+  offer(true); await settle();
+  assert.equal(calls.length, 1); assert.equal(pcs[1].cfg.iceServers.length, 2); assert.equal(timers.at(-1), 15000);
+});
+test('own TURN: a guest without it still waits the TURN time when the host brings one', async () => {
+  const { N, pcs, offer, timers } = turnNetwork(() => turnReply({ error: 'user_denied' }, 403), { user: { uid: 'guest', getIdToken: async () => 'token' }, host: false });
+  N.open('room', false, 'host'); await settle();
+  offer(true); await settle();
+  assert.equal(pcs[0].cfg.iceServers.length, 1); assert.equal(timers.at(-1), 15000);
+});
+test('own TURN: players without an account never ask, but the guest is still asked for theirs', async () => {
   for (const user of [null, { uid: 'anon', isAnonymous: true }]) {
-    const { N, pcs, calls, timers } = turnNetwork(() => assert.fail('no request'), { user });
+    const { N, pcs, calls, timers, signals } = turnNetwork(() => assert.fail('no request'), { user });
     N.open('room', true, 'host'); N.syncMembers(['host', 'a']); await settle();
     pcs[0].fail(); await settle();
-    assert.equal(calls.length, 0); assert.equal(pcs.length, 1); assert.equal(timers.at(-1), 15000);
+    assert.equal(calls.length, 0); assert.equal(pcs.length, 2); assert.equal(pcs[1].cfg.iceServers.length, 1);
+    assert.equal(signals.filter(([, m]) => m.sig.sdp).at(-1)[1].sig.t, 1);
+    pcs[1].fail(); await settle();
+    assert.equal(timers.at(-1), 15000); assert.equal(pcs.length, 2);
   }
 });
 test('own TURN: a pair that needed it starts with it next time, and after 2 such guests everyone does', async () => {
@@ -249,7 +277,7 @@ function coopWithCuts(host) {
   const timers = new Map(), lost = [], said = [], dropped = [];
   let mode = 'direct', nextT = 0;
   const G = {};
-  G.Net = { uid: host ? 'host' : 'guest', on(fn) { msgFn = fn; }, onPeer(fn) { peerFn = fn; }, slow: () => false,
+  G.Net = { uid: host ? 'host' : 'guest', on(fn) { msgFn = fn; }, onPeer(fn) { peerFn = fn; }, slow: () => false, busy: () => false,
     send() {}, toHost() {}, mode: () => mode };
   G.Player = class { constructor() { this.maxHp = 300; } };
   G.DEX_BY = { 25: { dex: 25 } }; G.baseStartOf = () => 'thundershock';
@@ -307,7 +335,7 @@ test('co-op cut mid-run: the host keeps the guest while it reconnects and remove
 test('co-op orbs: the host applies a guest orb only if the guest really has it, and buffs reach those nearby', () => {
   let msgFn = null;
   const G = {}, slept = [], slowed = [];
-  G.Net = { uid: 'host', on(fn) { msgFn = fn; }, onPeer() {}, slow: () => false, send() {}, toHost() {}, mode: () => 'direct' };
+  G.Net = { uid: 'host', on(fn) { msgFn = fn; }, onPeer() {}, slow: () => false, busy: () => false, send() {}, toHost() {}, mode: () => 'direct' };
   G.Player = class { constructor() { this.maxHp = 300; } };
   G.DEX_BY = { 25: { dex: 25 } }; G.baseStartOf = () => 'thundershock';
   G.Sprites = { preload() {} };
@@ -368,7 +396,7 @@ test('connection candidates travel together in one database message, and both fo
 function coopSums(host, mySum) {
   let msgFn = null; const got = {};
   const G = {};
-  G.Net = { uid: host ? 'host' : 'guest', on(fn) { msgFn = fn; }, onPeer() {}, slow: () => false, send() {}, toHost() {}, mode: () => 'direct' };
+  G.Net = { uid: host ? 'host' : 'guest', on(fn) { msgFn = fn; }, onPeer() {}, slow: () => false, busy: () => false, send() {}, toHost() {}, mode: () => 'direct' };
   G.Player = class { constructor() { this.maxHp = 300; } };
   G.DEX_BY = { 25: { dex: 25 }, 7: { dex: 7 } }; G.baseStartOf = () => 'thundershock';
   G.Moves = { BY_ID: { thundershock: {}, tackle: {} } }; G.Items = { BY: { leftovers: {} } };
@@ -422,4 +450,60 @@ test('co-op: a lost "I have picked" or "I am done choosing" message no longer fr
   r.from('guest', { k: 'f', ev: [['hs']] });
   r.from('guest', { k: 'f', ev: [] });
   assert.equal(calls.hold.at(-1), 'Bea');
+});
+
+function coopJam(host) {
+  const sent = [], G = {};
+  let jam = false;
+  G.Net = { uid: host ? 'host' : 'guest', on() {}, onPeer() {}, slow: () => false, busy: () => jam,
+    send: (uid, f) => sent.push(f), toHost: f => sent.push(f) };
+  G.Player = class { constructor() { this.maxHp = 300; } };
+  G.DEX_BY = { 25: { dex: 25 } }; G.baseStartOf = () => 'thundershock';
+  G.Sprites = { preload() {} }; G.U = { dist2: () => 0 };
+  G.EnemyMgr = { all: () => [] }; G.Judgment = { netState: () => null }; G.Ranking = { mySeal: () => null };
+  G.Social = { me: { name: 'yo' } };
+  new Function('G', 'document', source('js/net/coop.js'))(G, { addEventListener() {} });
+  const local = { x: 0, y: 0, moveAngle: 0, walking: false, hp: 300, maxHp: 300, magnet: 78, aim: 0, xpMul: 1, activeGroup: () => [] };
+  G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 25 }] }, local,
+    { team: () => ({ time: 0, level: 1, xp: 0, xpNext: 10, kills: 0, bosses: 0, coins: 0, t1: 0, t10: 0 }), choosing: () => false, levelStart() {}, waiting() {} });
+  return { G, sent, jam: v => { jam = v; } };
+}
+
+test('co-op jammed connection: nothing piles up behind (the 4-minute delay); events wait and none are lost', () => {
+  const h = coopJam(true);
+  h.G.Coop.tick(1); h.sent.length = 0;
+  h.jam(true);
+  for (let i = 0; i < 700; i++) h.G.Coop.say('e' + i, 1);
+  for (let i = 0; i < 30; i++) h.G.Coop.tick(1 / 15);
+  h.G.Coop.levelStart(2);                                   // también lo que se manda al momento
+  assert.equal(h.sent.length, 0, 'nothing is added while the channel still has a backlog');
+  h.jam(false);
+  h.G.Coop.tick(1 / 15); h.G.Coop.tick(1 / 15);
+  const evs = h.sent.flatMap(f => f.ev).filter(e => e[0] === 'say').map(e => e[1]);
+  assert.equal(h.sent[0].ev.length, 500, 'a huge backlog goes in several messages');
+  assert.deepEqual(evs, Array.from({ length: 700 }, (_, i) => 'e' + i), 'all of them, in order');
+
+  const g = coopJam(false);
+  g.G.Coop.tick(1); g.sent.length = 0;
+  g.jam(true);
+  g.G.Coop.status({ id: 7 }, 'b', 3);
+  g.G.Coop.localPicked();
+  g.G.Coop.tick(1);
+  assert.equal(g.sent.length, 0);
+  g.jam(false); g.G.Coop.tick(1);
+  assert.deepEqual(g.sent[0].ev.map(e => e[0]), ['s', 'lp']);
+  g.jam(true); g.G.Coop.leave();
+  assert.deepEqual(g.sent.at(-1).ev.at(-1), ['bye'], 'leaving is always said');
+});
+
+test('net busy: only an open channel with a big backlog counts as busy', async () => {
+  const { N, pcs } = turnNetwork(goodTurn);
+  N.open('room', true, 'host'); N.syncMembers(['host', 'a']); await settle();
+  const dc = pcs[0].dc;
+  assert.equal(N.busy('a'), false);
+  dc.readyState = 'open'; dc.bufferedAmount = 64 * 1024;
+  assert.equal(N.busy('a'), false);
+  dc.bufferedAmount = 64 * 1024 + 1;
+  assert.equal(N.busy('a'), true);
+  assert.equal(N.busy('nadie'), false);
 });

@@ -7,7 +7,7 @@
  *   calm        true/false                        menos sacudidas y destellos
  *   fps         true/false                        contador de FPS
  *   stick       0.8 | 1 | 1.25                    tamaño del joystick táctil
- *   stickMode   'float' | 'fixed'                 joystick donde pones el dedo, o siempre en su sitio
+ *   stickMode   'float' | 'anchor' | 'fixed'      joystick donde pones el dedo (que le sigue o se queda ahí), o siempre en su sitio
  *   pad         { bar, pause, stick } | null      dónde van los botones en móvil (centro, en
  *                                                 proporción a la pantalla); lo pone layout-ui.js
  *   gamepad     true/false                        jugar con mando (gamepad.js)

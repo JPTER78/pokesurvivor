@@ -23,6 +23,7 @@ G.Player = class Player {
     this.spdMul = perks.spdMul || 1;
     this.cdMul = perks.cdMul || 1;
     this.dmgReduce = perks.dmgReduce || 0;
+    this.itemReduce = 0;          // el del objeto (Chaleco Asalto): no cuenta para el tope de las cartas Coraza
     this.regenFlat = perks.regen || 0;
     this.magnet = 78 * (perks.magnetMul || 1);
     this.xpMul = perks.xpMul || 1;
@@ -130,7 +131,7 @@ G.Player = class Player {
     const slow = this.inLiquid && !ab.steady ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return G.Judgment && G.Judgment.active ? G.Judgment.capSpd(s * slow * w) : s * slow * w;
   }
-  get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
+  get reduction() { return Math.min(0.8, this.dmgReduce + this.itemReduce + this.buffs.def.n * this.buffs.def.amount); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
 
   // ---------------- movimientos ----------------
@@ -402,8 +403,12 @@ G.Player = class Player {
   addBuff(stat, amount, dur, maxStacks) {
     const b = this.buffs[stat];
     if (!b) return;
+    const n = Math.min(maxStacks, b.n + 1);
+    // Si lo que ya tienes vale más, no se pierde: con 3 cargas de Agilidad, un golpe
+    // con Armadura Frágil las dejaba en 1 (27-10-2026, #352). Sólo dura lo que dure más.
+    if (b.n && b.n * b.amount > n * amount) { b.t = Math.max(b.t, dur); return; }
     b.amount = amount;
-    b.n = Math.min(maxStacks, b.n + 1);
+    b.n = n;
     b.t = dur;
   }
 

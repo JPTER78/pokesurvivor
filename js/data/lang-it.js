@@ -584,5 +584,21 @@ G.I18n.add({
   'Bloquea 1 movimiento: no te sale en las cartas': 'Blocca 1 mossa: non apparirà mai tra le carte', 'Elegir ({x})': 'Scegli ({x})',
   'Toca los movimientos que no quieres que te salgan en las cartas ({x}). El movimiento de inicio no se puede vetar.': 'Tocca le mosse che non vuoi vedere tra le carte ({x}). La mossa iniziale non può essere esclusa.',
   'Ya tienes {x} vetados: quita uno primero': 'Hai già escluso {x} mosse: rimuovine prima una',
-  'En iPhone, Safari no deja poner las webs a pantalla completa. Pulsa Compartir y luego "Añadir a pantalla de inicio": abriendo el juego desde ese icono se juega a pantalla completa.': 'Su iPhone, Safari non supporta lo schermo intero per i siti web. Tocca Condividi e seleziona "Aggiungi a schermata Home": avviando il gioco da quell\'icona si giocherà a schermo intero.'
+  'En iPhone, Safari no deja poner las webs a pantalla completa. Pulsa Compartir y luego "Añadir a pantalla de inicio": abriendo el juego desde ese icono se juega a pantalla completa.': 'Su iPhone, Safari non supporta lo schermo intero per i siti web. Tocca Condividi e seleziona "Aggiungi a schermata Home": avviando il gioco da quell\'icona si giocherà a schermo intero.',
+  // Rasgos del test inicial (#357)
+  "Impulsivo": "Impulsivo",
+  "Prudente": "Prudente",
+  "Leal": "Leale",
+  "Paciente": "Paziente",
+  "Dulce": "Dolce",
+  "Tímido": "Timido",
+  "Travieso": "Birichino",
+  "Sereno": "Sereno",
+  "Astuto": "Astuto",
+  "Alegre": "Allegro",
+  "Tenaz": "Tenace",
+  "Orgulloso": "Orgoglioso",
+  "Solitario": "Solitario",
+  "Tranquilo": "Tranquillo",
+  "Caótico": "Caotico"
 }, 'it');

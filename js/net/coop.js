@@ -29,6 +29,7 @@ G.Coop = (() => {
   const RATE_FAST = 1 / 15, RATE_SLOW = 1 / 3;
   const rateFor = u => (G.Net.slow(u) ? RATE_SLOW : RATE_FAST);
   const NEAR = 950;                     // radio de enemigos que se mandan a cada uno
+  const EV_MAX = 500;                   // eventos por envío como mucho (el resto, en el siguiente)
 
   let active = false, host = false, me = null, hostUid = null;
   let local = null;                     // tu Player
@@ -101,7 +102,7 @@ G.Coop = (() => {
       flushAll();
     } else {
       outEv.push(['bye']);
-      flushClient(true);
+      flushClient('bye');
     }
     end();
   }
@@ -233,7 +234,9 @@ G.Coop = (() => {
     for (const o of mates.values()) {
       if (o.connected && o.uid !== m.uid && o.state) p[o.uid] = o.state;
     }
-    const ev = m.q; m.q = [];
+    // Tras una espera (ver tick) puede haber muchos: un mensaje enorme no saldría.
+    const ev = m.q.length > EV_MAX ? m.q.splice(0, EV_MAX) : m.q;
+    if (ev === m.q) m.q = [];
     const f = { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10, st.cn || 0],
                 p, e: enemyList(viewOf(m)), ev };
     const ja = G.Judgment.netState();       // Arceus en la Sentencia
@@ -244,7 +247,7 @@ G.Coop = (() => {
     return f;
   }
 
-  function flushAll() { for (const m of mates.values()) if (m.connected) G.Net.send(m.uid, hostFrame(m)); }
+  function flushAll() { for (const m of mates.values()) if (m.connected && !G.Net.busy(m.uid)) G.Net.send(m.uid, hostFrame(m)); }
 
   /*
    * Cada mensaje del invitado lleva también si está eligiendo fusión u objeto (h)
@@ -256,6 +259,8 @@ G.Coop = (() => {
   let myHold = false;
   function flushClient(force) {
     if (!force && !outEv.length && flushT > 0) return;
+    // Con la conexión atascada se espera (los eventos siguen en outEv); el 'bye' sale igual.
+    if (force !== 'bye' && G.Net.busy(hostUid)) return;
     G.Net.toHost({ k: 'f', p: myState(), ev: outEv, h: myHold ? 1 : 0, w: doneSeq });
     outEv = [];
   }
@@ -281,6 +286,10 @@ G.Coop = (() => {
         m.pl.silent = performance.now() - m.lastAt > SILENT_MS;
         m.flushT -= dt;
         if (m.flushT > 0) continue;
+        // Si aún no ha salido lo de antes, mandar más sólo alarga la cola: se espera
+        // (los eventos se guardan en m.q). Si dura, el invitado se pone en pausa
+        // («esperando al anfitrión») en vez de ver la partida minutos tarde.
+        if (G.Net.busy(m.uid)) continue;
         m.flushT = rateFor(m.uid);
         G.Net.send(m.uid, hostFrame(m));
       }

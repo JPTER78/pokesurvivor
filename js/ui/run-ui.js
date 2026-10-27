@@ -27,9 +27,15 @@ G.RunUI = (() => {
    * joystick se había atascado. Con el dedo se elige al levantarlo sobre la
    * misma carta (y el click que venga detrás no repite); ratón y teclado, como
    * siempre.
+   *
+   * Ese click de detrás se ignora en TODAS las cartas y botones, no sólo en el
+   * que se tocó (27-10-2026): al cambiar las cartas o pasar al 2.º paso del
+   * vínculo, las de debajo del dedo ya son otras y el click caía en la nueva,
+   * que se elegía sola (una carta al azar, o el movimiento equivocado).
    */
+  let fired = -1e9;           // último toque que eligió algo
   function onTap(el, fn) {
-    let id = null, at = 0, fired = -1e9;
+    let id = null, at = 0;
     el.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') { id = e.pointerId; at = performance.now(); } });
     el.addEventListener('pointercancel', e => { if (e.pointerId === id) id = null; });
     el.addEventListener('pointerup', e => {

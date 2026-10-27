@@ -3,6 +3,10 @@
  * y ahí aparece; arrastras para moverte y al soltar desaparece. Si el dedo se
  * aleja más que el radio, la base le sigue (nunca se queda "atascado").
  *
+ * Joystick anclado (27-10-2026, lo pidió un jugador): como el flotante, pero
+ * la base se queda donde pusiste el dedo hasta que lo levantas, aunque lo
+ * alejes más que el radio (ahí va a toda velocidad hacia el dedo).
+ *
  * Botones del HUD (iconos de ataque, pausa): el HUD los registra en cada
  * fotograma con addButton(); un toque (o un clic con el ratón) sobre uno lo
  * pulsa en vez de abrir el joystick. Varios dedos a la vez funcionan.
@@ -33,6 +37,7 @@ G.Touch = (() => {
   function spot(k) { const p = G.Settings.get('pad'); return p && Array.isArray(p[k]) ? p[k] : null; }
   const STICK_DEF = [0.14, 0.72];
   const fixed = () => G.Settings.get('stickMode') === 'fixed';
+  const anchored = () => G.Settings.get('stickMode') === 'anchor';
   /** Centro del joystick fijo, en px de pantalla. */
   function stickBase(w = cv.clientWidth, h = cv.clientHeight) {
     const p = spot('stick') || STICK_DEF, r = R();
@@ -136,7 +141,7 @@ G.Touch = (() => {
     const s = stick && e.pointerId === stick.id ? stick : aimStick && e.pointerId === aimStick.id ? aimStick : null;
     if (!s) return;
     s.x = e.clientX; s.y = e.clientY;
-    if (s.fixed) return;
+    if (s.fixed || (s === stick && anchored())) return;
     const dx = s.x - s.ox, dy = s.y - s.oy, d = Math.hypot(dx, dy), r = R();
     if (d > r) { s.ox = s.x - dx / d * r; s.oy = s.y - dy / d * r; }
   }

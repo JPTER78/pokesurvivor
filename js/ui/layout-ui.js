@@ -47,9 +47,10 @@ G.LayoutUI = (() => {
         <h3>Arrastra los botones a donde quieras</h3>
         <p class="lay-turn">Gira el móvil: se juega en horizontal.</p>
         <div class="chips set-chips" id="lay-mode"><b>Joystick</b>
-          <button class="chip" data-m="float">Flotante</button><button class="chip" data-m="fixed">Fijo</button>
+          <button class="chip" data-m="float">Flotante</button><button class="chip" data-m="anchor">Anclado</button><button class="chip" data-m="fixed">Fijo</button>
         </div>
         <small class="lay-help">Flotante: aparece donde pones el dedo. Fijo: siempre en el mismo sitio.</small>
+        <small class="lay-help">Anclado: aparece donde pones el dedo y se queda ahí hasta que lo levantas.</small>
         <div class="row wrap lay-btns">
           <button class="btn small ghost" id="lay-cancel">Cancelar</button>
           <button class="btn small" id="lay-reset">Restablecer</button>
@@ -130,7 +131,7 @@ G.LayoutUI = (() => {
 
   function open() {
     if (!el) build();
-    mode = G.Settings.get('stickMode') === 'fixed' ? 'fixed' : 'float';
+    mode = ['fixed', 'anchor'].includes(G.Settings.get('stickMode')) ? G.Settings.get('stickMode') : 'float';
     load();
     el.classList.remove('hidden');
     paint();

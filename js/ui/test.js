@@ -45,13 +45,16 @@ G.TestUI = (() => {
   function showResult() {
     result = G.personalityResult(scores);
     const mon = G.DEX_BY[result.dex];
-    $('res-trait').textContent = result.trait.charAt(0).toUpperCase() + result.trait.slice(1);
+    $('res-trait').textContent = trait(result.trait);
     $('res-text').textContent = G.TRAIT_TEXT[result.trait] || '';
     $('res-name').textContent = mon.name;
     G.UI.sprite($('res-stage'), mon.dex, { lively: true, scale: 4, hero: true });
     $('res-stage').style.setProperty('--stage-c', G.U.TYPE_COLOR[mon.types[0]]);
     G.UI.show('scr-result');
   }
+
+  /** Un rasgo («paciente») con mayúscula y en el idioma del jugador (#357: salían en español). */
+  const trait = t => G.T(t.charAt(0).toUpperCase() + t.slice(1));
 
   /** Abre la rejilla de starters. `fromMenu` = cambiar compañero inicial más tarde. */
   function openStarters() {
@@ -71,7 +74,7 @@ G.TestUI = (() => {
         cell.classList.add('on');
         picked = s.dex;
         const mv = G.Moves.BY_ID[s.start];
-        $('starter-info').innerHTML = `${G.UI.typeChips(mon.types)} ${G.Icons.html('move:' + s.start, 16)} ${G.T(mv.name, 'move')} · ${s.traits.join(', ')}`;
+        $('starter-info').innerHTML = `${G.UI.typeChips(mon.types)} ${G.Icons.html('move:' + s.start, 16)} ${G.T(mv.name, 'move')} · ${s.traits.map(trait).join(', ')}`;
         $('starter-ok').disabled = false;
       };
       if (result && s.dex === result.dex) { picked = s.dex; $('starter-ok').disabled = false; }

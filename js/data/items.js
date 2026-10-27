@@ -32,7 +32,8 @@ G.Items = (() => {
     { id: 'rockyhelmet', name: 'Casco Dentado', desc: 'Los que te golpean cuerpo a cuerpo reciben daño.',
       on: () => {}, off: () => {} },
     { id: 'assaultvest', name: 'Chaleco Asalto', desc: '+20% de reducción de daño recibido.',
-      on: p => { p.dmgReduce += 0.2; }, off: p => { p.dmgReduce -= 0.2; } },
+      // (aparte del tope del 70 % de las cartas Coraza: ver Player.reduction)
+      on: p => { p.itemReduce += 0.2; }, off: p => { p.itemReduce -= 0.2; } },
     // Todos los huecos a la vez (ver Player.activeGroup). Al quitársela se recogen
     // los orbes de los que dejan de lanzarse (el activo los vuelve a sacar).
     { id: 'zring', name: 'Pulsera Z', desc: 'Todos tus movimientos se lanzan a la vez.',

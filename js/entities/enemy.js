@@ -988,10 +988,16 @@
     // Segundos que un rezagado tiene que llevar fuera de la vista antes de volver por delante.
     const LAG_T = 2.5;
     const BOSS_FAR = 2500;    // jefe más lejos que esto de todos: se ha perdido (ver update)
+    const FAR = 1400;         // enemigo normal más lejos que esto: vuelve a salir cerca (ver update)
+    // Con una ventana muy alargada (#350, 1587 × 188) los enemigos salen a más de
+    // 1400 y se recolocaban en cada fotograma sin acercarse nunca: parecía que ya
+    // no salía ninguno. "Lejos" es siempre algo más que donde salen.
+    const farFor = base => Math.max(base, G.Spawner.outR() + 300);
 
     function update(dt, players) {
       if (!Array.isArray(players)) players = [players];
       const pl = players[0];
+      const far = farFor(FAR), bossFar = farFor(BOSS_FAR);
       // Velocidad suavizada de cada jugador (vale también para los compañeros).
       for (const p of players) {
         if (p._px != null && dt > 0) {
@@ -1034,7 +1040,7 @@
         // grieta, o se quedó atrás): a los 4 s vuelve a salir cerca, fuera de la vista.
         // Si no, no se le encontraba y, con un jefe vivo, no salen grietas.
         if (e.boss && !e.judge && !G.Rift.inArena) {
-          e.lagT = G.U.dist2(e.x, e.y, near.x, near.y) > BOSS_FAR * BOSS_FAR ? e.lagT + dt : 0;
+          e.lagT = G.U.dist2(e.x, e.y, near.x, near.y) > bossFar * bossFar ? e.lagT + dt : 0;
           if (e.lagT > 4) { e.lagT = 0; G.Spawner.ahead(e, near); }
         }
         if (e.boss || e.shiny || e.arceus || G.Rift.inArena) continue;
@@ -1048,7 +1054,7 @@
         const behind = sp > 40 && ((e.x - near.x) * near._vx + (e.y - near.y) * near._vy) < -0.2 * Math.sqrt(d2) * sp;
         if (unseen && behind) e.lagT += dt;
         else if (!unseen) e.lagT = 0;
-        if ((unseen && e.lagT > LAG_T) || d2 > 1400 * 1400) {
+        if ((unseen && e.lagT > LAG_T) || d2 > far * far) {
           e.lagT = 0;
           if (!G.Spawner.ahead(e, near)) { list.splice(i, 1); byId.delete(e.id); if (G.Coop.isHost) G.Coop.enemyGone(e, false); }
         }

@@ -135,7 +135,7 @@ G.UI = (() => {
 
   // ---------------- aviso legal ----------------
 
-  const CONTACT = 'jpieratorregrosa@gmail.com';
+  const CONTACT = 'contactopokesurvivor@gmail.com';
   const REPO = 'https://github.com/JPTER78/pokesurvivor';
 
   function openLegal() {
