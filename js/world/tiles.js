@@ -135,7 +135,7 @@ G.Tiles = (() => {
   for (const t of ARENA_TYPES) BIOMES.push(arenaBiome(ARENA_THEMES[t]));
   BIOMES[ARENA + ARENA_TYPES.indexOf('judgment')].name = ARENA_THEMES.judgment.name;
 
-  // ---------------- Halloween (30-10 al 1-11, systems/halloween.js) ----------------
+  // ---------------- Halloween (30-10 al 2-11, systems/halloween.js) ----------------
   /*
    * Tres biomas de noche que esos días sustituyen a los normales (y el fondo
    * del menú): paletas apagadas, flores naranjas y calabazas por el mapa

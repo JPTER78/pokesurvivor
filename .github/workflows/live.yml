@@ -1,5 +1,5 @@
 # ¿Está el canal de YouTube en directo? Cada 5 min (GitHub lo retrasa a veces
-# unos minutos) mira la página /live del canal y deja live.json en la rama
+# unos minutos) mira los directos del canal y deja live.json en la rama
 # «live»: { live, id, at }. El juego la lee (js/ui/live-ui.js) sin Firebase.
 # Sólo se sube algo al cambiar o, en directo, cada 30 min (para que «at» no
 # caduque). Gratis: el repositorio es público.
@@ -28,21 +28,26 @@ jobs:
       - name: Mirar el canal
         run: |
           set -u
-          curl -sL --max-time 25 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' \
-            -H 'Accept-Language: en' --cookie 'CONSENT=YES+1; SOCS=CAI' \
-            'https://www.youtube.com/channel/UC5nyI589EfbS3KvyNdAVOGA/live' -o page.html || true
+          get() {
+            curl -sL --max-time 20 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' \
+              -H 'Accept-Language: en' --cookie 'CONSENT=YES+1; SOCS=CAI' "$1" -o "$2" || true
+          }
+          # No sirve /live: lleva a una emisión de la PS4 de 2018 que sigue «programada»
+          # (afwp0I0hZeY) y no al directo de verdad (por eso el 27-10-2026 no se vio).
+          # Se mira la pestaña de directos y, de los 3 primeros vídeos, la ficha de cada uno.
+          get 'https://www.youtube.com/channel/UC5nyI589EfbS3KvyNdAVOGA/streams' streams.html
           # Si YouTube no da la página de verdad (aviso de bots, error...), no se toca nada.
-          # (Sin directo, /live es la página del canal: ahí el id va como browseId o externalId.)
-          if ! grep -qE '"(channelId|externalId|browseId)":"UC5nyI589EfbS3KvyNdAVOGA"' page.html; then echo 'página rara: sin cambios'; rm -f page.html; exit 0; fi
+          if ! grep -qE '"(channelId|externalId|browseId)":"UC5nyI589EfbS3KvyNdAVOGA"' streams.html; then echo 'página rara: sin cambios'; rm -f streams.html; exit 0; fi
           live=false; id=''
-          # En directo: el vídeo se puede ver (OK), es un directo y no está sólo programado.
-          # (Hasta el 25-10-2026 se buscaba "isLiveNow":true, que YouTube ya no pone:
-          # nunca se veía un directo. Un directo programado da LIVE_STREAM_OFFLINE e isUpcoming.)
-          if grep -q '"playabilityStatus":{"status":"OK"' page.html && grep -q '"isLiveContent":true' page.html && ! grep -q '"isUpcoming":true' page.html; then
-            id=$(grep -oE '<link rel="canonical" href="https://www.youtube.com/watch\?v=[A-Za-z0-9_-]{11}"' page.html | head -1 | grep -oE '[A-Za-z0-9_-]{11}"$' | tr -d '"')
-            [ -n "$id" ] && live=true
-          fi
-          rm -f page.html
+          for v in $(grep -oE '"videoId":"[A-Za-z0-9_-]{11}"' streams.html | cut -d'"' -f4 | awk '!s[$0]++' | head -3); do
+            get "https://www.youtube.com/watch?v=$v" video.html
+            if ! grep -q '"channelId":"UC5nyI589EfbS3KvyNdAVOGA"' video.html; then
+              echo "ficha rara de $v: sin cambios"; rm -f streams.html video.html; exit 0
+            fi
+            # En directo ahora: isLiveNow true (al acabar pasa a false y lleva endTimestamp).
+            if grep -q '"liveBroadcastDetails":{"isLiveNow":true' video.html; then id=$v; live=true; break; fi
+          done
+          rm -f streams.html video.html
           old_live=$(grep -oE '"live":(true|false)' live.json 2>/dev/null | cut -d: -f2)
           old_id=$(grep -oE '"id":"[^"]*"' live.json 2>/dev/null | cut -d'"' -f4)
           old_at=$(grep -oE '"at":"[^"]*"' live.json 2>/dev/null | cut -d'"' -f4)

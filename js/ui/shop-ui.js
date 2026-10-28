@@ -589,7 +589,7 @@ G.ShopUI = (() => {
   function skinsHtml() {
     const s = G.DB.save, have = (s.bag && s.bag.candy) || 0, P = G.Halloween.SKIN_PRICE;
     let h = `<h3 style="margin:10px 0 6px">${G.Icons.html('witch', 18)} ${G.T('Halloween: skins de bruja')}</h3>
-      <p class="sub" style="margin:0 0 8px">${G.T('Sólo hasta el 1 de noviembre. Los caramelos salen en las partidas (sobre todo de los Fantasma y las calabazas) y ante el gran Gengar. La skin es para siempre; se pone y se quita en la ficha del Pokémon.')}
+      <p class="sub" style="margin:0 0 8px">${G.T('Sólo hasta el 2 de noviembre. Los caramelos salen en las partidas (sobre todo de los Fantasma y las calabazas) y ante el gran Gengar. La skin es para siempre; se pone y se quita en la ficha del Pokémon.')}
       <b class="gold">${G.Icons.html('candy', 14)} ${G.I18n.f('Tienes {x} caramelos', have.toLocaleString(G.I18n.locale))}</b></p><div class="upg">`;
     for (const id of G.Skins.LIST) {
       const sk = G.Skins.SKINS[id], got = G.Skins.owns(s, id), name = G.DEX_BY[sk.dex].name;

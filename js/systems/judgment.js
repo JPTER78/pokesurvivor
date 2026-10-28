@@ -63,7 +63,7 @@ G.Judgment = (() => {
     ghost: 'Tabla Terror', dragon: 'Tabla Draco', dark: 'Tabla Oscura', steel: 'Tabla Acero', fairy: 'Tabla Duende'
   };
   /*
-   * Quién protagoniza la Sentencia. Del 30-10 al 1-11 (systems/halloween.js), en
+   * Quién protagoniza la Sentencia. Del 30-10 al 2-11 (systems/halloween.js), en
    * vez de Arceus, el gran Gengar bruja (sombrero y capa: core/skins.js), de
    * tipo Fantasma y sin Tablas; todo lo demás igual. En grupo lo dice el
    * anfitrión (cfg.hw), así todos ven el mismo.

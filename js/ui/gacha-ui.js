@@ -55,7 +55,7 @@ G.GachaUI = (() => {
        radial-gradient(circle at 15% 80%, rgba(196,123,255,.3), transparent 50%),
        linear-gradient(135deg, ${c1}, ${c2} 55%, ${c3})`;
     $('banner-title').textContent = spooky ? G.T(banner.name) : banner.name + ' Misterioso';
-    $('banner-desc').textContent = spooky ? G.I18n.f('Los {x} Pokémon de tipo Fantasma de todas las regiones, con el doble de shiny. Sólo hasta el 1 de noviembre.', all.length)
+    $('banner-desc').textContent = spooky ? G.I18n.f('Los {x} Pokémon de tipo Fantasma de todas las regiones, con el doble de shiny. Sólo hasta el 2 de noviembre.', all.length)
       : `Los ${all.length} Pokémon de la generación ${gen}. ¡Los legendarios esperan!`;
     $('gacha-owned').innerHTML = `Tienes ${owned} de ${all.length}` +
       (shinies ? ` · ${G.Icons.html('shiny', 12)} ${shinies} shiny` : '') +

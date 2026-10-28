@@ -11,7 +11,7 @@
  * Amuleto Iris: uno por generación. Se tiene al completar su Pokédex (todos sus
  *   Pokémon, legendarios incluidos). No se guarda aparte: sale de lo que tienes.
  * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
- * Halloween (30-10 al 1-11, systems/halloween.js): banner Noche Espectral
+ * Halloween (30-10 al 2-11, systems/halloween.js): banner Noche Espectral
  *   (gen 10, SPOOKY): los Pokémon Fantasma de todas las regiones, con shiny al
  *   doble (2 %) y su propio pity. No tiene Amuleto Iris ni está en BANNERS.
  *

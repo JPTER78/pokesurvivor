@@ -1,6 +1,6 @@
-/* ============ halloween.js — el evento de Halloween (30-10 al 1-11) ============
- * Del 30 de octubre al 1 de noviembre (hora de España, de cualquier año) el
- * juego cambia solo; el 2 vuelve todo a la normalidad. Nada de esto usa
+/* ============ halloween.js — el evento de Halloween (30-10 al 2-11) ============
+ * Del 30 de octubre al 2 de noviembre (hora de España, de cualquier año) el
+ * juego cambia solo; el 3 vuelve todo a la normalidad. Nada de esto usa
  * Firebase: los caramelos y las skins van en la partida que ya se guarda.
  *
  *   - mapa de Halloween (biomas de noche con calabazas: world/tiles.js, world/world.js)
@@ -24,8 +24,8 @@ G.Halloween = (() => {
     for (const x of MD.formatToParts(date)) p[x.type] = x.value;
     return { m: +p.month, d: +p.day };
   }
-  /** ¿Es Halloween en esta fecha? (30-10, 31-10 y 1-11.) */
-  function isOn(date = new Date()) { const { m, d } = madrid(date); return (m === 10 && d >= 30) || (m === 11 && d === 1); }
+  /** ¿Es Halloween en esta fecha? (30-10, 31-10, 1-11 y 2-11; el 2-11 se añadió el 27-10-2026.) */
+  function isOn(date = new Date()) { const { m, d } = madrid(date); return (m === 10 && d >= 30) || (m === 11 && d <= 2); }
 
   /** La medianoche de España de ese día, como instante (con el horario de verano o invierno que toque). */
   function madridMidnight(y, m, d) {
@@ -44,7 +44,7 @@ G.Halloween = (() => {
     if (now == null) return null;                    // (aún sin la hora de la web)
     const y = +YEAR.format(now);
     for (const yy of [y - 1, y]) {
-      const start = madridMidnight(yy, 10, 30), end = madridMidnight(yy, 11, 2);
+      const start = madridMidnight(yy, 10, 30), end = madridMidnight(yy, 11, 3);
       if (now >= start && now < end) return { on: true, ms: end - now };
       if (now < start && start - now <= SOON) return { on: false, ms: start - now };
     }

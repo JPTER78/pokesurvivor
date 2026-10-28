@@ -356,7 +356,7 @@ G.Audio = (() => {
   }
 
   /*
-   * Halloween (30-10 al 1-11): las mismas canciones, más tenebrosas. Si están
+   * Halloween (30-10 al 2-11): las mismas canciones, más tenebrosas. Si están
    * en tono mayor (la del menú), pasan a menor: la 3.ª, la 6.ª y la 7.ª del
    * tono bajan un semitono, en la melodía y en los acordes. Y en todas, algo
    * más lentas, la melodía con theremin, caja de música en vez de campanitas,

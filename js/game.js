@@ -54,7 +54,9 @@ G.Game = (() => {
       Backdrop.restore();
       const t = G.Audio.track;
       if (t) { G.Audio.music(null); G.Audio.music(t); }
-      if (G.UI.isOpen('scr-menu')) G.MenuUI.open();
+      // (con la tienda, el gacha u otra pantalla encima, no: se cerraría; el menú
+      // se rehace al volver a él)
+      if (G.UI.isOpen('scr-menu') && !BACK_SCREENS.some(shown)) G.MenuUI.open();
     });
     last = performance.now();
     requestAnimationFrame(loop);
