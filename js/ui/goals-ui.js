@@ -51,8 +51,13 @@
                           : Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min';
     }
 
-    function missions(box) {
+    /**
+     * Las misiones con su barra, premio y botón. mini: el recuadro de la
+     * izquierda del menú principal (sin «Cambiar» y, al recoger, se refresca el menú).
+     */
+    function missions(box, mini = false) {
       const M = G.DB.save.missions;
+      const redraw = () => (mini ? G.MenuUI.open() : render());
       const section = (title, list, weekly) => {
         box.insertAdjacentHTML('beforeend', `<div class="row between goals-h"><h3>${title}</h3>
           <span class="sub">Se renuevan en ${untilText(weekly ? 'w' : 'd')}</span></div>`);
@@ -71,8 +76,9 @@
           if (m.claimed) { btn.className = 'btn small'; btn.disabled = true; btn.textContent = 'Recogido'; }
           else if (done) {
             btn.className = 'btn small gold'; btn.textContent = 'Recoger'; btn.dataset.sfx = 'none';
-            btn.onclick = () => { if (G.Progress.claim(m, weekly)) { G.Audio.sfx('buy'); G.UI.toast('¡Premio recogido!'); render(); } };
-          } else if (!weekly && !M.rerolled) {
+            btn.onclick = ev => { ev.stopPropagation(); if (G.Progress.claim(m, weekly)) { G.Audio.sfx('buy'); G.UI.toast('¡Premio recogido!'); redraw(); } };
+          } else if (mini) { el.appendChild(document.createElement('span')); box.appendChild(el); return; }
+          else if (!weekly && !M.rerolled) {
             btn.className = 'btn small ghost'; btn.textContent = 'Cambiar';
             btn.title = 'Cambia esta misión por otra (una vez al día)';
             btn.onclick = () => { if (G.Progress.reroll(i)) render(); };
@@ -83,6 +89,15 @@
       };
       section('Diarias', M.daily, false);
       section('Semanales', M.weekly, true);
+    }
+
+    /** Recuadro de misiones a la izquierda del menú principal (en pantallas anchas): se ven sin entrar. */
+    function mini(box) {
+      if (!box || !G.DB.save) return;
+      G.Progress.ensure(G.DB.save);
+      box.innerHTML = `<div class="row between goals-h"><h2>Misiones</h2><span class="mg-go">›</span></div>`;
+      missions(box, true);
+      box.onclick = () => { G.Audio.sfx('click'); open('missions'); };
     }
 
     // ---------------- logros ----------------
@@ -223,7 +238,7 @@
       G.Audio.sfx('confirm');
     }
 
-    return { init, open, render };
+    return { init, open, render, mini };
   })();
 
   // ======================= PERFIL PÚBLICO =======================

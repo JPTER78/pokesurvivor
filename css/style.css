@@ -303,6 +303,22 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
   padding: 70px 24px 18px; gap: 14px; overflow-y: auto;
   background: linear-gradient(90deg, transparent, rgba(5,10,25,.65) 30%);
 }
+/* Misiones a la izquierda del menú (sólo en pantallas anchas: en las demás no caben). */
+.menu-goals { display: none; }
+@media (min-width: 1200px) and (min-height: 661px) {
+  .menu-goals {
+    display: block; align-self: center; width: 360px; margin-left: 24px; flex: none;
+    max-height: calc(100dvh - 160px); overflow-y: auto; cursor: pointer;
+  }
+  .menu-goals:hover { border-color: var(--gold); }
+  .menu-goals h2 { margin: 0; font-size: 22px; }
+  .menu-goals h3 { font-size: 15px; margin: 10px 0 4px; }
+  .menu-goals .goals-h .sub { font-size: 11px; }
+  .menu-goals .mg-go { font-size: 26px; color: var(--gold); line-height: 1; }
+  .menu-goals .mission { grid-template-columns: 1fr auto; padding: 6px 8px; margin-bottom: 6px; font-size: 13px; }
+  .menu-goals .mission .m-rw { grid-column: 1; font-size: 12px; }
+  .menu-goals .mission > :last-child { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+}
 .menu-right > :first-child { margin-top: auto; }
 .menu-right > :last-child { margin-bottom: auto; }
 /* Portátiles con poca altura: menú más compacto y, si hace falta, en dos columnas. */
@@ -942,6 +958,15 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .box.support { width: min(560px, 100%); }
 /* Mejoras: botones y veto */
 .upg-btns { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+/* Precio siempre en una línea (antes, en algunas tarjetas la moneda quedaba encima del número). */
+.upg-btns .btn { max-width: 130px; white-space: normal; }
+.upg-btns [data-buy] .upg-price { white-space: nowrap; }
+.upg-item > div:nth-child(2) { min-width: 0; }
+.upg-item .pips i { flex: 0 1 12px; min-width: 5px; }
+/* Desplegables con el aspecto del juego (flecha dorada) en vez del del navegador. */
+select.field { appearance: none; -webkit-appearance: none; padding-right: 34px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%), linear-gradient(135deg, var(--gold) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 12px) 55%; background-size: 6px 6px; background-repeat: no-repeat; }
 .ban-picker { grid-column: 1 / -1; }
 .bind-panel { grid-column: 1 / -1; }
 .bind-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -954,6 +979,8 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .ban-moves .chip.ban { background: rgba(255,95,109,.25); border-color: #ff5f6d; color: #ffd3d8; text-decoration: line-through; }
 /* Novedades */
 .news-btn { position: relative; }
+/* Novedades y YouTube con fondo, como las monedas: sin él, los Pokémon del menú pasaban por detrás y no se leían. */
+.topbar .news-btn, .topbar .yt-btn:not(.live) { background: rgba(10,20,50,.85); }
 .news-btn .dot { display: none; position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; background: #ff5f6d; box-shadow: 0 0 0 2px var(--shadow); }
 .news-btn.new .dot { display: block; }
 .box.news-box { width: min(640px, 100%); max-height: calc(100dvh - 90px); display: flex; flex-direction: column; }
