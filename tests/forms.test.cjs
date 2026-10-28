@@ -110,6 +110,27 @@ test('only Mega Lucario Idle runs at half speed, including shiny and after an at
   }
 });
 
+test('Mega idle rests for a full slow cycle, preserves elapsed time and can be interrupted', () => {
+  const { G } = game(); load(G, 'js/core/sprites.js');
+  for (const shiny of [false, true]) {
+    const a = new G.Sprites.Animator('448-mega', 1, shiny);
+    const frames = G.Sprites.animMeta('448-mega', 'Idle', shiny).d.reduce((s, d) => s + d, 0);
+    const cycle = frames / 30; // 60 ticks/sec at half-speed.
+    a.update(cycle); assert.equal(a.frame, 0); near(a.t, 0); near(a.rest, frames);
+    a.update(cycle / 2); assert.equal(a.frame, 0); near(a.t, 0); near(a.rest, frames / 2);
+    a.update(cycle / 2); assert.equal(a.frame, 0); near(a.rest, 0);
+    a.update(1 / 120); near(a.t, .25);
+    const b = new G.Sprites.Animator('448-mega', 1, shiny);
+    b.update(cycle * 5.5); assert.equal(b.frame, 0); near(b.rest, frames / 2);
+    b.loop('Walk'); assert.equal(b.rest, 0); b.update(1 / 120); near(b.t, .5);
+    a.loop('Walk'); a.loop('Idle'); a.update(cycle); assert.ok(a.rest > 0);
+    a.play('Attack'); assert.equal(a.rest, 0); a.update(1 / 120); near(a.t, .5);
+    const regular = new G.Sprites.Animator(448, 1, shiny);
+    const normalCycle = G.Sprites.animMeta(448, 'Idle', shiny).d.reduce((s, d) => s + d, 0) / 60;
+    regular.update(normalCycle + 1 / 120); near(regular.t, .5); assert.equal(regular.rest, 0);
+  }
+});
+
 test('remote form applies validated sprite, nature, ability and stone independently', () => {
   const { G } = game(); const p = new G.Player(G.DEX_BY[448]); p.remote = true;
   const state = { form: 'lucario-mega', stone: 'lucarionite', nature: 'adamant', ability: 'adaptability' };

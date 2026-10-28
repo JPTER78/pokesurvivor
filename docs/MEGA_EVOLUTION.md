@@ -62,8 +62,11 @@ python tools/fetch_mega_items.py
 Sprite conversion writes only `assets/pokemon/<dex>/forms/...` and
 `js/data/sprites-forms.js`. It retains anchors, directions and animation timing.
 Shoot uses Attack and Faint uses Hurt because the upstream set lacks those names.
-Mega Lucario’s Idle playback rate is 0.5 in `tools/forms.json`; other animations
-and regular Lucario retain their original timing. Normal and shiny Mega sprites are included; missing shiny form sets fall back to
+Mega Lucario’s Idle playback rate is 0.5 in `tools/forms.json`, with
+`loopPauseCycles.Idle = 1`: each slow cycle is followed by an equally long pause
+on the neutral first frame. This halves the repeat frequency of the slow loop.
+Movement and attacks interrupt the pause immediately; other animations and
+regular Lucario retain their original timing. Normal and shiny Mega sprites are included; missing shiny form sets fall back to
 normal form sheets. Base Lucario sprites and generated Pokédex data are untouched.
 
 To add a form, add its definition, sprite source/path and stone name to the

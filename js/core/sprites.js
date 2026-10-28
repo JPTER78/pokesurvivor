@@ -13,6 +13,7 @@ G.Sprites = (() => {
   /** Unidades de mundo por píxel de arte. Tiles y sprites comparten escala. */
   const PX = 2;
   const playback = Object.fromEntries((G.FORM_DEFS || []).map(f => [f.sprite.key, f.sprite.playback || {}]));
+  const pauseCycles = Object.fromEntries((G.FORM_DEFS || []).map(f => [f.sprite.key, f.sprite.loopPauseCycles || {}]));
   const sheets = new Map();          // "dex/Anim[/s]" -> {img, ready, failed}
 
   function meta(dex) { return G.SPRITE_META[dex] || null; }
@@ -200,6 +201,7 @@ G.Sprites = (() => {
       this.base = 'Idle';
       this.cur = 'Idle';
       this.frame = 0;
+      this.rest = 0;           // pausa entre ciclos, en unidades de animación
       this.t = 0;              // tiempo dentro del fotograma, en 1/60 s
       this.speed = 1;
       this.once = false;
@@ -238,7 +240,7 @@ G.Sprites = (() => {
 
     _start(anim, once) {
       this.cur = animName(this.dex, anim, this.shiny) || 'Idle';
-      this.frame = 0; this.t = 0;
+      this.frame = 0; this.t = 0; this.rest = 0;
       this.once = once; this.done = false;
     }
 
@@ -246,7 +248,10 @@ G.Sprites = (() => {
       const m = animMeta(this.dex, this.cur, this.shiny);
       if (!m || this.done) return;
       const rate = (playback[this.dex] || {})[this.cur] || 1;
-      this.t += dt * 60 * this.speed * rate;
+      let ticks = dt * 60 * this.speed * rate;
+      const waited = Math.min(this.rest, ticks);
+      this.rest -= waited; ticks -= waited;
+      this.t += ticks;
       while (this.t >= m.d[this.frame]) {
         this.t -= m.d[this.frame];
         this.frame++;
@@ -259,6 +264,13 @@ G.Sprites = (() => {
             return;
           }
           this.frame = 0;
+          // Rest on the neutral first frame; preserve excess time for large updates.
+          const cycles = (pauseCycles[this.dex] || {})[this.cur] || 0;
+          if (cycles) {
+            this.rest = m.d.reduce((sum, d) => sum + d, 0) * cycles;
+            const waited = Math.min(this.rest, this.t);
+            this.rest -= waited; this.t -= waited;
+          }
         }
       }
     }

@@ -26,6 +26,9 @@ G.FORM_DEFS = [
       "path": "448/forms/mega",
       "playback": {
         "Idle": 0.5
+      },
+      "loopPauseCycles": {
+        "Idle": 1
       }
     },
     "stats": {
