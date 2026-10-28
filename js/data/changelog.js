@@ -11,6 +11,9 @@ G.CHANGELOG = [
      'Lucario can Mega Evolve during a run: defeat the Legendary in a red rift to earn Lucarionite, keeping your moves, held item and upgrades.'],
     ['Grietas mejoradas a los 15, 20 y 25 minutos, con jefes más fuertes. Si no puedes megaevolucionar, recibes un Vínculo. La colección indica qué Pokémon pueden megaevolucionar.',
      'Enhanced rifts at 15, 20 and 25 minutes with stronger bosses. If you cannot Mega Evolve, you receive a Bond. The collection shows which Pokémon can Mega Evolve.']
+  ], fix: [
+    ['Iconos de megapiedra y megapulsera más grandes. La megapulsera también aparece en los Pokémon que aún no tienes.',
+     'Larger Mega Stone and Mega Bracelet icons. The Mega Bracelet also appears on Pokémon you do not own yet.']
   ]},
   { d: '2026-10-27', title: ["Cooperativo más estable", "Steadier co-op"], new: [
     ["Móvil y tableta: nuevo joystick «Anclado» (Ajustes → Controles → Colocar los botones). Aparece donde pones el dedo y se queda en ese sitio mientras lo mantienes, aunque alejes el dedo; al levantarlo y tocar en otro sitio, aparece allí. El «Flotante» de siempre sigue al dedo y sigue siendo el que viene puesto.",

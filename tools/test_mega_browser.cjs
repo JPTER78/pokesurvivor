@@ -36,18 +36,21 @@ const server = http.createServer((req, res) => {
     });
     await page.evaluate(() => G.Forms.preload(G.Game.player));
     assert.equal(await page.evaluate(() => G.Game.player.formId), 'lucario');
-    // Collection badge, including a locked entry regression.
+    // Collection eligibility badge is visible for both owned and unowned entries.
     await page.evaluate(() => { G.Game.toUI(); G.MenuUI.open(); });
     assert.ok(await page.locator('#menu-partner-info .mega-badge').count());
     await page.evaluate(() => G.MenuUI.openDex());
-    await page.locator('#dex-q').fill('Lucario');
+    await page.locator('#dex-q').fill('448'); // Number search also finds unowned Pokémon.
     await page.waitForFunction(() => document.querySelector('#dex-grid .cell b')?.textContent === 'Lucario');
     assert.equal(await page.locator('#dex-grid .cell .mega-badge').count(), 1);
     await page.locator('#dex-grid .cell').first().click();
     assert.equal(await page.locator('#dex-detail .mega-badge').count(), 1);
     await page.screenshot({ path: path.join(out, 'mega-collection.png') });
     await page.evaluate(() => { delete G.DB.save.owned[448]; G.MenuUI.openDex(); });
-    assert.equal(await page.locator('#dex-grid .cell .mega-badge').count(), 0);
+    assert.equal(await page.locator('#dex-grid .cell .mega-badge').count(), 1);
+    await page.locator('#dex-grid .cell').first().click();
+    assert.equal(await page.locator('#dex-detail .mega-badge').count(), 1);
+    await page.screenshot({ path: path.join(out, 'mega-collection-unowned.png') });
     await page.evaluate(() => G.DB.grant(448, 'test'));
     await page.evaluate(() => { G.Game.startRun(); G.Game.togglePause(); G.UI.hideAll(); });
     await page.evaluate(() => {
@@ -79,6 +82,7 @@ const server = http.createServer((req, res) => {
       form: 'lucario-mega', stone: 'lucarionite', ability: 'adaptability', sprite: '448-mega' });
     await page.evaluate(async () => {
       const p = G.Game.player; await G.Sprites.preload([p.spriteKey], 8000, p.shiny);
+      const stone = new Image(); stone.src = G.Icons.url(p.megaStone); await stone.decode();
       G.Rift.update(6, p, G.Game.st.time); G.Camera.x = p.x; G.Camera.y = p.y;
       G.Game.flash('#fff', 0); G.FX.clear(); p.invuln = 0;
     });
@@ -134,7 +138,7 @@ const server = http.createServer((req, res) => {
     await prod.keyboard.press('Enter');
     await prod.locator('#btn-guest').waitFor({ state: 'visible' });
     assert.deepEqual(errors, []);
-    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 5 }, null, 2));
+    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 6 }, null, 2));
     console.log('Browser integration passed: portal → arena → victory → Mega → new run; Pikachu fallback; mobile; production privacy.');
     console.log(out);
   } finally { await browser.close(); server.close(); }

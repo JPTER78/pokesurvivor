@@ -421,8 +421,10 @@ G.HUD = (() => {
       ctx.fillStyle = pl.megaStone ? 'rgba(65,12,30,.9)' : 'rgba(10,16,28,.45)'; ctx.fill();
       ctx.lineWidth = pl.megaStone ? 2 : 1;
       ctx.strokeStyle = pl.megaStone ? '#ff5473' : 'rgba(180,130,155,.3)'; ctx.stroke();
-      if (pl.megaStone) G.Icons.draw(ctx, pl.megaStone, x + (S - 32) / 2, sy + (S - 32) / 2, 32);
-      else { ctx.globalAlpha = 0.35; G.Icons.draw(ctx, 'mega_bracelet', x + (S - 32) / 2, sy + (S - 32) / 2, 32); ctx.globalAlpha = 1; }
+      // Imported 32px sheets have generous transparent margins; render at 2x.
+      const iconSize = Math.min(64, S * 1.25);
+      if (pl.megaStone) G.Icons.draw(ctx, pl.megaStone, x + (S - iconSize) / 2, sy + (S - iconSize) / 2, iconSize);
+      else { ctx.globalAlpha = 0.35; G.Icons.draw(ctx, 'mega_bracelet', x + (S - iconSize) / 2, sy + (S - iconSize) / 2, iconSize); ctx.globalAlpha = 1; }
       ctx.font = F(700, 9); ctx.textAlign = 'center'; ctx.fillStyle = '#ff9ab0';
       const form = G.Forms.megaFormFor(pl);
       ctx.fillText(G.T(pl.megaStone && form ? form.stoneName : 'Megapiedra'), x + S / 2, sy - 6);
