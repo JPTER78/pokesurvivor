@@ -1,7 +1,11 @@
 /* ============ menu.js — menú principal, colección y mejoras ============ */
 G.MenuUI = (() => {
-  const megaBadge = (dex, size = 32) => G.Forms.hasMegaForm(dex)
-    ? `<button type="button" class="mega-badge" data-mega-dex="${dex}" style="--mega-size:${size}px" aria-label="${G.T('Mega Evolución disponible')}">${G.Icons.html('mega_bracelet', size)}</button>` : '';
+  const megaBadge = (dex, size = 32) => {
+    const form = G.Forms.rewardForDex(dex);
+    if (!form) return '';
+    const fusion = form.category === 'fusion';
+    return `<button type="button" class="mega-badge" data-mega-dex="${dex}" style="--mega-size:${size}px" aria-label="${G.T(fusion ? 'Fusión disponible' : 'Mega Evolución disponible')}">${G.Icons.html(fusion ? form.stone : 'mega_bracelet', size)}</button>`;
+  };
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
   let dexGen = 1, dexSel = null;
@@ -391,7 +395,7 @@ G.MenuUI = (() => {
     const tip = $('mega-tip'); if (tip) tip.classList.add('hidden');
   }
   function showMegaTip(badge) {
-    const dex = +badge.dataset.megaDex, form = G.Forms.megaForDex(dex), mon = G.DEX_BY[dex];
+    const dex = +badge.dataset.megaDex, forms = G.Forms.rewardFormsForDex(dex), form = forms[0], mon = G.DEX_BY[dex];
     if (!form || !mon) return;
     hideMegaTip();
     let tip = $('mega-tip');
@@ -402,9 +406,13 @@ G.MenuUI = (() => {
     }
     // Outside the scrolling box, inside the active screen: no clipping or stale overlay.
     badge.closest('.scr').appendChild(tip);
-    const values = [G.T(mon.name), G.T(form.name), G.T(form.stoneName)];
-    tip.querySelector('b').textContent = G.T('Mega Evolución disponible');
-    tip.querySelector('p').textContent = G.T('{x} puede megaevolucionar en {x} al encontrar {x} durante una partida.')
+    const multiple = forms.length > 1;
+    const values = multiple ? [G.T(mon.name), G.T(forms[0].name), G.T(forms[1].name), G.T(form.stoneName)]
+      : [G.T(mon.name), G.T(form.name), G.T(form.stoneName)];
+    tip.querySelector('b').textContent = G.T(form.category === 'fusion' ? 'Fusión disponible' : 'Mega Evolución disponible');
+    tip.querySelector('p').textContent = G.T(multiple
+      ? '{x} puede transformarse en {x} o {x} al encontrar {x} durante una partida.'
+      : '{x} puede megaevolucionar en {x} al encontrar {x} durante una partida.')
       .replace(/\{x\}/g, () => values.shift());
     tip.classList.remove('hidden');
     badge.setAttribute('aria-describedby', 'mega-tip'); megaTipOn = badge;

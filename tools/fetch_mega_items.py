@@ -1,7 +1,7 @@
-"""Import the two unmodified item icons and upstream license notices.
+"""Import the unmodified rift reward item icons and upstream license notices.
 
 Upstream README declares CC-BY-NC-SA-4.0 to the extent assets are licensable;
-these two files have no overriding entry in root/images REUSE.toml at this revision.
+These files have no overriding entry in root/images REUSE.toml at this revision.
 See docs/MEGA_ASSETS.md for provenance and the underlying Pokemon rights notice.
 """
 from pathlib import Path
@@ -14,7 +14,7 @@ RAW = 'https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/' + REV
 
 def main():
     files = [('images/items/' + n + '.png', 'assets/items/' + n + '.png')
-             for n in ['lucarionite', 'mega_bracelet']]
+             for n in ['lucarionite', 'mega_bracelet', 'dna_splicers']]
     files += [('LICENSES/' + n, 'assets/licenses/' + n)
               for n in ['CC-BY-NC-SA-4.0.txt', 'LicenseRef-FAIR-USE.txt']]
     for source, target in files:

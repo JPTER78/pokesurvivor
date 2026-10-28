@@ -41,5 +41,77 @@ G.FORM_DEFS = [
       "sd": 70,
       "bst": 625
     }
+  },
+  {
+    "id": "kyurem-black",
+    "baseDex": 646,
+    "name": "Kyurem Negro",
+    "category": "fusion",
+    "stone": "dna_splicers",
+    "stoneName": "Punta ADN",
+    "types": [
+      "dragon",
+      "ice"
+    ],
+    "baseStats": {
+      "hp": 125,
+      "attack": 170,
+      "defense": 100,
+      "special-attack": 120,
+      "special-defense": 90,
+      "speed": 95
+    },
+    "ability": "teravolt",
+    "sprite": {
+      "key": "646-black",
+      "source": "0646/0001",
+      "path": "646/forms/black"
+    },
+    "stats": {
+      "hp": 126,
+      "spd": 118,
+      "atk": 1.64,
+      "pa": 1.64,
+      "sa": 1.36,
+      "df": 100,
+      "sd": 90,
+      "bst": 700
+    }
+  },
+  {
+    "id": "kyurem-white",
+    "baseDex": 646,
+    "name": "Kyurem Blanco",
+    "category": "fusion",
+    "stone": "dna_splicers",
+    "stoneName": "Punta ADN",
+    "types": [
+      "dragon",
+      "ice"
+    ],
+    "baseStats": {
+      "hp": 125,
+      "attack": 120,
+      "defense": 90,
+      "special-attack": 170,
+      "special-defense": 100,
+      "speed": 95
+    },
+    "ability": "turboblaze",
+    "sprite": {
+      "key": "646-white",
+      "source": "0646/0002",
+      "path": "646/forms/white"
+    },
+    "stats": {
+      "hp": 126,
+      "spd": 118,
+      "atk": 1.64,
+      "pa": 1.36,
+      "sa": 1.64,
+      "df": 90,
+      "sd": 100,
+      "bst": 700
+    }
   }
 ];

@@ -532,13 +532,13 @@ G.Game = (() => {
     if (!form) return;
     state = 'choice';
     if (G.Coop.active) G.Coop.holdStart();
-    G.RunUI.showMegaStone(form, () => {
-      if (pl !== player || state !== 'choice' || !G.Forms.claimMega(player)) return;
+    G.RunUI.showMegaStone(form, id => {
+      if (pl !== player || state !== 'choice' || !G.Forms.claimReward(player, id)) return;
       G.Audio.sfx('legend');
       state = holdBy.length || awayBy ? 'held' : 'playing';
       if (G.Coop.active) G.Coop.holdEnd();
       afterLevelUp();
-    });
+    }, G.Forms.rewardFormsFor(player));
   }
 
   // ---------------- recogida ----------------
@@ -675,7 +675,14 @@ G.Game = (() => {
       return;
     }
     if (G.UI.isOpen('scr-mega')) {
-      if (['enter', 'space', 'digit1', 'numpad1'].some(k => G.Input.tap(k))) document.getElementById('mega-claim').click();
+      const choices = document.querySelectorAll('#mega-cards button');
+      for (let i = 0; i < choices.length; i++) {
+        if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) choices[i].click();
+      }
+      if (['enter', 'space'].some(k => G.Input.tap(k))) {
+        const focused = document.activeElement;
+        (Array.from(choices).includes(focused) ? focused : choices[0])?.click();
+      }
       return;
     }
     if (G.UI.isOpen('scr-bond')) {

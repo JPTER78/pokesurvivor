@@ -228,18 +228,39 @@ G.RunUI = (() => {
     guard(box);
   }
 
-  function showMegaStone(form, cb) {
+  function showMegaStone(form, cb, choices = [form]) {
+    const fusion = form.category === 'fusion';
+    $('mega-box').classList.toggle('fusion-reward', fusion);
+    $('mega-title').textContent = G.T(fusion ? '¡Punta ADN conseguida!' : '¡Megapiedra conseguida!');
+    $('mega-sub').textContent = G.T(fusion ? 'Elige una forma hasta el final de la partida. Conservas tus movimientos, objeto y mejoras.' : 'Megaevoluciona hasta el final de la partida. Conservas tu objeto equipado.');
     $('mega-art').innerHTML = G.Icons.html(form.stone, 128);
     $('mega-name').textContent = G.T(form.stoneName);
-    const button = $('mega-claim');
-    // Replacing the button also clears callbacks from a previous run/reopened choice.
-    const next = button.cloneNode(true); button.replaceWith(next);
+    const box = $('mega-cards'); box.innerHTML = '';
+    box.classList.toggle('form-choices', choices.length > 1);
     let claimed = false;
-    onTap(next, () => {
-      if (claimed || guarded() || !G.UI.isOpen('scr-mega')) return;
-      claimed = true; G.UI.hide('scr-mega'); cb();
+    choices.forEach((choice, i) => {
+      const button = document.createElement('button'); button.type = 'button';
+      button.id = i ? 'mega-claim-' + (i + 1) : 'mega-claim';
+      button.dataset.form = choice.id;
+      if (choices.length > 1) {
+        button.className = 'card form-choice';
+        button.appendChild(G.UI.spriteCanvas(choice.sprite.key, 120, 100, { shiny: !!G.Game.player.shiny, hero: true }));
+        const name = document.createElement('b'); name.textContent = G.T(choice.name); button.appendChild(name);
+        const desc = document.createElement('span');
+        desc.textContent = G.T(choice.stats.pa > choice.stats.sa ? 'Potencia física' : 'Potencia especial');
+        button.appendChild(desc);
+        const key = document.createElement('span'); key.className = 'key'; key.textContent = i + 1; button.appendChild(key);
+        button.setAttribute('aria-label', G.T(choice.name) + ': ' + desc.textContent);
+      } else {
+        button.className = 'btn gold'; button.textContent = G.T('Recoger y megaevolucionar');
+      }
+      onTap(button, () => {
+        if (claimed || guarded() || !G.UI.isOpen('scr-mega')) return;
+        claimed = true; G.UI.hide('scr-mega'); cb(choice.id);
+      });
+      box.appendChild(button);
     });
-    G.UI.show('scr-mega'); guard($('mega-cards'));
+    G.UI.show('scr-mega'); guard(box);
   }
 
   // ---------------- vínculo: qué movimientos se fusionan ----------------

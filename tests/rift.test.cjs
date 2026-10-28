@@ -45,10 +45,35 @@ test('enhanced boss scaling composes with time and co-op scaling, preserving nor
     for (const c of [a, b]) c.G.Game.everyone = () => [c.p, { dead: false, x: 0, y: 0 }];
     a.G.Rift.debugArena(); b.G.Rift.debugMegaArena();
     const normal = [...a.enemies.values()][0].def, mega = [...b.enemies.values()][0].def;
-    for (const [key, k] of [['hp', 2.5], ['dmg', 1.5], ['shotDmg', 1.5], ['spd', 1.1]]) assert.equal(mega[key], normal[key] * k, key);
+    assert.equal(mega.hp, Math.round(9_000_000 * 1.3 * 1.4));
+    assert.equal(normal.hp, Math.round((3200 + 900 * 9) * 1.3 * 1.4));
+    for (const [key, k] of [['dmg', 1.5], ['shotDmg', 1.5], ['spd', 1.1]]) assert.equal(mega[key], normal[key] * k, key);
     assert.equal(mega.attackFrequency, 1.2); assert.equal(mega.shotCd, normal.shotCd / 1.2);
     assert.equal(b.G.Rift.timeLeft, 120); assert.ok(normal.hp > 3200 + 900 * 9);
   } finally { Math.random = original; }
+});
+
+test('all three Mega Rift encounters have 9 million solo HP, even when entered late', () => {
+  for (const at of [900, 1200, 1500]) {
+    const { G, p, enemies } = game();
+    for (const earlier of [900, 1200, 1500].filter(t => t < at)) {
+      G.Rift.update(.1, p, earlier);
+      G.Rift.update(61, p, earlier + 61);
+    }
+    G.Rift.update(.1, p, at);
+    assert.equal(G.Rift.rift.eventAt, at);
+    G.Game.st.time = at + 30;
+    p.x = G.Rift.rift.x; p.y = G.Rift.rift.y - 10;
+    G.Rift.update(.1, p, at + 30);
+    const boss = enemies.get(G.Rift.arena.bossId);
+    assert.equal(boss.maxHp, 9_000_000);
+    // A sustained 300k hit per second survives 29s and wins at 30s.
+    for (let second = 0; second < 29; second++) boss.hurt(300_000);
+    G.Rift.update(29, p, at + 59);
+    assert.equal(G.Rift.arena.phase, 'fight'); assert.equal(p.pendingMegaForm, null);
+    boss.hurt(300_000); G.Rift.update(1, p, at + 60);
+    assert.equal(G.Rift.arena.phase, 'won'); assert.equal(p.pendingMegaForm, 'lucario-mega');
+  }
 });
 
 test('victory is idempotent, duplicates/stale resolutions cannot reward a later arena', () => {

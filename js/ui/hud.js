@@ -261,7 +261,7 @@ G.HUD = (() => {
       ctx.translate(w / 2, y0); ctx.scale(pop, pop);
       ctx.font = F(800, 20);
       const t1 = redRift ? '¡SE HA ABIERTO UNA MEGAGRIETA!' : '¡SE HA ABIERTO UNA GRIETA!',
-            t2 = redRift ? 'Sigue la flecha roja: vence al legendario para megaevolucionar' : 'Sigue la flecha morada: dentro te espera un legendario';
+            t2 = redRift ? 'Sigue la flecha roja: vence al legendario para transformarte' : 'Sigue la flecha morada: dentro te espera un legendario';
       const bw = Math.min(w - 24, Math.max(ctx.measureText(t1).width, (ctx.font = F(700, 11), ctx.measureText(t2).width)) + 36);
       roundRect(ctx, -bw / 2, -26, bw, 52, 10);
       ctx.fillStyle = (redRift ? 'rgba(51,8,20,.88)' : 'rgba(26,11,51,.88)'); ctx.fill();
@@ -302,7 +302,7 @@ G.HUD = (() => {
     }
 
     // ---------- ranura de movimientos ----------
-    const mega = !!(pl.megaStone || G.Forms.hasMegaForm(pl.mon.dex));
+    const mega = !!(pl.megaStone || G.Forms.rewardForDex(pl.mon.dex));
     const n = Math.max(1, pl.slots.length), pb = touch && G.Touch.spot('bar');
     const hotbar = G.Hotbar.layout(w, h, n, mega, touch ? G.Touch.safeArea() : {}, pb,
       pb ? Math.max(n, pl.maxMoves) : n);
@@ -424,10 +424,10 @@ G.HUD = (() => {
       // Imported 32px sheets have generous transparent margins; render at 2x.
       const iconSize = Math.min(64, S * 1.25);
       if (pl.megaStone) G.Icons.draw(ctx, pl.megaStone, x + (S - iconSize) / 2, sy + (S - iconSize) / 2, iconSize);
-      else { ctx.globalAlpha = 0.35; G.Icons.draw(ctx, 'mega_bracelet', x + (S - iconSize) / 2, sy + (S - iconSize) / 2, iconSize); ctx.globalAlpha = 1; }
+      else { ctx.globalAlpha = 0.35; G.Icons.draw(ctx, G.Forms.rewardForDex(pl.mon.dex)?.category === 'fusion' ? 'dna_splicers' : 'mega_bracelet', x + (S - iconSize) / 2, sy + (S - iconSize) / 2, iconSize); ctx.globalAlpha = 1; }
       ctx.font = F(700, 9); ctx.textAlign = 'center'; ctx.fillStyle = '#ff9ab0';
-      const form = G.Forms.megaFormFor(pl);
-      ctx.fillText(G.T(pl.megaStone && form ? form.stoneName : 'Megapiedra'), x + S / 2, sy - 6);
+      const form = G.Forms.get(pl.formId) || G.Forms.rewardForDex(pl.mon.dex);
+      ctx.fillText(G.T(form && (pl.megaStone || form.category === 'fusion') ? form.stoneName : 'Megapiedra'), x + S / 2, sy - 6);
     }
 
     // ---------- esferas (encima de los ataques; teclas 5-8) y sus mejoras activas ----------

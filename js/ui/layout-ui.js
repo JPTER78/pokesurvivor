@@ -8,7 +8,7 @@
  */
 G.LayoutUI = (() => {
   const N = 4;          // Geometry is shared with hud.js through G.Hotbar.
-  const hasMega = () => !!(G.Game.player ? G.Forms.hasMegaForm(G.Game.player.mon.dex) || G.Game.player.megaStone : G.DB.save && G.Forms.hasMegaForm(G.DB.save.partner));
+  const hasMega = () => !!(G.Game.player ? G.Forms.rewardForDex(G.Game.player.mon.dex) || G.Game.player.megaStone : G.DB.save && G.Forms.rewardForDex(G.DB.save.partner));
   const barLayout = (w, h, spot = null) => G.Hotbar.layout(w, h, N, hasMega(), G.Touch.safeArea(), spot);
   let el = null, pos = null, moved = null, mode = 'float';
 

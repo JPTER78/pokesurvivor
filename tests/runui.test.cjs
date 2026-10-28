@@ -23,7 +23,7 @@ function runUI() {
   let now = 10000;
   const els = {}, $ = id => (els[id] = els[id] || fakeEl(id));
   const G = {
-    UI: { $, show() {}, hide() {}, isOpen: () => true }, Audio: { sfx() {} }, T: s => s,
+    UI: { $, show() {}, hide() {}, isOpen: () => true, spriteCanvas: () => fakeEl() }, Audio: { sfx() {} }, T: s => s,
     U: { TYPE_COLOR: { electric: '#fc0', fire: '#f40', water: '#39f' } }, Icons: { html: () => '' },
     Game: { player: { rerolls: 0, rerollBonus: 5 } }, LevelUp: { offer: () => [{ title: 'B0' }, { title: 'B1' }, { title: 'B2' }] }
   };
@@ -72,4 +72,17 @@ test('mouse and keyboard keep working as before (a plain click picks at once)', 
   r.wait(1000);
   r.$('cards').children[0].onclick();
   assert.deepEqual(picked, ['A0']);
+});
+
+test('DNA Splicers displays two guarded choices and claims only the selected form once', () => {
+  for (const index of [0, 1]) {
+    const r = runUI(), picked = [];
+    const forms = ['black', 'white'].map((v, i) => ({ id: 'kyurem-' + v, name: v, category: 'fusion',
+      stone: 'dna_splicers', stoneName: 'Punta ADN', sprite: { key: '646-' + v }, stats: { pa: i ? 1 : 2, sa: i ? 2 : 1 } }));
+    r.G.RunUI.showMegaStone(forms[0], id => picked.push(id), forms);
+    const cards = r.$('mega-cards').children;
+    assert.equal(cards.length, 2); cards[index].onclick(); assert.deepEqual(picked, []);
+    r.wait(1000); r.finger(cards[index]); r.wait(1000); cards[1 - index].onclick();
+    assert.deepEqual(picked, [forms[index].id]);
+  }
 });

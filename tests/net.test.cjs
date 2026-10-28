@@ -93,6 +93,8 @@ test('game protocol capability rejects old/unknown peers and resets on reconnect
   assert.equal(N.compatible('a'), false);
   dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1 }) });
   assert.equal(N.compatible('a'), false);
+  dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1, game: N.GAME_VERSION - 1 }) });
+  assert.equal(N.compatible('a'), false);
   dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1, game: 999 }) });
   assert.equal(N.compatible('a'), false);
   dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1, game: N.GAME_VERSION }) });

@@ -7,11 +7,13 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-28', title: ['Mega Evolución', 'Mega Evolution'], new: [
+    ['Kyurem recibe la Punta ADN al vencer una grieta mejorada y puede elegir entre Kyurem Negro y Kyurem Blanco hasta el final de la partida.', 'Kyurem receives DNA Splicers after winning an enhanced rift and can choose Black Kyurem or White Kyurem for the rest of the run.'],
     ['Lucario puede megaevolucionar durante la partida: vence al legendario de una grieta roja para conseguir Lucarionita, sin perder tus movimientos, objeto ni mejoras.',
      'Lucario can Mega Evolve during a run: defeat the Legendary in a red rift to earn Lucarionite, keeping your moves, held item and upgrades.'],
     ['Grietas mejoradas a los 15, 20 y 25 minutos, con jefes más fuertes. Si no puedes megaevolucionar, recibes un Vínculo. La colección indica qué Pokémon pueden megaevolucionar.',
      'Enhanced rifts at 15, 20 and 25 minutes with stronger bosses. If you cannot Mega Evolve, you receive a Bond. The collection shows which Pokémon can Mega Evolve.']
   ], chg: [
+    ['Los jefes de las tres grietas mejoradas tienen ahora 9 millones de PS en solitario, con el escalado habitual en cooperativo.', 'All three enhanced-rift bosses now have 9 million HP in solo play, with the usual co-op scaling.'],
     ["La megapiedra se recoge en una pantalla de recompensa antes de megaevolucionar. Mega Lucario descansa con una animación más lenta y pausas entre ciclos.", "Claim your Mega Stone on a reward screen before Mega Evolving. Mega Lucario now has a slower idle animation with pauses between cycles."]
   ], fix: [
     ["Rareza y megapulsera centradas en la colección. La megapulsera explica cómo megaevolucionar cada Pokémon.", "Centered rarity and Mega Bracelet in the collection. The bracelet explains how each Pokémon can Mega Evolve."],

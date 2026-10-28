@@ -2,9 +2,11 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { game, load } = require('./mega-fixtures.cjs');
 
-test('real Coop frames carry each player form/stone and apply it through Player.netUpdate', () => {
-  const clients = { host: game(25), guest: game(448) }, handlers = {}, sent = [];
-  const members = [{ uid: 'host', name: 'Pikachu', dex: 25 }, { uid: 'guest', name: 'Lucario', dex: 448 }];
+for (const [dex, form, sprite, stone, ability] of [[448, 'lucario-mega', '448-mega', 'lucarionite', 'adaptability'],
+  [646, 'kyurem-black', '646-black', 'dna_splicers', 'teravolt'], [646, 'kyurem-white', '646-white', 'dna_splicers', 'turboblaze']]) {
+test(`real Coop frames carry ${form} and apply it through Player.netUpdate`, () => {
+  const clients = { host: game(25), guest: game(dex) }, handlers = {}, sent = [];
+  const members = [{ uid: 'host', name: 'Pikachu', dex: 25 }, { uid: 'guest', name: 'Guest', dex }];
   for (const [uid, c] of Object.entries(clients)) {
     const G = c.G;
     G.Net = { uid, on: fn => { handlers[uid] = fn; }, onPeer() {}, slow: () => false, busy: () => false,
@@ -21,13 +23,14 @@ test('real Coop frames carry each player form/stone and apply it through Player.
     });
   }
   const { G, p } = clients.guest;
-  assert.ok(G.Forms.awardMega(p)); G.Coop.tick(.1);
+  assert.ok(G.Forms.queueReward(p)); assert.ok(G.Forms.claimReward(p, form)); G.Coop.tick(.1);
   const host = clients.host.G, mate = host.Coop.puppets()[0];
   mate.netUpdate(.1);
-  assert.equal(mate.formId, 'lucario-mega'); assert.equal(mate.anim.dex, '448-mega');
-  assert.equal(mate.megaStone, 'lucarionite'); assert.equal(mate.abilId, 'adaptability'); assert.equal(mate.nature, p.nature);
+  assert.equal(mate.formId, form); assert.equal(mate.anim.dex, sprite);
+  assert.equal(mate.megaStone, stone); assert.equal(mate.abilId, ability); assert.equal(mate.nature, p.nature);
   const oldAnim = mate.anim; G.Coop.tick(.1); mate.netUpdate(.1); assert.equal(mate.anim, oldAnim);
   host.Coop.tick(.1); const pikachu = G.Coop.puppets()[0]; pikachu.netUpdate(.1);
   assert.equal(pikachu.formId, 'pikachu'); assert.equal(pikachu.megaStone, null);
   for (const msg of sent) assert.deepEqual(G.NetCodec.decode(G.NetCodec.encode(msg)), msg);
 });
+}

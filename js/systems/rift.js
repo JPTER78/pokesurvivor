@@ -25,8 +25,9 @@ G.Rift = (() => {
   const CHECK = 30, CHANCE = 0.2, TTL = 45;
   const ARENA_R = 11, ARENA_TIME = 120, FROM = 75;
   const ENCOUNTERS = {
-    normal: { ttl: TTL, hp: 1, dmg: 1, shot: 1, speed: 1, frequency: 1, color: '#b48aff' },
-    mega: { ttl: 60, hp: 2.5, dmg: 1.5, shot: 1.5, speed: 1.1, frequency: 1.2, color: '#ff4966' }
+    normal: { ttl: TTL, dmg: 1, shot: 1, speed: 1, frequency: 1, color: '#b48aff' },
+    // Fixed solo HP at all three thresholds: about 30s at 300k boss DPS.
+    mega: { ttl: 60, hp: 9_000_000, dmg: 1.5, shot: 1.5, speed: 1.1, frequency: 1.2, color: '#ff4966' }
   };
   const TIMES = [900, 1200, 1500];
   let schedule = [], queue = [], previousTime = 0, retryT = 0, serial = 0;
@@ -184,16 +185,16 @@ G.Rift = (() => {
     const t = G.Game.st.time;
     const n = G.Game.everyone().length;
     const ts = TS();
+    const difficulty = config(arena.kind);
     const def = {
       dex: mon.dex, name: mon.name,
-      hp: Math.round((3200 + t * 9) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1)),
+      hp: Math.round((difficulty.hp ?? (3200 + t * 9)) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1)),
       spd: Math.round(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105)),
       dmg: Math.round(36 + t / 20), xp: Math.round(500 + t * 1.2),
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
       shotDmg: Math.round(18 + t / 40), shotCd: 0.9, range: 300
     };
-    const difficulty = config(arena.kind);
-    def.hp *= difficulty.hp; def.dmg *= difficulty.dmg; def.shotDmg *= difficulty.shot;
+    def.dmg *= difficulty.dmg; def.shotDmg *= difficulty.shot;
     def.spd *= difficulty.speed; def.shotCd /= difficulty.frequency;
     def.attackFrequency = difficulty.frequency;
     const e = new G.Enemy(def, arena.x, arena.y - ts * 3.5, { hp: 1, spd: 1, dmg: 1 }, true);
@@ -244,7 +245,7 @@ G.Rift = (() => {
     G.Audio.sfx('legend');
     const pl = G.Game.player;
     if (pl) {
-      if (arena.kind === 'mega' && G.Forms.queueMega(pl)) return;
+      if (arena.kind === 'mega' && G.Forms.queueReward(pl)) return;
       pl.bonds++;
       G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, '¡Vínculo!', '#ff8ad8', true);
       G.FX.ring(pl.x, pl.y, 8, 90, '#ff8ad8', 0.7, 5);

@@ -4,9 +4,10 @@
 G.Forms = (() => {
   const BY = Object.fromEntries(G.FORM_DEFS.map(f => [f.id, f]));
   const get = id => Object.prototype.hasOwnProperty.call(BY, id) ? BY[id] : null;
-  const megaForDex = dex => G.FORM_DEFS.find(f => f.baseDex === dex && f.category === 'mega') || null;
-  const megaFormFor = p => p && megaForDex(p.mon.dex);
-  const canMegaEvolve = p => !!(megaFormFor(p) && !p.megaStone && !(p.transformation && p.transformation.kind === 'mega'));
+  const rewardFormsForDex = dex => G.FORM_DEFS.filter(f => f.baseDex === dex && f.stone && ['mega', 'fusion'].includes(f.category));
+  const rewardForDex = dex => rewardFormsForDex(dex)[0] || null;
+  const rewardFormsFor = p => p ? rewardFormsForDex(p.mon.dex) : [];
+  const canClaimReward = p => !!(p && rewardFormsFor(p).length && !p.megaStone && !['mega', 'fusion'].includes(p.transformation?.kind));
 
   function withNature(base, id) {
     const mon = Object.assign({}, base, { types: base.types.slice(), nature: id });
@@ -64,29 +65,34 @@ G.Forms = (() => {
   }
 
   // Reserve the reward until its screen is acknowledged; no stats change yet.
-  function queueMega(p) {
-    if (!canMegaEvolve(p) || p.pendingMegaForm) return false;
-    p.pendingMegaForm = megaFormFor(p).id;
+  function queueReward(p) {
+    if (!canClaimReward(p) || p.pendingMegaForm) return false;
+    // Legacy field names remain stable in Player/co-op. This ID reserves the
+    // reward item; it does not select a form when that item has several choices.
+    p.pendingMegaForm = rewardFormsFor(p)[0].id;
     return true;
   }
-  function claimMega(p) {
-    const f = p && get(p.pendingMegaForm);
-    return !!f && f === megaFormFor(p) && awardMega(p);
+  function claimReward(p, id) {
+    const pending = p && get(p.pendingMegaForm), choices = rewardFormsFor(p);
+    if (!pending || !choices.includes(pending)) return false;
+    const f = get(id || (choices.length === 1 ? pending.id : ''));
+    return !!f && choices.includes(f) && f.stone === pending.stone && awardReward(p, f.id);
   }
 
-  function awardMega(p) {
-    if (!canMegaEvolve(p)) return false;
-    const f = megaFormFor(p);
+  function awardReward(p, id) {
+    if (!canClaimReward(p)) return false;
+    const choices = rewardFormsFor(p), f = get(id || (choices.length === 1 ? choices[0].id : ''));
+    if (!f || !choices.includes(f)) return false;
     if (!transform(p, f.id, { source: f.stone })) return false;
     p.megaStone = f.stone;
     p.pendingMegaForm = null;
-    G.Spawner.say(G.T('¡Mega Evolución!') + ' ' + p.mon.name, 3.4, true);
+    G.Spawner.say(G.T(f.category === 'mega' ? '¡Mega Evolución!' : '¡Fusión completada!') + ' ' + G.T(p.mon.name), 3.4, true);
     return true;
   }
 
   function preload(p) {
-    const f = megaFormFor(p);
-    if (f) return G.Sprites.preload([f.sprite.key], 8000, p.shiny);
+    const forms = rewardFormsFor(p);
+    if (forms.length) return G.Sprites.preload(forms.map(f => f.sprite.key), 8000, p.shiny);
     return Promise.resolve();
   }
 
@@ -110,8 +116,13 @@ G.Forms = (() => {
     }
   }
   function revert(p) { return !!p._originalForm && transform(p, p._originalForm.id, { silent: true }); }
-  const api = { get, transform, revert, preload, awardMega, queueMega, claimMega, applyRemote, megaFormFor, canMegaEvolve,
+  const megaForDex = dex => rewardFormsForDex(dex).find(f => f.category === 'mega') || null;
+  const api = { get, transform, revert, preload, awardReward, queueReward, claimReward, applyRemote,
+    rewardForDex, rewardFormsForDex, rewardFormsFor, canClaimReward,
+    // Compatibility for existing debug scripts and Mega-only callers.
+    awardMega: awardReward, queueMega: queueReward, claimMega: claimReward,
+    megaFormFor: p => p && megaForDex(p.mon.dex), canMegaEvolve: p => !!(p && megaForDex(p.mon.dex) && canClaimReward(p)),
     hasMegaForm: dex => !!megaForDex(dex), megaForDex };
-  if (G.Dev && G.Dev.enabled) api.debugMegaEvolve = () => awardMega(G.Game.player);
+  if (G.Dev && G.Dev.enabled) api.debugMegaEvolve = id => awardReward(G.Game.player, id);
   return api;
 })();

@@ -9,7 +9,7 @@
  *   'type:<tipo>'                sólo el emblema
  */
 G.Icons = (() => {
-  const ART = { lucarionite: 'assets/items/lucarionite.png', mega_bracelet: 'assets/items/mega_bracelet.png' };
+  const ART = { lucarionite: 'assets/items/lucarionite.png', mega_bracelet: 'assets/items/mega_bracelet.png', dna_splicers: 'assets/items/dna_splicers.png' };
   const images = {};
   const K = '#1b1528';          // contorno
 

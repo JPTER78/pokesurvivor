@@ -8,12 +8,33 @@ and players already carrying a Mega Stone receive the existing Bond reward.
 Everything resets with the next run; collection ownership and upgrades still use
 the original species identity.
 
+Kyurem uses the same enhanced-rift victories to obtain **DNA Splicers** and
+choose **Black Kyurem** or **White Kyurem**. The two buttons preview normal/shiny
+sprites and indicate physical/special emphasis; mouse, touch, controller, or
+keys 1/2 select a form. No Reshiram/Zekrom ownership is required. Choosing is
+instant, with no transition cinematic. The reward pauses the run and follows
+the existing co-op level-up/item ordering. After fusion, later red rifts give a
+Bond instead of another form choice. New runs restore regular Kyurem.
+
 ## Architecture
 
 - `tools/forms.json` is the form registry source. `generate_forms.py` produces
   `js/data/forms.js` using the same conversion helper as `fetch_pokedex.py`.
   Official Mega Lucario stats total 625; game stats before nature are HP 102,
   speed 125, physical attack 1.50, special attack 1.47, defense 88, special defense 70.
+  Black/White Kyurem use verified [PokéAPI Black Kyurem](https://pokeapi.co/api/v2/pokemon/kyurem-black)
+  and [White Kyurem](https://pokeapi.co/api/v2/pokemon/kyurem-white) base stats
+  (700 total): converted HP 126, speed 118; Black has physical/special attack
+  1.64/1.36 and defenses 100/90; White has 1.36/1.64 and defenses 90/100.
+  The current nature still applies. Teravolt/Turboblaze use the existing ability
+  framework (currently the generic primary-type passive); their identifiers are
+  displayed and synchronized, with no changes to other Pokémon's ability balance.
+- `rewardFormsForDex()` and `rewardFormsFor()` enumerate eligible rift forms.
+  `queueReward()` reserves the item using the legacy `pendingMegaForm` field;
+  `claimReward(player, formId)` validates the selected form against that player's
+  pending reward and refuses to choose implicitly when there are multiple forms.
+  `megaStone` also carries `dna_splicers`, retaining the existing Player/network
+  field layout. Mega-named API aliases remain for existing debug scripts.
 - `G.Forms.transform(player, id, options)` mutates the existing player. It retains
   moves, slot arrays, cooldown timers, nature, resources, counters and arbitrary
   runtime properties. Base stat differences are added to the current values,
@@ -31,9 +52,11 @@ the original species identity.
   1500 seconds) has independent waiting/queued/spawned/attempted/won/lost/expired
   state. Queued events take priority, retry failed placement once per second,
   and wait for existing portals, arenas and world bosses. Portal lifetime is 60s.
-  Difficulty is in `G.Rift.ENCOUNTERS`: HP ×2.5, damage/projectiles ×1.5, speed
-  ×1.1, attack cooldown rate ×1.2; telegraph timing stays readable. Existing time
-  and co-op HP scaling apply first. Arena duration remains 120s.
+  Difficulty is in `G.Rift.ENCOUNTERS`: all three Mega bosses have 9,000,000 solo
+  HP (about 30 seconds at sustained 300,000 boss DPS), including delayed entries.
+  Existing co-op HP scaling applies on top. Normal rifts retain time-based HP.
+  Damage/projectiles remain ×1.5, speed ×1.1, attack cooldown rate ×1.2;
+  telegraph timing and the 120-second arena limit remain unchanged.
 - Red portal frames use a second palette in the existing pixel painter and its
   cache. HUD arrows, banners, arena clock, entry/exit flashes and particles use
   red accents. Judgment waits for queued enhanced encounters; entering Judgment
@@ -42,12 +65,13 @@ the original species identity.
   safe areas and narrow viewports. The Mega slot registers no input handler and
   does not participate in move selection. Keyboard and gamepad continue selecting
   only moves. The stone name uses the same always-visible label as the held item.
-- Co-op protocol **2** is advertised in the existing capability handshake and
+- Co-op protocol **3** is advertised in the existing capability handshake and
   start message. Hosts refuse to start with incompatible peers; updated guests
   reject an older host. State fields 17–20 carry form, stone, ability and nature.
   The host schedules/spawns/resolves; each client awards its own player once.
   Encounter IDs reject duplicate or stale victory messages. Remote sprites and
   abilities are reconstructed from the trusted form registry.
+  Version 3 requires both peers to know the selectable Kyurem forms.
 
 ## Assets and extending forms
 
@@ -74,6 +98,9 @@ registry, run the generators, add the icon mapping and localized text/credits.
 No Lucario-specific transformation or rift code needs changing. The collection
 bracelet tooltip uses one localized template, populated from the base Pokémon
 name and the form’s `name` and `stoneName`; it supports hover, focus and touch.
+Kyurem shows DNA Splicers with a second template listing both available forms,
+including when Kyurem is unowned. Its passive HUD slot shows DNA Splicers while
+the ordinary held-item slot remains independent.
 
 ## Repeatable development workflow
 
@@ -100,6 +127,19 @@ Other shortcuts: `G.Forms.debugMegaEvolve()`, `G.Game.debugSetTime(899)`;
 `G.Rift.schedule` shows whether a crossed threshold is waiting behind a world
 boss/portal. Starting again with `G.Game.startRun()` must produce normal Lucario.
 Repeat with partner 25 to verify Bond fallback.
+
+To preview the DNA Splicers choice directly in the same debug session:
+
+```js
+G.DB.grant(646, 'test');
+G.DB.save.partner = 646;
+G.Game.startRun();
+G.Forms.queueReward(G.Game.player);
+```
+
+For the full battle flow, use partner 646 and the same `debugMegaArena()` /
+`debugWin()` sequence above. Both choices have automated runtime, normal/shiny
+sprite, co-op serialization, mobile/keyboard UI and new-run reset coverage.
 
 Debug controls require **both localhost and `?debug=1` on the source page**.
 That session disables cloud initialization, database writes, achievement events

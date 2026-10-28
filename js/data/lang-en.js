@@ -4,6 +4,19 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  'Kyurem Negro': 'Black Kyurem',
+  'Kyurem Blanco': 'White Kyurem',
+  'Punta ADN': 'DNA Splicers',
+  '¡Punta ADN conseguida!': 'DNA Splicers obtained!',
+  'Elige una forma hasta el final de la partida. Conservas tus movimientos, objeto y mejoras.': 'Choose a form for the rest of this run. Keep your moves, held item and upgrades.',
+  'Potencia física': 'Physical power',
+  'Potencia especial': 'Special power',
+  'Fusión disponible': 'Fusion available',
+  '¡Fusión completada!': 'Fusion complete!',
+  '{x} puede transformarse en {x} o {x} al encontrar {x} durante una partida.': '{x} can transform into {x} or {x} by finding {x} during a run.',
+  'Kyurem recibe la Punta ADN al vencer una grieta mejorada y puede elegir entre Kyurem Negro y Kyurem Blanco hasta el final de la partida.': 'Kyurem receives DNA Splicers after winning an enhanced rift and can choose Black Kyurem or White Kyurem for the rest of the run.',
+  'Sigue la flecha roja: vence al legendario para transformarte': 'Follow the red arrow: defeat the Legendary to transform',
+  'Los jefes de las tres grietas mejoradas tienen ahora 9 millones de PS en solitario, con el escalado habitual en cooperativo.': 'All three enhanced-rift bosses now have 9 million HP in solo play, with the usual co-op scaling.',
   "{x} puede megaevolucionar en {x} al encontrar {x} durante una partida.": "{x} can evolve into {x} by finding {x} during a run.",
   "Rareza y megapulsera centradas en la colección. La megapulsera explica cómo megaevolucionar cada Pokémon.": "Centered rarity and Mega Bracelet in the collection. The bracelet explains how each Pokémon can Mega Evolve.",
 

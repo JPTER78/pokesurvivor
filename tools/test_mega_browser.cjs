@@ -237,6 +237,57 @@ const server = http.createServer((req, res) => {
     });
     assert.equal(await page.evaluate(() => G.DB.commit()), false);
     assert.equal(await page.evaluate(() => G.DB.online), false);
+    // Kyurem receives a real two-way choice after the same enhanced-rift victory.
+    for (const variant of ['black', 'white']) {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.evaluate(() => {
+        G.DB.grant(646, 'test'); G.DB.save.partner = 646; G.Game.startRun(); G.Game.togglePause(); G.UI.hideAll();
+        const p = G.Game.player;
+        for (const id of G.Moves.poolFor(p.mon)) { if (p.slots.length >= 4) break; p.addMove(id); }
+        p.equip('quickclaw'); p.hp = p.maxHp * .4; p.invuln = 999;
+        window.kyuremBefore = { p, moves: p.moves, slots: p.slots, nature: p.nature, ratio: p.hp / p.maxHp };
+        G.Game.debugSetTime(900); G.Rift.debugMegaArena();
+        if (G.EnemyMgr.get(G.Rift.arena.bossId).maxHp !== 9000000) throw Error('Mega Rift HP regressed');
+        G.Rift.debugWin(); G.Rift.update(.01, p, G.Game.st.time); G.Pickups.clear(); G.Game.togglePause();
+      });
+      await page.locator('#scr-mega:not(.hidden)').waitFor();
+      await page.waitForFunction(() => !document.getElementById('mega-cards').classList.contains('guard'));
+      await page.evaluate(() => G.Forms.preload(G.Game.player));
+      await page.locator('#mega-art img').evaluate(img => img.decode());
+      assert.equal(await page.locator('#mega-cards button').count(), 2);
+      assert.equal(await page.locator('#mega-title').innerText(), 'DNA Splicers obtained!');
+      assert.equal(await page.evaluate(() => G.Game.player.formId), 'kyurem');
+      await page.screenshot({ path: path.join(out, 'kyurem-choice-' + variant + '.png') });
+      if (variant === 'white') {
+        await page.setViewportSize({ width: 568, height: 320 });
+        await page.screenshot({ path: path.join(out, 'kyurem-choice-mobile.png') });
+        const box = await page.locator('#mega-claim-2').boundingBox();
+        assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 568 && box.y + box.height <= 320);
+        await page.locator('#mega-claim-2').tap();
+      } else await page.keyboard.press('1');
+      await page.waitForFunction(v => G.Game.player.formId === 'kyurem-' + v, variant);
+      await page.evaluate(() => {
+        G.Game.togglePause(); G.UI.hideAll();
+        const p = G.Game.player, b = kyuremBefore;
+        if (p !== b.p || p.moves !== b.moves || p.slots !== b.slots || p.nature !== b.nature ||
+            p.item !== 'quickclaw' || p.megaStone !== 'dna_splicers' || Math.abs(p.hp / p.maxHp - b.ratio) > 1e-9)
+          throw Error('Kyurem transformation lost run state');
+        G.Rift.update(6, p, G.Game.st.time); G.Camera.x = p.x; G.Camera.y = p.y; G.FX.clear(); G.Game.flash('#fff', 0); p.invuln = 0;
+      });
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.screenshot({ path: path.join(out, 'kyurem-' + variant + '.png') });
+      await page.evaluate(() => {
+        G.Game.startRun();
+        if (G.Game.player.formId !== 'kyurem' || G.Game.player.megaStone) throw Error('Kyurem persisted into a new run');
+        G.Game.togglePause(); G.UI.hideAll();
+      });
+    }
+    // Collection tooltip lists both forms and the correct item.
+    await page.evaluate(() => { G.Game.toUI(); G.MenuUI.open(); });
+    await page.locator('#menu-partner-info .mega-badge').hover();
+    assert.match(await page.locator('#mega-tip').innerText(), /Black Kyurem.*White Kyurem.*DNA Splicers/s);
+    await page.screenshot({ path: path.join(out, 'kyurem-tooltip.png') });
     // Production build must keep G private even with the test flag.
     const prod = await ctx.newPage();
     prod.on('pageerror', e => errors.push('production: ' + e.message));
@@ -246,7 +297,7 @@ const server = http.createServer((req, res) => {
     await prod.keyboard.press('Enter');
     await prod.locator('#btn-guest').waitFor({ state: 'visible' });
     assert.deepEqual(errors, []);
-    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 10 }, null, 2));
+    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 16 }, null, 2));
     console.log('Browser integration passed: portal → arena → victory → Mega → new run; Pikachu fallback; mobile; production privacy.');
     console.log(out);
   } finally { await browser.close(); server.close(); }
