@@ -608,14 +608,12 @@ G.World = (() => {
 
   function biomeName() { return G.Tiles.BIOMES[biome].name; }
 
-  /** Viñeta en coordenadas de pantalla. */
-  function drawVignette(ctx, w, h) {
-    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.34, w / 2, h / 2, Math.max(w, h) * 0.78);
-    g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(1, 'rgba(0,0,0,.5)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-  }
+  /**
+   * Viñeta en coordenadas de pantalla. `under` / `over`: otros velos que se
+   * pintan en la misma pasada, debajo y encima (la niebla: ver G.U.veil).
+   */
+  const VIGNETTE = [0.34, 0.78, '0,0,0', 0.5];
+  function drawVignette(ctx, w, h, under = [], over = []) { G.U.veil(ctx, w, h, [...under, VIGNETTE, ...over]); }
 
   /*
    * Halloween (fondo del menú): de noche. Todo se oscurece menos un halo

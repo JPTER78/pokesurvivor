@@ -34,6 +34,11 @@ G.VFX = (() => {
     aura:     ['#0c2460', '#1c4cb0', '#3a7cff', '#90d2ff', '#ffffff']
   };
   const IDX = { o: 0, d: 1, m: 2, l: 3, w: 4 };
+  // Letras extra: M / W = medio / brillo semitransparentes y U = lavanda
+  // semitransparente (bordes difusos); C = chispa cian y V = lavanda (colores
+  // fijos, no dependen del tipo).
+  const SEMI = { M: [2, 0.45], W: [4, 0.75], U: ['#c9a6ff', 0.55] };
+  const FIXED = { C: '#8af4ff', V: '#c9a6ff' };
   const H = (a, b, c) => G.U.hash(a, b, c);
 
   // ---------------- lienzo de píxeles ----------------
@@ -239,6 +244,55 @@ G.VFX = (() => {
       P.set(3, 3, 'w');
       P.outline();
     } },
+    // Bola Voltio: esfera de plasma con un chispazo dentro y tres arcos que
+    // giran a su alrededor (4 fotogramas = un tercio de vuelta; con 3 arcos
+    // el ciclo cierra sin salto).
+    voltball: { w: 15, h: 15, frames: 4, gen(P, f) {
+      const c = 7;
+      P.fill((x, y) => {                                           // esfera con volumen
+        const dx = x - c, dy = y - c, d = Math.hypot(dx, dy);
+        if (d > 3.9) return null;
+        const lit = (-dx * 0.6 - dy * 0.8) / 3.9;
+        if (d < 1.1) return 'w';
+        if (lit > 0.45 && d > 1.8) return 'l';
+        return lit < -0.45 && d > 2.6 ? 'd' : 'm';
+      });
+      const a0 = f * Math.PI / 4, ux = Math.cos(a0), uy = Math.sin(a0), s = f % 2 ? 1 : -1;
+      const zz = [[-2.7, 0], [-0.9, 0.9 * s], [0.9, -0.9 * s], [2.7, 0]]      // chispazo interior que gira
+        .map(([a, b]) => [c + ux * a - uy * b, c + uy * a + ux * b]);
+      for (let i = 0; i < 3; i++) P.line(zz[i][0], zz[i][1], zz[i + 1][0], zz[i + 1][1], 'w');
+      P.outline();
+      for (let k = 0; k < 3; k++) {                                 // arcos que giran
+        const a = k * Math.PI * 2 / 3 + f * Math.PI / 6;
+        const pt = (r, da) => [c + Math.cos(a + da) * r, c + Math.sin(a + da) * r];
+        const p = [pt(4.8, 0), pt(5.7, 0.3), pt(6.3, -0.02), pt(7.1, 0.22)];
+        P.line(p[0][0], p[0][1], p[1][0], p[1][1], 'w');
+        P.line(p[1][0], p[1][1], p[2][0], p[2][1], 'C');
+        P.line(p[2][0], p[2][1], p[3][0], p[3][1], 'C');
+      }
+    } },
+    // Bola Neblina: bruma psíquica con dos brazos de espiral que giran, un
+    // halo difuso que respira y jirones que la rodean (sin contorno duro).
+    mistball: { w: 13, h: 13, frames: 4, gen(P, f) {
+      const c = 6, ph = f * Math.PI / 2;
+      const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+      P.fill((x, y) => {
+        const dx = x - c, dy = y - c, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+        const R = 3.7 + Math.sin(a * 3 + ph) * 0.35 + (f % 2 ? 0.25 : 0);       // borde que respira
+        if (d > R + 1.4) return null;
+        if (d > R) return d < R + 0.7 ? 'U' : H(x, y, f + 21) < 0.35 ? 'M' : null;   // halo difuso
+        if (d < (f % 2 ? 1.2 : 0.8)) return 'w';                               // núcleo que late
+        const arm = Math.abs(wrap(2 * (a - ph * 0.5 - d * 0.8))) < 1.1;          // 2 brazos de espiral
+        const lit = (-dx * 0.6 - dy * 0.8) / R;
+        if (d > R - 0.9) return lit < -0.25 ? 'd' : arm ? 'V' : 'm';
+        if (d < 2) return 'l';
+        return arm ? 'V' : 'l';
+      });
+      for (let k = 0; k < 3; k++) {                                 // jirones que orbitan
+        const a = k * Math.PI * 2 / 3 + f * Math.PI / 6, r = 5.6;
+        for (let j = 0; j < 3; j++) P.set(c + Math.cos(a - j * 0.28) * (r - j * 0.25), c + Math.sin(a - j * 0.28) * (r - j * 0.25), j ? 'U' : 'W');
+      }
+    } },
     shadow: { w: 13, h: 13, frames: 3, gen(P, f) {
       P.fill((x, y) => { const d = Math.hypot(x - 6, y - 6); return d < 1.6 ? 'l' : d < 3 ? 'm' : d < 4.4 ? 'd' : null; });
       for (let k = 0; k < 6; k++) {                                 // jirones de sombra
@@ -279,7 +333,7 @@ G.VFX = (() => {
     for (let y = 0; y < S.h; y++) for (let x = 0; x < S.w; x++) {
       const ch = P.g[y][x];
       if (!ch) continue;
-      c.fillStyle = ch === 'L' ? rgba(colors[3], 0.5) : colors[IDX[ch]];
+      c.fillStyle = ch === 'L' ? rgba(colors[3], 0.5) : SEMI[ch] ? rgba(typeof SEMI[ch][0] === 'string' ? SEMI[ch][0] : colors[SEMI[ch][0]], SEMI[ch][1]) : FIXED[ch] || colors[IDX[ch]];
       c.fillRect(x, y, 1, 1);
     }
     cache.set(k, cv);
@@ -389,9 +443,9 @@ G.VFX = (() => {
     'energy-ball':   { proj: 'ball', trail: 'spark' },
     'solar-beam':    { beam: 'star', proj: 'leaf' },
     'thunder-wave':  { proj: 'bolt', trail: 'spark' },
-    'electro-ball':  { proj: 'bolt', trail: 'spark' },
+    'electro-ball':  { proj: 'voltball', trail: 'spark' },
     'extrasensory':  { proj: 'ring' },
-    'mist-ball':     { proj: 'ring', trail: 'wisp' },
+    'mist-ball':     { proj: 'mistball', trail: 'wisp' },
     'acid-spray':    { proj: 'blob', trail: 'bubbles' },
     'sand-tomb':     { proj: 'rock', trail: 'dirt' },
     'magnitude':     { proj: 'rock', trail: 'dirt' },

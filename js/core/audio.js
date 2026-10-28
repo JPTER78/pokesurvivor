@@ -27,8 +27,15 @@ G.Audio = (() => {
     ctx = new AC();
     master = ctx.createDynamicsCompressor();
     master.threshold.value = -14; master.ratio.value = 4;
-    const out = outNode = ctx.createGain(); out.gain.value = 0.9;
-    master.connect(out).connect(ctx.destination);
+    // (0,78 y no 0,9: el limitador de abajo sube un poco el volumen por su cuenta.)
+    const out = ctx.createGain(); out.gain.value = 0.78;
+    // Limitador final: el compresor de arriba es suave (ratio 4) y con muchos
+    // efectos a la vez la salida pasaba de 1 y se saturaba (sobre todo en
+    // móvil, que recorta en seco). Éste la deja por debajo.
+    const lim = outNode = ctx.createDynamicsCompressor();
+    lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20;
+    lim.attack.value = 0.002; lim.release.value = 0.1;
+    master.connect(out).connect(lim).connect(ctx.destination);
 
     musicBus = ctx.createGain(); sfxBus = ctx.createGain();
     musicBus.connect(master); sfxBus.connect(master);
@@ -78,8 +85,9 @@ G.Audio = (() => {
     if (!ctx) return;
     const t = ctx.currentTime;
     musicBus.gain.setTargetAtTime(settings.muted ? 0 : settings.music * 0.7, t, 0.05);
-    // Los efectos se generan bajitos: ×2,4 los pone a la par de la música (medido).
-    sfxBus.gain.setTargetAtTime(settings.muted ? 0 : settings.sfx * 2.4, t, 0.05);
+    // Los efectos se generan bajitos: ×2,2 los pone a la par de la música (medido;
+    // era ×2,4 y con muchos a la vez saturaban).
+    sfxBus.gain.setTargetAtTime(settings.muted ? 0 : settings.sfx * 2.2, t, 0.05);
   }
 
   function setVolume(which, v) { settings[which] = G.U.clamp(v, 0, 1); save(); applyVolumes(); }
@@ -89,10 +97,14 @@ G.Audio = (() => {
 
   const midiFreq = m => 440 * Math.pow(2, (m - 69) / 12);
 
+  // Mientras suena un efecto (sfx), hasta cuándo dura de verdad (para el tope de voces).
+  let tracking = false, sfxEnd = 0;
+
   function osc(type, f, t, end, dest) {
     const o = ctx.createOscillator();
     o.type = type; o.frequency.setValueAtTime(f, t);
     o.connect(dest); o.start(t); o.stop(end + 0.05);
+    if (tracking && end + 0.05 > sfxEnd) sfxEnd = end + 0.05;
     return o;
   }
 
@@ -110,6 +122,7 @@ G.Audio = (() => {
     const s = ctx.createBufferSource();
     s.buffer = noiseBuf;
     s.connect(dest); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.05);
+    if (tracking && t + dur + 0.05 > sfxEnd) sfxEnd = t + dur + 0.05;
     return s;
   }
 
@@ -546,6 +559,9 @@ G.Audio = (() => {
   // Separación mínima entre repeticiones del mismo efecto (ms).
   const MIN_GAP = { hit: 45, faint: 60, xp: 35, coin: 50, grass: 70, shot: 70, hover: 40, break: 60, judge: 80 };
 
+  const MAX_VOICES = G.Settings.touch ? 14 : 24;
+  const COMMON = { hover: 1, hit: 1, faint: 1, xp: 1, coin: 1, grass: 1, shot: 1, break: 1, shake: 1, select: 1, click: 1 };
+
   function sfx(name, opts) {
     if (!ctx || settings.muted || settings.sfx <= 0 || ctx.state !== 'running') return;
     const fn = SFX[name];
@@ -553,10 +569,19 @@ G.Audio = (() => {
     const now = performance.now();
     const key = name === 'shot' && opts ? 'shot' + opts.kind : name;
     if (now - (last[key] || 0) < (MIN_GAP[name] || 0)) return;
-    if (voices > 24) return;                    // tope de voces simultáneas
+    // Tope de voces simultáneas (más bajo en táctil: el móvil se saturaba).
+    // Los efectos de cada momento (disparos, golpes, experiencia...) se
+    // descartan al llegar al tope; los importantes (subir de nivel, jefe...)
+    // tienen un margen para sonar siempre.
+    if (voices >= (COMMON[name] ? MAX_VOICES : MAX_VOICES + 6)) return;
     last[key] = now;
-    voices++; setTimeout(() => voices--, 150);
+    voices++;
+    // La voz se libera cuando el efecto termina de verdad (antes, a los 150 ms
+    // aunque durase 2 s, y se amontonaban muchas más de las del tope).
+    tracking = true; sfxEnd = ctx.currentTime;
     try { fn(opts); } catch (e) { /* un efecto nunca debe romper el juego */ }
+    tracking = false;
+    setTimeout(() => voices--, Math.max(0.05, sfxEnd - ctx.currentTime) * 1000);
   }
 
   /** Para pruebas: mide pico y RMS de la salida durante `ms` milisegundos. */

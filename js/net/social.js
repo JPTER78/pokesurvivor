@@ -484,8 +484,11 @@ G.Social = (() => {
 
   /** Actualiza tu Pokémon en la sala (si cambias de compañero). */
   function refreshMember() {
-    if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update(
-      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner) }).catch(() => {});
+    if (!room || !me) return;
+    const dex = G.DB.save.partner, shiny = !!G.DB.save.partnerShiny && G.DB.ownsShiny(dex);
+    const mine = room.members.find(x => x.uid === uid);
+    if (mine && mine.dex === dex && !!mine.shiny === shiny) return;   // ya está así: no se escribe nada
+    fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update({ dex, shiny }).catch(() => {});
   }
 
   // ---------------- invitaciones ----------------

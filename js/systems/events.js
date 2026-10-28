@@ -155,8 +155,17 @@ G.Events = (() => {
                            anim: new G.Sprites.Animator(o.dex, 1), r: G.Sprites.bodyRadius(o.dex) }, o);
   }
 
+  /** En la grieta o en la Sentencia el mapa se queda atrás: el Pokémon perdido espera allí. */
+  const away = () => G.Rift.inArena || G.Judgment.active;
+
   function lostTick(dt, players) {
     const L = lost;
+    // Mientras estás lejos (grieta, Sentencia) no corre su tiempo ni se mueve
+    // (antes te seguía hacia la arena y casi siempre acababa yéndose).
+    // En grupo, el anfitrión vuelve unas décimas antes: espera también a que vuelva
+    // aquel al que seguía (si no, lo pondría a su lado, aún en la arena).
+    if (away() || (authority() && L.follow && players.includes(L.follow) && G.Rift.leftBehind(L.follow))) { L.away = true; return; }
+    if (L.away) { L.away = false; if (authority()) comeBack(L, players); }
     L.t += dt;
     L.anim.update(dt);
     if (!authority()) { L.anim.loop(L.moving ? 'Walk' : 'Idle'); return; }
@@ -199,6 +208,19 @@ G.Events = (() => {
       G.Coop.broadcast(['ev', 'lp', L.dex, Math.round(L.x), Math.round(L.y), Math.round(L.hp), L.state === 'follow' ? 1 : 0,
                         Math.round(L.tx), Math.round(L.ty), L.anim.dir, L.moving ? 1 : 0]);
     }
+  }
+
+  /** Al volver de la grieta: si te seguía, aparece a tu lado (si esperaba, sigue en su sitio). */
+  function comeBack(L, players) {
+    if (L.state !== 'follow') return;
+    const p = L.follow && !L.follow.dead ? L.follow : players.find(o => !o.dead) || L.follow;
+    if (!p) return;
+    const d = p.r + L.r + 14;
+    for (let i = 0; i < 8; i++) {
+      const a = i * 0.785, x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
+      if (i === 7 || G.World.isFree(x, y, L.r)) { L.x = x; L.y = y; break; }
+    }
+    L.netT = 0;
   }
 
   function rescued() {
@@ -251,7 +273,7 @@ G.Events = (() => {
 
   /** El Pokémon perdido y la marca, para ordenarlos por Y con el resto. */
   function drawables() {
-    if (!lost) return [];
+    if (!lost || away()) return [];
     const L = lost;
     const now = performance.now() / 1000;
     const goal = {
@@ -300,7 +322,7 @@ G.Events = (() => {
   /** Flecha en el borde hacia el Pokémon perdido (o hacia la marca, si ya te sigue). */
   function drawHud(ctx, w, h, pl, F) {
     const cam = G.Camera;
-    if (lost) {
+    if (lost && !away()) {
       const L = lost, to = L.state === 'wait' ? [L.x, L.y - 10] : [L.tx, L.ty];
       edgeArrow(ctx, w, h, cam, to[0], to[1], '#7dffb0', (L.state === 'wait' ? L.name : 'Marca') + ' · ' +
                 Math.round(G.U.dist(pl.x, pl.y, to[0], to[1]) / 32) + ' m', F);
@@ -353,6 +375,6 @@ G.Events = (() => {
     /** Para pruebas. */
     debugStart(id) { start(id, G.Game.st.time, G.Game.everyone()); },
     debugThief() { spawnThief(G.Game.everyone(), G.Game.st.time); },
-    _dbg() { return lost && { x: lost.x, y: lost.y, tx: lost.tx, ty: lost.ty, state: lost.state, hp: lost.hp }; }
+    _dbg() { return lost && { x: lost.x, y: lost.y, tx: lost.tx, ty: lost.ty, state: lost.state, hp: lost.hp, t: lost.t }; }
   };
 })();

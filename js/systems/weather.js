@@ -137,9 +137,12 @@ G.Weather = (() => {
     const d = def();
     const k = level();
     if (!d || k <= 0) { parts.length = 0; return; }
-    const [r, g, b, a] = d.tint;
-    ctx.fillStyle = `rgba(${r},${g},${b},${a * k})`;
-    ctx.fillRect(0, 0, w, h);
+    // (El tinte de la niebla lo pinta game.js junto con la viñeta: una pasada menos.)
+    if (cur.kind !== 'fog') {
+      const [r, g, b, a] = d.tint;
+      ctx.fillStyle = `rgba(${r},${g},${b},${a * k})`;
+      ctx.fillRect(0, 0, w, h);
+    }
 
     const want = { rain: 70, snow: 45, sand: 40, sun: 14, fog: 0 }[cur.kind] * k * (w / 1280);
     while (parts.length < want) parts.push(spawn(w, h, true));

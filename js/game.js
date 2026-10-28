@@ -922,16 +922,15 @@ G.Game = (() => {
     ctx.restore();
 
     G.Weather.draw(ctx, w, h, frameDt);
-    G.World.drawVignette(ctx, w, h);
-    // Niebla: la viñeta se cierra un poco (sin tapar el centro).
-    const fog = G.Weather.vignette;
+    // Niebla: la viñeta se cierra un poco (sin tapar el centro). Su tinte, la
+    // viñeta y la niebla van en una sola copia ya hecha (G.U.veil): antes eran
+    // tres rellenos a pantalla completa por fotograma, dos con un degradado
+    // radial nuevo cada vez (~10 FPS en móvil).
+    const fog = Math.round(G.Weather.vignette * 50) / 50;
     if (fog > 0) {
-      const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.62);
-      g.addColorStop(0, 'rgba(200,205,220,0)');
-      g.addColorStop(1, `rgba(200,205,220,${0.45 * fog})`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
-    }
+      const [r, g, b, a] = G.Weather.KINDS.fog.tint;
+      G.World.drawVignette(ctx, w, h, [[0, 0, `${r},${g},${b}`, +(a * fog).toFixed(4)]], [[0.32, 0.62, '200,205,220', +(0.45 * fog).toFixed(4)]]);
+    } else G.World.drawVignette(ctx, w, h);
     if (!G.Judgment.cinematic) G.HUD.draw(ctx, w, h, pl, st);
     G.Judgment.drawOverlay(ctx, w, h);
     G.Touch.draw(ctx);

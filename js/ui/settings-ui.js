@@ -119,7 +119,9 @@ G.SettingsUI = (() => {
              <div><kbd>1</kbd>–<kbd>3</kbd></div><span>elegir carta al subir de nivel</span>
            </div>`;
     } else if (tab === 'a11y') {
-      box.innerHTML = section('Apuntado')
+      box.innerHTML = section('Visión')
+        + toggle('hiContrast', 'Avisos de alto contraste', 'Las zonas de ataque de los enemigos se ven con borde blanco y negro y rayadas, sin depender del color. Pensado para el daltonismo.')
+        + section('Apuntado')
         + (G.Settings.touch
           ? toggle('aimManual', 'Apuntar a mano', 'Con el dedo en la mitad derecha de la pantalla apuntas tus ataques: arrástralo hacia donde quieras disparar (con el joystick fijo, en cualquier sitio lejos de él). La mitad izquierda sigue siendo para moverte. Al soltar el dedo, vuelven a apuntar solos al enemigo más cercano. La cadena y los meteoros siguen buscando a los enemigos solos.')
           : toggle('aimManual', 'Apuntar a mano', 'Tus ataques van hacia el ratón (o hacia donde empujes el stick derecho del mando) en vez de al enemigo más cercano. Si sueltas el stick y no mueves el ratón, vuelve a apuntar solo. La cadena y los meteoros siguen buscando a los enemigos solos.'));

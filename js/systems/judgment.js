@@ -535,26 +535,59 @@ G.Judgment = (() => {
     A.anim.draw(ctx, A.x, A.y - lift);
   }
 
-  /** La rueda de Arceus: aro dorado con 12 joyas que gira. */
-  function wheel(ctx, x, y, R, rot, alpha) {
+  /*
+   * La rueda de Arceus: aro dorado con 12 joyas que gira.
+   * Se pinta una vez (con su brillo) en un sprite y luego sólo se gira: con
+   * shadowBlur en los 2 aros y las 12 joyas en cada fotograma, la Sentencia
+   * iba a tirones en el móvil. Un sprite por tamaño en pantalla, opacidad
+   * (`base`: va dentro del sprite, pieza a pieza como antes, para que las
+   * joyas dejen ver el aro igual) y jefe.
+   */
+  const wheelSprites = new Map();
+  function wheelSprite(R, s, base) {
+    // R: radio en unidades del dibujo; s: píxeles reales por unidad.
+    const key = BOSS.dex + '|' + base + '|' + Math.round(Math.log(R * s) / 0.04) + '|' + Math.round(Math.log(s) / 0.04);
+    let spr = wheelSprites.get(key);
+    if (spr) return spr;
+    if (wheelSprites.size > 6) wheelSprites.clear();
+    const Rp = R * s, blur = R * 0.3;          // (el desenfoque de la sombra no se escala con la transformación)
+    const pad = Math.ceil(blur * 1.6 + Math.max(2, R * 0.07) * s + 2);
+    const size = Math.ceil(Rp * 1.02 + pad) * 2;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const c = cv.getContext('2d');
+    c.translate(size / 2, size / 2);
+    c.globalAlpha = base;
+    c.strokeStyle = GOLD; c.lineWidth = Math.max(2, R * 0.07) * s;
+    c.shadowColor = GLOW; c.shadowBlur = blur;
+    c.beginPath(); c.arc(0, 0, Rp, 0, 6.2832); c.stroke();
+    c.lineWidth = Math.max(1, R * 0.025) * s;
+    c.beginPath(); c.arc(0, 0, Rp * 0.82, 0, 6.2832); c.stroke();
+    const GEMS = BOSS.gems;
+    for (let i = 0; i < 12; i++) {
+      c.save();
+      c.rotate(i * 6.2832 / 12);
+      c.fillStyle = GEMS[i % GEMS.length];
+      c.beginPath(); c.moveTo(Rp * 1.02, 0); c.lineTo(Rp * 0.91, -Rp * 0.07); c.lineTo(Rp * 0.8, 0); c.lineTo(Rp * 0.91, Rp * 0.07); c.closePath(); c.fill();
+      c.restore();
+    }
+    spr = { cv, half: size / 2 / s };
+    wheelSprites.set(key, spr);
+    return spr;
+  }
+
+  /** `alpha`: opacidad; `base`: la de la rueda entera (alpha / base es el fundido). */
+  function wheel(ctx, x, y, R, rot, alpha, base = alpha) {
+    if (alpha <= 0) return;
+    const m = ctx.getTransform();
+    const s = Math.hypot(m.a, m.b) || 1;
+    const spr = wheelSprite(R, s, base);
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rot);
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(2, R * 0.07);
-    ctx.shadowColor = GLOW; ctx.shadowBlur = R * 0.3;
-    ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.stroke();
-    ctx.lineWidth = Math.max(1, R * 0.025);
-    ctx.beginPath(); ctx.arc(0, 0, R * 0.82, 0, 6.2832); ctx.stroke();
-    const GEMS = BOSS.gems;
-    for (let i = 0; i < 12; i++) {
-      const a = i * 6.2832 / 12;
-      ctx.save();
-      ctx.rotate(a);
-      ctx.fillStyle = GEMS[i % GEMS.length];
-      ctx.beginPath(); ctx.moveTo(R * 1.02, 0); ctx.lineTo(R * 0.91, -R * 0.07); ctx.lineTo(R * 0.8, 0); ctx.lineTo(R * 0.91, R * 0.07); ctx.closePath(); ctx.fill();
-      ctx.restore();
-    }
+    ctx.globalAlpha = Math.min(1, alpha / base);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(spr.cv, -spr.half, -spr.half, spr.half * 2, spr.half * 2);
     ctx.restore();
   }
 
@@ -621,7 +654,7 @@ G.Judgment = (() => {
       }
       ctx.restore();
       // Arceus en silueta de luz, detrás de su rueda.
-      wheel(ctx, cx, cy - R * 0.05, R, t * 0.35, a * 0.9);
+      wheel(ctx, cx, cy - R * 0.05, R, t * 0.35, a * 0.9, 0.9);
       const idle = G.Sprites.sheet(BOSS.dex, 'Idle');
       if (cineAnim && idle && idle.ready) {
         // Silueta de luz que llena la rueda (en múltiplos de 0,5: píxeles enteros).
@@ -730,11 +763,7 @@ G.Judgment = (() => {
   /** Pelea: cielo rojizo, ceniza, flecha a Arceus y el contador. */
   function drawFight(ctx, w, h) {
     ctx.save();
-    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
-    g.addColorStop(0, 'rgba(120,40,10,0)');
-    g.addColorStop(1, 'rgba(120,40,10,0.35)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
+    G.U.veil(ctx, w, h, [[0.3, 0.75, '120,40,10', 0.35]]);
     for (const e of embers) {
       ctx.globalAlpha = Math.min(1, e.life) * e.a;
       ctx.fillStyle = e.c;
