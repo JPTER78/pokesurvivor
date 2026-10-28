@@ -140,3 +140,9 @@ licencia en `assets/fonts/OFL.txt`). El juego usa una versión modificada,
 
 Pokémon es propiedad de Nintendo, Creatures Inc. y GAME FREAK.
 Este es un proyecto de fan sin ánimo de lucro.
+
+## Mega Evolution assets
+
+Mega Lucario: **baronessfaron** (normal) and **Emmuffin** (shiny), SpriteCollab, CC BY-NC 4.0.
+Lucarionite and Mega Bracelet: Pagefault Games / PokéRogue asset contributors; upstream art terms are separate from the code license.
+See [asset provenance, pinned revisions and license notices](docs/MEGA_ASSETS.md).

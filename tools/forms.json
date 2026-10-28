@@ -1,0 +1,8 @@
+[
+  {
+    "id": "lucario-mega", "baseDex": 448, "name": "Mega Lucario", "category": "mega",
+    "stone": "lucarionite", "stoneName": "Lucarionita", "types": ["fighting", "steel"],
+    "baseStats": { "hp": 70, "attack": 145, "defense": 88, "special-attack": 140, "special-defense": 70, "speed": 112 },
+    "ability": "adaptability", "sprite": { "key": "448-mega", "source": "0448/0001", "path": "448/forms/mega" }
+  }
+]

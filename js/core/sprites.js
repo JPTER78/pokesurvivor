@@ -96,7 +96,7 @@ G.Sprites = (() => {
     }
     if (sheets.size >= MAX_SHEETS) evict(now);
     s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0, at: now,
-          src: `assets/pokemon/${dex}/${skin ? 'k-' + skin + '/' : ''}${shiny ? 's/' : ''}${name}.png` };
+          src: `assets/pokemon/${m.path || dex}/${skin ? 'k-' + skin + '/' : ''}${shiny ? 's/' : ''}${name}.png` };
     s.img.onload = () => { s.ready = true; };
     s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
     s.img.src = s.src;

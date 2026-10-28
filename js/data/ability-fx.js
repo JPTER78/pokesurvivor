@@ -50,6 +50,17 @@ G.AbilityFX = (() => {
   const dmgBack = pl => 10 + pl.level * 3;
   const superEff = (pl, type) => type && mult(type, pl.mon.types) > 1;
 
+  // Persistent initial effects return their exact inverse. Captured additive
+  // bonuses do not erase HP/cards gained while the ability was active.
+  const add = (key, value) => pl => {
+    const n = typeof value === 'function' ? value(pl) : value;
+    pl[key] += n;
+    return () => { pl[key] -= n; };
+  };
+  const multiply = (key, n) => pl => {
+    pl[key] *= n;
+    return () => { pl[key] /= n; };
+  };
   const FX = {
     // --- más daño ---
     'overgrow': pinch('grass'), 'blaze': pinch('fire'), 'torrent': pinch('water'), 'swarm': pinch('bug'),
@@ -83,8 +94,8 @@ G.AbilityFX = (() => {
       out: (pl, m) => (wx() === 'sun' && cls(m) === 's' ? 1.4 : 1),
       tick: (pl, dt) => { if (wx() === 'sun' && pl.hp > pl.maxHp * 0.1) pl.hp -= pl.maxHp * 0.004 * dt; } },
     'sniper': { d: 'Sus golpes críticos hacen ×2 de daño (en vez de ×1,5).', critMul: 2 },
-    'super-luck': { d: '+10 % de probabilidad de golpe crítico.', start: pl => { pl.critChance += 0.1; } },
-    'compound-eyes': { d: '+6 % de probabilidad de golpe crítico.', start: pl => { pl.critChance += 0.06; } },
+    'super-luck': { d: '+10 % de probabilidad de golpe crítico.', start: add('critChance', 0.1) },
+    'compound-eyes': { d: '+6 % de probabilidad de golpe crítico.', start: add('critChance', 0.06) },
     'moxie': moxie, 'chilling-neigh': moxie, 'grim-neigh': moxie, 'beast-boost': moxie,
 
     // --- velocidad ---
@@ -124,7 +135,7 @@ G.AbilityFX = (() => {
     'intimidate': { d: 'Los enemigos le hacen un 12 % menos de daño físico.', inMul: (pl, type, c) => (c === 'p' ? 0.88 : 1) },
     'pressure': { d: 'Recibe un 8 % menos de daño.', inMul: () => 0.92 },
     'sturdy': { d: 'Un golpe que le dejaría KO le deja con 1 de vida (cada 90 s).', sturdy: true },
-    'regenerator': { d: 'Recupera un 0,6 % de su vida por segundo.', start: pl => { pl.regenFlat += pl.maxHp * 0.006; } },
+    'regenerator': { d: 'Recupera un 0,6 % de su vida por segundo.', start: add('regenFlat', pl => pl.maxHp * 0.006) },
     'magic-guard': { d: 'Sólo le hacen daño los ataques: ni la lava ni las trampas.', lavaProof: true, trapProof: true },
     'stamina': { d: 'Cada golpe cuerpo a cuerpo que recibe le sube un poco la defensa.', contact: pl => pl.addBuff('def', 0.03, 6, 5) },
     'limber': steady, 'own-tempo': steady, 'oblivious': steady, 'inner-focus': steady, 'clear-body': steady,
@@ -141,8 +152,8 @@ G.AbilityFX = (() => {
     'poison-touch': { d: 'Sus ataques cuerpo a cuerpo y embestidas envenenan.', touchPoison: true },
 
     // --- botín ---
-    'pickup': { d: '+15 % de Pokémonedas en la partida.', start: pl => { pl.coinMul *= 1.15; } },
-    'honey-gather': { d: '+15 % de Pokémonedas en la partida.', start: pl => { pl.coinMul *= 1.15; } },
+    'pickup': { d: '+15 % de Pokémonedas en la partida.', start: multiply('coinMul', 1.15) },
+    'honey-gather': { d: '+15 % de Pokémonedas en la partida.', start: multiply('coinMul', 1.15) },
 
     // --- las que en los juegos son un lastre: aquí, un intercambio ---
     'truant': { d: 'Golpes sueltos y fuertes: tarda un 60 % más en recargar, pero cada golpe hace +35 %.', cdMul: 1.6, out: () => 1.35 },
@@ -152,21 +163,27 @@ G.AbilityFX = (() => {
     'wonder-guard': { d: 'Lo que no es muy eficaz apenas le hace daño (35 %); lo muy eficaz, un 50 % más.',
       inMul: (pl, type) => (superEff(pl, type) ? 1.5 : 0.35) },
     'schooling': { d: 'Forma banco: +25 % de vida y, con más de 1/4 de vida, +50 % de daño.',
-      start: pl => { pl.maxHp = Math.round(pl.maxHp * 1.25); pl.hp = pl.maxHp; }, out: pl => (pl.hp > pl.maxHp / 4 ? 1.5 : 1) },
+      start: pl => { const n = Math.round(pl.maxHp * 1.25) - pl.maxHp; pl.maxHp += n; pl.hp += n; return () => { pl.maxHp -= n; }; }, out: pl => (pl.hp > pl.maxHp / 4 ? 1.5 : 1) },
     'zen-mode': { d: 'Con menos de la mitad de vida entra en Modo Daruma: +30 % de daño especial.', plus: true,
       out: (pl, m) => (half(pl) && cls(m) === 's' ? 1.3 : 1) },
     'stance-change': { d: 'Alterna cada 8 s entre filo (+20 % de daño) y escudo (−20 % de daño recibido).',
       tick: (pl, dt) => { pl.stanceT = (pl.stanceT || 0) + dt; if (pl.stanceT >= 8) { pl.stanceT = 0; pl.shieldForm = !pl.shieldForm; } },
       out: pl => (pl.shieldForm ? 1 : 1.2), inMul: pl => (pl.shieldForm ? 0.8 : 1) },
     'imposter': { d: 'Se transforma: pega y aguanta como un Pokémon equilibrado.',
-      start: pl => { const m = pl.mon; m.pa = m.sa = m.atk = pl.baseAtk = Math.max(m.atk, 1.12); m.df = Math.max(m.df, 72); m.sd = Math.max(m.sd, 72); } },
+      start: pl => {
+        const m = pl.mon, before = { pa: m.pa, sa: m.sa, atk: m.atk, df: m.df, sd: m.sd };
+        const delta = Math.max(m.atk, 1.12) - pl.baseAtk;
+        m.pa = m.sa = m.atk = Math.max(m.atk, 1.12); pl.baseAtk += delta;
+        m.df = Math.max(m.df, 72); m.sd = Math.max(m.sd, 72);
+        return () => { Object.assign(m, before); pl.baseAtk -= delta; };
+      } },
 
     // --- las genéricas más comunes (suman también la pasiva de su tipo: plus) ---
-    'keen-eye': { d: '+5 % de probabilidad de golpe crítico.', plus: true, start: pl => { pl.critChance += 0.05; } },
-    'frisk': { d: 'Atrae los objetos desde más lejos (+20 % de imán).', plus: true, start: pl => { pl.magnet *= 1.2; } },
-    'magnet-pull': { d: 'Atrae los objetos desde más lejos (+20 % de imán).', plus: true, start: pl => { pl.magnet *= 1.2; } },
-    'sticky-hold': { d: 'Atrae los objetos desde más lejos (+20 % de imán).', plus: true, start: pl => { pl.magnet *= 1.2; } },
-    'illuminate': { d: 'Atrae los objetos desde más lejos (+10 % de imán).', plus: true, start: pl => { pl.magnet *= 1.1; } },
+    'keen-eye': { d: '+5 % de probabilidad de golpe crítico.', plus: true, start: add('critChance', 0.05) },
+    'frisk': { d: 'Atrae los objetos desde más lejos (+20 % de imán).', plus: true, start: multiply('magnet', 1.2) },
+    'magnet-pull': { d: 'Atrae los objetos desde más lejos (+20 % de imán).', plus: true, start: multiply('magnet', 1.2) },
+    'sticky-hold': { d: 'Atrae los objetos desde más lejos (+20 % de imán).', plus: true, start: multiply('magnet', 1.2) },
+    'illuminate': { d: 'Atrae los objetos desde más lejos (+10 % de imán).', plus: true, start: multiply('magnet', 1.1) },
     'sand-veil': { d: 'Con tormenta de arena esquiva el 15 % de los golpes.', plus: true, dodge: () => (wx() === 'sand' ? 0.15 : 0) },
     'snow-cloak': { d: 'Con nieve esquiva el 15 % de los golpes.', plus: true, dodge: () => (wx() === 'snow' ? 0.15 : 0) },
     'gluttony': { d: 'Las curas le curan un 40 % más.', plus: true, healMul: 1.4 },
@@ -187,8 +204,8 @@ G.AbilityFX = (() => {
     'overcoat': { d: 'Recibe un 5 % menos de daño especial.', plus: true, inMul: (pl, type, c) => (c === 's' ? 0.95 : 1) },
     'shed-skin': { d: 'Cada 5 s muda: se quita los frenazos y recupera un 2 % de vida.', plus: true,
       tick: (pl, dt) => { pl.shedT = (pl.shedT || 0) + dt; if (pl.shedT >= 5) { pl.shedT = 0; pl.slowT = 0; heal(pl, 0.02); } } },
-    'natural-cure': { d: 'Recupera un 0,3 % de su vida por segundo.', plus: true, start: pl => { pl.regenFlat += pl.maxHp * 0.003; } },
-    'healer': { d: 'Recupera un 0,3 % de su vida por segundo.', plus: true, start: pl => { pl.regenFlat += pl.maxHp * 0.003; } },
+    'natural-cure': { d: 'Recupera un 0,3 % de su vida por segundo.', plus: true, start: add('regenFlat', pl => pl.maxHp * 0.003) },
+    'healer': { d: 'Recupera un 0,3 % de su vida por segundo.', plus: true, start: add('regenFlat', pl => pl.maxHp * 0.003) },
     'leaf-guard': { d: 'Con sol no le frena nada y recibe un 15 % menos de daño.', plus: true,
       tick: pl => { if (wx() === 'sun') pl.slowT = 0; }, inMul: () => (wx() === 'sun' ? 0.85 : 1) },
     'mold-breaker': { d: '+12 % de daño a los jefes.', plus: true, out: (pl, m, e) => (e && e.boss ? 1.12 : 1) },

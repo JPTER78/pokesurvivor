@@ -11,6 +11,7 @@ del juego y la rareza para el gacha.
 """
 import io
 import json
+from pokemon_stats import convert
 import os
 import urllib.error
 import urllib.request
@@ -88,12 +89,8 @@ def one(dex):
             break
 
     # --- stats del juego a partir de los stats base ---
-    hp = round(70 + base['hp'] * 0.45)
-    spd = round(78 + base['speed'] * 0.42)
-    atk = round(0.70 + max(base['attack'], base['special-attack']) / 100 * 0.55, 2)
-    # Físico / especial por separado (atk es el mayor de los dos) y las defensas tal cual.
-    pa = round(0.70 + base['attack'] / 100 * 0.55, 2)
-    sa = round(0.70 + base['special-attack'] / 100 * 0.55, 2)
+    stats = convert(base)
+    hp, spd, atk, pa, sa = (stats[k] for k in ['hp', 'spd', 'atk', 'pa', 'sa'])
 
     return {
         'dex': dex,

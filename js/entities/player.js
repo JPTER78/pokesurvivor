@@ -9,8 +9,14 @@ G.Player = class Player {
    * @param perks mejoras permanentes ya resueltas (ver data/upgrades.js)
    */
   constructor(mon, perks = {}, shiny = false) {
-    this.mon = mon;
+    this.mon = Object.assign({}, mon, { types: mon.types.slice() });
     this.dex = mon.dex;
+    this.baseSpecies = mon.dex;
+    this.formId = mon.name.toLowerCase();
+    this.spriteKey = mon.dex;
+    this.nature = mon.nature;
+    this.megaStone = null;
+    this.transformation = null;
     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
     // Los grandes, algo más pequeños y con el choque de uno normal (ver sprites.js).
     this.scale = G.Sprites.playerScale(mon.dex);
@@ -85,10 +91,20 @@ G.Player = class Player {
 
   /** Pone la habilidad (G.AbilityFX.of) y aplica lo que hace al empezar. */
   setAbility(id) {
+    if (this.abil && this.abilId === (id || '')) return;
+    this.clearAbility();
     this.abilId = id || '';
     this.abil = G.AbilityFX.of(id, this.mon);
     if (this.abil.cdMul) this.cdMul *= this.abil.cdMul;
-    if (this.abil.start) this.abil.start(this);
+    if (this.abil.start) this._abilityOff = this.abil.start(this);
+  }
+
+  /** Undo only modifiers owned by the ability, retaining items, cards and counters. */
+  clearAbility() {
+    if (this._abilityOff) this._abilityOff();
+    this._abilityOff = null;
+    if (this.abil && this.abil.cdMul) this.cdMul /= this.abil.cdMul;
+    this.abil = null;
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
@@ -244,7 +260,7 @@ G.Player = class Player {
     if (m.kind === 'trail') return;
     // No reinicies una animación que va por la mitad: se vería a tirones.
     if (this.anim.busy() && this.anim.progress() < 0.65) return;
-    const meta = G.Sprites.animMeta(this.dex, anim);
+    const meta = G.Sprites.animMeta(this.spriteKey, anim);
     const len = meta ? meta.d.reduce((a, b) => a + b, 0) / 60 : 0.4;
     const cd = Math.max(0.12, m.cd * this.cdMul);
     this.anim.play(anim, { speed: Math.max(1, len / (cd * 0.9)) });
@@ -526,6 +542,7 @@ G.Player = class Player {
     this.anim.update(dt);
     const n = this.net;
     if (!n) return;
+    if (G.Forms) G.Forms.applyRemote(this, n);
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
     if (G.U.dist2(this.x, this.y, n.x, n.y) > 300 * 300) { this.x = n.x; this.y = n.y; }
@@ -563,7 +580,7 @@ G.Player = class Player {
       ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.5, this.r * 0.6, 0, 0, 6.2832); ctx.stroke();
       ctx.restore();
     }
-    G.Sprites.drawShadow(ctx, this.dex, this.x, this.y, this.scale);
+    G.Sprites.drawShadow(ctx, this.spriteKey, this.x, this.y, this.scale);
     // Poder de altar: aro de su color latiendo bajo los pies.
     if (this.power && !this.dead) {
       ctx.save();

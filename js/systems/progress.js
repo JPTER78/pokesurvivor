@@ -130,6 +130,7 @@ G.Progress = (() => {
   // ---------------- eventos ----------------
 
   function event(kind, d = {}) {
+    if (G.Dev && G.Dev.enabled) return;
     const s = G.DB.save;
     if (!s) return;
     ensure(s);
@@ -181,6 +182,7 @@ G.Progress = (() => {
   // ---------------- logros ----------------
 
   function checkAch() {
+    if (G.Dev && G.Dev.enabled) return;
     const s = G.DB.save;
     if (!s) return;
     achT = performance.now();

@@ -47,6 +47,7 @@ G.DB = (() => {
     catch (e) { storageOk = false; return null; }
   }
   function write(k, v) {
+    if (G.Dev && G.Dev.enabled) return false;
     const s = JSON.stringify(v);
     try { localStorage.setItem(k, s); return true; }
     catch (e) {
@@ -62,7 +63,7 @@ G.DB = (() => {
       } catch (e2) { storageOk = false; return false; }
     }
   }
-  function remove(k) { try { localStorage.removeItem(k); } catch (e) { /* nada */ } }
+  function remove(k) { if (G.Dev && G.Dev.enabled) return; try { localStorage.removeItem(k); } catch (e) { /* nada */ } }
 
   const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
   /** Un entero >= 0 (lo raro, negativo o que no es un número, 0). */
@@ -551,6 +552,7 @@ G.DB = (() => {
   const HOSTS = ['pokesurvivor.com', 'www.pokesurvivor.com', 'jpter78.github.io', 'localhost', '127.0.0.1'];
 
   async function initCloud() {
+    if (G.Dev && G.Dev.enabled) { localReason = 'dev'; return false; }
     const cfg = G.FIREBASE_CONFIG;
     if (!/^https?:$/.test(location.protocol)) { localReason = 'file'; return false; }
     if (cfg && !cfg.emulator && !HOSTS.includes(location.hostname)) { localReason = 'host'; return false; }
@@ -914,6 +916,7 @@ G.DB = (() => {
    * lo urgente: ya no cambia nada.)
    */
   function commit() {
+    if (G.Dev && G.Dev.enabled) return false;
     if (guest || !key || !save) return false;
     save.updated = Date.now();
     fold(save);
