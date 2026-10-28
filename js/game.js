@@ -752,15 +752,31 @@ G.Game = (() => {
     handleKeys();
     if ((trapT -= real) <= 0) { trapT = 0.5; ensureTrap(); }
 
-    if (state === 'playing') update(dt);
+    if (state === 'playing') { if (G.Coop.active) coopSteps(real); else update(dt); }
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
     // La red se atiende siempre (también con las cartas de nivel abiertas).
-    if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
+    if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick();
 
     if (pl && state !== 'ui') render(); else Backdrop.render(ctx, w, h, dpr, dt);
     G.UI.tick(dt);
 
     G.Input.endFrame();
+  }
+
+  // En grupo, el juego sigue al reloj de verdad aunque el aparato vaya a menos de
+  // 30 fps: el fotograma se simula en pasos de 1/30 s como mucho (y 0,25 s en total,
+  // para que un tirón largo no lo dispare). Antes, con el dt recortado a 1/30, el que
+  // iba lento se movía y atacaba a cámara lenta (y si era el anfitrión, todos).
+  // En solitario sigue como siempre (update(dt) una vez).
+  const STEP = 1 / 30, MAX_FRAME = 0.25;
+  function coopSteps(real) {
+    const total = Math.min(MAX_FRAME, real) * speedK;
+    const n = Math.max(1, Math.ceil(total / STEP));
+    for (let i = 0; i < n && state === 'playing'; i++) {
+      // Las pulsaciones (tap) cuentan sólo en el primer paso: no se repiten por fotograma.
+      if (i === 1) G.Input.endFrame();
+      update(total / n);
+    }
   }
 
   function update(dt) {

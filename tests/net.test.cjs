@@ -462,7 +462,12 @@ function coopJam(host) {
   G.Sprites = { preload() {} }; G.U = { dist2: () => 0 };
   G.EnemyMgr = { all: () => [] }; G.Judgment = { netState: () => null }; G.Ranking = { mySeal: () => null };
   G.Social = { me: { name: 'yo' } };
-  new Function('G', 'document', source('js/net/coop.js'))(G, { addEventListener() {} });
+  // Los envíos van por el reloj (performance.now): aquí tick(dt) lo adelanta dt segundos.
+  let now = 1e6;
+  const performance = { now: () => now };
+  new Function('G', 'document', 'performance', source('js/net/coop.js'))(G, { addEventListener() {} }, performance);
+  const tick = G.Coop.tick;
+  G.Coop.tick = dt => { now += dt * 1000; tick(); };
   const local = { x: 0, y: 0, moveAngle: 0, walking: false, hp: 300, maxHp: 300, magnet: 78, aim: 0, xpMul: 1, activeGroup: () => [] };
   G.Coop.begin({ host: 'host', members: [{ uid: 'host', name: 'Ana', dex: 25 }, { uid: 'guest', name: 'Bea', dex: 25 }] }, local,
     { team: () => ({ time: 0, level: 1, xp: 0, xpNext: 10, kills: 0, bosses: 0, coins: 0, t1: 0, t10: 0 }), choosing: () => false, levelStart() {}, waiting() {} });

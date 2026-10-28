@@ -28,14 +28,23 @@ G.Coop = (() => {
   // Realtime Database (apagado: 1 $ el GB).
   const RATE_FAST = 1 / 15, RATE_SLOW = 1 / 3;
   const rateFor = u => (G.Net.slow(u) ? RATE_SLOW : RATE_FAST);
+  // Los envíos van por el reloj de verdad (performance.now), no por el dt del juego:
+  // con el dt (recortado a 1/30 s) un aparato a menos de 30 fps mandaba menos, y al
+  // volver a contar desde cero en cada envío se perdía el sobrante (a 60 fps salían
+  // ~13 por segundo en vez de 15). Se sigue la cuenta; si se va más de un envío por
+  // detrás (conexión atascada), se empieza de nuevo desde ahora.
+  function nextAt(at, now, u) {
+    const step = rateFor(u) * 1000;
+    return now - at > step ? now + step : at + step;
+  }
   const NEAR = 950;                     // radio de enemigos que se mandan a cada uno
   const EV_MAX = 500;                   // eventos por envío como mucho (el resto, en el siguiente)
 
   let active = false, host = false, me = null, hostUid = null;
   let local = null;                     // tu Player
-  const mates = new Map();              // uid -> { uid, name, color, pl, connected, q:[], flushT, xpMul }
+  const mates = new Map();              // uid -> { uid, name, color, pl, connected, q:[], flushAt, xpMul }
   let outEv = [];                       // invitado: eventos para el anfitrión
-  let flushT = 0;
+  let flushAt = 0;                      // invitado: cuándo toca el siguiente envío (performance.now)
   let hitFrom = null;                   // invitado cuyo golpe se está aplicando (no repetirle el número)
   let api = {};                         // callbacks del juego (game.js)
   let waiting = new Set();              // subida de nivel: quién falta por elegir
@@ -70,9 +79,9 @@ G.Coop = (() => {
     api = cb;
     members = cfg.members;
     mates.clear();
-    outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
+    outEv = []; flushAt = 0; waiting = new Set(); holds = new Set();
     hostAway = false; stalled = false; lastHostAt = performance.now();
-    sums = {}; sumT = 1; myHold = false;
+    sums = {}; sumAt = performance.now() + 1000; myHold = false;
     levelSeq = 0; levelNow = 1; seenSeq = 0; doneSeq = 0; lastHo = '';
     cfg.members.forEach((m, i) => {
       const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
@@ -83,7 +92,7 @@ G.Coop = (() => {
       p.x = x; p.y = y;
       p.net = { x, y, ang: Math.PI / 2, walk: 0, hp: p.maxHp, maxHp: p.maxHp, dead: 0, mv: G.baseStartOf(mon.dex), ml: 1, mag: 78, aim: Math.PI / 2, rev: 0 };
       G.Sprites.preload([mon.dex], 8000, p.shiny);
-      mates.set(m.uid, { uid: m.uid, name: m.name, color: COLORS[i], pl: p, connected: true, q: [], flushT: 0, xpMul: 1, lastAt: performance.now() });
+      mates.set(m.uid, { uid: m.uid, name: m.name, color: COLORS[i], pl: p, connected: true, q: [], flushAt: 0, xpMul: 1, lastAt: performance.now() });
     });
   }
 
@@ -151,7 +160,7 @@ G.Coop = (() => {
    * existen): nada de texto de otros jugadores.
    */
   const SUM_EVERY = 5;
-  let sums = {}, sumT = 0;
+  let sums = {}, sumAt = 0;             // sumAt: cuándo toca el siguiente (performance.now)
   const mySum = () => (api && api.mySum ? api.mySum() : null);
   function cleanSum(s) {
     if (!s || typeof s !== 'object') return null;
@@ -258,7 +267,7 @@ G.Coop = (() => {
    */
   let myHold = false;
   function flushClient(force) {
-    if (!force && !outEv.length && flushT > 0) return;
+    if (!force && !outEv.length && performance.now() < flushAt) return;
     // Con la conexión atascada se espera (los eventos siguen en outEv); el 'bye' sale igual.
     if (force !== 'bye' && G.Net.busy(hostUid)) return;
     G.Net.toHost({ k: 'f', p: myState(), ev: outEv, h: myHold ? 1 : 0, w: doneSeq });
@@ -266,10 +275,11 @@ G.Coop = (() => {
   }
 
   /** Cada fotograma (también en la pantalla de subida de nivel). */
-  function tick(dt) {
+  function tick() {
     if (!active) return;
-    if ((sumT -= dt) <= 0) {
-      sumT = SUM_EVERY;
+    const now = performance.now();
+    if (now >= sumAt) {
+      sumAt = now + SUM_EVERY * 1000;
       if (host) emit(['sms', teamSums()]);
       else {
         const m = mySum(); if (m) outEv.push(['sm', m]);
@@ -283,21 +293,19 @@ G.Coop = (() => {
         // Un compañero que no manda nada (el móvil apagado o en segundo plano) se
         // queda quieto y nunca muere: si los enemigos y Arceus le seguían
         // persiguiendo, el anfitrión aguantaba para siempre (25-10-2026).
-        m.pl.silent = performance.now() - m.lastAt > SILENT_MS;
-        m.flushT -= dt;
-        if (m.flushT > 0) continue;
+        m.pl.silent = now - m.lastAt > SILENT_MS;
+        if (now < m.flushAt) continue;
         // Si aún no ha salido lo de antes, mandar más sólo alarga la cola: se espera
         // (los eventos se guardan en m.q). Si dura, el invitado se pone en pausa
         // («esperando al anfitrión») en vez de ver la partida minutos tarde.
         if (G.Net.busy(m.uid)) continue;
-        m.flushT = rateFor(m.uid);
+        m.flushAt = nextAt(m.flushAt, now, m.uid);
         G.Net.send(m.uid, hostFrame(m));
       }
     } else {
-      if (!stalled && performance.now() - lastHostAt > STALL_MS) { stalled = true; updateAway(); }
-      flushT -= dt;
-      if (flushT <= 0) {
-        flushT = rateFor(hostUid);
+      if (!stalled && now - lastHostAt > STALL_MS) { stalled = true; updateAway(); }
+      if (now >= flushAt) {
+        flushAt = nextAt(flushAt, now, hostUid);
         flushClient(true);
       }
     }

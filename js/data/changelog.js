@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-28', title: ["Cooperativo en aparatos lentos", "Co-op on slower devices"], fix: [
+    ["Cooperativo: si un jugador iba a menos de 30 imágenes por segundo, su Pokémon se movía y atacaba a cámara lenta (y si era el anfitrión, toda la partida). Ahora el juego sigue al reloj de verdad, y los datos de la partida se mandan las 15 veces por segundo que tocan (antes salían algunas menos).",
+     "Co-op: if a player was running below 30 frames per second, their Pokémon moved and attacked in slow motion (and if it was the host, the whole run did). Now the game follows the real clock, and the run data is sent the full 15 times per second (a few fewer went out before)."]
+  ]},
   { d: '2026-10-28', title: ["Halloween, un día más", "Halloween, one more day"], chg: [
     ["El evento de Halloween dura un día más: del 30 de octubre al 2 de noviembre (hora de España).",
      "The Halloween event lasts one more day: from October 30 to November 2 (Spain time)."]
