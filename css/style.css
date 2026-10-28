@@ -816,7 +816,15 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 .lay-thing.held { cursor: grabbing; filter: drop-shadow(0 0 8px rgba(255,210,63,.8)); }
 .lay-thing.hidden { display: none; }
 .lay-bar { display: flex; gap: 9px; }
-.mega-badge { display: inline-flex; vertical-align: middle; margin-left: 3px; }
+.mon-rarity { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.mon-rarity > .rarity-ball { display: inline-flex; align-items: center; }
+/* Exclude the bracelet sheet's transparent side margins from centering. */
+.mega-badge { position: relative; display: inline-block; flex: none; width: calc(var(--mega-size) * .5625); height: var(--mega-size);
+  padding: 0; margin: 0; border: 0; background: transparent; color: inherit; cursor: help; vertical-align: middle; }
+.mega-badge img { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.mega-badge:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+.mega-tip { width: 300px; max-width: calc(100vw - 16px); border-color: #ff8aa2; }
+.mega-tip b { display: block; color: #ffb0c2; margin-bottom: 6px; }
 .lay-slot.mega { border-color: #ff5473; }
 .lay-slot { position: relative; width: 54px; height: 54px; flex: none; border-radius: 12px; background: rgba(10,16,28,.8); border: 1.2px solid rgba(140,170,210,.4); }
 .lay-slot.on { border: 2.5px solid var(--gold); }

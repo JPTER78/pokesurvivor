@@ -71,7 +71,9 @@ normal form sheets. Base Lucario sprites and generated Pokédex data are untouch
 
 To add a form, add its definition, sprite source/path and stone name to the
 registry, run the generators, add the icon mapping and localized text/credits.
-No Lucario-specific transformation or rift code needs changing.
+No Lucario-specific transformation or rift code needs changing. The collection
+bracelet tooltip uses one localized template, populated from the base Pokémon
+name and the form’s `name` and `stoneName`; it supports hover, focus and touch.
 
 ## Repeatable development workflow
 

@@ -4,6 +4,9 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  "{x} puede megaevolucionar en {x} al encontrar {x} durante una partida.": "{x} can evolve into {x} by finding {x} during a run.",
+  "Rareza y megapulsera centradas en la colección. La megapulsera explica cómo megaevolucionar cada Pokémon.": "Centered rarity and Mega Bracelet in the collection. The bracelet explains how each Pokémon can Mega Evolve.",
+
   "¡Megapiedra conseguida!": "Mega Stone earned!",
   "Megaevoluciona hasta el final de la partida. Conservas tu objeto equipado.": "Mega Evolve until the end of this run. Keep your held item.",
   "Recoger y megaevolucionar": "Claim & Mega Evolve",

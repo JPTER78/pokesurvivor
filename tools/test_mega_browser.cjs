@@ -46,11 +46,44 @@ const server = http.createServer((req, res) => {
     await page.locator('#dex-grid .cell').first().click();
     assert.equal(await page.locator('#dex-detail .mega-badge').count(), 1);
     await page.screenshot({ path: path.join(out, 'mega-collection.png') });
+    const centering = await page.evaluate(() => [...document.querySelectorAll('#dex-grid .mon-rarity, #dex-detail .mon-rarity')].map(row => {
+      const r = row.getBoundingClientRect(), a = row.firstElementChild.getBoundingClientRect(), b = row.lastElementChild.getBoundingClientRect();
+      return Math.abs((a.left + b.right) / 2 - (r.left + r.right) / 2);
+    }));
+    assert.ok(centering.every(offset => offset < 1), 'rarity and bracelet are centered together');
+    await page.locator('#dex-detail .mega-badge').hover();
+    await page.locator('#mega-tip:not(.hidden)').waitFor();
+    assert.equal(await page.locator('#mega-tip p').textContent(), 'Lucario can evolve into Mega Lucario by finding Lucarionite during a run.');
+    await page.screenshot({ path: path.join(out, 'mega-tooltip.png') });
+    // Future forms use the same template, pulling names directly from the registry.
+    await page.evaluate(() => {
+      const f = G.Forms.get('lucario-mega'); window.tooltipFormNames = [f.name, f.stoneName];
+      f.name = 'Mega Test'; f.stoneName = 'Test Stone'; document.querySelector('#dex-detail .mega-badge').click();
+    });
+    assert.match(await page.locator('#mega-tip p').textContent(), /Mega Test by finding Test Stone/);
+    await page.evaluate(() => {
+      const f = G.Forms.get('lucario-mega'); [f.name, f.stoneName] = tooltipFormNames;
+      document.querySelector('#dex-detail .mega-badge').focus();
+    });
+    assert.equal(await page.locator('#dex-detail .mega-badge').getAttribute('aria-describedby'), 'mega-tip');
+    await page.keyboard.press('Escape');
+    await page.locator('#mega-tip.hidden').waitFor({ state: 'attached' });
+    assert.equal(await page.evaluate(() => G.UI.isOpen('scr-dex')), true);
+    await page.mouse.move(0, 0);
+
     await page.evaluate(() => { delete G.DB.save.owned[448]; G.MenuUI.openDex(); });
     assert.equal(await page.locator('#dex-grid .cell .mega-badge').count(), 1);
     await page.locator('#dex-grid .cell').first().click();
     assert.equal(await page.locator('#dex-detail .mega-badge').count(), 1);
     await page.screenshot({ path: path.join(out, 'mega-collection-unowned.png') });
+    await page.setViewportSize({ width: 568, height: 320 });
+    await page.locator('#dex-detail .mega-badge').tap();
+    await page.locator('#mega-tip:not(.hidden)').waitFor();
+    const tipBounds = await page.locator('#mega-tip').boundingBox();
+    assert.ok(tipBounds.x >= 0 && tipBounds.y >= 0 && tipBounds.x + tipBounds.width <= 568 && tipBounds.y + tipBounds.height <= 320);
+    await page.screenshot({ path: path.join(out, 'mega-tooltip-mobile.png') });
+    await page.setViewportSize({ width: 1280, height: 720 });
+
     await page.evaluate(() => G.DB.grant(448, 'test'));
     await page.evaluate(() => { G.Game.startRun(); G.Game.togglePause(); G.UI.hideAll(); });
     await page.evaluate(() => {
@@ -213,7 +246,7 @@ const server = http.createServer((req, res) => {
     await prod.keyboard.press('Enter');
     await prod.locator('#btn-guest').waitFor({ state: 'visible' });
     assert.deepEqual(errors, []);
-    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 8 }, null, 2));
+    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 10 }, null, 2));
     console.log('Browser integration passed: portal → arena → victory → Mega → new run; Pikachu fallback; mobile; production privacy.');
     console.log(out);
   } finally { await browser.close(); server.close(); }

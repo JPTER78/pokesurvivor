@@ -1,7 +1,7 @@
 /* ============ menu.js — menú principal, colección y mejoras ============ */
 G.MenuUI = (() => {
   const megaBadge = (dex, size = 32) => G.Forms.hasMegaForm(dex)
-    ? `<span class="mega-badge" title="${G.T('Mega Evolución disponible')}" aria-label="${G.T('Mega Evolución disponible')}">${G.Icons.html('mega_bracelet', size)}</span>` : '';
+    ? `<button type="button" class="mega-badge" data-mega-dex="${dex}" style="--mega-size:${size}px" aria-label="${G.T('Mega Evolución disponible')}">${G.Icons.html('mega_bracelet', size)}</button>` : '';
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
   let dexGen = 1, dexSel = null;
@@ -12,6 +12,7 @@ G.MenuUI = (() => {
   const SORTS = [['num', 'Nº'], ['name', 'Nombre'], ['rar', 'Rareza'], ['new', 'Recién conseguidos'], ['used', 'Más usados']];
 
   function init() {
+    wireMegaTips();
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
@@ -42,6 +43,7 @@ G.MenuUI = (() => {
   // ---------------- menú principal ----------------
 
   function open() {
+    hideMegaTip();
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);
@@ -53,7 +55,7 @@ G.MenuUI = (() => {
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
     $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
-    $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity) + megaBadge(mon.dex);
+    $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + `<span class="mon-rarity">${G.UI.stars(mon.rarity)}${megaBadge(mon.dex)}</span>`;
     // Normal / shiny a mano, aquí mismo (en el móvil no se encontraba en la ficha).
     const seg = $('menu-shiny');
     seg.classList.toggle('hidden', !G.DB.ownsShiny(mon.dex));
@@ -140,6 +142,7 @@ G.MenuUI = (() => {
   // ---------------- colección ----------------
 
   function openDex() {
+    hideMegaTip();
     G.UI.show('scr-dex', true);
     const s = G.DB.save;
     if (dexSel == null) { dexSel = s.partner; dexGen = G.DEX_BY[s.partner].gen; }
@@ -289,7 +292,7 @@ G.MenuUI = (() => {
     else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
     const useShiny = sh && p.dex === s.partner && s.partnerShiny;
     cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
-    cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}${megaBadge(p.dex, 24)}`);
+    cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b><span class="mon-rarity">${G.UI.stars(p.rarity, 9)}${megaBadge(p.dex, 24)}</span>`);
     cell.onclick = () => {
       dexSel = p.dex;
       $('dex-grid').querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
@@ -303,6 +306,7 @@ G.MenuUI = (() => {
   let viewShiny = false;
 
   function showDetail(dex) {
+    hideMegaTip();
     const s = G.DB.save;
     const p = G.DEX_BY[dex];
     const own = !!s.owned[dex];
@@ -335,7 +339,7 @@ G.MenuUI = (() => {
         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
         ${own ? `<button id="dex-fav" class="chip${G.DB.isFav(dex) ? ' on' : ''}" type="button">${G.Icons.html(G.DB.isFav(dex) ? 'star' : 'starDim', 12)} ${G.DB.isFav(dex) ? 'Favorito' : 'Marcar como favorito'}</button>` : ''}
-        <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]} ${megaBadge(p.dex)}</div>
+        <div class="mon-rarity" style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)}<span>${G.Gacha.RARITY_NAME[p.rarity]}</span>${megaBadge(p.dex)}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div>
       ${own ? `
@@ -377,6 +381,57 @@ G.MenuUI = (() => {
       renderGrid(true); showDetail(dex);
     };
     if (own) wireExtras(dex, box);
+  }
+
+  // Registry-driven Mega tooltip, shared by partner, collection and detail views.
+  let megaTipOn = null;
+  function hideMegaTip() {
+    if (megaTipOn) megaTipOn.removeAttribute('aria-describedby');
+    megaTipOn = null;
+    const tip = $('mega-tip'); if (tip) tip.classList.add('hidden');
+  }
+  function showMegaTip(badge) {
+    const dex = +badge.dataset.megaDex, form = G.Forms.megaForDex(dex), mon = G.DEX_BY[dex];
+    if (!form || !mon) return;
+    hideMegaTip();
+    let tip = $('mega-tip');
+    if (!tip) {
+      tip = document.createElement('div'); tip.id = 'mega-tip';
+      tip.className = 'move-tip mega-tip'; tip.setAttribute('role', 'tooltip');
+      tip.innerHTML = '<b></b><p class="sub"></p>';
+    }
+    // Outside the scrolling box, inside the active screen: no clipping or stale overlay.
+    badge.closest('.scr').appendChild(tip);
+    const values = [G.T(mon.name), G.T(form.name), G.T(form.stoneName)];
+    tip.querySelector('b').textContent = G.T('Mega Evolución disponible');
+    tip.querySelector('p').textContent = G.T('{x} puede megaevolucionar en {x} al encontrar {x} durante una partida.')
+      .replace(/\{x\}/g, () => values.shift());
+    tip.classList.remove('hidden');
+    badge.setAttribute('aria-describedby', 'mega-tip'); megaTipOn = badge;
+    const r = badge.getBoundingClientRect(), t = tip.getBoundingClientRect(), margin = 8;
+    tip.style.left = G.U.clamp(r.left + r.width / 2 - t.width / 2, margin, innerWidth - t.width - margin) + 'px';
+    tip.style.top = G.U.clamp(r.top - t.height - margin >= margin ? r.top - t.height - margin : r.bottom + margin,
+      margin, innerHeight - t.height - margin) + 'px';
+  }
+  function wireMegaTips() {
+    const badgeAt = e => e.target.closest && e.target.closest('.mega-badge');
+    document.addEventListener('pointerover', e => { const b = badgeAt(e); if (b && e.pointerType !== 'touch') showMegaTip(b); });
+    document.addEventListener('pointerout', e => {
+      const b = badgeAt(e);
+      if (b && e.pointerType !== 'touch' && !b.contains(e.relatedTarget) && document.activeElement !== b) hideMegaTip();
+    });
+    document.addEventListener('focusin', e => { const b = badgeAt(e); if (b) showMegaTip(b); });
+    document.addEventListener('focusout', e => { if (badgeAt(e)) hideMegaTip(); });
+    document.addEventListener('pointerdown', e => { if (!badgeAt(e)) hideMegaTip(); }, true);
+    document.addEventListener('click', e => {
+      const b = badgeAt(e); if (!b) return;
+      e.stopPropagation(); showMegaTip(b); // A tap shows the hint without selecting another card.
+    }, true);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && megaTipOn) { hideMegaTip(); e.preventDefault(); e.stopPropagation(); }
+    });
+    document.addEventListener('scroll', hideMegaTip, true);
+    addEventListener('resize', hideMegaTip);
   }
 
   // ---------------- ficha: lo que hace cada ataque (24-10-2026) ----------------

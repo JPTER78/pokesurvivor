@@ -14,6 +14,7 @@ G.CHANGELOG = [
   ], chg: [
     ["La megapiedra se recoge en una pantalla de recompensa antes de megaevolucionar. Mega Lucario descansa con una animación más lenta y pausas entre ciclos.", "Claim your Mega Stone on a reward screen before Mega Evolving. Mega Lucario now has a slower idle animation with pauses between cycles."]
   ], fix: [
+    ["Rareza y megapulsera centradas en la colección. La megapulsera explica cómo megaevolucionar cada Pokémon.", "Centered rarity and Mega Bracelet in the collection. The bracelet explains how each Pokémon can Mega Evolve."],
     ['Iconos de megapiedra y megapulsera más grandes. La megapulsera también aparece en los Pokémon que aún no tienes.',
      'Larger Mega Stone and Mega Bracelet icons. The Mega Bracelet also appears on Pokémon you do not own yet.']
   ]},
