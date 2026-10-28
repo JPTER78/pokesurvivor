@@ -87,6 +87,19 @@ function network() {
   const cap = dc => dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1 }) });
   return { N: G.Net, pcs, relay, cap };
 }
+
+test('game protocol capability rejects old/unknown peers and resets on reconnect', () => {
+  const { N, pcs } = network(), dc = pcs[0].dc;
+  assert.equal(N.compatible('a'), false);
+  dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1 }) });
+  assert.equal(N.compatible('a'), false);
+  dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1, game: 999 }) });
+  assert.equal(N.compatible('a'), false);
+  dc.onmessage({ data: JSON.stringify({ k: 'net-cap', binary: 1, game: N.GAME_VERSION }) });
+  assert.equal(N.compatible('a'), true);
+  N.close(); N.open('next', true, 'host'); N.syncMembers(['host', 'a']);
+  assert.equal(N.compatible('a'), false);
+});
 test('negotiation is per peer; old clients and unknown versions keep JSON', () => {
   const { N, pcs, cap } = network(), [a, b] = pcs.map(p => p.dc), f = frame();
   assert.equal(a.binaryType, 'arraybuffer');
@@ -154,7 +167,7 @@ test('real Coop.tick frames pass through the codec without changing gameplay fie
     assert.equal(sent.length, 1);
     assert.deepEqual(C.decode(C.encode(sent[0])), sent[0]);
     if (host) { assert.deepEqual(sent[0].e, [[123, 50, -10, 126, 1, 3, 1]]); assert.ok('ho' in sent[0]); }
-    else { assert.equal(sent[0].p.length, 17); assert.equal(sent[0].p[15], ''); assert.equal(sent[0].p[16], 1); }   // 16.º: a quién mira estando caído; 17.º: zoom (Luminosfera)
+    else { assert.equal(sent[0].p.length, 21); assert.equal(sent[0].p[15], ''); assert.equal(sent[0].p[16], 1); }   // 16.º: a quién mira estando caído; 17.º: zoom (Luminosfera)
   }
 });
 

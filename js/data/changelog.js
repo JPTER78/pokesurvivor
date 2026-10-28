@@ -6,6 +6,12 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-28', title: ['Mega Evolución', 'Mega Evolution'], new: [
+    ['Lucario puede megaevolucionar durante la partida: vence al legendario de una grieta roja para conseguir Lucarionita, sin perder tus movimientos, objeto ni mejoras.',
+     'Lucario can Mega Evolve during a run: defeat the Legendary in a red rift to earn Lucarionite, keeping your moves, held item and upgrades.'],
+    ['Grietas mejoradas a los 15, 20 y 25 minutos, con jefes más fuertes. Si no puedes megaevolucionar, recibes un Vínculo. La colección indica qué Pokémon pueden megaevolucionar.',
+     'Enhanced rifts at 15, 20 and 25 minutes with stronger bosses. If you cannot Mega Evolve, you receive a Bond. The collection shows which Pokémon can Mega Evolve.']
+  ]},
   { d: '2026-10-27', title: ["Cooperativo más estable", "Steadier co-op"], new: [
     ["Móvil y tableta: nuevo joystick «Anclado» (Ajustes → Controles → Colocar los botones). Aparece donde pones el dedo y se queda en ese sitio mientras lo mantienes, aunque alejes el dedo; al levantarlo y tocar en otro sitio, aparece allí. El «Flotante» de siempre sigue al dedo y sigue siendo el que viene puesto.",
      "Mobile and tablet: new \"Anchored\" joystick (Settings → Controls → Place the buttons). It appears where you put your finger and stays in that spot while you hold it, even if you move your finger away; lift it and touch somewhere else, and it appears there. The usual \"Floating\" one follows your finger and is still the default."]

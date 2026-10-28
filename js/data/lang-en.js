@@ -4,6 +4,15 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  'Mega Evolución disponible': 'Mega Evolution available',
+  '¡Mega Evolución!': 'Mega Evolution!',
+  'Megapiedra': 'Mega Stone', 'Lucarionita': 'Lucarionite',
+  'MEGAGRIETA': 'MEGA RIFT',
+  '¡SE HA ABIERTO UNA MEGAGRIETA!': 'A MEGA RIFT HAS OPENED!',
+  'Sigue la flecha roja: vence al legendario para megaevolucionar': 'Follow the red arrow: defeat the Legendary to Mega Evolve',
+  'Has entrado en la grieta mejorada…': 'You entered the enhanced rift…',
+  'Todos deben actualizar el juego para jugar juntos.': 'Everyone must update the game to play together.',
+
   // ---------------- tipos y regiones ----------------
   'Acero': 'Steel', 'Agua': 'Water', 'Bicho': 'Bug', 'Dragón': 'Dragon', 'Eléctrico': 'Electric', 'Fantasma': 'Ghost',
   'Fuego': 'Fire', 'Hada': 'Fairy', 'Hielo': 'Ice', 'Lucha': 'Fighting', 'Planta': 'Grass', 'Psíquico': 'Psychic',

@@ -173,7 +173,7 @@ G.Judgment = (() => {
   function port() {
     ported = true;
     const pl = G.Game.player, ts = TS();
-    G.Rift.reset();
+    G.Rift.closeWorld();
     if (authority()) G.EnemyMgr.stash(); else G.EnemyMgr.clearRemote();
     G.Projectiles.clear();
     G.Combat.clearFields();
@@ -310,7 +310,7 @@ G.Judgment = (() => {
   function update(dt, pl, time) {
     if (!phase) {
       sampleDps(dt);                        // (para la vida del primer legendario)
-      if (authority() && time >= AT && !G.Rift.inArena) start();
+      if (authority() && time >= AT && !G.Rift.inArena && !G.Rift.pendingMega) start();
       return;
     }
     if (phase !== 'fight') return;
@@ -821,7 +821,7 @@ G.Judgment = (() => {
     if (Number.isFinite(a[4]) && a[4] >= 0) dealt = a[4];      // el daño a Arceus lo cuenta el anfitrión
   }
 
-  return {
+  const api = {
     AT, reset, noteDmg, hitArceus, dress, dmgK, update, cineTick, skip, bossDown, drawable, drawAir, drawOverlay, onEvent, netState, netApply,
     get active() { return !!phase; }, capSpd,
     /** ¿Hay legendarios vivos? (entonces los ataques no le apuntan a Arceus) */
@@ -838,4 +838,6 @@ G.Judgment = (() => {
     /** Para vídeos: que no acudan legendarios. */
     debugNoBosses(v = true) { noBosses = !!v; }
   };
+  if (!G.Dev || !G.Dev.enabled) { delete api.debugStart; delete api.debugNoBosses; }
+  return api;
 })();

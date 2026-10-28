@@ -24,6 +24,14 @@ G.Rift = (() => {
   // Desde 2 min antes de la Sentencia de Arceus (minuto 30) ya no se abren.
   const CHECK = 30, CHANCE = 0.2, TTL = 45;
   const ARENA_R = 11, ARENA_TIME = 120, FROM = 75;
+  const ENCOUNTERS = {
+    normal: { ttl: TTL, hp: 1, dmg: 1, shot: 1, speed: 1, frequency: 1, color: '#b48aff' },
+    mega: { ttl: 60, hp: 2.5, dmg: 1.5, shot: 1.5, speed: 1.1, frequency: 1.2, color: '#ff4966' }
+  };
+  const TIMES = [900, 1200, 1500];
+  let schedule = [], queue = [], previousTime = 0, retryT = 0, serial = 0;
+  const resolved = new Set();
+  const config = kind => ENCOUNTERS[kind] || ENCOUNTERS.normal;
   let rift = null;          // { x, y, ttl, t }
   let arena = null;         // { tx, ty, r, dex, shiny, x, y, back, biome, t, phase, endT, bossId }
   let zone = null;          // dónde estaba la última arena { x, y, r } (ver leftBehind)
@@ -31,7 +39,9 @@ G.Rift = (() => {
   const authority = () => !G.Coop.active || G.Coop.isHost;
   const TS = () => G.Tiles.T * G.Sprites.PX;
 
-  function reset() { rift = null; arena = null; zone = null; checkT = CHECK; asked = false; downT = 0; misses = 0; }
+  function reset() { rift = null; arena = null; zone = null; checkT = CHECK; asked = false; downT = 0; misses = 0;
+    schedule = TIMES.map(at => ({ at, status: 'waiting' })); queue = []; previousTime = 0; retryT = 0; serial = 0; resolved.clear();
+  }
 
   /**
    * ¿Sigue este jugador en la arena aunque aquí ya se haya vuelto al mapa?
@@ -46,12 +56,25 @@ G.Rift = (() => {
   // ---------------- grieta en el mapa ----------------
 
   function update(dt, pl, time) {
+    if (G.Judgment.active) return;
+    if (authority()) {
+      for (const event of schedule) if (event.status === 'waiting' && previousTime < event.at && time >= event.at) {
+        event.status = 'queued'; queue.push(event);
+      }
+      previousTime = time;
+      retryT = Math.max(0, retryT - dt);
+      if (!rift && !arena && queue.length && retryT <= 0 && !G.EnemyMgr.bossAlive()) {
+        const event = queue[0];
+        if (open('mega', event.at)) { event.status = 'spawned'; queue.shift(); }
+        else retryT = 1;
+      }
+    }
     if (rift) {
       rift.t += dt;
       rift.ttl -= dt;
-      if (rift.ttl <= 0) { rift = null; return; }
-      if (!arena && !pl.dead && G.U.dist2(pl.x, pl.y, rift.x, rift.y - 10) < 30 * 30) enter();
-    } else if (!arena && authority() && time > FROM && time < G.Judgment.AT - 120) {
+      if (rift.ttl <= 0) { markEvent(rift.eventAt, 'expired'); rift = null; if (G.Coop.isHost) G.Coop.broadcast(['riftx']); }
+      if (rift && !arena && !pl.dead && G.U.dist2(pl.x, pl.y, rift.x, rift.y - 10) < 30 * 30) enter();
+    } else if (!arena && !queue.length && authority() && time > FROM && time < G.Judgment.AT - 120) {
       checkT -= dt;
       if (checkT <= 0) {
         checkT = CHECK;
@@ -63,26 +86,32 @@ G.Rift = (() => {
     if (arena) arenaTick(dt, pl);
   }
 
-  function open() {
+  function markEvent(at, status) { const e = schedule.find(e => e.at === at); if (e) e.status = status; }
+
+  function open(kind = 'normal', eventAt = null) {
+    if (rift || arena || !authority()) return false;
     const alive = G.Game.everyone().filter(p => !p.dead);
     const near = G.U.pick(alive.length ? alive : [G.Game.player]);
     for (let i = 0; i < 24; i++) {
       const a = Math.random() * 6.2832, d = G.U.rand(380, 560);
       const x = near.x + Math.cos(a) * d, y = near.y + Math.sin(a) * d * 0.85;
       if (!G.World.isFree(x, y, 22)) continue;
-      show(x, y, TTL);
-      if (G.Coop.isHost) G.Coop.broadcast(['rift', Math.round(x), Math.round(y), TTL]);
-      return;
+      const ttl = config(kind).ttl, id = ++serial;
+      show(x, y, ttl, kind, id, eventAt);
+      if (G.Coop.isHost) G.Coop.broadcast(['rift', Math.round(x), Math.round(y), ttl, kind, id, eventAt]);
+      return true;
     }
   }
 
   /** Aparece la grieta (también la que manda el anfitrión). */
-  function show(x, y, ttl) {
-    rift = { x, y, ttl, t: 0 };
+  function show(x, y, ttl, kind = 'normal', id = 0, eventAt = null) {
+    if (!ENCOUNTERS[kind]) return;
+    rift = { x, y, ttl, t: 0, kind, id, eventAt };
+    if (kind === 'mega') G.Forms.preload(G.Game.player);
     asked = false;
     // (El aviso grande lo dibuja hud.js mientras rift.t < 4,5 s.)
     G.Audio.sfx('rift');
-    G.FX.ring(x, y, 6, 80, '#b48aff', 0.7, 5);
+    G.FX.ring(x, y, 6, 80, config(kind).color, 0.7, 5);
   }
 
   function enter() {
@@ -97,8 +126,8 @@ G.Rift = (() => {
   /** Quien manda: elige legendario y lugar, y avisa a todos. */
   let nextType = null;          // pruebas/vídeos: tipo de la próxima arena
 
-  function start(forceType) {
-    if (arena) return;
+  function start(forceType, kind = rift ? rift.kind : 'normal') {
+    if (arena || !authority()) return;
     forceType = forceType || nextType; nextType = null;
     let pool = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
     if (forceType && pool.some(p => p.types.includes(forceType))) pool = pool.filter(p => p.types.includes(forceType));
@@ -109,6 +138,7 @@ G.Rift = (() => {
     while (mi < pool.length - 1 && (r -= ws[mi]) > 0) mi++;
     const mon = pool[mi];
     const cfg = {
+      kind, id: rift ? rift.id : ++serial, eventAt: rift ? rift.eventAt : null,
       tx: 5000 + Math.floor(Math.random() * 3000), ty: 5000 + Math.floor(Math.random() * 3000), r: ARENA_R,
       dex: mon.dex, shiny: G.Sprites.hasShiny(mon.dex) && Math.random() < 1 / 512,
       // La arena es la de uno de sus tipos, al azar.
@@ -121,6 +151,8 @@ G.Rift = (() => {
 
   /** En cada ordenador: viaje a la arena. */
   function begin(cfg) {
+    if (arena || resolved.has(cfg.id) || !ENCOUNTERS[cfg.kind || 'normal']) return;
+    markEvent(cfg.eventAt, 'attempted');
     const pl = G.Game.player;
     const ts = TS();
     arena = Object.assign({}, cfg, {
@@ -142,9 +174,9 @@ G.Rift = (() => {
     const ps = G.Game.everyone();
     ps.forEach((p, i) => { p.x = arena.x + (i - (ps.length - 1) / 2) * 34; p.y = arena.y + ts * 3; });
     G.Camera.x = pl.x; G.Camera.y = pl.y;
-    G.Game.flash('#c9a6ff', 0.9);
+    G.Game.flash(config(arena.kind).color, 0.9);
     G.Audio.sfx('rift');
-    G.Spawner.say('Has entrado en la grieta…', 2.4, true);
+    G.Spawner.say(arena.kind === 'mega' ? 'Has entrado en la grieta mejorada…' : 'Has entrado en la grieta…', 2.4, true);
   }
 
   function spawnLegend() {
@@ -160,6 +192,10 @@ G.Rift = (() => {
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
       shotDmg: Math.round(18 + t / 40), shotCd: 0.9, range: 300
     };
+    const difficulty = config(arena.kind);
+    def.hp *= difficulty.hp; def.dmg *= difficulty.dmg; def.shotDmg *= difficulty.shot;
+    def.spd *= difficulty.speed; def.shotCd /= difficulty.frequency;
+    def.attackFrequency = difficulty.frequency;
     const e = new G.Enemy(def, arena.x, arena.y - ts * 3.5, { hp: 1, spd: 1, dmg: 1 }, true);
     e.legend = true;
     // Choca con las paredes y columnas como tú: si volara por encima de las
@@ -189,10 +225,10 @@ G.Rift = (() => {
       if (!authority()) return;
       keepInside();
       const boss = G.EnemyMgr.get(arena.bossId);
-      if (!boss || boss.dead) { G.Coop.isHost && G.Coop.broadcast(['aw']); won(); return; }
+      if (!boss || boss.dead) { G.Coop.isHost && G.Coop.broadcast(['aw', arena.id]); won(); return; }
       const allDown = G.Game.everyone().every(p => p.dead);
       downT = allDown ? downT + dt : 0;
-      if (downT > 1.4 || arena.t > ARENA_TIME) { G.Coop.isHost && G.Coop.broadcast(['al']); lost(); }
+      if (downT > 1.4 || arena.t > ARENA_TIME) { G.Coop.isHost && G.Coop.broadcast(['al', arena.id]); lost(); }
       return;
     }
     arena.endT -= dt;
@@ -202,12 +238,13 @@ G.Rift = (() => {
   function won() {
     if (!arena || arena.phase !== 'fight') return;
     arena.phase = 'won'; arena.endT = 5;
-    G.Progress.event('rift', { type: arena.type });
+    if (arena.kind !== 'mega') G.Progress.event('rift', { type: arena.type });
     G.Pickups.pullAll();
     G.Spawner.say('¡Has vencido a ' + G.DEX_BY[arena.dex].name + '! Recoge el premio…', 3.4, true);
     G.Audio.sfx('legend');
     const pl = G.Game.player;
     if (pl) {
+      if (arena.kind === 'mega' && G.Forms.awardMega(pl)) return;
       pl.bonds++;
       G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, '¡Vínculo!', '#ff8ad8', true);
       G.FX.ring(pl.x, pl.y, 8, 90, '#ff8ad8', 0.7, 5);
@@ -225,6 +262,8 @@ G.Rift = (() => {
   function finish() {
     const pl = G.Game.player;
     const a = arena;
+    resolved.add(a.id);
+    markEvent(a.eventAt, a.phase);
     arena = null;
     G.World.setBiome(a.biome, true);
     G.Weather.clear();
@@ -240,7 +279,7 @@ G.Rift = (() => {
     pl.x = a.back.x; pl.y = a.back.y;
     if (pl.dead) pl.revive(0.3);
     G.Camera.x = pl.x; G.Camera.y = pl.y;
-    G.Game.flash('#c9a6ff', 0.8);
+    G.Game.flash(config(a.kind).color, 0.8);
     if (pl.bonds > 0) G.Game.offerBond();
   }
 
@@ -253,17 +292,17 @@ G.Rift = (() => {
       y: rift.y,
       draw(ctx) {
         const P = G.Sprites.PX;
-        const img = G.Tiles.propSprite(0, 'rift', Math.floor(rift.t * 8) % 4);
+        const img = G.Tiles.propSprite(0, rift.kind === 'mega' ? 'megaRift' : 'rift', Math.floor(rift.t * 8) % 4);
         const w = img.width * P, h = img.height * P;
         const fadeIn = Math.min(1, rift.t * 2), fadeOut = Math.min(1, rift.ttl / 1.5);
         ctx.save();
         ctx.globalAlpha = 0.25 * fadeIn * fadeOut;
-        ctx.fillStyle = '#7b3cff';
+        ctx.fillStyle = rift.kind === 'mega' ? '#d51638' : '#7b3cff';
         ctx.beginPath(); ctx.ellipse(rift.x, rift.y, 34, 12, 0, 0, 6.2832); ctx.fill();
         ctx.globalAlpha = fadeIn * fadeOut;
         ctx.drawImage(img, Math.round(rift.x - w / 2), Math.round(rift.y - h + 4), w, h);
         ctx.restore();
-        if (Math.random() < 0.3) G.FX.px(rift.x + G.U.rand(-14, 14), rift.y - G.U.rand(10, 80), '#d9c2ff', { vy: -40, life: 0.6 });
+        if (Math.random() < 0.3) G.FX.px(rift.x + G.U.rand(-14, 14), rift.y - G.U.rand(10, 80), rift.kind === 'mega' ? '#ff9cba' : '#d9c2ff', { vy: -40, life: 0.6 });
       }
     };
   }
@@ -272,23 +311,37 @@ G.Rift = (() => {
 
   function onEvent(ev) {
     switch (ev[0]) {
-      case 'rift': show(ev[1], ev[2], ev[3]); break;
+      case 'rift': show(ev[1], ev[2], ev[3], ev[4], ev[5], ev[6]); break;
       case 'riftx': rift = null; break;
       case 'arena': begin(ev[1]); break;
-      case 'aw': won(); break;
-      case 'al': lost(); break;
+      case 'aw': if (arena && ev[1] === arena.id) won(); break;
+      case 'al': if (arena && ev[1] === arena.id) lost(); break;
     }
   }
 
-  return {
-    reset, update, drawable, onEvent, leftBehind, enterRequest() { if (!arena) start(); },
+  reset();
+  const api = {
+    ENCOUNTERS,
+    get schedule() { return schedule.map(e => ({ ...e })); },
+    reset, update, drawable, onEvent, leftBehind, enterRequest() { if (rift && !arena && authority()) start(); },
     get rift() { return rift; }, get arena() { return arena; },
     get inArena() { return !!arena; },
+    get pendingMega() { return queue.length > 0 || !!(rift && rift.kind === 'mega'); },
+    closeWorld() { if (rift) markEvent(rift.eventAt, 'expired'); rift = null; arena = null; zone = null; },
     get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },
-    debugOpen() { open(); },
-    /** Para pruebas: arena de un tipo ya. */
-    debugArena(type) { start(type); },
-    /** Para vídeos: la próxima grieta en la que entres será de este tipo. */
-    debugNextType(type) { nextType = type; }
   };
+  if (G.Dev && G.Dev.enabled) Object.assign(api, {
+    debugOpen() { return open(); },
+    debugArena(type) { start(type); },
+    debugNextType(type) { nextType = type; },
+    debugOpenMega() { return open('mega'); },
+    debugMegaArena() { start(null, 'mega'); },
+    debugWin() {
+      if (!authority() || !arena || arena.phase !== 'fight') return false;
+      const boss = G.EnemyMgr.get(arena.bossId);
+      if (boss) boss.hurt(boss.hp + 1, '#ff4966');
+      return true;
+    }
+  });
+  return api;
 })();

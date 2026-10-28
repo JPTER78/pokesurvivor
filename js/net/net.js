@@ -22,6 +22,7 @@
  *       peers() · mode(uid) -> 'connecting' | 'direct' | 'relay' | 'closed'
  */
 G.Net = (() => {
+  const GAME_VERSION = 2;  // typed rifts and runtime forms; independent of the binary codec
   const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
   const TURN_API = 'https://ice.pokesurvivor.com/v1/ice';
   // Primero se intenta sin TURN (lo normal es conectar directo) y sólo si falla se
@@ -211,14 +212,14 @@ G.Net = (() => {
 
   function wireChannel(u, p, dc) {
     p.dc = dc;
-    p.binaryVersion = 0;
+    p.binaryVersion = 0; p.gameVersion = 0;
     dc.binaryType = 'arraybuffer';
     dc.onopen = () => {
       clearTimeout(p.timer); p.mode = 'direct';
       if (p.pc) checkTurn(u, p);
       // Aviso de que entendemos binario (las versiones viejas lo ignoran); hasta que el otro
       // mande el suyo, se le habla en JSON.
-      try { dc.send(JSON.stringify({ k: 'net-cap', binary: G.NetCodec.version })); } catch (e) { /* el JSON sigue valiendo */ }
+      try { dc.send(JSON.stringify({ k: 'net-cap', binary: G.NetCodec.version, game: GAME_VERSION })); } catch (e) { /* el JSON sigue valiendo */ }
       emitPeer(u);
     };
     dc.onclose = () => { if (p.mode === 'direct') { p.mode = 'connecting'; useRelay(u); } };
@@ -228,6 +229,8 @@ G.Net = (() => {
         try { m = JSON.parse(e.data); } catch (err) { return; }
         if (m && m.k === 'net-cap') {
           p.binaryVersion = m.binary === G.NetCodec.version ? m.binary : 0;
+          p.gameVersion = m.game;
+          emitPeer(u);
           return;
         }
         stats.recvBytes += G.NetCodec.size(e.data);
@@ -381,6 +384,8 @@ G.Net = (() => {
 
   return {
     open, close, syncMembers, send, toHost, broadcast,
+    GAME_VERSION,
+    compatible(u) { const p = peers.get(u); return !!p && p.gameVersion === GAME_VERSION; },
     on(fn) { handlers.add(fn); }, off(fn) { handlers.delete(fn); },
     onPeer(fn) { peerHandlers.add(fn); },
     mode(u) { const p = peers.get(u); return p ? p.mode : 'closed'; },

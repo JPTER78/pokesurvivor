@@ -195,10 +195,12 @@ G.HUD = (() => {
     // Grieta: flecha grande que late en el borde si no se ve, y si se ve, una
     // flecha que bota encima; en la arena, cuenta atrás.
     const rift = G.Rift.rift;
+    const redRift = (rift || G.Rift.arena || {}).kind === 'mega';
+    const riftLabel = redRift ? 'MEGAGRIETA' : 'GRIETA';
     if (rift) {
       const sx = (rift.x - cam.left()) * cam.scale, sy = (rift.y - 40 - cam.top()) * cam.scale;
       const now = performance.now() / 1000, beat = 0.5 + Math.sin(now * 7) * 0.5;
-      const label = 'GRIETA · ' + Math.round(G.U.dist(pl.x, pl.y, rift.x, rift.y) / 32) + ' m · ' + Math.ceil(rift.ttl) + ' s';
+      const label = G.T(riftLabel) + ' · ' + Math.round(G.U.dist(pl.x, pl.y, rift.x, rift.y) / 32) + ' m · ' + Math.ceil(rift.ttl) + ' s';
       const off = sx < 0 || sx > w || sy < 0 || sy > h;
       ctx.save();
       if (off) {
@@ -207,7 +209,7 @@ G.HUD = (() => {
         ctx.translate(ex, ey);
         // Halo que late.
         ctx.globalAlpha = 0.18 + beat * 0.22;
-        ctx.fillStyle = '#b48aff';
+        ctx.fillStyle = (redRift ? '#ff4966' : '#b48aff');
         ctx.beginPath(); ctx.arc(0, 0, 30 + beat * 8, 0, 6.2832); ctx.fill();
         ctx.globalAlpha = 1;
         const tri = (k) => {
@@ -217,34 +219,34 @@ G.HUD = (() => {
           ctx.lineTo(Math.cos(a - 2.45) * 20 * k, Math.sin(a - 2.45) * 20 * k);
           ctx.closePath();
         };
-        tri(1.12); ctx.fillStyle = '#1a0b33'; ctx.fill();
-        tri(1); ctx.fillStyle = beat > 0.5 ? '#e2d0ff' : '#a06bff'; ctx.fill();
+        tri(1.12); ctx.fillStyle = (redRift ? '#330914' : '#1a0b33'); ctx.fill();
+        tri(1); ctx.fillStyle = beat > 0.5 ? (redRift ? '#ffd0dc' : '#e2d0ff') : (redRift ? '#ff4966' : '#a06bff'); ctx.fill();
         ctx.font = F(800, 12);
         ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
         const lx = -ca * 34, ly = -sa * 30 + 4;
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
         ctx.strokeText(label, lx, ly);
-        ctx.fillStyle = '#e2d0ff';
+        ctx.fillStyle = (redRift ? '#ffd0dc' : '#e2d0ff');
         ctx.fillText(label, lx, ly);
       } else {
         // Encima de la grieta: flecha hacia abajo que bota.
         const by = sy - 46 - Math.abs(Math.sin(now * 4)) * 10;
         ctx.translate(sx, by);
         ctx.beginPath(); ctx.moveTo(-15, -12); ctx.lineTo(15, -12); ctx.lineTo(0, 8); ctx.closePath();
-        ctx.lineWidth = 4; ctx.strokeStyle = '#1a0b33'; ctx.stroke();
-        ctx.fillStyle = beat > 0.5 ? '#e2d0ff' : '#a06bff'; ctx.fill();
+        ctx.lineWidth = 4; ctx.strokeStyle = (redRift ? '#330914' : '#1a0b33'); ctx.stroke();
+        ctx.fillStyle = beat > 0.5 ? (redRift ? '#ffd0dc' : '#e2d0ff') : (redRift ? '#ff4966' : '#a06bff'); ctx.fill();
         ctx.font = F(800, 11); ctx.textAlign = 'center';
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
-        const l2 = 'GRIETA · ' + Math.ceil(rift.ttl) + ' s';
-        ctx.strokeText(l2, 0, -18); ctx.fillStyle = '#e2d0ff'; ctx.fillText(l2, 0, -18);
+        const l2 = G.T(riftLabel) + ' · ' + Math.ceil(rift.ttl) + ' s';
+        ctx.strokeText(l2, 0, -18); ctx.fillStyle = (redRift ? '#ffd0dc' : '#e2d0ff'); ctx.fillText(l2, 0, -18);
       }
       ctx.restore();
     }
     if (G.Rift.inArena) {
       ctx.textAlign = 'center';
       ctx.font = F(800, 12);
-      ctx.fillStyle = '#d9c2ff';
-      ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
+      ctx.fillStyle = (redRift ? '#ff9cba' : '#d9c2ff');
+      ctx.fillText(G.T(riftLabel) + ' · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
     }
 
     // Eventos: cuenta atrás, flecha al Pokémon perdido / a la marca y a los duendes.
@@ -258,14 +260,15 @@ G.HUD = (() => {
       ctx.globalAlpha = a;
       ctx.translate(w / 2, y0); ctx.scale(pop, pop);
       ctx.font = F(800, 20);
-      const t1 = '¡SE HA ABIERTO UNA GRIETA!', t2 = 'Sigue la flecha morada: dentro te espera un legendario';
+      const t1 = redRift ? '¡SE HA ABIERTO UNA MEGAGRIETA!' : '¡SE HA ABIERTO UNA GRIETA!',
+            t2 = redRift ? 'Sigue la flecha roja: vence al legendario para megaevolucionar' : 'Sigue la flecha morada: dentro te espera un legendario';
       const bw = Math.min(w - 24, Math.max(ctx.measureText(t1).width, (ctx.font = F(700, 11), ctx.measureText(t2).width)) + 36);
       roundRect(ctx, -bw / 2, -26, bw, 52, 10);
-      ctx.fillStyle = 'rgba(26,11,51,.88)'; ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = '#b48aff'; ctx.stroke();
+      ctx.fillStyle = (redRift ? 'rgba(51,8,20,.88)' : 'rgba(26,11,51,.88)'); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = (redRift ? '#ff4966' : '#b48aff'); ctx.stroke();
       ctx.textAlign = 'center';
-      ctx.font = F(800, 20); ctx.fillStyle = '#e2d0ff'; ctx.fillText(t1, 0, -2);
-      ctx.font = F(700, 11); ctx.fillStyle = '#c9b0ff'; ctx.fillText(t2, 0, 16);
+      ctx.font = F(800, 20); ctx.fillStyle = (redRift ? '#ffd0dc' : '#e2d0ff'); ctx.fillText(t1, 0, -2);
+      ctx.font = F(700, 11); ctx.fillStyle = (redRift ? '#ffb0c2' : '#c9b0ff'); ctx.fillText(t2, 0, 16);
       ctx.restore();
     }
 
@@ -299,21 +302,11 @@ G.HUD = (() => {
     }
 
     // ---------- ranura de movimientos ----------
-    const S = 54, GAP = 9;
-    const n = Math.max(1, pl.slots.length);
-    const totalW = n * S + (n - 1) * GAP;
-    let sx = (w - totalW) / 2;
-    // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
-    let sy = h - S - 18 - (touch ? Math.min(28, G.Touch.safeArea().bottom) : 0);
-    // En móvil, donde la haya puesto el jugador: el bloque objeto + todos los
-    // huecos (aunque aún no estén llenos), por su centro, como en el editor
-    // (layout-ui.js); los ataques nuevos van saliendo hacia la derecha.
-    const pb = touch && G.Touch.spot('bar');
-    if (pb) {
-      const nAll = Math.max(n, pl.maxMoves), bw = S + 18 + nAll * S + (nAll - 1) * GAP;
-      sx = G.U.clamp(pb[0] * w - bw / 2, 6, Math.max(6, w - bw - 6)) + S + 18;
-      sy = G.U.clamp(pb[1] * h - S / 2, 24, h - S - 6);
-    }
+    const mega = !!(pl.megaStone || G.Forms.hasMegaForm(pl.mon.dex));
+    const n = Math.max(1, pl.slots.length), pb = touch && G.Touch.spot('bar');
+    const hotbar = G.Hotbar.layout(w, h, n, mega, touch ? G.Touch.safeArea() : {}, pb,
+      pb ? Math.max(n, pl.maxMoves) : n);
+    const S = hotbar.size, GAP = hotbar.gap, totalW = hotbar.totalW, sx = hotbar.sx, sy = hotbar.y;
     const BOND = '#ff8ad8';
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
 
@@ -341,7 +334,7 @@ G.HUD = (() => {
 
       if (fused) {
         // Vínculo: los movimientos en una cuadrícula de 2×2, cada uno con su recarga.
-        const C = 22, P = (S - C * 2) / 3;
+        const C = Math.min(22, Math.floor((S - 9) / 2)), P = (S - C * 2) / 3;
         g.forEach((gm, k) => {
           const cx = x + P + (k % 2) * (C + P), cy = y + P + Math.floor(k / 2) * (C + P);
           G.Icons.draw(ctx, 'move:' + gm.id, cx, cy, C);
@@ -393,7 +386,7 @@ G.HUD = (() => {
 
     // ---------- vínculo guardado (aún no hay dos movimientos sueltos) ----------
     if (pl.bonds > 0) {
-      const bx = sx + totalW + 12, by = sy + S / 2 - 12;
+      const bx = mega ? hotbar.megaX : sx + totalW - 24, by = sy - 36;
       G.Icons.draw(ctx, 'bond', bx, by, 24);
       if (pl.bonds > 1) {
         ctx.font = F(800, 10);
@@ -419,6 +412,20 @@ G.HUD = (() => {
         ctx.fillStyle = '#ffd23f';
         ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
       }
+    }
+
+    // Separate, passive Mega Stone slot, immediately after the move slots.
+    if (mega) {
+      const x = hotbar.megaX;
+      roundRect(ctx, x, sy, S, S, 12);
+      ctx.fillStyle = pl.megaStone ? 'rgba(65,12,30,.9)' : 'rgba(10,16,28,.45)'; ctx.fill();
+      ctx.lineWidth = pl.megaStone ? 2 : 1;
+      ctx.strokeStyle = pl.megaStone ? '#ff5473' : 'rgba(180,130,155,.3)'; ctx.stroke();
+      if (pl.megaStone) G.Icons.draw(ctx, pl.megaStone, x + (S - 32) / 2, sy + (S - 32) / 2, 32);
+      else { ctx.globalAlpha = 0.35; G.Icons.draw(ctx, 'mega_bracelet', x + (S - 32) / 2, sy + (S - 32) / 2, 32); ctx.globalAlpha = 1; }
+      ctx.font = F(700, 9); ctx.textAlign = 'center'; ctx.fillStyle = '#ff9ab0';
+      const form = G.Forms.megaFormFor(pl);
+      ctx.fillText(G.T(pl.megaStone && form ? form.stoneName : 'Megapiedra'), x + S / 2, sy - 6);
     }
 
     // ---------- esferas (encima de los ataques; teclas 5-8) y sus mejoras activas ----------

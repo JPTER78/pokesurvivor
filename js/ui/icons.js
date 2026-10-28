@@ -9,6 +9,8 @@
  *   'type:<tipo>'                sólo el emblema
  */
 G.Icons = (() => {
+  const ART = { lucarionite: 'assets/items/lucarionite.png', mega_bracelet: 'assets/items/mega_bracelet.png' };
+  const images = {};
   const K = '#1b1528';          // contorno
 
   // ---------------- iconos de interfaz (12×12) ----------------
@@ -364,6 +366,7 @@ G.Icons = (() => {
   }
 
   function url(name) {
+    if (ART[name]) return ART[name];
     let u = urls.get(name);
     if (!u) {
       // Los de interfaz, directamente de su dibujo; los emblemas (tipos, movimientos), del canvas.
@@ -431,11 +434,21 @@ G.Icons = (() => {
 
   /** <img> pixelado para el DOM. */
   function html(name, size = 20, cls = '') {
+    if (ART[name]) return `<img class="pix ${cls}" src="${ART[name]}" width="${size}" height="${size}" alt="" draggable="false">`;
     const cv = canvas(name), w = snap(name, size), h = w * cv.height / cv.width;
     return `<img class="pix ${cls}" src="${url(name)}" width="${w}" height="${h}" alt="" draggable="false">`;
   }
 
   function draw(ctx, name, x, y, size) {
+    if (ART[name]) {
+      let img = images[name];
+      if (!img) { img = images[name] = new Image(); img.src = ART[name]; }
+      if (img.complete && img.naturalWidth) {
+        const prev = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, Math.round(x), Math.round(y), size, size); ctx.imageSmoothingEnabled = prev;
+      }
+      return;
+    }
     const cv = canvas(name);
     const s2 = snap(name, size);
     x += (size - s2) / 2; y += (size - s2) / 2; size = s2;

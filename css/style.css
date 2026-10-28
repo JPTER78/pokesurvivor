@@ -816,6 +816,8 @@ body.touch kbd, body.touch .card .key, body.touch .kbd-hint { display: none !imp
 .lay-thing.held { cursor: grabbing; filter: drop-shadow(0 0 8px rgba(255,210,63,.8)); }
 .lay-thing.hidden { display: none; }
 .lay-bar { display: flex; gap: 9px; }
+.mega-badge { display: inline-flex; vertical-align: middle; margin-left: 3px; }
+.lay-slot.mega { border-color: #ff5473; }
 .lay-slot { position: relative; width: 54px; height: 54px; flex: none; border-radius: 12px; background: rgba(10,16,28,.8); border: 1.2px solid rgba(140,170,210,.4); }
 .lay-slot.on { border: 2.5px solid var(--gold); }
 .lay-slot.item { margin-right: 9px; background: rgba(10,16,28,.55); }

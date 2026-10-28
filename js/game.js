@@ -214,10 +214,11 @@ G.Game = (() => {
     G.Camera.x = pl.x; G.Camera.y = pl.y; G.Camera.shake = 0;
     // Hojas de sprites locales: el compañero y los primeros enemigos.
     G.Sprites.preload([mon.dex], 8000, pl.shiny, pl.anim.skin || '');
+    G.Forms.preload(pl);
     G.Audio.music(G.BIOME_MUSIC[0]);
     // Ranking: sube las marcas del histórico que estaban esperando (ver DEFER en ranking.js).
-    G.Ranking.newSeal();          // el sello del ranking de esta partida (también el invitado)
-    if (!coop || G.Coop.isHost) G.Ranking.runStarted();
+    if (!G.Dev.enabled) G.Ranking.newSeal();          // el sello del ranking de esta partida (también el invitado)
+    if (!G.Dev.enabled && (!coop || G.Coop.isHost)) G.Ranking.runStarted();
     deathT = 0;
 
     state = 'playing';
@@ -460,7 +461,7 @@ G.Game = (() => {
    */
   let runReal = 0, tampered = false;
   function clean() {
-    if (tampered) return false;
+    if (tampered || G.Dev.enabled) return false;
     if (time > (performance.now() - runReal) / 1000 + 10) return false;
     for (const k of ['hurt', 'update', 'heal', 'gainXp']) if (Object.prototype.hasOwnProperty.call(pl, k)) return false;
     if (!isFinite(pl.hp) || !isFinite(pl.maxHp) || pl.hp > pl.maxHp + 1 || pl.maxHp > 50000) return false;
@@ -1049,7 +1050,7 @@ G.Game = (() => {
     return { init, render, restore };
   })();
 
-  return {
+  const api = {
     init, startRun, everyone, levelXp, flash, offerBond,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { tampered = true; time = t; },
@@ -1072,6 +1073,12 @@ G.Game = (() => {
     toUI() { state = 'ui'; if (cv) cv.style.cursor = ''; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };
+  if (G.Dev.enabled) {
+    api.debugSetTime = t => { if (Number.isFinite(t) && t >= 0 && (!G.Coop.active || G.Coop.isHost)) api.debugTime(t); };
+  } else {
+    for (const k of Object.keys(api)) if (k.startsWith('debug')) delete api[k];
+  }
+  return api;
 })();
 
 /* ============ Flow — transiciones entre pantallas ============ */
@@ -1137,6 +1144,7 @@ G.Flow = {
   /** Empieza la partida en grupo (el anfitrión la manda a todos). */
   startCoop(cfg) {
     if (G.Game.state !== 'ui' || !G.Social.room) return;
+    if (cfg.protocol !== G.Net.GAME_VERSION) { G.UI.toast('Todos deben actualizar el juego para jugar juntos.'); return; }
     G.LobbyUI.close();
     G.Game.startRun(cfg);
   }

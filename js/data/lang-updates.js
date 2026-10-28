@@ -8,6 +8,20 @@
 (() => {
   const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
   const rows = [
+    ["Mega Evolución", "Méga-Évolution", "Megaevoluzione", "Mega Evolução", "超级进化", "超級進化"],
+    ["Lucario puede megaevolucionar durante la partida: vence al legendario de una grieta roja para conseguir Lucarionita, sin perder tus movimientos, objeto ni mejoras.", "Lucario peut méga-évoluer pendant la partie : bats le légendaire d’une faille rouge pour obtenir une Lucarite, sans perdre tes capacités, ton objet ni tes améliorations.", "Lucario può megaevolversi durante la partita: sconfiggi il leggendario di una fenditura rossa per ottenere la Lucarite, conservando mosse, strumento e potenziamenti.", "Lucario pode megaevoluir durante a partida: derrote o lendário de uma fenda vermelha para obter Lucarionite, mantendo golpes, item e melhorias.", "路卡利欧可在本局中超级进化：击败红色裂隙中的传说宝可梦，获得路卡利欧进化石，并保留招式、携带道具及强化。", "路卡利歐可在本局中超級進化：擊敗紅色裂隙中的傳說寶可夢，獲得路卡利歐進化石，並保留招式、攜帶道具及強化。"],
+    ["Grietas mejoradas a los 15, 20 y 25 minutos, con jefes más fuertes. Si no puedes megaevolucionar, recibes un Vínculo. La colección indica qué Pokémon pueden megaevolucionar.", "Des failles renforcées apparaissent à 15, 20 et 25 minutes avec des boss plus puissants. Si tu ne peux pas méga-évoluer, tu reçois un Lien. La collection indique quels Pokémon peuvent méga-évoluer.", "Fenditure potenziate a 15, 20 e 25 minuti con boss più forti. Se non puoi megaevolverti, ricevi un Legame. La collezione indica quali Pokémon possono megaevolversi.", "Fendas aprimoradas aos 15, 20 e 25 minutos, com chefes mais fortes. Se não puder megaevoluir, você recebe um Vínculo. A coleção indica quais Pokémon podem megaevoluir.", "第15、20及25分钟会出现强化裂隙，内有更强的首领。无法超级进化时可获得羁绊奖励。收藏中会标明可超级进化的宝可梦。", "第15、20及25分鐘會出現強化裂隙，內有更強的首領。無法超級進化時可獲得羈絆獎勵。收藏中會標明可超級進化的寶可夢。"],
+
+    ["Mega Evolución disponible", "Méga-Évolution disponible", "Megaevoluzione disponibile", "Mega Evolução disponível", "可超级进化", "可超級進化"],
+    ["¡Mega Evolución!", "Méga-Évolution !", "Megaevoluzione!", "Mega Evolução!", "超级进化！", "超級進化！"],
+    ["Megapiedra", "Méga-Gemme", "Megapietra", "Mega Pedra", "超级石", "超級石"],
+    ["Lucarionita", "Lucarite", "Lucarite", "Lucarionite", "路卡利欧进化石", "路卡利歐進化石"],
+    ["MEGAGRIETA", "MÉGA-FAILLE", "MEGAFENDITURA", "MEGAFENDA", "超级裂隙", "超級裂隙"],
+    ["¡SE HA ABIERTO UNA MEGAGRIETA!", "UNE MÉGA-FAILLE EST APPARUE !", "SI È APERTA UNA MEGAFENDITURA!", "UMA MEGAFENDA SE ABRIU!", "超级裂隙已开启！", "超級裂隙已開啟！"],
+    ["Sigue la flecha roja: vence al legendario para megaevolucionar", "Suis la flèche rouge : bats le légendaire pour méga-évoluer", "Segui la freccia rossa: sconfiggi il leggendario per megaevolverti", "Siga a seta vermelha: derrote o lendário para megaevoluir", "跟随红色箭头：击败传说宝可梦即可超级进化", "跟隨紅色箭頭：擊敗傳說寶可夢即可超級進化"],
+    ["Has entrado en la grieta mejorada…", "Tu es entré dans la faille renforcée…", "Sei entrato nella fenditura potenziata…", "Você entrou na fenda aprimorada…", "已进入强化裂隙……", "已進入強化裂隙……"],
+    ["Todos deben actualizar el juego para jugar juntos.", "Tout le monde doit mettre le jeu à jour pour jouer ensemble.", "Tutti devono aggiornare il gioco per giocare insieme.", "Todos devem atualizar o jogo para jogar juntos.", "所有玩家都必须更新游戏才能一起游玩。", "所有玩家都必須更新遊戲才能一起遊玩。"],
+
     ["Tipo", "Type", "Tipo", "Tipo", "属性", "屬性"],
     ["Nuevo", "Nouveau", "Novità", "Novidades", "新增", "新增"],
     ["Cambios", "Modifications", "Modifiche", "Alterações", "变更", "變更"],

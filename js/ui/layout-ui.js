@@ -4,11 +4,12 @@
  * quiera. Se guarda el centro de cada cosa en proporción a la pantalla
  * (G.Settings 'pad'); lo que no se mueve se queda en su sitio de siempre.
  * El HUD (hud.js) y el joystick (touch.js) leen esas posiciones.
- * Las medidas copian las del HUD: si cambian allí, cambiarlas aquí.
+ * Las medidas se comparten con el HUD (hotbar.js).
  */
 G.LayoutUI = (() => {
-  const S = 54, GAP = 9, ITEM_GAP = 18, N = 4;          // como en hud.js
-  const BAR_W = S + ITEM_GAP + N * S + (N - 1) * GAP;
+  const N = 4;          // Geometry is shared with hud.js through G.Hotbar.
+  const hasMega = () => !!(G.Game.player ? G.Forms.hasMegaForm(G.Game.player.mon.dex) || G.Game.player.megaStone : G.DB.save && G.Forms.hasMegaForm(G.DB.save.partner));
+  const barLayout = (w, h, spot = null) => G.Hotbar.layout(w, h, N, hasMega(), G.Touch.safeArea(), spot);
   let el = null, pos = null, moved = null, mode = 'float';
 
   /** Dónde está cada cosa ahora mismo (centro en px), con lo guardado o lo de siempre. */
@@ -17,10 +18,8 @@ G.LayoutUI = (() => {
     if (k === 'stick') { const b = G.Touch.stickBase(w, h); return [b.x, b.y]; }
     const sa = G.Touch.safeArea();
     if (k === 'bar') {
-      if (p) return [p[0] * w, p[1] * h];
-      const totalW = N * S + (N - 1) * GAP;
-      const left = (w - totalW) / 2 - S - ITEM_GAP;
-      return [left + BAR_W / 2, h - S - 18 - Math.min(28, sa.bottom) + S / 2];
+      const b = barLayout(w, h, p);
+      return [b.x + b.width / 2, b.y + b.size / 2];
     }
     if (p) return [p[0] * w, p[1] * h];
     return [w - 52 - Math.min(44, sa.right) + 20, 12 + Math.min(20, sa.top) + 20];
@@ -28,7 +27,7 @@ G.LayoutUI = (() => {
 
   /** Lo mismo que hace el HUD para que no se salga de la pantalla. */
   function fit(k, x, y, w, h) {
-    if (k === 'bar') return [G.U.clamp(x, 6 + BAR_W / 2, Math.max(6 + BAR_W / 2, w - BAR_W / 2 - 6)), G.U.clamp(y, 24 + S / 2, h - S / 2 - 6)];
+    if (k === 'bar') { const b = barLayout(w, h, [x / w, y / h]); return [b.x + b.width / 2, b.y + b.size / 2]; }
     if (k === 'pause') return [G.U.clamp(x, 24, w - 24), G.U.clamp(y, 30, h - 24)];
     const r = G.Touch.R();
     return [G.U.clamp(x, r + 4, w - r - 4), G.U.clamp(y, r + 4, h - r - 4)];
@@ -40,7 +39,7 @@ G.LayoutUI = (() => {
     el.className = 'scr hidden';
     const slots = Array.from({ length: N }, (_, i) => `<div class="lay-slot${i === 0 ? ' on' : ''}"><i>${i + 1}</i></div>`).join('');
     el.innerHTML = `
-      <div class="lay-thing lay-bar" data-k="bar"><div class="lay-slot item"></div>${slots}<span class="lay-tag">Ataques</span></div>
+      <div class="lay-thing lay-bar" data-k="bar"><div class="lay-slot item"></div>${slots}<div class="lay-slot mega"></div><span class="lay-tag">Ataques</span></div>
       <div class="lay-thing lay-pause" data-k="pause"><b></b><b></b></div>
       <div class="lay-thing lay-stick" data-k="stick"><div class="knob"></div><span class="lay-tag">Joystick</span></div>
       <div class="box lay-panel">
@@ -64,8 +63,8 @@ G.LayoutUI = (() => {
     el.querySelector('#lay-reset').onclick = () => {
       moved = {}; mode = 'float';
       const w = innerWidth, h = innerHeight, sa = G.Touch.safeArea();
-      const totalW = N * S + (N - 1) * GAP;
-      pos = { bar: [(w - totalW) / 2 - S - ITEM_GAP + BAR_W / 2, h - S - 18 - Math.min(28, sa.bottom) + S / 2],
+      const b = barLayout(w, h);
+      pos = { bar: [b.x + b.width / 2, b.y + b.size / 2],
               pause: [w - 52 - Math.min(44, sa.right) + 20, 12 + Math.min(20, sa.top) + 20],
               stick: [G.Touch.STICK_DEF[0] * w, G.Touch.STICK_DEF[1] * h] };
       for (const k in pos) pos[k] = fit(k, pos[k][0], pos[k][1], w, h);
@@ -113,7 +112,10 @@ G.LayoutUI = (() => {
       n.style.width = ww + 'px'; n.style.height = hh + 'px';
       return n;
     };
-    place('bar', BAR_W, S);
+    const b = barLayout(innerWidth, innerHeight);
+    place('bar', b.width, b.size);
+    el.querySelector('.lay-slot.mega').classList.toggle('hidden', !hasMega());
+    el.querySelectorAll('.lay-slot').forEach(n => { n.style.width = b.size + 'px'; n.style.height = b.size + 'px'; });
     place('pause', 40, 40);
     place('stick', r * 2, r * 2).classList.toggle('hidden', mode !== 'fixed');
     el.querySelectorAll('#lay-mode .chip').forEach(b => b.classList.toggle('on', b.dataset.m === mode));

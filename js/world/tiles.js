@@ -655,9 +655,11 @@ G.Tiles = (() => {
     },
 
     /** Grieta hacia la arena del legendario. variante = fotograma 0..3. */
-    rift(B, variant) {
+    megaRift(B, variant) { return PAINT.rift(B, variant, true); },
+    rift(B, variant, red = false) {
       const P = Pix(30, 46);
-      const glow = pack('#7b3cff'), mid = pack('#b48aff'), core = pack('#140a26'), white = pack('#f2e6ff');
+      const glow = pack(red ? '#b30f31' : '#7b3cff'), mid = pack(red ? '#ff4966' : '#b48aff'),
+            core = pack(red ? '#290810' : '#140a26'), white = pack(red ? '#ffe8ed' : '#f2e6ff');
       for (let y = 2; y < 44; y++) {
         const t = (y - 2) / 42;
         const w = Math.sin(t * Math.PI) * 9 + 1;
