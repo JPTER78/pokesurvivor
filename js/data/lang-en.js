@@ -4,6 +4,11 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  "¡Megapiedra conseguida!": "Mega Stone earned!",
+  "Megaevoluciona hasta el final de la partida. Conservas tu objeto equipado.": "Mega Evolve until the end of this run. Keep your held item.",
+  "Recoger y megaevolucionar": "Claim & Mega Evolve",
+  "La megapiedra se recoge en una pantalla de recompensa antes de megaevolucionar. Mega Lucario descansa con una animación más lenta.": "Claim your Mega Stone on a reward screen before Mega Evolving. Mega Lucario now has a slower idle animation.",
+
   'Mega Evolución disponible': 'Mega Evolution available',
   '¡Mega Evolución!': 'Mega Evolution!',
   'Megapiedra': 'Mega Stone', 'Lucarionita': 'Lucarionite',

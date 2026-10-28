@@ -16,6 +16,7 @@ G.Player = class Player {
     this.spriteKey = mon.dex;
     this.nature = mon.nature;
     this.megaStone = null;
+    this.pendingMegaForm = null;
     this.transformation = null;
     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
     // Los grandes, algo más pequeños y con el choque de uno normal (ver sprites.js).

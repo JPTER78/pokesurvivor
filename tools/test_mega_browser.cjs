@@ -71,6 +71,23 @@ const server = http.createServer((req, res) => {
         xpNext: p.xpNext, item: p.item, cd: p.cdMul, coins: p.coins, ratio: p.hp / p.maxHp, t: p.moves[0].t };
       G.Rift.debugWin(); G.Rift.update(.01, p, G.Game.st.time);
     });
+    assert.equal(await page.evaluate(() => G.Game.player.megaStone), null);
+    assert.equal(await page.evaluate(() => G.Game.player.formId), 'lucario');
+    await page.evaluate(() => G.Game.togglePause());
+    await page.locator('#scr-mega:not(.hidden)').waitFor();
+    await page.waitForFunction(() => !document.getElementById('mega-cards').classList.contains('guard'));
+    await page.locator('#mega-art img').evaluate(img => img.decode());
+    assert.equal(await page.evaluate(() => G.Game.state), 'choice');
+    await page.screenshot({ path: path.join(out, 'mega-reward.png') });
+    await page.setViewportSize({ width: 568, height: 320 });
+    await page.screenshot({ path: path.join(out, 'mega-reward-mobile.png') });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Claim and pause in the same task so combat cannot alter the preservation snapshot.
+    await page.evaluate(() => {
+      document.getElementById('mega-claim').click();
+      if (G.Game.state !== 'playing') throw Error('claim did not resume run');
+      G.Game.togglePause(); G.UI.hideAll();
+    });
     const result = await page.evaluate(() => {
       const p = G.Game.player, b = window.beforeMega;
       return { identity: b.p === p, moves: b.moves === p.moves, slots: b.slots === p.slots, buffs: b.buffs === p.buffs,
@@ -127,6 +144,64 @@ const server = http.createServer((req, res) => {
       if (G.Game.player.megaStone || G.Game.player.bonds !== 1) throw Error('Pikachu fallback failed');
       G.Rift.update(6, G.Game.player, G.Game.st.time);
     });
+    // A level-up takes priority; the pending stone survives it and needs an explicit tap.
+    await page.evaluate(() => {
+      G.DB.save.partner = 448; G.Game.startRun(); G.Rift.debugMegaArena(); G.Rift.debugWin();
+      G.Rift.update(.01, G.Game.player, G.Game.st.time); G.Pickups.clear(); G.Game.debugLevelUp();
+    });
+    await page.locator('#scr-levelup:not(.hidden)').waitFor();
+    assert.equal(await page.evaluate(() => G.UI.isOpen('scr-mega')), false);
+    assert.equal(await page.evaluate(() => G.Game.player.formId), 'lucario');
+    await page.waitForFunction(() => !document.getElementById('cards').classList.contains('guard'));
+    await page.evaluate(() => G.RunUI.pick(0));
+    await page.locator('#scr-mega:not(.hidden)').waitFor();
+    await page.waitForFunction(() => !document.getElementById('mega-cards').classList.contains('guard'));
+    await page.locator('#mega-claim').tap();
+    await page.waitForFunction(() => G.Game.player.formId === 'lucario-mega');
+    // Leaving an unclaimed reward for a new run cannot transform the new player.
+    await page.evaluate(() => { G.Game.startRun(); G.Forms.queueMega(G.Game.player); });
+    await page.locator('#scr-mega:not(.hidden)').waitFor();
+    await page.evaluate(() => {
+      const old = document.getElementById('mega-claim');
+      G.Game.startRun(); old.click();
+      if (G.Game.player.pendingMegaForm || G.Game.player.formId !== 'lucario') throw Error('stale reward leaked into a fresh run');
+      G.Game.togglePause(); G.UI.hideAll();
+    });
+    // Real Game choice flow with a simulated co-op transport: interrupt a reward
+    // with a level-up, queue an item behind it, and wait for a teammate afterward.
+    await page.evaluate(() => {
+      window.originalCoop = G.Coop; window.rewardHolds = { start: 0, end: 0 };
+      G.Coop = Object.assign({}, G.Coop, {
+        active: true, isHost: false, members: [], tick() {}, puppets: () => [], players: () => [G.Game.player],
+        begin(cfg, p, api) { window.rewardApi = api; },
+        holdStart() { rewardHolds.start++; }, holdEnd() { rewardHolds.end++; },
+        localPicked() { rewardApi.resume(); }
+      });
+      G.Game.startRun({ seed: 123, hw: false }); G.Game.player.equip('quickclaw');
+      G.Forms.queueMega(G.Game.player);
+    });
+    await page.locator('#scr-mega:not(.hidden)').waitFor();
+    await page.evaluate(() => rewardApi.levelStart(2));
+    await page.locator('#scr-levelup:not(.hidden)').waitFor();
+    assert.equal(await page.evaluate(() => G.UI.isOpen('scr-mega')), false);
+    await page.waitForFunction(() => !document.getElementById('cards').classList.contains('guard'));
+    await page.evaluate(() => G.RunUI.pick(0));
+    await page.locator('#scr-mega:not(.hidden)').waitFor();
+    await page.evaluate(() => { rewardApi.hold(['Friend']); rewardApi.item('leftovers'); });
+    assert.equal(await page.evaluate(() => G.UI.isOpen('scr-item')), false);
+    await page.waitForFunction(() => !document.getElementById('mega-cards').classList.contains('guard'));
+    await page.locator('#mega-claim').tap();
+    await page.locator('#scr-item:not(.hidden)').waitFor();
+    await page.waitForFunction(() => !document.getElementById('item-cards').classList.contains('guard'));
+    await page.locator('#item-cards .card').nth(1).tap();
+    await page.waitForFunction(() => G.Game.state === 'held');
+    assert.deepEqual(await page.evaluate(() => rewardHolds), { start: 3, end: 3 });
+    assert.equal(await page.evaluate(() => G.Game.player.megaStone), 'lucarionite');
+    await page.evaluate(() => {
+      rewardApi.hold([]);
+      if (G.Game.state !== 'playing') throw Error('co-op remained paused after all choices');
+      G.Coop = originalCoop; G.Game.startRun(); G.Game.togglePause(); G.UI.hideAll();
+    });
     assert.equal(await page.evaluate(() => G.DB.commit()), false);
     assert.equal(await page.evaluate(() => G.DB.online), false);
     // Production build must keep G private even with the test flag.
@@ -138,7 +213,7 @@ const server = http.createServer((req, res) => {
     await prod.keyboard.press('Enter');
     await prod.locator('#btn-guest').waitFor({ state: 'visible' });
     assert.deepEqual(errors, []);
-    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 6 }, null, 2));
+    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ result, errors, screenshots: 8 }, null, 2));
     console.log('Browser integration passed: portal → arena → victory → Mega → new run; Pikachu fallback; mobile; production privacy.');
     console.log(out);
   } finally { await browser.close(); server.close(); }

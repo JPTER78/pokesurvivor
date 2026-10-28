@@ -78,6 +78,38 @@ test('stone is independent of held item, awarded once, and absent in a fresh run
   assert.equal(G.Forms.hasMegaForm(25), false);
 });
 
+test('Mega reward is reserved without transforming and can only be claimed once', () => {
+  const { G, p } = game(); p.equip('leftovers');
+  const before = { hp: p.hp, maxHp: p.maxHp, mon: p.mon, anim: p.anim };
+  assert.ok(G.Forms.queueMega(p)); assert.equal(G.Forms.queueMega(p), false);
+  assert.equal(p.pendingMegaForm, 'lucario-mega'); assert.equal(p.megaStone, null);
+  assert.equal(p.formId, 'lucario');
+  for (const k of Object.keys(before)) assert.equal(p[k], before[k], k);
+  assert.ok(G.Forms.claimMega(p)); assert.equal(p.pendingMegaForm, null);
+  assert.equal(p.item, 'leftovers'); assert.equal(p.megaStone, 'lucarionite');
+  assert.equal(G.Forms.claimMega(p), false); assert.equal(G.Forms.queueMega(p), false);
+  const q = new G.Player(G.Mons.monFor(448));
+  assert.equal(q.pendingMegaForm, null); assert.equal(G.Forms.claimMega(q), false);
+  assert.equal(G.Forms.queueMega(game(25).p), false);
+});
+
+test('only Mega Lucario Idle runs at half speed, including shiny and after an attack', () => {
+  const { G } = game(); load(G, 'js/core/sprites.js');
+  for (const shiny of [false, true]) {
+    for (const key of [448, '448-mega', 25]) {
+      const a = new G.Sprites.Animator(key, 1, shiny);
+      a.update(1 / 120); near(a.t, key === '448-mega' ? .25 : .5);
+      a.loop('Walk'); a.update(1 / 120); near(a.t, .5);
+      a.play('Attack'); a.update(1 / 120); near(a.t, .5);
+      a.loop('Idle');
+      const m = G.Sprites.animMeta(key, 'Attack', shiny);
+      a.update(m.d.reduce((sum, d) => sum + d, 0) / 60);
+      assert.equal(a.cur, 'Idle'); a.update(1 / 120);
+      near(a.t, key === '448-mega' ? .25 : .5);
+    }
+  }
+});
+
 test('remote form applies validated sprite, nature, ability and stone independently', () => {
   const { G } = game(); const p = new G.Player(G.DEX_BY[448]); p.remote = true;
   const state = { form: 'lucario-mega', stone: 'lucarionite', nature: 'adamant', ability: 'adaptability' };

@@ -11,6 +11,8 @@ G.CHANGELOG = [
      'Lucario can Mega Evolve during a run: defeat the Legendary in a red rift to earn Lucarionite, keeping your moves, held item and upgrades.'],
     ['Grietas mejoradas a los 15, 20 y 25 minutos, con jefes más fuertes. Si no puedes megaevolucionar, recibes un Vínculo. La colección indica qué Pokémon pueden megaevolucionar.',
      'Enhanced rifts at 15, 20 and 25 minutes with stronger bosses. If you cannot Mega Evolve, you receive a Bond. The collection shows which Pokémon can Mega Evolve.']
+  ], chg: [
+    ["La megapiedra se recoge en una pantalla de recompensa antes de megaevolucionar. Mega Lucario descansa con una animación más lenta.", "Claim your Mega Stone on a reward screen before Mega Evolving. Mega Lucario now has a slower idle animation."]
   ], fix: [
     ['Iconos de megapiedra y megapulsera más grandes. La megapulsera también aparece en los Pokémon que aún no tienes.',
      'Larger Mega Stone and Mega Bracelet icons. The Mega Bracelet also appears on Pokémon you do not own yet.']

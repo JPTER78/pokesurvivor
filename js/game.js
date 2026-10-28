@@ -292,7 +292,7 @@ G.Game = (() => {
     },
     levelStart(level) {
       // (Si tenías abierta la elección de objeto, vuelve al terminar: afterLevelUp.)
-      if (state === 'choice' && openItem && G.Coop.active) G.Coop.holdEnd();
+      if (state === 'choice' && (openItem || G.UI.isOpen('scr-mega')) && G.Coop.active) G.Coop.holdEnd();
       state = 'levelup';
       G.UI.hide('scr-pause');
       G.Audio.sfx('levelup');
@@ -524,6 +524,23 @@ G.Game = (() => {
     });
   }
 
+  /** A rift reward waits behind other choices and uses the shared co-op pause. */
+  function offerMegaStone() {
+    if (!pl || !pl.pendingMegaForm || pendingLevels > 0 || (state !== 'playing' && state !== 'held')) return;
+    if (G.SettingsUI.isOpen || ['scr-pause', 'scr-item', 'scr-levelup', 'scr-bond', 'scr-mega'].some(G.UI.isOpen)) return;
+    const player = pl, form = G.Forms.get(player.pendingMegaForm);
+    if (!form) return;
+    state = 'choice';
+    if (G.Coop.active) G.Coop.holdStart();
+    G.RunUI.showMegaStone(form, () => {
+      if (pl !== player || state !== 'choice' || !G.Forms.claimMega(player)) return;
+      G.Audio.sfx('legend');
+      state = holdBy.length || awayBy ? 'held' : 'playing';
+      if (G.Coop.active) G.Coop.holdEnd();
+      afterLevelUp();
+    });
+  }
+
   // ---------------- recogida ----------------
 
   const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend', sphere: 'confirm' };
@@ -551,7 +568,7 @@ G.Game = (() => {
   /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
-    if (state === 'levelup' || G.UI.isOpen('scr-levelup')) { laterItems.push(id); return; }
+    if (state === 'levelup' || G.UI.isOpen('scr-levelup') || G.UI.isOpen('scr-mega')) { laterItems.push(id); return; }
     let mine = false;            // esta elección es la que ha parado el juego
     const take = got => {
       openItem = null;
@@ -657,6 +674,10 @@ G.Game = (() => {
       if (G.Input.tap('keyr')) G.RunUI.reroll();
       return;
     }
+    if (G.UI.isOpen('scr-mega')) {
+      if (['enter', 'space', 'digit1', 'numpad1'].some(k => G.Input.tap(k))) document.getElementById('mega-claim').click();
+      return;
+    }
     if (G.UI.isOpen('scr-bond')) {
       for (let i = 0; i < 4; i++) {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pickBond(i);
@@ -749,6 +770,7 @@ G.Game = (() => {
 
     G.Pad.poll(real);
     handleKeys();
+    offerMegaStone();
     if ((trapT -= real) <= 0) { trapT = 0.5; ensureTrap(); }
 
     if (state === 'playing') update(dt);

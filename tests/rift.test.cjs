@@ -53,7 +53,8 @@ test('enhanced boss scaling composes with time and co-op scaling, preserving nor
 
 test('victory is idempotent, duplicates/stale resolutions cannot reward a later arena', () => {
   const { G, p } = game(); G.Rift.debugMegaArena(); const id = G.Rift.arena.id;
-  G.Rift.onEvent(['aw', id]); assert.equal(p.megaStone, 'lucarionite'); assert.equal(p.formId, 'lucario-mega'); assert.equal(p.bonds, 0);
+  G.Rift.onEvent(['aw', id]); assert.equal(p.megaStone, null); assert.equal(p.pendingMegaForm, 'lucario-mega');
+  G.Rift.onEvent(['aw', id]); assert.equal(p.bonds, 0); assert.ok(G.Forms.claimMega(p)); assert.equal(p.megaStone, 'lucarionite'); assert.equal(p.formId, 'lucario-mega'); assert.equal(p.bonds, 0);
   G.Rift.onEvent(['aw', id]); assert.equal(p.bonds, 0);
   G.Rift.update(6, p, 906); G.Rift.debugMegaArena();
   G.Rift.onEvent(['aw', id]); assert.equal(p.bonds, 0); assert.equal(G.Rift.arena.phase, 'fight');
@@ -83,7 +84,8 @@ test('host alone schedules and resolves a shared encounter, each client receives
   host.G.Rift.update(.1, host.p, 902); assert.equal(guest.G.Rift.arena.kind, 'mega'); assert.equal(guest.enemies.size, 0);
   guest.G.Rift.update(200, guest.p, 1102); assert.equal(guest.G.Rift.arena.phase, 'fight');
   host.G.Rift.debugWin(); host.G.Rift.update(.1, host.p, 903);
-  assert.equal(host.p.megaStone, 'lucarionite'); assert.equal(guest.p.bonds, 1);
+  assert.equal(host.p.megaStone, null); assert.equal(host.p.pendingMegaForm, 'lucario-mega');
+  assert.ok(host.G.Forms.claimMega(host.p)); assert.equal(host.p.megaStone, 'lucarionite'); assert.equal(guest.p.bonds, 1);
   guest.G.Rift.onEvent(['aw', guest.G.Rift.arena.id]); assert.equal(guest.p.bonds, 1);
 });
 

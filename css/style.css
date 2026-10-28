@@ -1086,3 +1086,17 @@ html:lang(zh) .btn, html:lang(zh) .chip { letter-spacing: 0; }
   .topbar .btn.small { padding: 2px 4px; }
   .topbar img { width: 14px; height: 14px; }
 }
+
+/* Enhanced-rift reward: artwork stays pixelated and choices pause the run. */
+.mega-reward { width: min(460px, 100%); border-color: #ff5473; background: radial-gradient(ellipse at top, #542237, #101a32 75%); }
+.mega-reward h2 { color: #ffb0c2; }
+.mega-reward h3 { color: var(--gold); }
+.mega-reward-art { height: 128px; display: grid; place-items: center; background: radial-gradient(circle, #ff547344, transparent 60%); }
+#mega-cards { margin-top: 18px; }
+#mega-cards.guard button { opacity: .5; }
+@media (max-height: 480px) {
+  #scr-mega { padding: 8px; }
+  .mega-reward-art { height: 84px; }
+  .mega-reward-art img { width: 96px; height: 96px; }
+  #mega-cards { margin-top: 8px; }
+}

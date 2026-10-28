@@ -244,7 +244,7 @@ G.Rift = (() => {
     G.Audio.sfx('legend');
     const pl = G.Game.player;
     if (pl) {
-      if (arena.kind === 'mega' && G.Forms.awardMega(pl)) return;
+      if (arena.kind === 'mega' && G.Forms.queueMega(pl)) return;
       pl.bonds++;
       G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, '¡Vínculo!', '#ff8ad8', true);
       G.FX.ring(pl.x, pl.y, 8, 90, '#ff8ad8', 0.7, 5);

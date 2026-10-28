@@ -1,7 +1,9 @@
 # Mega Evolution
 
-Lucario receives Lucarionite and automatically becomes Mega Lucario after winning
-an enhanced red rift. Its normal held item remains equipped. Ineligible players
+After winning an enhanced red rift, Lucario receives a Mega Stone reward screen.
+Claiming Lucarionite transforms the same player into Mega Lucario. The screen
+waits behind existing choices, pauses the run (including co-op), and prevents
+accidental or duplicate claims. Its normal held item remains equipped. Ineligible players
 and players already carrying a Mega Stone receive the existing Bond reward.
 Everything resets with the next run; collection ownership and upgrades still use
 the original species identity.
@@ -60,7 +62,8 @@ python tools/fetch_mega_items.py
 Sprite conversion writes only `assets/pokemon/<dex>/forms/...` and
 `js/data/sprites-forms.js`. It retains anchors, directions and animation timing.
 Shoot uses Attack and Faint uses Hurt because the upstream set lacks those names.
-Normal and shiny Mega sprites are included; missing shiny form sets fall back to
+Mega Lucario’s Idle playback rate is 0.5 in `tools/forms.json`; other animations
+and regular Lucario retain their original timing. Normal and shiny Mega sprites are included; missing shiny form sets fall back to
 normal form sheets. Base Lucario sprites and generated Pokédex data are untouched.
 
 To add a form, add its definition, sprite source/path and stone name to the
@@ -85,7 +88,7 @@ G.Game.startRun();
 G.Rift.debugOpenMega();          // walk into the red portal
 // Or G.Rift.debugMegaArena() to skip walking.
 G.Rift.debugWin();               // kills the arena boss through normal damage
-// Resolve any level/item choices, collect the rewards and return to the world.
+// Resolve any level/item choices, claim the Mega Stone and return to the world.
 ```
 
 Other shortcuts: `G.Forms.debugMegaEvolve()`, `G.Game.debugSetTime(899)`;

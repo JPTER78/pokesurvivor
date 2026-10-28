@@ -12,6 +12,7 @@
 G.Sprites = (() => {
   /** Unidades de mundo por píxel de arte. Tiles y sprites comparten escala. */
   const PX = 2;
+  const playback = Object.fromEntries((G.FORM_DEFS || []).map(f => [f.sprite.key, f.sprite.playback || {}]));
   const sheets = new Map();          // "dex/Anim[/s]" -> {img, ready, failed}
 
   function meta(dex) { return G.SPRITE_META[dex] || null; }
@@ -244,7 +245,8 @@ G.Sprites = (() => {
     update(dt) {
       const m = animMeta(this.dex, this.cur, this.shiny);
       if (!m || this.done) return;
-      this.t += dt * 60 * this.speed;
+      const rate = (playback[this.dex] || {})[this.cur] || 1;
+      this.t += dt * 60 * this.speed * rate;
       while (this.t >= m.d[this.frame]) {
         this.t -= m.d[this.frame];
         this.frame++;

@@ -63,11 +63,23 @@ G.Forms = (() => {
     return true;
   }
 
+  // Reserve the reward until its screen is acknowledged; no stats change yet.
+  function queueMega(p) {
+    if (!canMegaEvolve(p) || p.pendingMegaForm) return false;
+    p.pendingMegaForm = megaFormFor(p).id;
+    return true;
+  }
+  function claimMega(p) {
+    const f = p && get(p.pendingMegaForm);
+    return !!f && f === megaFormFor(p) && awardMega(p);
+  }
+
   function awardMega(p) {
     if (!canMegaEvolve(p)) return false;
     const f = megaFormFor(p);
     if (!transform(p, f.id, { source: f.stone })) return false;
     p.megaStone = f.stone;
+    p.pendingMegaForm = null;
     G.Spawner.say(G.T('¡Mega Evolución!') + ' ' + p.mon.name, 3.4, true);
     return true;
   }
@@ -98,7 +110,7 @@ G.Forms = (() => {
     }
   }
   function revert(p) { return !!p._originalForm && transform(p, p._originalForm.id, { silent: true }); }
-  const api = { get, transform, revert, preload, awardMega, applyRemote, megaFormFor, canMegaEvolve,
+  const api = { get, transform, revert, preload, awardMega, queueMega, claimMega, applyRemote, megaFormFor, canMegaEvolve,
     hasMegaForm: dex => !!megaForDex(dex), megaForDex };
   if (G.Dev && G.Dev.enabled) api.debugMegaEvolve = () => awardMega(G.Game.player);
   return api;

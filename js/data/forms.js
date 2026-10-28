@@ -23,7 +23,10 @@ G.FORM_DEFS = [
     "sprite": {
       "key": "448-mega",
       "source": "0448/0001",
-      "path": "448/forms/mega"
+      "path": "448/forms/mega",
+      "playback": {
+        "Idle": 0.5
+      }
     },
     "stats": {
       "hp": 102,

@@ -228,6 +228,20 @@ G.RunUI = (() => {
     guard(box);
   }
 
+  function showMegaStone(form, cb) {
+    $('mega-art').innerHTML = G.Icons.html(form.stone, 128);
+    $('mega-name').textContent = G.T(form.stoneName);
+    const button = $('mega-claim');
+    // Replacing the button also clears callbacks from a previous run/reopened choice.
+    const next = button.cloneNode(true); button.replaceWith(next);
+    let claimed = false;
+    onTap(next, () => {
+      if (claimed || guarded() || !G.UI.isOpen('scr-mega')) return;
+      claimed = true; G.UI.hide('scr-mega'); cb();
+    });
+    G.UI.show('scr-mega'); guard($('mega-cards'));
+  }
+
   // ---------------- vínculo: qué movimientos se fusionan ----------------
 
   let bond = null;          // { opt, cb, first, list }
@@ -389,5 +403,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, reroll, showItemChoice, showMegaStone, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
 })();
