@@ -29,6 +29,7 @@ G.Rift = (() => {
   let zone = null;          // dónde estaba la última arena { x, y, r } (ver leftBehind)
   let checkT = CHECK, asked = false, downT = 0, misses = 0;
   const authority = () => !G.Coop.active || G.Coop.isHost;
+  const BACK_PUSH_R = 130, BACK_PUSH = 320;   // empujón al volver de la grieta: radio y fuerza (suave: unos 50 px)
   const TS = () => G.Tiles.T * G.Sprites.PX;
 
   function reset() { rift = null; arena = null; zone = null; checkT = CHECK; asked = false; downT = 0; misses = 0; }
@@ -239,6 +240,18 @@ G.Rift = (() => {
     for (const p of G.Game.everyone()) { p.x = a.back.x; p.y = a.back.y; }
     pl.x = a.back.x; pl.y = a.back.y;
     if (pl.dead) pl.revive(0.3);
+    // Al volver se cae donde se entró, a menudo en medio de la horda: 1 s sin
+    // daño y un empujón suave a los que esperaban encima (el anfitrión, que es
+    // quien mueve a los enemigos), para no comerse los golpes sin poder hacer nada.
+    pl.invuln = Math.max(pl.invuln, 1);
+    if (authority()) {
+      for (const e of G.EnemyMgr.queryCircle(a.back.x, a.back.y, BACK_PUSH_R)) {
+        if (e.dead || e.boss || e.arceus) continue;
+        const [nx, ny] = G.U.norm(e.x - a.back.x || 1, e.y - a.back.y);
+        e.kx += nx * BACK_PUSH; e.ky += ny * BACK_PUSH;
+      }
+    }
+    G.FX.ring(a.back.x, a.back.y, 10, BACK_PUSH_R, '#c9a6ff', 0.45, 3);
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     G.Game.flash('#c9a6ff', 0.8);
     if (pl.bonds > 0) G.Game.offerBond();

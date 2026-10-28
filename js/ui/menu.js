@@ -531,10 +531,85 @@ G.MenuUI = (() => {
     renderUpgrades();
   }
 
+  /** Qué niveles se comprarían para subir las mejoras de `dex` (las más baratas
+   *  primero) con `coins` monedas; sin `coins`, lo que cuesta subirlo todo al máximo. */
+  function upgradePlan(dex, coins = Infinity) {
+    const lv = Object.assign({}, G.DB.upgradesOf(dex));
+    let spent = 0, n = 0;
+    for (;;) {
+      let best = null, bc = Infinity;
+      for (const u of G.Upgrades.LIST) {
+        const l = lv[u.id] || 0;
+        if (l >= u.max || (u.needs && !lv[u.needs])) continue;
+        const c = G.Upgrades.cost(u.id, l);
+        if (c < bc) { bc = c; best = u; }
+      }
+      if (!best || spent + bc > coins) break;
+      spent += bc; n++;
+      lv[best.id] = (lv[best.id] || 0) + 1;
+    }
+    return { spent, n, levels: lv };
+  }
+
+  /** Botón «Mejora total»: enseña lo que cuesta subirlo todo al máximo y, antes
+   *  de gastar nada, una ventana con lo que se compra, cuánto cuesta y lo que te queda. */
+  function upgradeAllButton() {
+    const box = $('upg-all');
+    if (!box) return;
+    const s = G.DB.save, mon = G.DEX_BY[upgDex];
+    const nf = n => n.toLocaleString(G.I18n.locale);
+    const all = upgradePlan(upgDex), can = upgradePlan(upgDex, s.coins);
+    if (!all.n) { box.innerHTML = `<span class="sub" style="margin:0">${G.T('Todas las mejoras al máximo')}</span>`; return; }
+    box.innerHTML = `<button class="btn gold" data-sfx="none" ${can.n ? '' : 'disabled'}>
+      ${G.T('Mejora total')}: <span class="coin"></span> ${nf(all.spent)}</button>
+      ${can.n < all.n ? `<span class="sub" style="margin:0">${G.I18n.f('Tienes {x}: te faltan {x}', nf(s.coins), nf(all.spent - s.coins))}</span>` : ''}`;
+    box.querySelector('button').onclick = () => {
+      const sv = G.DB.save, before = G.DB.upgradesOf(upgDex);
+      const full = upgradePlan(upgDex), plan = upgradePlan(upgDex, sv.coins);
+      if (!plan.n) { renderUpgrades(); return; }
+      const whole = plan.n === full.n;
+      const rows = G.Upgrades.LIST.filter(u => (plan.levels[u.id] || 0) > (before[u.id] || 0))
+        .map(u => `<li><b>${u.name}</b>: ${before[u.id] || 0} → ${plan.levels[u.id]}${plan.levels[u.id] >= u.max ? ' (' + G.T('Máx.') + ')' : ''}</li>`).join('');
+      const el = document.createElement('section');
+      el.className = 'scr dim';
+      el.style.zIndex = 70;
+      el.innerHTML = `<div class="box" style="max-width:420px">
+        <h3>${G.T('Mejora total')}</h3>
+        <p class="sub">${whole
+          ? G.I18n.f('Se suben al máximo todas las mejoras de {x}: {x} niveles por {x} monedas.', mon.name, plan.n, nf(plan.spent))
+          : G.I18n.f('Para subir todas las mejoras de {x} al máximo hacen falta {x} monedas y tienes {x}. Con lo que tienes se compran {x} niveles, empezando por los más baratos, por {x} monedas:', mon.name, nf(full.spent), nf(sv.coins), plan.n, nf(plan.spent))}</p>
+        <ul style="margin:6px 0 8px;padding-left:20px;line-height:1.5">${rows}</ul>
+        <p class="sub"><b>${G.I18n.f('Te quedarán {x} monedas.', nf(sv.coins - plan.spent))}</b> ${G.T('No se puede deshacer.')}</p>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn ghost" data-a="no">Cancelar</button>
+          <button class="btn gold" data-a="yes" data-sfx="none">${G.I18n.f('Gastar {x} monedas', nf(plan.spent))}</button>
+        </div></div>`;
+      document.body.appendChild(el);
+      const end = () => el.remove();
+      el.querySelector('[data-a=no]').onclick = end;
+      el.onclick = ev => { if (ev.target === el) end(); };
+      el.querySelector('[data-a=yes]').onclick = () => {
+        end();
+        // Se vuelve a calcular con la partida de ahora (pudo cambiar con la ventana abierta).
+        const now = G.DB.save, p = upgradePlan(upgDex, now.coins);
+        if (!p.n) { renderUpgrades(); return; }
+        now.coins -= p.spent;
+        Object.assign(G.DB.upgradesOf(upgDex), p.levels);
+        G.DB.commit(true);
+        G.Audio.sfx('buy');
+        G.UI.refreshCoins();
+        G.UI.toast(G.I18n.f('{x}: {x} niveles de mejora por {x} monedas', mon.name, p.n, nf(p.spent)));
+        renderUpgrades();
+      };
+      el.querySelector('[data-a=yes]').focus();
+    };
+  }
+
   function renderUpgrades() {
     const s = G.DB.save;
     const levels = G.DB.upgradesOf(upgDex);
     const mon = G.DEX_BY[upgDex];
+    upgradeAllButton();
     const shiny = upgDex === s.partner && !!s.partnerShiny && G.DB.ownsShiny(upgDex);
     G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny });
     $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);

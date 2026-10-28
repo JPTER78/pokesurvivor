@@ -516,7 +516,7 @@ G.Coop = (() => {
         G.Audio.sfx('break');
         break;
       case 'pb': G.World.breakAt(ev[1], ev[2]); break;
-      case 'say': G.Spawner.say(ev[1], ev[2]); break;
+      case 'say': G.Spawner.say(ev[1], ev[2], false, !!ev[3]); break;
       case 'heal': if (!local.dead) { local.heal(local.maxHp * ev[1]); G.FX.ring(local.x, local.y, 6, 60, '#5fe08a', 0.4, 3); } break;
       case 'lu': if (!ev[2] || ev[2] > seenSeq) { seenSeq = ev[2] || seenSeq; api.levelStart(ev[1]); } break;
       case 'lw': api.waiting(ev[1]); break;
@@ -559,7 +559,7 @@ G.Coop = (() => {
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type, p.cat]); }
   function pickupAdded(o) { emit(['pk', o.id, o.kind, r1(o.x), r1(o.y), o.value]); }
   function pickupGone(id) { emit(['pc', id]); }
-  function say(text, secs) { emit(['say', text, secs]); }
+  function say(text, secs, shiny) { emit(shiny ? ['say', text, secs, 1] : ['say', text, secs]); }
 
   function propBroken(p) {
     if (host) emit(['pb', p.tx, p.ty]);

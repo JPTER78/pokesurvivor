@@ -23,10 +23,12 @@ G.Spawner = (() => {
   const hpK = t => 3.3 + Math.min(1.7, t / 210);
   const SHINY_RATE = 1 / 4096;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
+  let announceShiny = false, pending = null;   // aviso de shiny en pantalla; el normal que espera a que acabe
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
   function reset() {
     acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
+    announceShiny = false; pending = null;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
   }
@@ -117,7 +119,7 @@ G.Spawner = (() => {
     if (G.Events.golden) e.makeGolden();
     G.EnemyMgr.add(e);
     if (shiny) {
-      say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);
+      say('¡Un ' + e.name + ' shiny anda cerca!', 4.5, false, true);
       G.Audio.sfx('shiny');
     }
     return e;
@@ -137,7 +139,7 @@ G.Spawner = (() => {
   /** @param who  el jugador o la lista de jugadores (cooperativo) */
   function update(dt, who, t) {
     players = Array.isArray(who) ? who : [who];
-    if (announceT > 0) announceT -= dt;
+    tickBanner(dt);
     // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
     // En la Sentencia de Arceus, sólo sus legendarios (systems/judgment.js).
     if (G.Rift.inArena || G.Judgment.active) return;
@@ -197,16 +199,24 @@ G.Spawner = (() => {
   }
 
   /** Aviso grande en pantalla (también lo usan el bioma y los shinies). */
-  /** @param local  sólo en este ordenador (no se manda a los compañeros) */
-  function say(text, secs = 2.6, local = false) {
-    announce = text; announceT = secs;
-    if (G.Coop.isHost && !local) G.Coop.say(text, secs);
+  /** @param local  sólo en este ordenador (no se manda a los compañeros)
+   *  @param shiny  aviso de shiny: sale destacado y ningún aviso normal lo pisa
+   *                (el normal espera a que acabe; antes, con mucho jaleo en
+   *                pantalla, el del shiny se tapaba y no te enterabas) */
+  function say(text, secs = 2.6, local = false, shiny = false) {
+    if (!shiny && announceShiny && announceT > 0) pending = [text, secs];
+    else { announce = text; announceT = secs; announceShiny = shiny; }
+    if (G.Coop.isHost && !local) G.Coop.say(text, secs, shiny);
   }
 
-  function banner() { return announceT > 0 ? { text: announce, t: announceT } : null; }
+  function banner() { return announceT > 0 ? { text: announce, t: announceT, shiny: announceShiny } : null; }
 
-  /** Invitado en cooperativo: sólo corre el reloj del aviso. */
-  function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
+  /** Corre el reloj del aviso (el invitado en cooperativo, sólo esto). */
+  function tickBanner(dt) {
+    if (announceT > 0 && (announceT -= dt) <= 0 && pending) {
+      [announce, announceT] = pending; announceShiny = false; pending = null;
+    }
+  }
 
   return { reset, update, ahead, burst, outR, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { forceShiny = n; } };

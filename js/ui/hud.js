@@ -46,6 +46,17 @@ G.HUD = (() => {
     ctx.restore();
   }
 
+  /** Destello de cuatro puntas (el de los shinies). */
+  function sparkle(ctx, x, y, r, col) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4, d = i % 2 ? r * 0.28 : r;
+      ctx[i ? 'lineTo' : 'moveTo'](x + Math.cos(a - Math.PI / 2) * d, y + Math.sin(a - Math.PI / 2) * d);
+    }
+    ctx.closePath();
+    ctx.fillStyle = col; ctx.fill();
+  }
+
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -279,17 +290,24 @@ G.HUD = (() => {
       ctx.textAlign = 'center';
       // En el móvil las frases largas (las esferas) se salían por los dos lados:
       // se parten en líneas y, si aún no caben en tres, la letra baja.
-      let size = 22, lines;
+      // El de un shiny, igual que los demás pero en azul shiny y con un destello
+      // a cada lado, para que se distinga entre tantos ataques.
+      const sh = ban.shiny;
+      let size = sh ? 24 : 22, lines;
       for (;;) {
         ctx.font = F(800, size);
-        lines = wrap(ctx, ban.text, w - 40);
+        lines = wrap(ctx, ban.text, w - (sh ? 80 : 40));
         if (lines.length <= 3 || size <= 14) break;
         size -= 2;
       }
-      ctx.fillStyle = '#ffcb3d';
-      ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = 4;
       // (Nunca por encima de la línea de bioma, derrotados y monedas, bajo el reloj.)
       const y0 = Math.max(78 + size * 0.5, h * 0.3 - (lines.length - 1) / 2 * size * 1.25);
+      if (sh) {
+        const tw = ctx.measureText(lines[0]).width, r = 6 + (Math.sin(performance.now() / 140) + 1) * 2;
+        for (const sx of [-1, 1]) sparkle(ctx, w / 2 + sx * (tw / 2 + 18), y0 - size * 0.35, r, '#e6fbff');
+      }
+      ctx.fillStyle = sh ? '#9ae6ff' : '#ffcb3d';
+      ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = 4;
       lines.forEach((ln, i) => {
         const y = y0 + i * size * 1.25;
         ctx.strokeText(ln, w / 2, y);
