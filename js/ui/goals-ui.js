@@ -41,12 +41,15 @@
     // ---------------- misiones ----------------
 
     function untilText(kind) {
-      const now = new Date();
-      // Medianoche (diarias) o lunes (semanales), hora de España aproximada por la del navegador.
-      const end = new Date(now);
-      end.setHours(24, 0, 0, 0);
-      if (kind === 'w') { const add = (8 - (now.getDay() || 7)) % 7; end.setDate(end.getDate() + add); }
-      const mins = Math.max(1, Math.round((end - now) / 60000));
+      // Medianoche (diarias) o lunes (semanales) en hora de España, como G.Ranking.periodIds:
+      // con la del navegador, fuera de España la cuenta llegaba a 0 sin que cambiaran (#320).
+      const p = {};
+      for (const x of new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', hourCycle: 'h23', weekday: 'short', hour: '2-digit', minute: '2-digit' })
+        .formatToParts(new Date())) p[x.type] = x.value;
+      const dow = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(p.weekday) + 1;
+      let mins = 1440 - (+p.hour * 60 + +p.minute);
+      if (kind === 'w') mins += (7 - dow) * 1440;
+      mins = Math.max(1, mins);
       return mins >= 1440 ? Math.floor(mins / 1440) + ' d ' + Math.floor(mins % 1440 / 60) + ' h'
                           : Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min';
     }

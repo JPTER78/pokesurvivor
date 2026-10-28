@@ -54,6 +54,7 @@ G.AbilityFX = (() => {
     // --- más daño ---
     'overgrow': pinch('grass'), 'blaze': pinch('fire'), 'torrent': pinch('water'), 'swarm': pinch('bug'),
     'steelworker': boost('steel'), 'steely-spirit': boost('steel'), 'dragons-maw': boost('dragon'), 'transistor': boost('electric'),
+    'corrosion': boost('poison'),
     'water-bubble': { d: '+40 % de daño de tipo Agua y recibe la mitad de daño de Fuego.',
       out: (pl, m) => (m.type === 'water' ? 1.4 : 1), inMul: (pl, type) => (type === 'fire' ? 0.5 : 1) },
     'technician': { d: '+35 % de daño con los ataques de golpes flojos.', out: (pl, m) => ((m.def || m).dmg <= 12 ? 1.35 : 1) },
@@ -134,6 +135,7 @@ G.AbilityFX = (() => {
     'static': contact((pl, e) => e.applySlow(0.5, 2.5), 'Quien le golpea cuerpo a cuerpo se queda frenado (paralizado).'),
     'flame-body': contact((pl, e) => e.applyBurn(2), 'Quien le golpea cuerpo a cuerpo se quema.'),
     'poison-point': contact((pl, e) => e.applyPoison(2), 'Quien le golpea cuerpo a cuerpo se envenena.'),
+    'toxic-debris': contact((pl, e) => e.applyPoison(2), 'Quien le golpea cuerpo a cuerpo se envenena.'),
     'cute-charm': contact((pl, e) => e.applySlow(0.4, 2.5), 'Quien le golpea cuerpo a cuerpo se queda embobado (frenado).'),
     'effect-spore': contact((pl, e) => (Math.random() < 0.5 ? e.applySlow(0.45, 2.5) : e.applyPoison(2)), 'Quien le golpea cuerpo a cuerpo se frena o se envenena.'),
     'rough-skin': contact((pl, e) => e.hurt(dmgBack(pl), '#9aa6b5'), 'Quien le golpea cuerpo a cuerpo recibe daño.'),

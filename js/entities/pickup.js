@@ -140,7 +140,9 @@ G.Pickups = (() => {
       if (p.pulled || d2 < mag2) {
         p.pulled = true;
         const d = Math.sqrt(d2) || 1;
-        const pull = 240 + 1400 / d;
+        // Siempre más rápido que quien lo atrae: con mucha velocidad (mejoras,
+        // buffs, clima) un tope fijo de 240 dejaba los orbes atrás (#263).
+        const pull = Math.max(240, (pl.spd || 0) * 1.4) + 1400 / d;
         p.vx = G.U.damp(p.vx, (dx / d) * pull, 7, dt);
         p.vy = G.U.damp(p.vy, (dy / d) * pull, 7, dt);
       } else {

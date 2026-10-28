@@ -484,11 +484,18 @@ G.Game = (() => {
     pendingLevels--;
     state = 'levelup';
     G.Audio.sfx('levelup');
-    G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
-      G.Audio.sfx('confirm');
-      card.apply(pl);
+    // Si algo falla al montar o al aplicar la carta, se vuelve a jugar: antes se quedaba
+    // en 'levelup' sin cartas a la vista y la partida, congelada para siempre (#262).
+    try {
+      G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
+        G.Audio.sfx('confirm');
+        try { card.apply(pl); } finally { state = 'playing'; }
+      });
+    } catch (e) {
+      G.UI.hide('scr-levelup');
       state = 'playing';
-    });
+      throw e;
+    }
   }
 
   // ---------------- vínculos ----------------
