@@ -149,3 +149,11 @@ test('external boot follows the shared locale without inline executable scripts'
     if (lang !== 'es') assert.notEqual(paragraphs[1].textContent, 'Cargando…');
   }
 });
+
+test('level-up stat card tag with its count is translated in every language (Mejora · 3/40)', () => {
+  for (const lang of langs) {
+    const b = boot(lang);
+    for (const n of [' · 3/40', ' · 0/8']) assert.equal(b.G.T('Mejora' + n), b.G.T('Mejora') + n, lang);
+    if (lang !== 'es') assert.notEqual(b.G.T('Mejora'), 'Mejora', lang);
+  }
+});

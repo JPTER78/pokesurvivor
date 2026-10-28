@@ -114,10 +114,12 @@ G.LevelUp = (() => {
     const pickStats = G.U.pickN(STATS.filter(s => !waiting[s.id] && room(s)), 5).concat(STATS.filter(s => waiting[s.id]));
     for (const s of pickStats) {
       const evoFor = waiting[s.id];
+      // Las que llevas y el tope (como en «Tus estadísticas» de la pausa); sólo las que tienen tope.
+      const count = s.max ? ' · ' + (pl.statsTaken[s.id] || 0) + '/' + s.max : '';
       out.push({
         w: evoFor ? 14 : pl.slots.length < pl.maxMoves ? 4 : 7,
         type: 'stat', key: 'stat:' + s.id,
-        icon: s.icon, color: evoFor ? '#ffd23f' : '#8fa3c4', tag: evoFor ? 'Evoluciona ' + G.T(evoFor.name, 'move') : 'Mejora',
+        icon: s.icon, color: evoFor ? '#ffd23f' : '#8fa3c4', tag: (evoFor ? 'Evoluciona ' + G.T(evoFor.name, 'move') : 'Mejora') + count,
         title: s.title, desc: s.desc,
         apply: p => { s.apply(p); p.statsTaken[s.id] = (p.statsTaken[s.id] || 0) + 1; }
       });
