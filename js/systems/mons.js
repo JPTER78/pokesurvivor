@@ -110,15 +110,32 @@ G.Mons = (() => {
   /** MT que puede aprender (las que no sabe ya). */
   function learnable(dex) { return G.TM_OF(dex).filter(id => G.Moves.BY_ID[id] && !natural(dex, id) && !taught(dex).includes(id)); }
   const canLearn = (dex, id) => learnable(dex).includes(id);
+  /** Apunta cuándo aprendió (1) u olvidó (0) una MT: al juntar la partida de dos
+   *  aparatos manda lo último que pasó (ver merge en core/db.js). */
+  function mark(s, dex, id, on) {
+    s.ptmAt = s.ptmAt || {};
+    (s.ptmAt[dex] = s.ptmAt[dex] || {})[id] = [on ? 1 : 0, Date.now()];
+  }
   /** Enseña una MT de la Mochila (se gasta). → true si se ha aprendido. */
   function teach(dex, id) {
     const s = save();
     if (!s || !canLearn(dex, id) || !G.Shop.takeTm(id)) return false;
     s.ptm = s.ptm || {};
     s.ptm[dex] = taught(dex).concat([id]);
+    mark(s, dex, id, true);
+    return true;
+  }
+  /** Olvida una MT con un Olvidamovimientos de la Mochila (se gasta). Sólo las
+   *  aprendidas con MT: las propias del Pokémon no están en esta lista. → true si la ha olvidado. */
+  function forget(dex, id) {
+    const s = save();
+    if (!s || !taught(dex).includes(id) || !G.Shop.take('forget')) return false;
+    s.ptm[dex] = taught(dex).filter(m => m !== id);
+    if (!s.ptm[dex].length) delete s.ptm[dex];
+    mark(s, dex, id, false);
     return true;
   }
 
   return { name, natureOf, setNature, rolledNature, monFor, abilityOf, abilityChoices, setAbility, abilityName,
-           slots, taught, learnable, canLearn, teach, natural };
+           slots, taught, learnable, canLearn, teach, forget, natural };
 })();

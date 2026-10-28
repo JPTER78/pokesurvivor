@@ -92,7 +92,8 @@ G.DB = (() => {
       // Tienda Kecleon (20-10-2026, ver data/shop.js y systems/mons.js):
       bag: {},                // Mochila: id -> cuántos (mint, cap, caph); en la libreta, como las monedas
       tms: {},                // MT sin usar: movimiento -> cuántas; también en la libreta
-      ptm: {},                // dex -> [movimientos aprendidos con MT] (para siempre)
+      ptm: {},                // dex -> [movimientos aprendidos con MT] (hasta que se olviden)
+      ptmAt: {},              // dex -> { movimiento -> [1 aprendida / 0 olvidada, fecha] }: para fusionar
       pnat: {},               // dex -> [naturaleza, fecha]: la cambiada con Menta (si no, la que le tocó)
       pabil: {},              // dex -> [0|1|2, fecha]: la habilidad cambiada con Cápsula (2 = oculta)
       // Halloween (25-10-2026, core/skins.js): los caramelos van en bag.candy.
@@ -179,6 +180,16 @@ G.DB = (() => {
       const l = Array.isArray(s.ptm[d]) ? s.ptm[d] : [];
       s.ptm[d] = [...new Set(l.filter(id => typeof id === 'string' && (!G.Moves || G.Moves.BY_ID[id])))];
       if (!s.ptm[d].length || (G.DEX_BY && !G.DEX_BY[d])) delete s.ptm[d];
+    }
+    if (!isObj(s.ptmAt)) s.ptmAt = {};
+    for (const d of Object.keys(s.ptmAt)) {
+      const m = s.ptmAt[d];
+      if (!isObj(m) || (G.DEX_BY && !G.DEX_BY[d])) { delete s.ptmAt[d]; continue; }
+      for (const id of Object.keys(m)) {
+        const v = m[id];
+        if (!Array.isArray(v) || (v[0] !== 0 && v[0] !== 1) || !Number.isFinite(+v[1]) || (G.Moves && !G.Moves.BY_ID[id])) delete m[id];
+      }
+      if (!Object.keys(m).length) delete s.ptmAt[d];
     }
     // Naturaleza y habilidad elegidas: [valor, fecha].
     for (const [k, ok] of [['pnat', v => typeof v === 'string' && (!G.NATURE_BY || G.NATURE_BY[v])], ['pabil', v => v === 0 || v === 1 || v === 2]]) {
@@ -341,9 +352,23 @@ G.DB = (() => {
     r.tickets = r.tickets || { t1: 0, t10: 0 };
     r.bag = {}; r.tms = {};
     for (const k of curKeys({ bag: {}, tms: {} }, led)) curSet(r, k, Math.max(0, ledSum(led, k)));
-    // MT aprendidas: nunca se olvidan (unión). Naturaleza y habilidad: la elegida más tarde.
+    // MT aprendidas: unión, salvo las que se olvidaron (Olvidamovimientos) después de
+    // aprenderlas: de cada una manda lo último que pasó en cualquiera de los dos aparatos.
+    // Las aprendidas antes de que hubiera fechas cuentan como aprendidas en la fecha 0.
+    // Naturaleza y habilidad: la elegida más tarde.
     r.ptm = r.ptm || {};
     for (const d in older.ptm || {}) r.ptm[d] = [...new Set((r.ptm[d] || []).concat(older.ptm[d] || []))];
+    const at = {};
+    for (const src of [r.ptmAt, older.ptmAt]) for (const d in src || {}) for (const id in src[d] || {}) {
+      const v = src[d][id], cur = (at[d] = at[d] || {})[id];
+      if (Array.isArray(v) && (!cur || (+v[1] || 0) > (+cur[1] || 0))) at[d][id] = v;
+    }
+    r.ptmAt = at;
+    for (const d in at) {
+      const l = new Set(r.ptm[d] || []);
+      for (const id in at[d]) { if (at[d][id][0]) l.add(id); else l.delete(id); }
+      if (l.size) r.ptm[d] = [...l]; else delete r.ptm[d];
+    }
     for (const k of ['pnat', 'pabil', 'pskin']) {
       r[k] = r[k] || {};
       for (const d in older[k] || {}) if (!r[k][d] || (+older[k][d][1] || 0) > (+r[k][d][1] || 0)) r[k][d] = older[k][d];

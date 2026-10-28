@@ -20,6 +20,10 @@ G.Icons = (() => {
     tm: { pal: { b: '#7f93ff', d: '#4a5bc4', w: '#e6ecff' }, rows: [
       '....kkkk....', '..kkbbbbkk..', '.kbbwwbbbbk.', '.kbwwbbbbbk.', 'kbbwbkkbbbbk', 'kbbbk..kbbbk',
       'kbbbk..kbbbk', 'kbbbbkkbbbdk', '.kbbbbbbbdk.', '.kbbbbbbddk.', '..kkbbddkk..', '....kkkk....'] },
+    // Olvidamovimientos (27-10-2026): un disco de MT gris tachado en rojo.
+    forget: { pal: { b: '#aab3c8', d: '#6b7488', w: '#f2f5ff', r: '#ff5f6d' }, rows: [
+      '....kkkk....', '..kkbbbbkr..', '.kbbwwbbrrk.', '.kbwwbbrrbk.', 'kbbwbkrrbbbk', 'kbbbkrrkbbbk',
+      'kbbbrrkkbbbk', 'kbbrrkkbbbdk', '.krrbbbbbdk.', '.rrbbbbbddk.', '..kkbbddkk..', '....kkkk....'] },
     mint: { pal: { g: '#5fe08a', w: '#d6ffe2' }, rows: [
       '............', '.......kkk..', '.....kkgggk.', '....kgggwgk.', '...kgggwggk.', '..kgggwgggk.',
       '..kggwgggk..', '.kggwgggk...', '.kgwgggk....', '.kwkkkk.....', 'kk..........', 'k...........'] },

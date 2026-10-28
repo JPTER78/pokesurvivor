@@ -37,7 +37,7 @@ G.ShopUI = (() => {
     const calm = () => !!G.Settings.get('calm');
     const at = (ms, fn) => timers.push(setTimeout(fn, ms));
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const SHELF = ['mint', 'berry', 'tm', 'capsule', 'ball', 'capsuleh', 'tm', 'mint', 'berry', 'capsule', 'tm', 'ball', 'mint', 'capsuleh'];
+    const SHELF = ['mint', 'berry', 'tm', 'capsule', 'ball', 'capsuleh', 'tm', 'forget', 'berry', 'capsule', 'tm', 'ball', 'mint', 'capsuleh'];
 
     // ---------------- tamaño y escenario ----------------
 
@@ -523,7 +523,7 @@ G.ShopUI = (() => {
   }
 
   // Qué hay en la estantería de cada cosa que se compra (para que salga de ahí).
-  const SHELF_ICON = { mint: 'mint', cap: 'capsule', caph: 'capsuleh' };
+  const SHELF_ICON = { mint: 'mint', cap: 'capsule', caph: 'capsuleh', forget: 'forget' };
 
   function render() {
     const box = $('shop-body');
@@ -566,7 +566,7 @@ G.ShopUI = (() => {
     const s = G.DB.save, partner = s.partner, mine = n => (n ? ` <small class="gold">· ${G.I18n.f('tienes {x}', n)}</small>` : '');
     const buyBtn = (key, price) => `<button class="btn small gold" data-buy="${key}" data-sfx="none" ${s.coins < price ? 'disabled' : ''}>${coin(price)}</button>`;
     let h = G.Halloween.on ? skinsHtml() : '';
-    h += `<h3 style="margin:10px 0 6px">${G.T('Objetos')}</h3><div class="upg">`;
+    h += `<h3 style="margin:10px 0 6px">${G.T('Objetos')}</h3><div class="upg upg-4">`;
     for (const id of G.Shop.ORDER) {
       const it = G.Shop.ITEMS[id];
       h += row(G.Icons.html(it.icon, 32), G.T(it.name) + mine(G.Shop.count(id)), G.T(it.desc), buyBtn(id, it.price));
@@ -611,7 +611,7 @@ G.ShopUI = (() => {
       return `<p class="sub center" style="margin:24px 0">${G.T('Tu Mochila está vacía.')}<br><br>
             <button class="btn gold" data-go-shop>${G.Icons.html('shop', 16)} ${G.T('Ir a la Tienda Kecleon')}</button></p>` + irisHtml();
     }
-    let h = `<p class="sub" style="margin:10px 0">${G.T('Para usarlo, abre la colección, elige un Pokémon y pulsa Menta, Cápsula o Enseñar MT en su ficha.')}
+    let h = `<p class="sub" style="margin:10px 0">${G.T('Para usarlo, abre la colección, elige un Pokémon y pulsa Menta, Cápsula, Enseñar MT u Olvidar MT en su ficha.')}
       <button class="btn small" data-go-dex>${G.Icons.html('book', 14)} ${G.T('Ir a la colección')}</button></p><div class="upg">`;
     for (const id of items) {
       const it = G.Shop.ITEMS[id];

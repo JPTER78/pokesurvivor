@@ -173,3 +173,25 @@ test('Guardar dos veces seguidas y salir del juego: la segunda se sube al salir'
   NOW += 17000; A.hide(); await settle();            // a los 22 s sales del juego
   assert.equal(cloud.save.tickets.t1, 5, 'se ha subido al salir');
 });
+
+test('Olvidamovimientos: lo olvidado en un aparato no vuelve al juntar, y se puede volver a aprender', async () => {
+  reset();
+  const { DB } = tab(new Map());
+  const base = { updated: 1, coins: 0, tickets: { t1: 0, t10: 0 }, owned: {}, shiny: {}, ptm: { 25: ['flamethrower', 'surf'] } };
+  // Aparato A olvida Lanzallamas (fecha 50); B no se ha enterado y sigue con las dos.
+  const a = Object.assign(JSON.parse(JSON.stringify(base)), { updated: 60, ptm: { 25: ['surf'] }, ptmAt: { 25: { flamethrower: [0, 50] } } });
+  const b = Object.assign(JSON.parse(JSON.stringify(base)), { updated: 70 });
+  let r = DB.merge(a, b);
+  assert.deepEqual([...r.ptm[25]].sort(), ['surf']);
+  // B la vuelve a aprender después (fecha 80): gana lo último.
+  const b2 = Object.assign(JSON.parse(JSON.stringify(base)), { updated: 90, ptmAt: { 25: { flamethrower: [1, 80] } } });
+  r = DB.merge(a, b2);
+  assert.deepEqual([...r.ptm[25]].sort(), ['flamethrower', 'surf']);
+  // Y olvidarla otra vez (fecha 100) la vuelve a quitar, aunque el otro aparato la tenga.
+  const a2 = Object.assign(JSON.parse(JSON.stringify(base)), { updated: 110, ptm: { 25: ['surf'] }, ptmAt: { 25: { flamethrower: [0, 100] } } });
+  r = DB.merge(r, a2);
+  assert.deepEqual([...r.ptm[25]].sort(), ['surf']);
+  // Sin fechas (partidas de antes) sigue siendo la unión de siempre.
+  r = DB.merge(Object.assign(JSON.parse(JSON.stringify(base)), { ptm: { 25: ['surf'] } }), Object.assign(JSON.parse(JSON.stringify(base)), { updated: 2, ptm: { 25: ['flamethrower'] } }));
+  assert.deepEqual([...r.ptm[25]].sort(), ['flamethrower', 'surf']);
+});

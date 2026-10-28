@@ -431,7 +431,7 @@ G.MenuUI = (() => {
   // ---------------- naturaleza, habilidad y MT (Tienda Kecleon, 20-10-2026) ----------------
   // Se ven en la ficha de cada Pokémon y aquí se usan la Menta, las Cápsulas y las MT de la Mochila.
   const STAT_NAME = { pa: 'Ataque', sa: 'At. Esp.', df: 'Defensa', sd: 'Def. Esp.', spd: 'Velocidad' };
-  let extraOpen = '';          // 'nat' | 'cap' | 'caph' | 'tm' | '' (qué selector está abierto)
+  let extraOpen = '';          // 'nat' | 'cap' | 'caph' | 'tm' | 'forget' | '' (qué selector está abierto)
   const natLine = n => (n.up ? `+${G.T(STAT_NAME[n.up])} −${G.T(STAT_NAME[n.down])}` : G.T('neutra'));
 
   function monExtras(dex) {
@@ -451,7 +451,7 @@ G.MenuUI = (() => {
       <div class="mx-row"><span>MT</span>${taught.length
         ? `<span class="move-icons">${taught.map(id => `<span title="${G.T(G.Moves.BY_ID[id].name, 'move')}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</span>`
         : `<small>${G.T('Aún no ha aprendido ninguna')}</small>`}
-        ${btn('tm', 'tm', 'Enseñar MT', tmsHere.length)}</div>
+        ${btn('tm', 'tm', 'Enseñar MT', tmsHere.length)}${btn('forget', 'forget', 'Olvidar MT', taught.length ? G.Shop.count('forget') : 0)}</div>
       ${skinRow(dex)}
       <div id="mx-picker"></div>
     </div>`;
@@ -507,6 +507,14 @@ G.MenuUI = (() => {
         if (!G.Mons.teach(dex, id)) return;
         done(G.I18n.f('¡{x} ha aprendido {x}!', mon.name, G.T(G.Moves.BY_ID[id].name, 'move')));
       });
+    } else if (extraOpen === 'forget' && G.Shop.count('forget')) {
+      // Sólo las aprendidas con MT: las suyas propias no salen (no se pueden olvidar).
+      chips(G.Mons.taught(dex).map(id => ({ v: id, html: `${G.Icons.html('move:' + id, 16)} ${G.T(G.Moves.BY_ID[id].name, 'move')}` })), '', id => {
+        if (!G.Mons.forget(dex, id)) return;
+        done(G.I18n.f('{x} ha olvidado {x}. Puede volver a aprenderlo con su MT.', mon.name, G.T(G.Moves.BY_ID[id].name, 'move')));
+      });
+      host.querySelector('.panel').insertAdjacentHTML('afterbegin',
+        `<p class="sub" style="margin:0 0 8px">${G.Icons.html('forget', 14)} ${G.T('¿Qué movimiento aprendido con MT olvida? Se gasta un Olvidamovimientos. Sus movimientos propios no se pueden olvidar.')}</p>`);
     }
   }
 
