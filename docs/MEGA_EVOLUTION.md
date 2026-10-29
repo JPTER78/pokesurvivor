@@ -11,10 +11,25 @@ the original species identity.
 Kyurem uses the same enhanced-rift victories to obtain **DNA Splicers** and
 choose **Black Kyurem** or **White Kyurem**. The two buttons preview normal/shiny
 sprites and indicate physical/special emphasis; mouse, touch, controller, or
-keys 1/2 select a form. No Reshiram/Zekrom ownership is required. Choosing is
-instant, with no transition cinematic. The reward pauses the run and follows
+keys 1/2 select a form. No Reshiram/Zekrom ownership is required. Choosing starts a paused sprite-based transformation cinematic. The reward pauses the run and follows
 the existing co-op level-up/item ordering. After fusion, later red rifts give a
 Bond instead of another form choice. New runs restore regular Kyurem.
+
+## Transformation presentation
+
+After confirming a reward, `G.FormScene` uses the existing normal/shiny sprites
+and item icon. Eleven-percent letterbox bars close in, the item rises, the base
+name appears above the large centered sprite, and white silhouettes alternate
+with a brightness pulse. The actual claim occurs at reveal, after which the
+name changes and all six nature-adjusted base stats show before/after values.
+The item remains visible and the result shows the new form’s type badges.
+Fixed layout slots keep the sprite still when results appear; visible-pixel
+bounds keep large forms fully in frame with a larger reveal scale.
+Continue closes the bars and releases the existing co-op hold. Reduced-motion
+users get a shorter fade without alternating silhouettes. Combat, timers and
+cooldowns stay paused; queued items and co-op level choices wait. Leaving or
+restarting a run cancels the scene without callbacks affecting a new player.
+No new art pack or VFX assets are required.
 
 ## Architecture
 

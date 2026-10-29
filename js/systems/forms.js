@@ -72,21 +72,21 @@ G.Forms = (() => {
     p.pendingMegaForm = rewardFormsFor(p)[0].id;
     return true;
   }
-  function claimReward(p, id) {
+  function claimReward(p, id, options = {}) {
     const pending = p && get(p.pendingMegaForm), choices = rewardFormsFor(p);
     if (!pending || !choices.includes(pending)) return false;
     const f = get(id || (choices.length === 1 ? pending.id : ''));
-    return !!f && choices.includes(f) && f.stone === pending.stone && awardReward(p, f.id);
+    return !!f && choices.includes(f) && f.stone === pending.stone && awardReward(p, f.id, options);
   }
 
-  function awardReward(p, id) {
+  function awardReward(p, id, options = {}) {
     if (!canClaimReward(p)) return false;
     const choices = rewardFormsFor(p), f = get(id || (choices.length === 1 ? choices[0].id : ''));
     if (!f || !choices.includes(f)) return false;
-    if (!transform(p, f.id, { source: f.stone })) return false;
+    if (!transform(p, f.id, { source: f.stone, silent: !!options.silent })) return false;
     p.megaStone = f.stone;
     p.pendingMegaForm = null;
-    G.Spawner.say(G.T(f.category === 'mega' ? '¡Mega Evolución!' : '¡Fusión completada!') + ' ' + G.T(p.mon.name), 3.4, true);
+    if (!options.silent) G.Spawner.say(G.T(f.category === 'mega' ? '¡Mega Evolución!' : '¡Fusión completada!') + ' ' + G.T(p.mon.name), 3.4, true);
     return true;
   }
 

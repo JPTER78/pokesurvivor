@@ -8,6 +8,8 @@
 (() => {
   const languages = ['fr', 'it', 'pt-BR', 'zh-Hans', 'zh-Hant'];
   const rows = [
+    ["Estadísticas base", "Statistiques de base", "Statistiche base", "Atributos base", "基础能力值", "基礎能力值"],
+    ["Al recoger la megapiedra o elegir una fusión, una secuencia con los sprites originales muestra la transformación y sus estadísticas base antes de continuar la partida.", "Obtenir une Méga-Gemme ou choisir une fusion lance une séquence de transformation avec les sprites d’origine et affiche les changements des statistiques de base avant de reprendre la partie.", "Ottenere una Megapietra o scegliere una fusione avvia una sequenza di trasformazione con gli sprite originali e mostra i cambiamenti delle statistiche base prima di riprendere la partita.", "Receber uma Mega Pedra ou escolher uma fusão inicia uma sequência de transformação com os sprites originais e mostra as mudanças nos atributos base antes de continuar a partida.", "领取超级石或选择合体后，使用原有精灵图播放变身过程，并在继续对战前显示基础能力值变化。", "領取超級石或選擇合體後，使用原有精靈圖播放變身過程，並在繼續對戰前顯示基礎能力值變化。"],
     ['Kyurem Negro', 'Kyurem Noir', 'Kyurem Nero', 'Kyurem Preto', '暗黑酋雷姆', '闇黑酋雷姆'],
     ['Kyurem Blanco', 'Kyurem Blanc', 'Kyurem Bianco', 'Kyurem Branco', '焰白酋雷姆', '焰白酋雷姆'],
     ['Punta ADN', 'Pointeau ADN', 'Cuneo DNA', 'DNA Splicers', '基因之楔', '基因之楔'],

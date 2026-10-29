@@ -288,7 +288,34 @@ G.UI = (() => {
       s.a.scale = k / G.Sprites.PX;
       // Si no cabe de pie, se centra el cuerpo en el recuadro.
       const big = ay * k > cv.height * 0.8;
-      const fx = cv.width / 2, fy = big ? cv.height / 2 + ay * k * 0.45 : cv.height * 0.88;
+      let fx = cv.width / 2, fy = big ? cv.height / 2 + ay * k * 0.45 : cv.height * 0.88;
+      // Cinematics fit the entire frame, including wings/tails below the feet.
+      if (s.opts.frameFit && m) {
+        const sheet = G.Sprites.sheet(s.dex, 'Idle', s.a.shiny);
+        if (sheet && sheet.ready && s.fitImage !== sheet.img) {
+          // Union of visible pixels across the front-facing idle frames. Cache
+          // once per canvas/image; sheet padding must not shrink large Pokémon.
+          const scratch = document.createElement('canvas');
+          scratch.width = m.w * m.n; scratch.height = m.h;
+          const sc = scratch.getContext('2d');
+          sc.drawImage(sheet.img, 0, 0);
+          const pixels = sc.getImageData(0, 0, scratch.width, scratch.height).data;
+          let x0 = m.w, y0 = m.h, x1 = 0, y1 = 0;
+          for (let y = 0; y < m.h; y++) for (let x = 0; x < scratch.width; x++) {
+            if (pixels[(y * scratch.width + x) * 4 + 3] < 8) continue;
+            const local = x % m.w;
+            x0 = Math.min(x0, local); x1 = Math.max(x1, local + 1);
+            y0 = Math.min(y0, y); y1 = Math.max(y1, y + 1);
+          }
+          s.fitImage = sheet.img;
+          s.fitBounds = x1 > x0 && y1 > y0 ? { x0, y0, x1, y1 } : null;
+        }
+        const b = s.fitBounds || { x0: 0, y0: 0, x1: m.w, y1: m.h };
+        k = Math.max(1, Math.min(s.opts.scale || 5, Math.floor(cv.width * .92 / (b.x1 - b.x0)), Math.floor(cv.height * (s.opts.frameFill || .88) / (b.y1 - b.y0))));
+        s.a.scale = k / G.Sprites.PX;
+        fx = cv.width / 2 + (m.ax - (b.x0 + b.x1) / 2) * k;
+        fy = cv.height * (s.opts.frameFill > .92 ? .5 : .46) + (m.ay - (b.y0 + b.y1) / 2) * k;
+      }
 
       if (s.opts.shadow !== false && !s.opts.silhouette) {
         ctx.fillStyle = 'rgba(0,0,0,.35)';

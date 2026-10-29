@@ -156,6 +156,7 @@ G.Game = (() => {
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
+    G.FormScene.cancel();
     holdBy = []; awayBy = null;
     // Halloween (systems/halloween.js): lo que sea al empezar vale toda la partida (en grupo, lo dice el anfitrión).
     G.Halloween.runStart(coop ? coop.hw : undefined);
@@ -225,6 +226,7 @@ G.Game = (() => {
   }
 
   function quitRun() {
+    G.FormScene.cancel();
     if (G.Coop.active) G.Coop.leave();
     endRun(false);
   }
@@ -291,8 +293,9 @@ G.Game = (() => {
       bankTickets();
     },
     levelStart(level) {
+      if (G.FormScene.active) { G.FormScene.after(() => coopApi.levelStart(level)); return; }
       // (Si tenías abierta la elección de objeto, vuelve al terminar: afterLevelUp.)
-      if (state === 'choice' && (openItem || G.UI.isOpen('scr-mega')) && G.Coop.active) G.Coop.holdEnd();
+      if (state === 'choice' && (openItem || G.UI.isOpen('scr-mega') || G.FormScene.active) && G.Coop.active) G.Coop.holdEnd();
       state = 'levelup';
       G.UI.hide('scr-pause');
       G.Audio.sfx('levelup');
@@ -386,6 +389,7 @@ G.Game = (() => {
   };
 
   function endRun(dead = true) {
+    G.FormScene.cancel();
     if (state === 'over' || !pl) return;
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
     const wasHost = !!pl.coopHost;
@@ -533,11 +537,17 @@ G.Game = (() => {
     state = 'choice';
     if (G.Coop.active) G.Coop.holdStart();
     G.RunUI.showMegaStone(form, id => {
-      if (pl !== player || state !== 'choice' || !G.Forms.claimReward(player, id)) return;
-      G.Audio.sfx('legend');
-      state = holdBy.length || awayBy ? 'held' : 'playing';
-      if (G.Coop.active) G.Coop.holdEnd();
-      afterLevelUp();
+      if (pl !== player || state !== 'choice') return;
+      const target = G.Forms.get(id);
+      if (!target || !G.Forms.rewardFormsFor(player).includes(target)) return;
+      G.FormScene.start(player, target,
+        () => pl === player && state === 'choice' && G.Forms.claimReward(player, id, { silent: true }),
+        () => {
+          if (pl !== player || state !== 'choice') return;
+          state = holdBy.length || awayBy ? 'held' : 'playing';
+          if (G.Coop.active) G.Coop.holdEnd();
+          afterLevelUp();
+        });
     }, G.Forms.rewardFormsFor(player));
   }
 
@@ -568,7 +578,7 @@ G.Game = (() => {
   /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
-    if (state === 'levelup' || G.UI.isOpen('scr-levelup') || G.UI.isOpen('scr-mega')) { laterItems.push(id); return; }
+    if (state === 'levelup' || G.UI.isOpen('scr-levelup') || G.UI.isOpen('scr-mega') || G.FormScene.active) { laterItems.push(id); return; }
     let mine = false;            // esta elección es la que ha parado el juego
     const take = got => {
       openItem = null;
@@ -661,6 +671,10 @@ G.Game = (() => {
   // ---------------- teclado ----------------
 
   function handleKeys() {
+    if (G.FormScene.active) {
+      if (['enter', 'space'].some(k => G.Input.tap(k))) G.FormScene.continue();
+      return;
+    }
     if (G.SettingsUI.isOpen) { if (G.Input.tap('escape')) G.SettingsUI.close(); return; }
     // La Sentencia de Arceus: Espacio, Intro o Esc saltan la animación (si se puede).
     if (G.Judgment.cinematic && state === 'playing') {
@@ -775,6 +789,7 @@ G.Game = (() => {
     if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
     frameDt = state === 'playing' ? dt : 0;
 
+    G.FormScene.update(Math.min(real, 0.05));
     G.Pad.poll(real);
     handleKeys();
     offerMegaStone();
@@ -1099,7 +1114,7 @@ G.Game = (() => {
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
     debugLevelUp() { tampered = true; pl.level++; pendingLevels++; },
-    toUI() { state = 'ui'; if (cv) cv.style.cursor = ''; Backdrop.restore(); },
+    toUI() { G.FormScene.cancel(); state = 'ui'; if (cv) cv.style.cursor = ''; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st
   };
   if (G.Dev.enabled) {

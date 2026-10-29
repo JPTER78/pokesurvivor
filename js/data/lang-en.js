@@ -4,6 +4,8 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  "Estadísticas base": "Base stats",
+  "Al recoger la megapiedra o elegir una fusión, una secuencia con los sprites originales muestra la transformación y sus estadísticas base antes de continuar la partida.": "Claiming a Mega Stone or choosing a fusion plays a sprite-based transformation sequence and shows the base stat changes before the run continues.",
   'Kyurem Negro': 'Black Kyurem',
   'Kyurem Blanco': 'White Kyurem',
   'Punta ADN': 'DNA Splicers',

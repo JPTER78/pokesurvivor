@@ -27,6 +27,16 @@ const server = http.createServer((req, res) => {
     const page = await ctx.newPage(), errors = [];
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error' && !m.text().includes('Failed to load resource')) errors.push(m.text()); });
+    const finishScene = async (pause = false) => {
+      await page.waitForFunction(() => G.FormScene.active);
+      await page.evaluate(pause => {
+        for (let i = 0; i < 150 && G.FormScene.stage !== 'result'; i++) G.FormScene.update(.05);
+        if (G.FormScene.stage !== 'result') throw Error('cinematic did not reveal');
+        G.FormScene.continue();
+        for (let i = 0; i < 12 && G.FormScene.active; i++) G.FormScene.update(.05);
+        if (pause && G.Game.state === 'playing') { G.Game.togglePause(); G.UI.hideAll(); }
+      }, pause);
+    };
     await page.goto(url + '/dev.html?debug=1');
     await page.waitForFunction(() => window.G?.Game && G.DB && document.getElementById('boot').classList.contains('hidden'));
     await page.keyboard.press('Enter');
@@ -116,11 +126,8 @@ const server = http.createServer((req, res) => {
     await page.screenshot({ path: path.join(out, 'mega-reward-mobile.png') });
     await page.setViewportSize({ width: 1280, height: 720 });
     // Claim and pause in the same task so combat cannot alter the preservation snapshot.
-    await page.evaluate(() => {
-      document.getElementById('mega-claim').click();
-      if (G.Game.state !== 'playing') throw Error('claim did not resume run');
-      G.Game.togglePause(); G.UI.hideAll();
-    });
+    await page.evaluate(() => document.getElementById('mega-claim').click());
+    await finishScene(true);
     const result = await page.evaluate(() => {
       const p = G.Game.player, b = window.beforeMega;
       return { identity: b.p === p, moves: b.moves === p.moves, slots: b.slots === p.slots, buffs: b.buffs === p.buffs,
@@ -190,6 +197,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#scr-mega:not(.hidden)').waitFor();
     await page.waitForFunction(() => !document.getElementById('mega-cards').classList.contains('guard'));
     await page.locator('#mega-claim').tap();
+    await finishScene();
     await page.waitForFunction(() => G.Game.player.formId === 'lucario-mega');
     // Leaving an unclaimed reward for a new run cannot transform the new player.
     await page.evaluate(() => { G.Game.startRun(); G.Forms.queueMega(G.Game.player); });
@@ -224,6 +232,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => G.UI.isOpen('scr-item')), false);
     await page.waitForFunction(() => !document.getElementById('mega-cards').classList.contains('guard'));
     await page.locator('#mega-claim').tap();
+    await finishScene();
     await page.locator('#scr-item:not(.hidden)').waitFor();
     await page.waitForFunction(() => !document.getElementById('item-cards').classList.contains('guard'));
     await page.locator('#item-cards .card').nth(1).tap();
@@ -265,9 +274,10 @@ const server = http.createServer((req, res) => {
         assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 568 && box.y + box.height <= 320);
         await page.locator('#mega-claim-2').tap();
       } else await page.keyboard.press('1');
+      await finishScene(true);
       await page.waitForFunction(v => G.Game.player.formId === 'kyurem-' + v, variant);
       await page.evaluate(() => {
-        G.Game.togglePause(); G.UI.hideAll();
+        G.UI.hideAll();
         const p = G.Game.player, b = kyuremBefore;
         if (p !== b.p || p.moves !== b.moves || p.slots !== b.slots || p.nature !== b.nature ||
             p.item !== 'quickclaw' || p.megaStone !== 'dna_splicers' || Math.abs(p.hp / p.maxHp - b.ratio) > 1e-9)
