@@ -4,6 +4,10 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  "Repertorio: activado": "Repertoire: on",
+  "Repertorio: desactivado": "Repertoire: off",
+  "Se aplica al empezar la próxima partida.": "Applies when starting your next run.",
+  "Puedes activar o desactivar Repertorio para cada Pokémon después de comprarlo, para empezar con uno o dos movimientos sin perder la mejora ni el segundo movimiento elegido.": "Toggle Repertoire for each Pokémon after purchasing it to start with one or two moves, keeping the upgrade and your selected second move.",
   "Prestigio Pokémon: maximiza todas sus mejoras y reinícialas para aumentar sus estadísticas base, hasta 5 veces. El nivel se muestra en la colección y el prestigio 5 desbloquea su forma shiny con una pantalla de celebración.": "Pokémon prestige: max all upgrades, then reset them to boost base stats, up to 5 times. Your prestige level appears in the collection, and Prestige 5 unlocks the shiny form with a celebration screen.",
   "Las transformaciones tienen una pantalla de recompensa, un espacio propio para su objeto y un indicador en la colección que explica cómo conseguir cada forma, incluso si aún no tienes al Pokémon.": "Transformations include a reward screen, a separate item slot, and a collection indicator explaining how to obtain each form, even for Pokémon you do not own yet.",
   "Ganar prestigio añade un {x}% a tus estadísticas base, hasta un {x}%. Todas tus mejoras se reiniciarán a 0.": "Prestiging adds {x}% to your base stats, up to {x}%. All your upgrades will be reset to 0.",
@@ -1039,6 +1043,10 @@ G.I18n.add({
 });
 // Sentencia de Arceus con daño, Tablas y ranking partido (23-10-2026)
 G.I18n.add({
+  "Repertorio: activado": "Repertoire: on",
+  "Repertorio: desactivado": "Repertoire: off",
+  "Se aplica al empezar la próxima partida.": "Applies when starting your next run.",
+  "Puedes activar o desactivar Repertorio para cada Pokémon después de comprarlo, para empezar con uno o dos movimientos sin perder la mejora ni el segundo movimiento elegido.": "Toggle Repertoire for each Pokémon after purchasing it to start with one or two moves, keeping the upgrade and your selected second move.",
   "Tabla Llama": "Flame Plate",
   "Tabla Linfa": "Splash Plate",
   "Tabla Trueno": "Zap Plate",

@@ -7,6 +7,7 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-29', title: ['Prestigio', 'Prestige'], new: [
+    ["Puedes activar o desactivar Repertorio para cada Pokémon después de comprarlo, para empezar con uno o dos movimientos sin perder la mejora ni el segundo movimiento elegido.", "Toggle Repertoire for each Pokémon after purchasing it to start with one or two moves, keeping the upgrade and your selected second move."],
     ["Prestigio Pokémon: maximiza todas sus mejoras y reinícialas para aumentar sus estadísticas base, hasta 5 veces. El nivel se muestra en la colección y el prestigio 5 desbloquea su forma shiny con una pantalla de celebración.", "Pokémon prestige: max all upgrades, then reset them to boost base stats, up to 5 times. Your prestige level appears in the collection, and Prestige 5 unlocks the shiny form with a celebration screen."],
     ["Los Pokémon comunes, poco comunes y raros ganan un 5% de estadísticas base por prestigio, hasta un 25%. Los épicos y legendarios ganan el 2,5%, hasta un 12,5%.", "Common, Uncommon and Rare Pokémon gain 5% base stats per prestige, up to 25%. Epic and Legendary Pokémon gain 2.5%, up to 12.5%."]
   ]},

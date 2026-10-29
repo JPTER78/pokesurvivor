@@ -199,7 +199,7 @@ G.Game = (() => {
     pl.banned = new Set((save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque, el elegido con
     // "Segundo movimiento inicial" o, si no, al azar.
-    if (perks.startMoves >= 2) {
+    if (perks.startMoves >= 2 && G.DB.repertoireEnabled(mon.dex)) {
       const pick2 = G.startMove2Of(mon.dex);
       const pool = G.Moves.poolFor(mon).filter(id => !pl.hasMove(id) && !pl.banned.has(id) && G.Moves.BY_ID[id].kind !== 'buff');
       if (pick2 && !pl.hasMove(pick2)) pl.addMove(pick2);

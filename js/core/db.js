@@ -90,6 +90,7 @@ G.DB = (() => {
       dfav: {},               // dex -> fecha: favorito de la colección (negativa = quitado entonces)
       pused: {},              // dex -> partidas jugadas con él (orden "más usados")
       pstart: {},             // dex -> movimiento inicial elegido (Mejoras → Movimiento inicial)
+      repertoire: {},        // dex -> signed timestamp: positive on, negative off
       pstart2: {},            // dex -> segundo movimiento inicial (Mejoras → Segundo movimiento inicial)
       // Tienda Kecleon (20-10-2026, ver data/shop.js y systems/mons.js):
       bag: {},                // Mochila: id -> cuántos (mint, cap, caph); en la libreta, como las monedas
@@ -154,10 +155,10 @@ G.DB = (() => {
         }
       }
     } else delete s.led;
-    if (G.DEX_BY) for (const coll of ['owned', 'shiny', 'dfav', 'pused']) {
+    if (G.DEX_BY) for (const coll of ['owned', 'shiny', 'dfav', 'pused', 'repertoire']) {
       for (const d of Object.keys(s[coll] || {})) if (!G.DEX_BY[d]) delete s[coll][d];
     }
-    for (const coll of ['dfav', 'pused']) {
+    for (const coll of ['dfav', 'pused', 'repertoire']) {
       if (!isObj(s[coll])) { s[coll] = {}; continue; }
       for (const d of Object.keys(s[coll])) if (!Number.isFinite(+s[coll][d])) delete s[coll][d];
     }
@@ -382,6 +383,8 @@ G.DB = (() => {
     for (const d in older.dfav || {}) if (Math.abs(+older.dfav[d] || 0) > Math.abs(+r.dfav[d] || 0)) r.dfav[d] = older.dfav[d];
     r.pused = r.pused || {};
     for (const d in older.pused || {}) r.pused[d] = Math.max(+r.pused[d] || 0, +older.pused[d] || 0);
+    r.repertoire = r.repertoire || {};
+    for (const d in older.repertoire || {}) if (Math.abs(+older.repertoire[d] || 0) > Math.abs(+r.repertoire[d] || 0)) r.repertoire[d] = older.repertoire[d];
     // Movimiento inicial: el de la versión más reciente; si no lo tenía elegido, el de la otra.
     for (const k of ['pstart', 'pstart2']) {
       r[k] = r[k] || {};
@@ -1049,6 +1052,16 @@ G.DB = (() => {
     return save.pupg[dex] || (save.pupg[dex] = {});
   }
 
+  function repertoireEnabled(dex) { return !(save && save.repertoire && save.repertoire[dex] < 0); }
+  function setRepertoire(dex, enabled) {
+    if (!owns(dex) || !upgradesOf(dex).moves) return false;
+    save.repertoire = save.repertoire || {};
+    const stamp = Math.max(Date.now(), Math.abs(+save.repertoire[dex] || 0) + 1);
+    save.repertoire[dex] = enabled ? stamp : -stamp;
+    commit();
+    return true;
+  }
+
   function prestigeOf(dex) { return Math.min(5, num(save && save.prestige && save.prestige[dex])); }
   function canPrestige(dex) {
     return owns(dex) && !!G.DEX_BY[dex] && prestigeOf(dex) < 5 && G.Upgrades.LIST.every(u => (upgradesOf(dex)[u.id] || 0) >= u.max);
@@ -1074,7 +1087,7 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow, saveNow,
-    prestigeOf, canPrestige, prestigePokemon, owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, isFav, setFav,
+    repertoireEnabled, setRepertoire, prestigeOf, canPrestige, prestigePokemon, owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, isFav, setFav,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */
