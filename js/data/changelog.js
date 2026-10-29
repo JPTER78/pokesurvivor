@@ -6,19 +6,17 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-29', title: ['Prestigio', 'Prestige'], new: [
+    ["Prestigio Pokémon: maximiza todas sus mejoras y reinícialas para aumentar sus estadísticas base, hasta 5 veces. El nivel se muestra en la colección y el prestigio 5 desbloquea su forma shiny con una pantalla de celebración.", "Pokémon prestige: max all upgrades, then reset them to boost base stats, up to 5 times. Your prestige level appears in the collection, and Prestige 5 unlocks the shiny form with a celebration screen."],
+    ["Los Pokémon comunes, poco comunes y raros ganan un 5% de estadísticas base por prestigio, hasta un 25%. Los épicos y legendarios ganan el 2,5%, hasta un 12,5%.", "Common, Uncommon and Rare Pokémon gain 5% base stats per prestige, up to 25%. Epic and Legendary Pokémon gain 2.5%, up to 12.5%."]
+  ]},
   { d: '2026-10-28', title: ['Mega Evolución', 'Mega Evolution'], new: [
     ['Kyurem recibe la Punta ADN al vencer una grieta mejorada y puede elegir entre Kyurem Negro y Kyurem Blanco hasta el final de la partida.', 'Kyurem receives DNA Splicers after winning an enhanced rift and can choose Black Kyurem or White Kyurem for the rest of the run.'],
     ['Lucario puede megaevolucionar durante la partida: vence al legendario de una grieta roja para conseguir Lucarionita, sin perder tus movimientos, objeto ni mejoras.',
      'Lucario can Mega Evolve during a run: defeat the Legendary in a red rift to earn Lucarionite, keeping your moves, held item and upgrades.'],
     ['Grietas mejoradas a los 15, 20 y 25 minutos, con jefes más fuertes. Si no puedes megaevolucionar, recibes un Vínculo. La colección indica qué Pokémon pueden megaevolucionar.',
-     'Enhanced rifts at 15, 20 and 25 minutes with stronger bosses. If you cannot Mega Evolve, you receive a Bond. The collection shows which Pokémon can Mega Evolve.']
-  ], chg: [
-    ['Los jefes de las tres grietas mejoradas tienen ahora 9 millones de PS en solitario, con el escalado habitual en cooperativo.', 'All three enhanced-rift bosses now have 9 million HP in solo play, with the usual co-op scaling.'],
-    ["La megapiedra se recoge en una pantalla de recompensa antes de megaevolucionar. Mega Lucario descansa con una animación más lenta y pausas entre ciclos.", "Claim your Mega Stone on a reward screen before Mega Evolving. Mega Lucario now has a slower idle animation with pauses between cycles."]
-  ], fix: [
-    ["Rareza y megapulsera centradas en la colección. La megapulsera explica cómo megaevolucionar cada Pokémon.", "Centered rarity and Mega Bracelet in the collection. The bracelet explains how each Pokémon can Mega Evolve."],
-    ['Iconos de megapiedra y megapulsera más grandes. La megapulsera también aparece en los Pokémon que aún no tienes.',
-     'Larger Mega Stone and Mega Bracelet icons. The Mega Bracelet also appears on Pokémon you do not own yet.']
+     'Enhanced rifts at 15, 20 and 25 minutes with stronger bosses. If you cannot Mega Evolve, you receive a Bond. The collection shows which Pokémon can Mega Evolve.'],
+    ["Las transformaciones tienen una pantalla de recompensa, un espacio propio para su objeto y un indicador en la colección que explica cómo conseguir cada forma, incluso si aún no tienes al Pokémon.", "Transformations include a reward screen, a separate item slot, and a collection indicator explaining how to obtain each form, even for Pokémon you do not own yet."]
   ]},
   { d: '2026-10-27', title: ["Cooperativo más estable", "Steadier co-op"], new: [
     ["Móvil y tableta: nuevo joystick «Anclado» (Ajustes → Controles → Colocar los botones). Aparece donde pones el dedo y se queda en ese sitio mientras lo mantienes, aunque alejes el dedo; al levantarlo y tocar en otro sitio, aparece allí. El «Flotante» de siempre sigue al dedo y sigue siendo el que viene puesto.",

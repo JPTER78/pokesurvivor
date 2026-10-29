@@ -15,6 +15,7 @@ G.Player = class Player {
     this.formId = mon.name.toLowerCase();
     this.spriteKey = mon.dex;
     this.nature = mon.nature;
+    this.prestige = mon.prestige || 0;
     this.megaStone = null;
     this.pendingMegaForm = null;
     this.transformation = null;

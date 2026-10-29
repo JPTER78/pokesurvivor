@@ -6,6 +6,10 @@ G.MenuUI = (() => {
     const fusion = form.category === 'fusion';
     return `<button type="button" class="mega-badge" data-mega-dex="${dex}" style="--mega-size:${size}px" aria-label="${G.T(fusion ? 'Fusión disponible' : 'Mega Evolución disponible')}">${G.Icons.html(fusion ? form.stone : 'mega_bracelet', size)}</button>`;
   };
+  const prestigeBadge = dex => {
+    const level = G.DB.prestigeOf(dex);
+    return level ? `<span class="prestige-badge">${G.T('Prestigio')} ${level}/5</span>` : '';
+  };
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
   let dexGen = 1, dexSel = null;
@@ -59,7 +63,7 @@ G.MenuUI = (() => {
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
     $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
-    $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + `<span class="mon-rarity">${G.UI.stars(mon.rarity)}${megaBadge(mon.dex)}</span>`;
+    $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + `<span class="mon-rarity">${G.UI.stars(mon.rarity)}${megaBadge(mon.dex)}</span>${prestigeBadge(mon.dex)}`;
     // Normal / shiny a mano, aquí mismo (en el móvil no se encontraba en la ficha).
     const seg = $('menu-shiny');
     seg.classList.toggle('hidden', !G.DB.ownsShiny(mon.dex));
@@ -296,7 +300,7 @@ G.MenuUI = (() => {
     else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
     const useShiny = sh && p.dex === s.partner && s.partnerShiny;
     cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
-    cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b><span class="mon-rarity">${G.UI.stars(p.rarity, 9)}${megaBadge(p.dex, 24)}</span>`);
+    cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b><span class="mon-rarity">${G.UI.stars(p.rarity, 9)}${megaBadge(p.dex, 24)}</span>${prestigeBadge(p.dex)}`);
     cell.onclick = () => {
       dexSel = p.dex;
       $('dex-grid').querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
@@ -343,7 +347,7 @@ G.MenuUI = (() => {
         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
         ${own ? `<button id="dex-fav" class="chip${G.DB.isFav(dex) ? ' on' : ''}" type="button">${G.Icons.html(G.DB.isFav(dex) ? 'star' : 'starDim', 12)} ${G.DB.isFav(dex) ? 'Favorito' : 'Marcar como favorito'}</button>` : ''}
-        <div class="mon-rarity" style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)}<span>${G.Gacha.RARITY_NAME[p.rarity]}</span>${megaBadge(p.dex)}</div>
+        <div class="mon-rarity" style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)}<span>${G.Gacha.RARITY_NAME[p.rarity]}</span>${megaBadge(p.dex)}</div>${prestigeBadge(p.dex)}
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div>
       ${own ? `
@@ -605,6 +609,7 @@ G.MenuUI = (() => {
     $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     const box = $('upg-list');
     box.innerHTML = '';
+    box.appendChild(prestigePanel());
     for (const u of G.Upgrades.LIST) {
       const lvl = levels[u.id] || 0;
       const maxed = lvl >= u.max;
@@ -650,6 +655,61 @@ G.MenuUI = (() => {
       if (u.id === 'start2' && lvl > 0 && start2Open) box.appendChild(start2Picker());
     }
     box.appendChild(bindPanel());
+  }
+
+  function prestigePanel() {
+    const dex = upgDex, level = G.DB.prestigeOf(dex);
+    const el = document.createElement('div');
+    el.className = 'panel prestige-panel';
+    el.innerHTML = `<div><b>${G.T('Prestigio')} ${level}/5</b>
+      <p>${G.I18n.f('+{x}% a todas las estadísticas base', level * (G.Mons.prestigeRate(dex) * 100))}</p>
+      <p class="sub">${G.T(level === 5 ? 'Prestigio máximo: shiny desbloqueado' : 'Mejora todo al máximo para ganar prestigio. El nivel 5 desbloquea el shiny.')}</p></div>
+      <button class="btn gold" data-prestige ${G.DB.canPrestige(dex) ? '' : 'disabled'}>${G.T('Ganar prestigio')}</button>`;
+    el.querySelector('[data-prestige]').onclick = () => {
+      if (!G.DB.canPrestige(dex) || document.getElementById('prestige-confirm')) return;
+      const account = G.DB.save, rank = G.DB.prestigeOf(dex);
+      const dialog = document.createElement('dialog');
+      dialog.id = 'prestige-confirm'; dialog.className = 'box prestige-dialog';
+      dialog.setAttribute('aria-labelledby', 'prestige-title');
+      dialog.innerHTML = `<h3 id="prestige-title">${G.T('Ganar prestigio')} · ${G.DEX_BY[dex].name}</h3>
+        <p>${G.I18n.f('Ganar prestigio añade un {x}% a tus estadísticas base, hasta un {x}%. Todas tus mejoras se reiniciarán a 0.', G.Mons.prestigeRate(dex) * 100, G.Mons.prestigeRate(dex) * 500)}</p>
+        <p>${G.T('Al alcanzar el prestigio 5 desbloqueas la forma shiny.')}</p>
+        <p><b>${G.T('Prestigio')} ${rank} → ${rank + 1}/5</b></p>
+        <div class="prestige-actions"><button class="btn ghost" data-cancel>${G.T('Cancelar')}</button><button class="btn gold" data-confirm>${G.T('Ganar prestigio')}</button></div>`;
+      const close = () => { dialog.close(); dialog.remove(); el.querySelector('[data-prestige]')?.focus(); };
+      dialog.addEventListener('keydown', e => e.stopPropagation());
+      dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
+      dialog.querySelector('[data-cancel]').onclick = close;
+      dialog.querySelector('[data-confirm]').onclick = () => {
+        const ok = account === G.DB.save && G.DB.prestigePokemon(dex, rank);
+        close();
+        if (ok) { G.Audio.sfx('buy'); banOpen = startOpen = start2Open = false; }
+        renderUpgrades();
+        if (ok && rank === 4) showPrestigeShiny(dex);
+      };
+      document.body.appendChild(dialog); dialog.showModal(); dialog.querySelector('[data-cancel]').focus();
+    };
+    return el;
+  }
+
+  function showPrestigeShiny(dex) {
+    const dialog = document.createElement('dialog');
+    dialog.id = 'prestige-shiny'; dialog.className = 'box prestige-dialog prestige-shiny';
+    dialog.setAttribute('aria-labelledby', 'prestige-shiny-title');
+    dialog.innerHTML = `<div class="prestige-shiny-star">${G.Icons.html('shiny', 40)}</div>
+      <h3 id="prestige-shiny-title">${G.T('¡Forma shiny desbloqueada!')}</h3>
+      <div class="prestige-shiny-preview"></div>
+      <h3>${G.DEX_BY[dex].name} · Shiny</h3>
+      <p class="prestige-badge">${G.T('Prestigio')} 5/5</p>
+      <p>${G.T('¡Has alcanzado el prestigio 5! Ya puedes elegir la forma shiny de este Pokémon en tu colección.')}</p>
+      <button class="btn gold" data-dismiss>${G.T('Continuar')}</button>`;
+    dialog.querySelector('.prestige-shiny-preview').appendChild(G.UI.spriteCanvas(dex, 220, 150, { shiny: true, lively: true, hero: true }));
+    const close = () => { dialog.close(); dialog.remove(); document.querySelector('#upg-mon')?.focus(); };
+    dialog.addEventListener('keydown', e => e.stopPropagation());
+    dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
+    dialog.querySelector('[data-dismiss]').onclick = close;
+    document.body.appendChild(dialog); dialog.showModal(); dialog.querySelector('[data-dismiss]').focus();
+    G.Audio.sfx('legend');
   }
 
   // ---------------- atajos: hueco fijo para cada movimiento ----------------

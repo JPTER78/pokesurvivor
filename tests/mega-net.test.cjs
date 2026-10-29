@@ -5,7 +5,7 @@ const { game, load } = require('./mega-fixtures.cjs');
 for (const [dex, form, sprite, stone, ability] of [[448, 'lucario-mega', '448-mega', 'lucarionite', 'adaptability'],
   [646, 'kyurem-black', '646-black', 'dna_splicers', 'teravolt'], [646, 'kyurem-white', '646-white', 'dna_splicers', 'turboblaze']]) {
 test(`real Coop frames carry ${form} and apply it through Player.netUpdate`, () => {
-  const clients = { host: game(25), guest: game(dex) }, handlers = {}, sent = [];
+  const clients = { host: game(25), guest: game(dex, true, 5) }, handlers = {}, sent = [];
   const members = [{ uid: 'host', name: 'Pikachu', dex: 25 }, { uid: 'guest', name: 'Guest', dex }];
   for (const [uid, c] of Object.entries(clients)) {
     const G = c.G;
@@ -28,6 +28,7 @@ test(`real Coop frames carry ${form} and apply it through Player.netUpdate`, () 
   mate.netUpdate(.1);
   assert.equal(mate.formId, form); assert.equal(mate.anim.dex, sprite);
   assert.equal(mate.megaStone, stone); assert.equal(mate.abilId, ability); assert.equal(mate.nature, p.nature);
+  assert.equal(mate.prestige, 5); assert.equal(mate.mon.pa, p.mon.pa); assert.equal(mate.mon.sd, p.mon.sd);
   const oldAnim = mate.anim; G.Coop.tick(.1); mate.netUpdate(.1); assert.equal(mate.anim, oldAnim);
   host.Coop.tick(.1); const pikachu = G.Coop.puppets()[0]; pikachu.netUpdate(.1);
   assert.equal(pikachu.formId, 'pikachu'); assert.equal(pikachu.megaStone, null);

@@ -85,6 +85,7 @@ G.DB = (() => {
       starter: null,          // dex que te tocó en el test
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
+      prestige: {},          // dex -> upgrade generation / prestige level (0..5)
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
       dfav: {},               // dex -> fecha: favorito de la colección (negativa = quitado entonces)
       pused: {},              // dex -> partidas jugadas con él (orden "más usados")
@@ -218,6 +219,12 @@ G.DB = (() => {
         s.pban[d] = [...new Set(l.filter(id => typeof id === 'string' && (!G.Moves || G.Moves.BY_ID[id])))].slice(0, 3);
       }
     } else s.pban = {};
+    if (!isObj(s.prestige)) s.prestige = {};
+    for (const d of Object.keys(s.prestige)) {
+      if ((G.DEX_BY && !G.DEX_BY[d]) || !s.owned[d]) { delete s.prestige[d]; continue; }
+      s.prestige[d] = Math.min(5, num(s.prestige[d]));
+      if (s.prestige[d] === 5 && !s.shiny[d]) s.shiny[d] = { at: s.created || 1, from: 'prestige' };
+    }
     if (G.Upgrades) for (const d of Object.keys(s.pupg || {})) {
       const u = s.pupg[d];
       if (!u || typeof u !== 'object') { delete s.pupg[d]; continue; }
@@ -356,10 +363,17 @@ G.DB = (() => {
       }
     }
     for (const k in older.upgrades || {}) r.upgrades[k] = Math.max(r.upgrades[k] || 0, older.upgrades[k]);
-    r.pupg = r.pupg || {};
-    for (const d in older.pupg || {}) {
-      const mine = r.pupg[d] = r.pupg[d] || {};
-      for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
+    // Upgrades only merge within the same prestige generation. A stale device
+    // must never restore the upgrades consumed by a later prestige.
+    r.prestige = {}; r.pupg = {};
+    const rank = (s, d) => Math.min(5, num(s.prestige && s.prestige[d]));
+    for (const d of new Set([...Object.keys(a.pupg || {}), ...Object.keys(b.pupg || {}),
+                              ...Object.keys(a.prestige || {}), ...Object.keys(b.prestige || {})])) {
+      const level = r.prestige[d] = Math.max(rank(a, d), rank(b, d)), mine = r.pupg[d] = {};
+      for (const src of [a, b]) if (rank(src, d) === level) {
+        for (const k in (src.pupg || {})[d] || {}) mine[k] = Math.max(mine[k] || 0, num(src.pupg[d][k]));
+      }
+      if (level === 5 && !r.shiny[d]) r.shiny[d] = { at: r.created || 1, from: 'prestige' };
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
     // Favoritos: gana lo último que se hizo con cada uno (poner o quitar), en
@@ -1035,6 +1049,21 @@ G.DB = (() => {
     return save.pupg[dex] || (save.pupg[dex] = {});
   }
 
+  function prestigeOf(dex) { return Math.min(5, num(save && save.prestige && save.prestige[dex])); }
+  function canPrestige(dex) {
+    return owns(dex) && !!G.DEX_BY[dex] && prestigeOf(dex) < 5 && G.Upgrades.LIST.every(u => (upgradesOf(dex)[u.id] || 0) >= u.max);
+  }
+  function prestigePokemon(dex, expectedLevel) {
+    if (!canPrestige(dex) || prestigeOf(dex) !== expectedLevel) return false;
+    if (G.Game && G.Game.state !== 'ui') return false;
+    save.prestige = save.prestige || {};
+    save.prestige[dex] = expectedLevel + 1;
+    save.pupg[dex] = {};
+    if (save.prestige[dex] === 5) grantShiny(dex, 'prestige');
+    commit(true);
+    return true;
+  }
+
   /** Da la versión shiny (y la normal, si no la tenía). Devuelve true si es nueva. */
   function grantShiny(dex, from) {
     grant(dex, from);
@@ -1045,7 +1074,7 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow, saveNow,
-    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, isFav, setFav,
+    prestigeOf, canPrestige, prestigePokemon, owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, isFav, setFav,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */

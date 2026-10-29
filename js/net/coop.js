@@ -137,7 +137,7 @@ G.Coop = (() => {
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
             r2(local.reviveT || 0), api.choosing && api.choosing() ? 1 : 0, doneSeq, api.watching ? api.watching() : '',
-            r2((G.Camera && G.Camera.zoomTo) || 1), local.formId || '', local.megaStone || '', local.abilId || '', local.nature || ''];
+            r2((G.Camera && G.Camera.zoomTo) || 1), local.formId || '', local.megaStone || '', local.abilId || '', local.nature || '', local.prestige || 0];
   }
 
   /** Número que llega por la red: si no es un número de verdad vale `def`, y si se pasa se queda en el tope. */
@@ -190,7 +190,7 @@ G.Coop = (() => {
              form: typeof a[17] === 'string' ? a[17].slice(0, 40) : '',
              stone: typeof a[18] === 'string' ? a[18].slice(0, 40) : '',
              ability: typeof a[19] === 'string' ? a[19].slice(0, 40) : '',
-             nature: typeof a[20] === 'string' ? a[20].slice(0, 30) : '' };
+             nature: typeof a[20] === 'string' ? a[20].slice(0, 30) : '', prestige: Math.floor(num(a[21], 0, 0, 5)) };
   }
 
   /** Anfitrión: dónde mira un invitado (él mismo, o el compañero vivo que mira estando caído). */

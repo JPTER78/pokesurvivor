@@ -9,11 +9,12 @@ G.Forms = (() => {
   const rewardFormsFor = p => p ? rewardFormsForDex(p.mon.dex) : [];
   const canClaimReward = p => !!(p && rewardFormsFor(p).length && !p.megaStone && !['mega', 'fusion'].includes(p.transformation?.kind));
 
-  function withNature(base, id) {
+  function withNature(base, id, prestige = 0) {
     const mon = Object.assign({}, base, { types: base.types.slice(), nature: id });
     const n = G.NATURE_BY[id];
     if (n && n.up) mon[n.up] *= 1.1;
     if (n && n.down) mon[n.down] *= 0.9;
+    G.Mons.applyPrestige(mon, prestige);
     mon.atk = Math.max(mon.pa, mon.sa);
     return mon;
   }
@@ -30,7 +31,7 @@ G.Forms = (() => {
     const key = reverting ? p._originalForm.spriteKey : f ? f.sprite.key : base.dex;
     if (!G.SPRITE_META[key]) return false;
     // Build and validate before touching the player. Keep the run's original nature.
-    const mon = reverting ? Object.assign({}, p._originalForm.mon) : withNature(raw, p.nature || p.mon.nature);
+    const mon = reverting ? Object.assign({}, p._originalForm.mon) : withNature(raw, p.nature || p.mon.nature, p.prestige);
     if (![mon.hp, mon.atk, mon.spd, mon.pa, mon.sa, mon.df, mon.sd].every(v => Number.isFinite(v) && v > 0)) return false;
     const ability = reverting ? p._originalForm.ability : f && f.ability !== undefined ? f.ability : p.abilId;
     const ratio = G.U.clamp(p.hp / p.maxHp, 0, 1), dir = p.anim.dir;
@@ -100,9 +101,10 @@ G.Forms = (() => {
   function applyRemote(p, state) {
     const f = get(state.form);
     if (!p.transformation) {
-      if (!p.nature && G.NATURE_BY[state.nature]) {
+      if ((!p.nature || p.prestige !== (state.prestige || 0)) && G.NATURE_BY[state.nature]) {
+        p.prestige = state.prestige || 0;
         p.nature = state.nature;
-        p.mon = withNature(G.DEX_BY[p.baseSpecies], p.nature);
+        p.mon = withNature(G.DEX_BY[p.baseSpecies], p.nature, p.prestige);
         p.baseAtk = p.mon.atk; p.baseSpd = p.mon.spd;
       }
       const allowed = G.DEX_ABIL[p.baseSpecies] || [];

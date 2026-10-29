@@ -4,6 +4,25 @@
  * son los oficiales en inglés.
  */
 G.I18n.add({
+  "Prestigio Pokémon: maximiza todas sus mejoras y reinícialas para aumentar sus estadísticas base, hasta 5 veces. El nivel se muestra en la colección y el prestigio 5 desbloquea su forma shiny con una pantalla de celebración.": "Pokémon prestige: max all upgrades, then reset them to boost base stats, up to 5 times. Your prestige level appears in the collection, and Prestige 5 unlocks the shiny form with a celebration screen.",
+  "Las transformaciones tienen una pantalla de recompensa, un espacio propio para su objeto y un indicador en la colección que explica cómo conseguir cada forma, incluso si aún no tienes al Pokémon.": "Transformations include a reward screen, a separate item slot, and a collection indicator explaining how to obtain each form, even for Pokémon you do not own yet.",
+  "Ganar prestigio añade un {x}% a tus estadísticas base, hasta un {x}%. Todas tus mejoras se reiniciarán a 0.": "Prestiging adds {x}% to your base stats, up to {x}%. All your upgrades will be reset to 0.",
+  "Los Pokémon comunes, poco comunes y raros ganan un 5% de estadísticas base por prestigio, hasta un 25%. Los épicos y legendarios ganan el 2,5%, hasta un 12,5%.": "Common, Uncommon and Rare Pokémon gain 5% base stats per prestige, up to 25%. Epic and Legendary Pokémon gain 2.5%, up to 12.5%.",
+  "Las ventanas de prestigio usan los colores azules habituales de la interfaz.": "Prestige popups now use the standard blue UI colors.",
+  "Ganar prestigio añade un 2,5% a tus estadísticas base, hasta un 12,5%. Todas tus mejoras se reiniciarán a 0.": "Prestiging adds 2.5% to your base stats, up to 12.5%. All your upgrades will be reset to 0.",
+  "Al alcanzar el prestigio 5 desbloqueas la forma shiny.": "Reaching Prestige 5 unlocks the shiny form.",
+  "¡Forma shiny desbloqueada!": "Shiny form unlocked!",
+  "¡Has alcanzado el prestigio 5! Ya puedes elegir la forma shiny de este Pokémon en tu colección.": "You reached Prestige 5! You can now select this Pokémon’s shiny form in your collection.",
+
+  "Prestigio": "Prestige",
+  "Ganar prestigio": "Prestige",
+  "+{x}% a todas las estadísticas base": "+{x}% to all base stats",
+  "Prestigio máximo: shiny desbloqueado": "Maximum prestige: shiny unlocked",
+  "Mejora todo al máximo para ganar prestigio. El nivel 5 desbloquea el shiny.": "Max all upgrades to prestige. Level 5 unlocks the shiny.",
+  "¿Seguro? Perderás todas las mejoras compradas de este Pokémon, sin reembolso. Cada nivel de prestigio añade un 2,5% a sus estadísticas base, hasta un 12,5%.": "Are you sure? You will lose all purchased upgrades for this Pokémon, with no refund. Each prestige level adds 2.5% to its base stats, up to 12.5%.",
+  "Conservas tus monedas, movimientos aprendidos y shiny. El prestigio 5 desbloquea el shiny.": "Keep your coins, learned moves and shiny. Prestige 5 unlocks the shiny.",
+  "Prestigio Pokémon: al maximizar sus mejoras puedes reiniciarlas para ganar un 2,5% a todas sus estadísticas base, hasta 5 veces. El prestigio 5 desbloquea su shiny.": "Pokémon prestige: max all upgrades, then reset them for +2.5% to all base stats, up to 5 times. Prestige 5 unlocks its shiny.",
+
   'Kyurem Negro': 'Black Kyurem',
   'Kyurem Blanco': 'White Kyurem',
   'Punta ADN': 'DNA Splicers',

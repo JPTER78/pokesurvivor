@@ -22,7 +22,7 @@
  *       peers() · mode(uid) -> 'connecting' | 'direct' | 'relay' | 'closed'
  */
 G.Net = (() => {
-  const GAME_VERSION = 3;  // includes selectable Kyurem forms; independent of the binary codec
+  const GAME_VERSION = 4;  // includes prestige base stats; independent of the binary codec
   const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
   const TURN_API = 'https://ice.pokesurvivor.com/v1/ice';
   // Primero se intenta sin TURN (lo normal es conectar directo) y sólo si falla se

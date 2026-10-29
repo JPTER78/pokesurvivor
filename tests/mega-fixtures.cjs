@@ -5,11 +5,11 @@ const source = file => fs.readFileSync(path.join(root, file), 'utf8');
 function load(G, file, extra = {}) { new Function('G', ...Object.keys(extra), source(file))(G, ...Object.values(extra)); }
 const noop = () => {};
 
-function game(dex = 448, dev = true) {
+function game(dex = 448, dev = true, prestige = 0) {
   const events = [], G = { Dev: { enabled: dev }, T: s => s };
   load(G, 'js/core/util.js', { window: { G } });
   for (const f of ['pokedex', 'sprites-meta', 'sprites-forms', 'forms', 'natures', 'abilities', 'items']) load(G, `js/data/${f}.js`);
-  G.DB = { save: { created: 1234, pnat: { [dex]: ['adamant', 1] } } };
+  G.DB = { prestigeOf: () => prestige, save: { created: 1234, pnat: { [dex]: ['adamant', 1] } } };
   G.Weather = { speedFor: () => 1, current: null, force: noop, clear: noop };
   G.World = { isFree: () => true, setArena: noop, setBiome: noop, biome: 0 };
   G.Judgment = { AT: 1800, active: false };

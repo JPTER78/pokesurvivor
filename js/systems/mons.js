@@ -63,9 +63,25 @@ G.Mons = (() => {
     const n = natureOf(dex), m = Object.assign({}, base);
     if (n.up) m[n.up] = base[n.up] * 1.1;
     if (n.down) m[n.down] = base[n.down] * 0.9;
+    applyPrestige(m, G.DB.prestigeOf ? G.DB.prestigeOf(dex) : 0);
     m.atk = Math.max(m.pa, m.sa);
     m.nature = n.id;
     return m;
+  }
+
+  // Use collection species rarity, including while in a runtime form.
+  function prestigeRate(dex) {
+    const rarity = G.DEX_BY[dex]?.rarity;
+    return rarity >= 1 && rarity <= 3 ? 0.05 : 0.025;
+  }
+  function applyPrestige(mon, level = 0) {
+    const n = Number.isFinite(+level) ? Math.max(0, Math.min(5, Math.floor(+level))) : 0;
+    const bonus = 1 + n * prestigeRate(mon.dex);
+    for (const key of ['hp', 'pa', 'sa', 'df', 'sd', 'spd']) mon[key] *= bonus;
+    mon.hp = Math.round(mon.hp);
+    mon.atk = Math.max(mon.pa, mon.sa);
+    mon.prestige = n;
+    return mon;
   }
 
   // ---------------- habilidad ----------------
@@ -119,6 +135,6 @@ G.Mons = (() => {
     return true;
   }
 
-  return { name, natureOf, setNature, rolledNature, monFor, abilityOf, abilityChoices, setAbility, abilityName,
+  return { prestigeRate, applyPrestige, name, natureOf, setNature, rolledNature, monFor, abilityOf, abilityChoices, setAbility, abilityName,
            slots, taught, learnable, canLearn, teach, natural };
 })();

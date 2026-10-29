@@ -1123,3 +1123,13 @@ html:lang(zh) .btn, html:lang(zh) .chip { letter-spacing: 0; }
   .fusion-reward .sub { grid-column: 2; margin-bottom: 0; font-size: 13px; }
   .fusion-reward #mega-cards { grid-column: 1 / -1; }
 }
+
+/* Prestige uses its own badge, distinct from rarity and transformation items. */
+.prestige-badge{display:inline-block;color:#ffdf7e;border:1px solid #a58135;border-radius:5px;padding:2px 6px;font-size:11px;line-height:1.4;background:#302714}
+.prestige-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;flex-wrap:wrap}
+.prestige-panel p{margin:5px 0}.prestige-dialog{color:var(--ink);max-width:460px;width:calc(100% - 32px);max-height:85dvh;overflow:auto;margin:auto;padding:22px}
+.prestige-dialog::backdrop{background:radial-gradient(circle at 50% 40%,rgba(10,20,50,.55),rgba(3,6,16,.88))}.prestige-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+.prestige-shiny{text-align:center}.prestige-shiny-preview{display:flex;justify-content:center;background:radial-gradient(ellipse,rgba(91,131,214,.35),transparent 70%)}.prestige-shiny-preview canvas{max-width:100%;object-fit:contain;image-rendering:pixelated}.prestige-shiny-star{margin-bottom:8px}
+
+.prestige-dialog .prestige-badge{color:var(--ink);border-color:var(--edge-in);background:var(--box2)}

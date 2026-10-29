@@ -169,7 +169,7 @@ test('real Coop.tick frames pass through the codec without changing gameplay fie
     assert.equal(sent.length, 1);
     assert.deepEqual(C.decode(C.encode(sent[0])), sent[0]);
     if (host) { assert.deepEqual(sent[0].e, [[123, 50, -10, 126, 1, 3, 1]]); assert.ok('ho' in sent[0]); }
-    else { assert.equal(sent[0].p.length, 21); assert.equal(sent[0].p[15], ''); assert.equal(sent[0].p[16], 1); }   // 16.º: a quién mira estando caído; 17.º: zoom (Luminosfera)
+    else { assert.equal(sent[0].p.length, 22); assert.equal(sent[0].p[15], ''); assert.equal(sent[0].p[16], 1); }   // 16.º: a quién mira estando caído; 17.º: zoom (Luminosfera)
   }
 });
 

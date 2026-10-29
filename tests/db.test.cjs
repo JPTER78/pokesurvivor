@@ -173,3 +173,19 @@ test('Guardar dos veces seguidas y salir del juego: la segunda se sube al salir'
   NOW += 17000; A.hide(); await settle();            // a los 22 s sales del juego
   assert.equal(cloud.save.tickets.t1, 5, 'se ha subido al salir');
 });
+
+test('prestige level and reset upgrades survive cloud reload and stale-device merge', async () => {
+  reset();
+  const A = await open(new Map());
+  A.DB.grant(646, 'test'); A.DB.save.prestige[646] = 4; A.DB.save.pupg[646] = { hp: 10 };
+  await act(A, 'save');
+  const B = await open(new Map());
+  A.DB.save.prestige[646] = 5; A.DB.save.pupg[646] = {}; A.DB.grantShiny(646, 'prestige'); A.DB.commit();
+  await act(A, 'save');
+  B.DB.save.pupg[646].atk = 10; B.DB.commit(); await act(B, 'save');
+  const C = await open(new Map());
+  assert.equal(C.DB.prestigeOf(646), 5);
+  assert.deepEqual(clone(C.DB.upgradesOf(646)), {});
+  assert.equal(C.DB.ownsShiny(646), true);
+  A.close(); B.close(); C.close();
+});
