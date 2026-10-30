@@ -3,6 +3,7 @@
 # «live»: { live, id, at }. El juego la lee (js/ui/live-ui.js) sin Firebase.
 # Sólo se sube algo al cambiar o, en directo, cada 30 min (para que «at» no
 # caduque). Gratis: el repositorio es público.
+# Además deja video.json con el último vídeo normal (paso «Último vídeo»).
 name: live
 
 on:
@@ -87,4 +88,45 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add live.json
           git commit -q -m "live: $live $id"
+          git push -q origin HEAD:live
+      # Último vídeo normal del canal (banner del menú, js/ui/banner-ui.js): video.json
+      # en la rama «live» ({ id, title, at }). La pestaña de vídeos no lleva shorts ni
+      # directos; los que están por estrenarse (UPCOMING) se saltan. Sólo se sube si cambia.
+      - name: Último vídeo
+        if: ${{ inputs.prueba == '' || inputs.prueba == null }}
+        run: |
+          set -u
+          CH=UC5nyI589EfbS3KvyNdAVOGA
+          for n in 1 2 3; do
+            curl -sL --max-time 20 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' \
+              -H 'Accept-Language: es' --cookie 'CONSENT=YES+1; SOCS=CAI' "https://www.youtube.com/channel/$CH/videos" -o videos.html || true
+            grep -q '"richItemRenderer"' videos.html && break
+            echo "intento $n: sin lista de vídeos"; sleep 5
+          done
+          if ! grep -qE "\"(channelId|externalId|browseId)\":\"$CH\"" videos.html; then echo 'página rara: sin cambios'; rm -f videos.html; exit 0; fi
+          python3 - <<'PY'
+          import json, re, datetime
+          s = open('videos.html', encoding='utf-8', errors='replace').read()
+          new = None
+          for b in s.split('"richItemRenderer"')[1:8]:
+              m = re.search(r'"(?:contentId|videoId)":"([A-Za-z0-9_-]{11})"', b)
+              if not m or 'UPCOMING' in b or 'BADGE_STYLE_LIVE' in b: continue
+              t = re.search(r'"title":\{"content":"((?:[^"\\]|\\.)*)"', b) or re.search(r'"title":\{"runs":\[\{"text":"((?:[^"\\]|\\.)*)"', b)
+              new = {'id': m.group(1), 'title': json.loads('"' + t.group(1) + '"')[:120] if t else ''}
+              break
+          if not new: print('sin vídeos: sin cambios'); raise SystemExit
+          try: old = json.load(open('video.json', encoding='utf-8'))
+          except Exception: old = {}
+          if old.get('id') == new['id'] and old.get('title') == new['title']: print('sin cambios:', new['id']); raise SystemExit
+          new['at'] = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+          open('video.json', 'w', encoding='utf-8').write(json.dumps(new, ensure_ascii=False) + '\n')
+          print('vídeo nuevo:', new)
+          PY
+          rm -f videos.html
+          [ -f video.json ] || exit 0
+          if git ls-files --error-unmatch video.json >/dev/null 2>&1 && git diff --quiet -- video.json; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add video.json
+          git commit -q -m "video: $(grep -oE '"id": "[^"]*"' video.json | cut -d'"' -f4)"
           git push -q origin HEAD:live
