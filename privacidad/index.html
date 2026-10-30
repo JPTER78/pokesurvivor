@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacidad · PokéSurvivor</title>
+<meta name="description" content="Política de privacidad de PokéSurvivor: qué datos se guardan, para qué y cómo borrarlos.">
+<meta name="theme-color" content="#0a1430">
+<link rel="icon" href="../favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="48x48" href="../assets/icons/icon-48.png"><link rel="icon" type="image/png" sizes="96x96" href="../assets/icons/icon-96.png">
+<link rel="stylesheet" href="../css/pages.css">
+<style>
+  [data-l="en"] { display: none; }
+  html[lang="en"] [data-l="es"] { display: none; }
+  html[lang="en"] [data-l="en"] { display: initial; }
+  html[lang="en"] p[data-l="en"], html[lang="en"] h1[data-l="en"], html[lang="en"] h2[data-l="en"], html[lang="en"] ul[data-l="en"] { display: block; }
+</style>
+<script>
+  // Mismo idioma que el juego (o el del navegador).
+  (function () {
+    var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
+    var n = ((navigator.languages && navigator.languages[0]) || navigator.language || 'es').toLowerCase();
+    var l = s === 'es' || s === 'en' ? s : (n.indexOf('es') === 0 ? 'es' : 'en');
+    document.documentElement.lang = l;
+    if (l === 'en') document.title = 'Privacy · PokéSurvivor';
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../">PokéSurvivor</a>
+  <nav><a class="play" href="../"><span data-l="es">Volver al juego</span><span data-l="en">Back to the game</span></a></nav>
+</header>
+<main>
+<article class="doc">
+  <h1 data-l="es">Política de privacidad</h1>
+  <h1 data-l="en">Privacy policy</h1>
+  <p class="lead" data-l="es">PokéSurvivor es un juego de navegador hecho por fans, gratuito y sin ánimo de lucro, en pokesurvivor.com. No tiene anuncios, compras ni seguimiento. Última actualización: 29-10-2026.</p>
+  <p class="lead" data-l="en">PokéSurvivor is a free, non-profit, fan-made browser game at pokesurvivor.com. It has no ads, no purchases and no tracking. Last updated: 29-10-2026.</p>
+
+  <h2 data-l="es">Como invitado</h2>
+  <h2 data-l="en">As a guest</h2>
+  <p data-l="es">Si juegas como invitado no se guarda nada fuera de tu navegador.</p>
+  <p data-l="en">If you play as a guest, nothing is stored outside your browser.</p>
+
+  <h2 data-l="es">Con cuenta</h2>
+  <h2 data-l="en">With an account</h2>
+  <p data-l="es">Si creas una cuenta, guardamos tu nombre de jugador y tu partida (colección, monedas, mejoras y estadísticas) en Google Firebase, para que puedas seguir jugando en cualquier dispositivo.</p>
+  <p data-l="en">If you create an account, we store your player name and your save (collection, coins, upgrades and stats) in Google Firebase, so you can keep playing on any device.</p>
+
+  <h2 data-l="es">Si entras con Google</h2>
+  <h2 data-l="en">If you sign in with Google</h2>
+  <p data-l="es">Sólo pedimos los datos básicos de tu cuenta de Google (correo, nombre e imagen de perfil). Los usamos únicamente para:</p>
+  <p data-l="en">We only request the basic data of your Google account (email, name and profile picture). We use them only to:</p>
+  <ul data-l="es">
+    <li>identificarte al entrar (tu correo; nunca se enseña a otros jugadores);</li>
+    <li>proponerte un nombre de jugador la primera vez (la primera palabra de tu nombre, que puedes cambiar).</li>
+  </ul>
+  <ul data-l="en">
+    <li>identify you when you sign in (your email; it is never shown to other players);</li>
+    <li>suggest a player name the first time (the first word of your name, which you can change).</li>
+  </ul>
+  <p data-l="es">No accedemos a nada más de tu cuenta de Google, no vendemos ni compartimos estos datos con nadie y no los usamos para publicidad.</p>
+  <p data-l="en">We do not access anything else in your Google account, we do not sell or share this data with anyone and we do not use it for advertising.</p>
+
+  <h2 data-l="es">Amigos y ranking</h2>
+  <h2 data-l="en">Friends and leaderboard</h2>
+  <p data-l="es">Tu apodo es público para otros jugadores. Guardamos tu lista de amigos, si estás en línea y tus mejores marcas (con tu apodo y tu Pokémon).</p>
+  <p data-l="en">Your nickname is visible to other players. We store your friends list, whether you are online and your best records (with your nickname and your Pokémon).</p>
+
+  <h2 data-l="es">Partidas en grupo</h2>
+  <h2 data-l="en">Group games</h2>
+  <p data-l="es">Tu navegador se conecta directamente con el de tus compañeros (como en una videollamada), así que cada uno puede llegar a ver la dirección IP del otro. Juega en grupo sólo con gente que conozcas. Si la conexión directa no es posible, la partida pasa por los servidores de Firebase.</p>
+  <p data-l="en">Your browser connects directly to your teammates' browsers (like a video call), so each of you may be able to see the other's IP address. Only play in groups with people you know. If a direct connection is not possible, the game goes through Firebase's servers.</p>
+
+  <h2 data-l="es">Borrar tus datos</h2>
+  <h2 data-l="en">Deleting your data</h2>
+  <p data-l="es">Puedes borrar tu cuenta cuando quieras desde el juego: «Aviso legal y privacidad» → «Borrar mi cuenta y mi partida». Se borran también tu apodo, tus amigos y tus marcas. Si no puedes entrar, escríbenos y la borramos nosotros.</p>
+  <p data-l="en">You can delete your account at any time from the game: "Legal notice &amp; privacy" → "Delete my account and my game". Your nickname, friends and records are deleted too. If you cannot sign in, email us and we will delete it for you.</p>
+
+  <h2 data-l="es">Contacto</h2>
+  <h2 data-l="en">Contact</h2>
+  <p data-l="es">Para cualquier duda sobre tus datos: <a href="mailto:contactopokesurvivor@gmail.com?subject=Pok%C3%A9Survivor">contactopokesurvivor@gmail.com</a> (más en <a href="../contacto/">Contacto</a>).</p>
+  <p data-l="en">For any question about your data: <a href="mailto:contactopokesurvivor@gmail.com?subject=Pok%C3%A9Survivor">contactopokesurvivor@gmail.com</a> (more in <a href="../contacto/">Contact</a>).</p>
+</article>
+</main>
+</body>
+</html>

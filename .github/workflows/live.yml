@@ -1,0 +1,90 @@
+# ¿Está el canal de YouTube en directo? Cada 5 min (GitHub lo retrasa a veces
+# unos minutos) mira los directos del canal y deja live.json en la rama
+# «live»: { live, id, at }. El juego la lee (js/ui/live-ui.js) sin Firebase.
+# Sólo se sube algo al cambiar o, en directo, cada 30 min (para que «at» no
+# caduque). Gratis: el repositorio es público.
+name: live
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      prueba:
+        description: 'Sólo para probar: id de otro canal (UC…). Dice si está en directo y no cambia live.json'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: live
+      - name: Mirar el canal
+        env:
+          PRUEBA: ${{ inputs.prueba }}
+        run: |
+          set -u
+          CH=UC5nyI589EfbS3KvyNdAVOGA
+          if [ -n "${PRUEBA:-}" ]; then
+            echo "$PRUEBA" | grep -qE '^UC[A-Za-z0-9_-]{22}$' || { echo "prueba: id de canal no válido"; exit 1; }
+            CH=$PRUEBA
+          fi
+          get() {
+            curl -sL --max-time 20 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' \
+              -H 'Accept-Language: en' --cookie 'CONSENT=YES+1; SOCS=CAI' "$1" -o "$2" || true
+          }
+          # No sirve /live: lleva a una emisión de la PS4 de 2018 que sigue «programada»
+          # (afwp0I0hZeY) y no al directo de verdad (por eso el 27-10-2026 no se vio).
+          # Se mira la pestaña de directos: el que se está emitiendo lleva la etiqueta
+          # THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE (los acabados, ..._DEFAULT).
+          # La ficha de cada vídeo no sirve: desde GitHub, YouTube la da con LOGIN_REQUIRED
+          # («confirma que no eres un bot») y sin isLiveNow (por eso no se vio el 24, 27 y 28-10-2026).
+          # A veces YouTube la da sin la lista de vídeos: hasta 3 intentos.
+          for n in 1 2 3; do
+            get "https://www.youtube.com/channel/$CH/streams" streams.html
+            grep -q '"richItemRenderer"' streams.html && break
+            echo "intento $n: sin lista de vídeos"; sleep 5
+          done
+          # Si YouTube no da la página de verdad (aviso de bots, error...), no se toca nada.
+          if ! grep -qE "\"(channelId|externalId|browseId)\":\"$CH\"" streams.html; then echo 'página rara: sin cambios'; rm -f streams.html; exit 0; fi
+          id=$(python3 - <<'PY'
+          import re, sys
+          s = open('streams.html', encoding='utf-8', errors='replace').read()
+          if 'THUMBNAIL_OVERLAY_BADGE_STYLE_' not in s: print('?'); sys.exit()
+          for b in s.split('"richItemRenderer"')[1:6]:
+              if 'THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE' in b:
+                  m = re.search(r'"(?:contentId|videoId)":"([A-Za-z0-9_-]{11})"', b)
+                  if m: print(m.group(1)); break
+          PY
+          )
+          rm -f streams.html
+          # Sin etiquetas: YouTube ha cambiado la página; mejor no tocar nada que poner «no» a ciegas.
+          if [ "$id" = '?' ]; then echo 'sin etiquetas de directo: sin cambios'; exit 0; fi
+          live=false; [ -n "$id" ] && live=true
+          echo "directo: $live $id"
+          if [ -n "${PRUEBA:-}" ]; then echo 'prueba: live.json no se toca'; exit 0; fi
+          old_live=$(grep -oE '"live":(true|false)' live.json 2>/dev/null | cut -d: -f2)
+          old_id=$(grep -oE '"id":"[^"]*"' live.json 2>/dev/null | cut -d'"' -f4)
+          old_at=$(grep -oE '"at":"[^"]*"' live.json 2>/dev/null | cut -d'"' -f4)
+          age=$(( $(date +%s) - $(date -d "${old_at:-1970-01-01T00:00:00Z}" +%s) ))
+          if [ "$live" = "${old_live:-}" ] && [ "$id" = "${old_id:-}" ] && { [ "$live" = false ] || [ "$age" -lt 1800 ]; }; then
+            echo "sin cambios (live=$live)"; exit 0
+          fi
+          printf '{"live":%s,"id":"%s","at":"%s"}\n' "$live" "$id" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > live.json
+          cat live.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add live.json
+          git commit -q -m "live: $live $id"
+          git push -q origin HEAD:live

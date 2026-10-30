@@ -1,0 +1,5 @@
+# PokéSurvivor
+User-agent: *
+Allow: /
+
+Sitemap: https://pokesurvivor.com/sitemap.xml

@@ -1,0 +1,119 @@
+# PokéSurvivor · Mundo Misterioso
+
+Bullet-heaven con Pokémon al estilo de Survivor.io y Megabonk, con sprites de
+*Pokémon Mundo Misterioso*, capa roguelike, **966 Pokémon de las 9 generaciones**,
+shinies y gacha por región. Música y efectos compuestos para el juego.
+
+HTML + CSS + JavaScript sobre Canvas 2D, en el navegador y en el móvil.
+
+> **Autoría / Authorship**
+>
+> PokéSurvivor (su código y su música original) lo ha escrito y es de
+> **Jonathan Piera Torregrosa**, dueño de esta cuenta (JPTER78) y de pokesurvivor.com.
+> The source code and original music of PokéSurvivor are written and owned by
+> **Jonathan Piera Torregrosa**, owner of this GitHub account (JPTER78) and of
+> pokesurvivor.com. Google copyright removal request **4-2352000042234**
+> (against pokesurvivor.co) was submitted by me.
+
+> **Aviso sobre criptomonedas / Crypto disclaimer**
+>
+> PokéSurvivor **no tiene ninguna criptomoneda, token ni NFT oficial**, y yo no
+> he creado ninguno. Cualquier token que use el nombre del juego lo han creado
+> terceros. **No me hago cargo de ninguna compra, venta o inversión** que hagas
+> con ellos y nada de lo que hay aquí es una recomendación de inversión. El
+> juego es gratis y lo seguirá siendo.
+>
+> PokéSurvivor has **no official cryptocurrency, token or NFT**, and I have not
+> created any. Any token using the game's name was created by third parties.
+> **I take no responsibility for any purchase, sale or investment** you make
+> with them, and nothing here is investment advice. The game is free and will
+> stay free.
+
+## Jugar
+
+Entra en [pokesurvivor.com](https://pokesurvivor.com). Crea una cuenta o entra como invitado, haz el test
+de personalidad y a la mazmorra.
+
+| Tecla | Acción |
+|---|---|
+| `W` `A` `S` `D` / flechas | Moverse |
+| `1` `2` `3` `4` | Elegir el movimiento activo |
+| `Q` / `E` | Ciclar movimientos |
+| `Esc` / `P` | Pausa |
+
+**En móvil o tablet** (en horizontal): pon el dedo en cualquier sitio y arrastra
+para moverte (el joystick aparece donde tocas), toca un ataque de abajo para
+cambiarlo y el botón de arriba a la derecha para pausar. Se puede instalar como
+app ("Añadir a pantalla de inicio"). En **Ajustes** hay sonido, calidad gráfica
+(con modo automático), números de daño, menos sacudidas, FPS y la cuenta.
+
+El Pokémon ataca solo con el movimiento activo (o con todos los de un
+**vínculo**: cada legendario vencido deja fusionar movimientos para lanzarlos a
+la vez desde un solo hueco, hasta 4). Las rocas, cofres y la hierba
+alta se rompen; las paredes y los árboles bloquean los disparos enemigos; el
+agua frena y la lava quema (también a los enemigos).
+
+En el mapa hay **altares de poder**, **manantiales** que curan, **cofres con
+candado** (quédate a su lado unos segundos) y **trampas** que también dañan a
+los enemigos. A veces se abre una **grieta**: entra y lucharás contra un
+**legendario** en una arena aparte.
+
+Hay **tabla de tipos** (un Rayo Burbuja le quita más a un Charmander) y,
+de vez en cuando, **climas** (sol, lluvia, arena, nieve, niebla) que potencian
+unos tipos y debilitan otros.
+
+Cada día hay **misiones** (y semanales) que dan tickets y monedas; los
+**logros** dan medallas y títulos, y tu **perfil** enseña tus 3 Pokémon
+favoritos, tus marcas y tus medallas. En las runs encuentras **objetos** (Restos,
+Cinta Elección...) y tus movimientos **evolucionan** al máximo nivel. Los
+enemigos tienen personalidad: curan, ponen escudos, llaman a su manada o atacan
+con aviso en el suelo.
+
+Las **mejoras** son de cada Pokémon. El **gacha** va con **tickets** que se
+ganan jugando (×1 de algunos Pokémon, ×10 de jefes y legendarios), y se tira
+en una tragaperras pixel art.
+
+Cada enemigo tiene 1/4096 de salir **shiny**: brilla, una flecha en el borde de
+la pantalla te dice dónde está, y si lo derrotas te lo quedas. En el gacha sale
+shiny 1 de cada 100 tiradas. En la colección eliges tu compañero en versión
+normal o shiny.
+
+La música suena tras el primer clic (los navegadores no dejan reproducir sonido
+antes). Volumen y silencio: botón del altavoz arriba a la derecha, o en la pausa.
+
+El guardado vive en el `localStorage` del navegador: si borras los datos del
+sitio, se pierde.
+
+## Guardado en la nube y publicación
+
+- **Base de datos (Firebase):** cuentas con nombre + contraseña o Google, y la
+  partida se sigue en cualquier ordenador.
+  Sin cuenta, el juego guarda sólo en el navegador.
+- **Jugar con amigos (hasta 4) y ranking:** con cuenta en la nube, menú
+  **Amigos** (añadir por apodo, invitar a tu sala) y **Ranking** (tiempo
+  aguantado: solo o grupo, de hoy a histórico, amigos, por Pokémon).
+- Si se juega en dos ordenadores a la vez o sin conexión, las partidas se
+  **fusionan**: las colecciones se unen (nunca se pierde un Pokémon ni un
+  shiny), mejoras y estadísticas se quedan con el máximo, y monedas y
+  compañero con la versión más reciente. Los cambios de otro ordenador llegan
+  en directo.
+
+## Licencia
+
+Código bajo [PolyForm Noncommercial 1.0.0](LICENSE-NONCOMMERCIAL.md) desde el
+14-10-2026: se puede usar, estudiar y modificar, pero **no con fines
+comerciales** (ni vender el juego ni cobrar nada dentro de él). Las versiones
+hasta el commit `b297089` se publicaron bajo MIT. Los sprites (CC BY-NC 4.0),
+la fuente (OFL) y las marcas de Pokémon tienen sus propias condiciones: ver
+[LICENSE](LICENSE) y [CREDITS.md](CREDITS.md). Proyecto de fan sin ánimo de
+lucro.
+
+**La única web oficial es [pokesurvivor.com](https://pokesurvivor.com).** El
+juego es y será gratis: si alguien te pide pagar, no somos nosotros.
+
+## Créditos y licencia
+
+Sprites de [SpriteCollab](https://github.com/PMDCollab/SpriteCollab) bajo
+**CC BY-NC 4.0** — uso **no comercial** y con atribución; la lista de artistas
+está en [`CREDITS.md`](CREDITS.md). Pokémon es propiedad de Nintendo, Creatures
+Inc. y GAME FREAK. Proyecto de fan sin ánimo de lucro.
